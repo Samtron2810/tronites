@@ -18,7 +18,9 @@ const Home = () => {
   // Fetch Posts
   const fetchPosts = async () => {
     try {
-      const res = await api.get("/posts");
+      setLoading(true);
+
+      const res = await api.get("/posts/feed");
 
       setPosts(res.data);
     } catch (error) {
@@ -38,11 +40,10 @@ const Home = () => {
         {/* Create Post */}
         <CreatePost fetchPosts={fetchPosts} />
 
-        {/* Loading */}
+        {/* Loading Skeletons */}
         {loading && (
           <>
             <PostSkeleton />
-            <br />
             <PostSkeleton />
           </>
         )}
@@ -62,6 +63,19 @@ const Home = () => {
               isLiked={post.isLiked}
             />
           ))}
+
+        {/* Empty Feed */}
+        {!loading && posts.length === 0 && (
+          <div className="bg-white rounded-2xl shadow-md p-8 text-center">
+            <h2 className="text-xl font-bold text-gray-800">
+              Your feed is empty
+            </h2>
+
+            <p className="text-gray-500 mt-2">
+              Follow users to start seeing posts.
+            </p>
+          </div>
+        )}
       </div>
     </MainLayout>
   );

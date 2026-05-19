@@ -15,6 +15,14 @@ const Profile = () => {
   console.log(id);
 
   const { user: currentUser } = useAuth();
+  //if (!currentUser) return null;
+  if (!currentUser) {
+    return (
+      <div className="min-h-screen bg-orange-400 flex items-center justify-center">
+        <h1 className="text-2xl font-bold">Loading user...</h1>
+      </div>
+    );
+  }
 
   const [profile, setProfile] = useState(null);
 
@@ -51,9 +59,14 @@ const Profile = () => {
       // update follower count instantly
       setProfile((prev) => ({
         ...prev,
+
         followers: res.data.following
           ? [...prev.followers, currentUser._id]
-          : prev.followers.slice(0, -1),
+          : prev.followers.filter(
+              (follower) =>
+                (follower._id || follower).toString() !==
+                currentUser._id.toString(),
+            ),
       }));
     } catch (error) {
       console.log(error);
@@ -68,7 +81,7 @@ const Profile = () => {
     );
   }
 
-  const isOwnProfile = currentUser._id === profile._id;
+  const isOwnProfile = currentUser?._id === profile?._id;
 
   return (
     <MainLayout>
@@ -136,7 +149,9 @@ const Profile = () => {
             image={post.image}
             likes={post.likes.length}
             commentsCount={post.commentsCount}
-            isLiked={post.likes.some((id) => id.toString() === currentUser._id)}
+            isLiked={post.likes.some(
+              (id) => id.toString() === currentUser?._id,
+            )}
           />
         ))}
       </div>

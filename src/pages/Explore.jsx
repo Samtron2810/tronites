@@ -1,63 +1,128 @@
+import { useEffect, useState } from "react";
+
+import { Link } from "react-router-dom";
+
+import MainLayout from "../layouts/MainLayout";
+
+import api from "../services/api";
+
+import { useAuth } from "../context/AuthContext";
+
 const Explore = () => {
+  const { user: currentUser } = useAuth();
+
+  const [search, setSearch] = useState("");
+
+  const [users, setUsers] = useState([]);
+
+  const [loading, setLoading] = useState(false);
+
+  // Fetch users
+  const fetchUsers = async () => {
+    try {
+      setLoading(true);
+
+      const res = await api.get(`/users/search?q=${search}`);
+
+      setUsers(res.data);
+    } catch (error) {
+      console.log(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchUsers();
+  }, [search]);
+
+  // Follow toggle
+  const handleFollow = async (userId) => {
+    try {
+      const res = await api.put(`/users/follow/${userId}`);
+
+      setUsers((prev) =>
+        prev.map((user) => {
+          if (user._id !== userId) {
+            return user;
+          }
+
+          const alreadyFollowing = user.followers.includes(currentUser._id);
+
+          return {
+            ...user,
+
+            followers: alreadyFollowing
+              ? user.followers.filter((id) => id !== currentUser._id)
+              : [...user.followers, currentUser._id],
+          };
+        }),
+      );
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-orange-400 px-6 py-10">
-      <div className="max-w-3xl mx-auto">
-        {/* Heading */}
-        <h1 className="text-4xl font-extrabold text-gray-900">
-          Explore <span className="text-blue-500">Users</span>
-        </h1>
-
-        <p className="text-gray-800 mt-2">
-          Discover and connect with people in the community.
-        </p>
-
+    <MainLayout>
+      <div className="space-y-6">
         {/* Search */}
-        <div className="mt-6">
+        <div className="bg-white rounded-2xl shadow-md p-4">
           <input
             type="text"
             placeholder="Search users..."
-            className="w-full p-4 rounded-xl border border-gray-300 outline-none focus:border-blue-500 bg-white"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full border rounded-xl p-3 outline-none"
           />
         </div>
 
-        {/* Users List */}
-        <div className="mt-8 space-y-4">
-          {/* User Card */}
-          <div className="bg-white rounded-2xl shadow p-5 flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="w-14 h-14 rounded-full bg-gray-300"></div>
+        {/* Users */}
+        <div className="space-y-4">
+          {loading && <p className="text-center text-gray-500">Searching...</p>}
 
-              <div>
-                <h2 className="font-bold text-gray-900">Jane Smith</h2>
+          {!loading &&
+            users.map((user) => {
+              const isFollowing = user.followers.includes(currentUser._id);
 
-                <p className="text-gray-600 text-sm">UI/UX Designer</p>
-              </div>
-            </div>
+              return (
+                <div
+                  key={user._id}
+                  className="bg-white rounded-2xl shadow-md p-4 flex items-center justify-between"
+                >
+                  {/* User Info */}
+                  <Link
+                    to={`/profile/${user._id}`}
+                    className="flex items-center gap-4"
+                  >
+                    <div className="w-14 h-14 rounded-full bg-gray-300"></div>
 
-            <button className="bg-blue-500 hover:bg-blue-600 text-white px-5 py-2 rounded-lg font-semibold transition duration-200">
-              Follow
-            </button>
-          </div>
+                    <div>
+                      <h2 className="font-bold text-gray-900">{user.name}</h2>
 
-          {/* Another User */}
-          <div className="bg-white rounded-2xl shadow p-5 flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="w-14 h-14 rounded-full bg-gray-300"></div>
+                      <p className="text-sm text-gray-500">
+                        {user.bio || "No bio"}
+                      </p>
+                    </div>
+                  </Link>
 
-              <div>
-                <h2 className="font-bold text-gray-900">Michael Lee</h2>
-
-                <p className="text-gray-600 text-sm">Fullstack Developer</p>
-              </div>
-            </div>
-
-            <button className="bg-blue-500 hover:bg-blue-600 text-white px-5 py-2 rounded-lg font-semibold transition duration-200">
-              Follow
-            </button>
-          </div>
+                  {/* Follow Button */}
+                  <button
+                    onClick={() => handleFollow(user._id)}
+                    className={`px-5 py-2 rounded-lg text-white font-semibold transition ${
+                      isFollowing
+                        ? "bg-gray-600 hover:bg-gray-700"
+                        : "bg-blue-500 hover:bg-blue-600"
+                    }`}
+                  >
+                    {isFollowing ? "Following" : "Follow"}
+                  </button>
+                </div>
+              );
+            })}
         </div>
       </div>
-    </div>
+    </MainLayout>
   );
 };
 

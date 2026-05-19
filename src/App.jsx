@@ -9,19 +9,19 @@ import Navbar from "./components/Navbar";
 
 import ProtectedRoute from "./components/ProtectedRoute";
 
-const App = () => {
+const AppContent = () => {
   const location = useLocation();
 
-  //display the navbar on all pages except login and register
-  const ShowNavbar = !["/login", "/signup"].includes(location.pathname);
+  // Display navbar on all pages except login and signup
+  const showNavbar = !["/login", "/signup"].includes(location.pathname);
 
   return (
-    <BrowserRouter>
-      {ShowNavbar && <Navbar />}
+    <>
+      {showNavbar && <Navbar />}
+
       <Routes>
         {/* Public */}
         <Route path="/login" element={<Login />} />
-
         <Route path="/signup" element={<Register />} />
 
         {/* Protected */}
@@ -52,6 +52,14 @@ const App = () => {
           }
         />
       </Routes>
+    </>
+  );
+};
+
+const App = () => {
+  return (
+    <BrowserRouter>
+      <AppContent />
     </BrowserRouter>
   );
 };

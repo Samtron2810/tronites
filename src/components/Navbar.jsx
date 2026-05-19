@@ -5,6 +5,9 @@ import { useAuth } from "../context/AuthContext";
 const Navbar = () => {
   const { user, logout } = useAuth();
 
+  // Prevent crash while auth is loading
+  if (!user) return null;
+
   return (
     <nav className="bg-orange-300/80 backdrop-blur-md border-b border-orange-200 px-6 py-4 flex items-center justify-between sticky top-0 z-50">
       {/* Logo */}
