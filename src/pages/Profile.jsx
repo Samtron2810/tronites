@@ -12,33 +12,19 @@ import { useAuth } from "../context/AuthContext";
 
 const Profile = () => {
   const { id } = useParams();
-  console.log(id);
-
   const { user: currentUser } = useAuth();
-  //if (!currentUser) return null;
-  if (!currentUser) {
-    return (
-      <div className="min-h-screen bg-orange-400 flex items-center justify-center">
-        <h1 className="text-2xl font-bold">Loading user...</h1>
-      </div>
-    );
-  }
 
+  // ✅ ALL hooks must be here, before any early returns
   const [profile, setProfile] = useState(null);
-
   const [posts, setPosts] = useState([]);
-
   const [isFollowing, setIsFollowing] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
-  // Fetch profile
   const fetchProfile = async () => {
     try {
       const res = await api.get(`/users/profile/${id}`);
-
       setProfile(res.data.user);
-
       setPosts(res.data.posts);
-
       setIsFollowing(res.data.isFollowing);
     } catch (error) {
       console.log(error);
@@ -73,6 +59,41 @@ const Profile = () => {
     }
   };
 
+  //HANDLE PROFILE UPLOAD
+  const handleProfileUpload = async (e) => {
+    const file = e.target.files[0];
+
+    if (!file) return;
+
+    try {
+      setUploading(true);
+
+      const formData = new FormData();
+
+      formData.append("image", file);
+
+      const res = await api.put("/users/profile-picture", formData);
+
+      setProfile((prev) => ({
+        ...prev,
+        profilePic: res.data.profilePic,
+      }));
+    } catch (error) {
+      console.log(error);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  // ✅ Early returns AFTER hooks
+  if (!currentUser) {
+    return (
+      <div className="min-h-screen bg-orange-400 flex items-center justify-center">
+        <h1 className="text-2xl font-bold">Loading user...</h1>
+      </div>
+    );
+  }
+
   if (!profile) {
     return (
       <div className="min-h-screen bg-orange-400 flex items-center justify-center">
@@ -90,7 +111,28 @@ const Profile = () => {
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
           <div className="flex items-center gap-5">
             {/* Avatar */}
-            <div className="w-24 h-24 rounded-full bg-gray-300"></div>
+            <div className="relative">
+              <img
+                // src={profile.profilePic || "https://via.placeholder.com/150"}
+                src={profile.profilePic || "https://i.pravatar.cc/"}
+                alt="profile"
+                className="w-24 h-24 rounded-full object-cover border"
+              />
+
+              {/* Upload Button */}
+              {isOwnProfile && (
+                <label className="absolute bottom-0 right-0 bg-blue-500 text-white text-xs px-2 py-1 rounded-lg cursor-pointer">
+                  {uploading ? "..." : "Edit"}
+
+                  <input
+                    type="file"
+                    accept="image/*"
+                    hidden
+                    onChange={handleProfileUpload}
+                  />
+                </label>
+              )}
+            </div>
 
             {/* Info */}
             <div>
@@ -144,6 +186,7 @@ const Profile = () => {
             key={post._id}
             postId={post._id}
             name={profile.name}
+            profilePic={profile.profilePic}
             time={new Date(post.createdAt).toLocaleString()}
             text={post.text}
             image={post.image}

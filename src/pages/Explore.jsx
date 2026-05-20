@@ -95,7 +95,12 @@ const Explore = () => {
                     to={`/profile/${user._id}`}
                     className="flex items-center gap-4"
                   >
-                    <div className="w-14 h-14 rounded-full bg-gray-300"></div>
+                    {/* USER AVATAR */}
+                    <img
+                      src={user.profilePic || "https://i.pravatar.cc/"}
+                      alt="user"
+                      className="w-14 h-14 rounded-full object-cover"
+                    />
 
                     <div>
                       <h2 className="font-bold text-gray-900">{user.name}</h2>

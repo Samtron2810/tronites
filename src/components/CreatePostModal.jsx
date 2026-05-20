@@ -24,12 +24,17 @@ const CreatePostModal = ({ closeModal, fetchPosts }) => {
 
   // real submit
   const handleSubmit = async () => {
-    if (!text.trim()) {
-      return toast.error("Post cannot be empty");
-    }
+    if (!text.trim()) return toast.error("Post cannot be empty");
 
     try {
-      await api.post("/posts", { text });
+      const formData = new FormData();
+      formData.append("text", text);
+      if (image) formData.append("image", image);
+
+      await api.post("/posts", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
       toast.success("Post created successfully");
       fetchPosts();
     } catch (error) {
@@ -80,7 +85,12 @@ const CreatePostModal = ({ closeModal, fetchPosts }) => {
 
         {/* Actions */}
         <div className="flex items-center justify-between mt-5">
-          <input type="file" accept="image/*" onChange={handleImage} className="cursor-pointer border-2 border-blue-500 rounded-lg bg-blue-200 pl-5"/>
+          <input
+            type="file"
+            accept="image/*"
+            onChange={handleImage}
+            className="cursor-pointer border-2 border-blue-500 rounded-lg bg-blue-200 pl-5"
+          />
 
           <button
             onClick={handleSubmit}

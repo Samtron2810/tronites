@@ -55,6 +55,7 @@ const Home = () => {
               key={post._id}
               postId={post._id}
               name={post.user.name}
+              profilePic={post.user.profilePic}
               time={new Date(post.createdAt).toLocaleString()}
               text={post.text}
               image={post.image}

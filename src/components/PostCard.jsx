@@ -7,6 +7,7 @@ import api from "../services/api";
 const PostCard = ({
   postId,
   name,
+  profilePic,
   time,
   text,
   image,
@@ -53,22 +54,6 @@ const PostCard = ({
     }
   };
 
-  //handle like
-  // const handleLike = async () => {
-  //   try {
-  //     await api.put(`/posts/like/${postId}`);
-
-  //     if (liked) {
-  //       setLikeCount((prev) => prev - 1);
-  //     } else {
-  //       setLikeCount((prev) => prev + 1);
-  //     }
-
-  //     setLiked(!liked);
-  //   } catch (error) {
-  //     console.log(error);
-  //   }
-  // };
   const handleLike = async () => {
     try {
       const res = await api.put(`/posts/like/${postId}`);
@@ -105,8 +90,12 @@ const PostCard = ({
     <div className="bg-white rounded-2xl shadow-md p-5">
       {/* User Info */}
       <div className="flex items-center gap-3">
-        <div className="w-12 h-12 rounded-full bg-gray-300"></div>
-
+        {/* AVATAR */}
+        <img
+          src={profilePic || "https://via.placeholder.com/150"}
+          alt="user"
+          className="w-12 h-12 rounded-full object-cover"
+        />
         <div>
           <h2 className="font-bold text-gray-900">{name}</h2>
           <p className="text-sm text-gray-500">{time}</p>
