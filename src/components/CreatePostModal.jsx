@@ -31,9 +31,7 @@ const CreatePostModal = ({ closeModal, fetchPosts }) => {
       formData.append("text", text);
       if (image) formData.append("image", image);
 
-      await api.post("/posts", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
+      await api.post("/posts", formData);
 
       toast.success("Post created successfully");
       fetchPosts();

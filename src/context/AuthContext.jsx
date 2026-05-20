@@ -30,6 +30,11 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
   };
 
+  // UPDATE USER (for profile pic sync)
+  const updateUser = (updates) => {
+    setUser((prev) => ({ ...prev, ...updates }));
+  };
+
   // GET CURRENT USER
   const getMe = async () => {
     try {
@@ -55,6 +60,7 @@ export const AuthProvider = ({ children }) => {
         register,
         login,
         logout,
+        updateUser,
       }}
     >
       {children}

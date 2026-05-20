@@ -12,7 +12,8 @@ import { useAuth } from "../context/AuthContext";
 
 const Profile = () => {
   const { id } = useParams();
-  const { user: currentUser } = useAuth();
+  // const { user: currentUser } = useAuth();
+  const { user: currentUser, updateUser } = useAuth();
 
   // ✅ ALL hooks must be here, before any early returns
   const [profile, setProfile] = useState(null);
@@ -78,6 +79,10 @@ const Profile = () => {
         ...prev,
         profilePic: res.data.profilePic,
       }));
+
+      // Update the current user's profile picture in context
+      updateUser({ profilePic: res.data.profilePic });
+      toast.success("Profile picture updated!");
     } catch (error) {
       console.log(error);
     } finally {

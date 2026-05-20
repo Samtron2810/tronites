@@ -18,3 +18,5 @@ maxAge: 7 _ 24 _ 60 _ 60 _ 1000,
 -
 -
 - ADD THUMBNAIL BESIDE THE ADD POST INPUT BOX
+
+before hosting, change the baseurl in frontend/src/service/api.js from localhost to a real url
