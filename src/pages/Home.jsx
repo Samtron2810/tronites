@@ -54,6 +54,7 @@ const Home = () => {
             <PostCard
               key={post._id}
               postId={post._id}
+              userId={post.user._id}
               name={post.user.name}
               profilePic={post.user.profilePic}
               time={new Date(post.createdAt).toLocaleString()}
@@ -62,6 +63,9 @@ const Home = () => {
               likes={post.likes.length}
               commentsCount={post.commentsCount}
               isLiked={post.isLiked}
+              onDelete={(id) =>
+                setPosts((prev) => prev.filter((p) => p._id !== id))
+              }
             />
           ))}
 

@@ -190,6 +190,7 @@ const Profile = () => {
           <PostCard
             key={post._id}
             postId={post._id}
+            userId={post.user?._id || profile._id}
             name={profile.name}
             profilePic={profile.profilePic}
             time={new Date(post.createdAt).toLocaleString()}
@@ -200,6 +201,9 @@ const Profile = () => {
             isLiked={post.likes.some(
               (id) => id.toString() === currentUser?._id,
             )}
+            onDelete={(id) =>
+              setPosts((prev) => prev.filter((p) => p._id !== id))
+            }
           />
         ))}
       </div>

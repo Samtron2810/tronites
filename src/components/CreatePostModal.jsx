@@ -77,7 +77,7 @@ const CreatePostModal = ({ closeModal, fetchPosts }) => {
           <img
             src={preview}
             alt="preview"
-            className="mt-4 rounded-xl w-full h-64 object-cover"
+            className="mt-4 mx-auto rounded-xl w-3/4 h-auto object-cover"
           />
         )}
 
@@ -87,7 +87,7 @@ const CreatePostModal = ({ closeModal, fetchPosts }) => {
             type="file"
             accept="image/*"
             onChange={handleImage}
-            className="cursor-pointer border-2 border-blue-500 rounded-lg bg-blue-200 pl-5"
+            className="cursor-pointer border-2 border-blue-500 rounded-lg bg-blue-200 pl-2 text-sm text-blue-700 hover:bg-blue-300 transition duration-200"
           />
 
           <button
