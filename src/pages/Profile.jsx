@@ -21,6 +21,9 @@ const Profile = () => {
   const [isFollowing, setIsFollowing] = useState(false);
   const [uploading, setUploading] = useState(false);
 
+  const [editingBio, setEditingBio] = useState(false);
+  const [bioText, setBioText] = useState("");
+
   const fetchProfile = async () => {
     try {
       const res = await api.get(`/users/profile/${id}`);
@@ -90,6 +93,21 @@ const Profile = () => {
     }
   };
 
+  //HANDLE BIO UPDATE
+  const handleBioSave = async () => {
+    if (bioText.trim() === (profile.bio || "")) {
+      setEditingBio(false);
+      return;
+    }
+    try {
+      const res = await api.put("/users/bio", { bio: bioText });
+      setProfile((prev) => ({ ...prev, bio: res.data.bio }));
+      setEditingBio(false);
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
   // ✅ Early returns AFTER hooks
   if (!currentUser) {
     return (
@@ -116,7 +134,7 @@ const Profile = () => {
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
           <div className="flex items-center gap-5">
             {/* Avatar */}
-            <div className="relative">
+            <div className={editingBio ? "hidden" : "relative"}>
               <img
                 // src={profile.profilePic || "https://via.placeholder.com/150"}
                 src={profile.profilePic || "https://i.pravatar.cc/"}
@@ -145,9 +163,47 @@ const Profile = () => {
                 {profile.name}
               </h1>
 
-              <p className="text-gray-600 mt-1">
-                {profile.bio || "No bio yet."}
-              </p>
+              {/* BIO DISPLAY AND EDITING */}
+              {editingBio ? (
+                <div className="flex items-center gap-2 mt-1">
+                  <input
+                    value={bioText}
+                    onChange={(e) => setBioText(e.target.value)}
+                    maxLength={150}
+                    placeholder="Write your bio..."
+                    className="border rounded-lg px-3 py-1 text-sm outline-none w-64"
+                  />
+                  <button
+                    onClick={handleBioSave}
+                    className="text-sm bg-blue-500 text-white px-3 py-1 rounded-lg hover:bg-blue-600 transition"
+                  >
+                    Save
+                  </button>
+                  <button
+                    onClick={() => setEditingBio(false)}
+                    className="text-sm text-gray-500 hover:text-gray-700 transition"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 mt-1">
+                  <p className="text-gray-600">
+                    {profile.bio || "No bio yet."}
+                  </p>
+                  {isOwnProfile && (
+                    <button
+                      onClick={() => {
+                        setBioText(profile.bio || "");
+                        setEditingBio(true);
+                      }}
+                      className="text-xs bg-blue-400 hover:bg-blue-500 text-white p-1 rounded-lg transition cursor-pointer"
+                    >
+                      {profile.bio ? "Edit bio" : "+ Add bio"}
+                    </button>
+                  )}
+                </div>
+              )}
 
               {/* Stats */}
               <div className="flex gap-6 mt-4 text-sm text-gray-700">

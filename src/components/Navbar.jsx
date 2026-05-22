@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { FaHome, FaCompass, FaUser, FaArrowLeft } from "react-icons/fa";
 import { useAuth } from "../context/AuthContext";
+import NotificationBell from "./NotificationBell";
 
 const Navbar = () => {
   const { user, logout } = useAuth();
@@ -20,20 +21,20 @@ const Navbar = () => {
         <Link to="/" className="text-gray-800 hover:text-blue-500 font-medium">
           Feed
         </Link>
-
         <Link
           to="/explore"
           className="text-gray-800 hover:text-blue-500 font-medium"
         >
           Explore
         </Link>
-
         <Link
           to={`/profile/${user._id}`}
           className="text-gray-800 hover:text-blue-500 font-medium"
         >
           Profile
         </Link>
+
+        <NotificationBell />
 
         <button
           onClick={logout}
@@ -59,6 +60,8 @@ const Navbar = () => {
         >
           <FaUser />
         </Link>
+
+        <NotificationBell />
 
         <button
           onClick={logout}
