@@ -1,14 +1,10 @@
 import { useEffect, useState } from "react";
-
 import MainLayout from "../layouts/MainLayout";
-
 import CreatePost from "../components/CreatePost";
-
 import PostCard from "../components/PostCard";
-
 import PostSkeleton from "../components/PostSkeleton";
-
 import api from "../services/api";
+import { useSocket } from "../context/SocketContext";
 
 const Home = () => {
   const [posts, setPosts] = useState([]);
@@ -30,9 +26,30 @@ const Home = () => {
     }
   };
 
+  const { socket } = useSocket();
+
   useEffect(() => {
     fetchPosts();
   }, []);
+
+  useEffect(() => {
+    if (socket) {
+      const handleNewPost = (newPost) => {
+        // Prepend new post in followers' feeds in real-time (prevent duplicates)
+        setPosts((prev) => {
+          if (prev.some((p) => p._id === newPost._id)) return prev;
+          return [newPost, ...prev];
+        });
+      };
+
+      socket.on("newPost", handleNewPost);
+
+      return () => {
+        // Clean up socket listener
+        socket.off("newPost", handleNewPost);
+      };
+    }
+  }, [socket]);
 
   return (
     <MainLayout>

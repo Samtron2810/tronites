@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 import MainLayout from "../layouts/MainLayout";
 import api from "../services/api";
+import { useSocket } from "../context/SocketContext";
 
 const Notifications = () => {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
+  const { socket } = useSocket();
 
   useEffect(() => {
     const fetchNotifications = async () => {
@@ -21,15 +23,32 @@ const Notifications = () => {
       }
     };
 
-    // first fetch immediately
     fetchNotifications();
-
-    // auto refresh every 30 seconds
-    const interval = setInterval(fetchNotifications, 30000);
-
-    // cleanup when leaving page
-    return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    if (socket) {
+      const handleNewNotification = async (newNotif) => {
+        // Prepend new notification; mark it as read immediately since user is on the Notifications page (prevent duplicates)
+        setNotifications((prev) => {
+          const exists = prev.some((n) => n._id === newNotif._id);
+          if (exists) return prev;
+          return [{ ...newNotif, read: true }, ...prev];
+        });
+        try {
+          await api.put("/notifications/mark-read");
+        } catch (error) {
+          console.log("Failed to mark notifications read:", error);
+        }
+      };
+
+      socket.on("newNotification", handleNewNotification);
+
+      return () => {
+        socket.off("newNotification", handleNewNotification);
+      };
+    }
+  }, [socket]);
 
   const getMessage = (n) => {
     if (n.type === "like") return "liked your post";

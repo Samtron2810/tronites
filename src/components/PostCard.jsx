@@ -3,6 +3,7 @@ import { FaHeart, FaRegHeart, FaRegComment, FaTrash } from "react-icons/fa";
 import api from "../services/api";
 import { useAuth } from "../context/AuthContext";
 import DeletePostModal from "./DeletePostModal";
+import { useSocket } from "../context/SocketContext";
 
 const PostCard = ({
   postId,
@@ -77,6 +78,20 @@ const PostCard = ({
     }
   };
 
+  const { socket } = useSocket();
+
+  useEffect(() => {
+    setLiked(isLiked);
+  }, [isLiked]);
+
+  useEffect(() => {
+    setLikeCount(likes);
+  }, [likes]);
+
+  useEffect(() => {
+    setCommentCount(commentsCount);
+  }, [commentsCount]);
+
   useEffect(() => {
     if (showComments) fetchComments();
   }, [showComments]);
@@ -84,6 +99,44 @@ const PostCard = ({
   useEffect(() => {
     if (showComments) setVisibleCount(1);
   }, [showComments]);
+
+  useEffect(() => {
+    if (socket && postId) {
+      // Join the specific post room for live likes and comments
+      socket.emit("joinPost", postId);
+
+      const handleLikeUpdate = (data) => {
+        if (data.postId === postId) {
+          setLikeCount(data.likesCount);
+          const isLikedByMe = data.likes.some(
+            (id) => id.toString() === currentUser?._id?.toString(),
+          );
+          setLiked(isLikedByMe);
+        }
+      };
+
+      const handleNewComment = (data) => {
+        if (data.postId === postId) {
+          setCommentCount(data.commentCount);
+          // If comments section is expanded, append the new comment in real-time (no duplicates)
+          setComments((prev) => {
+            if (prev.some((c) => c._id === data.comment._id)) return prev;
+            return [data.comment, ...prev];
+          });
+        }
+      };
+
+      socket.on("likeUpdate", handleLikeUpdate);
+      socket.on("newComment", handleNewComment);
+
+      return () => {
+        // Clean up: leave room and unbind event listeners
+        socket.emit("leavePost", postId);
+        socket.off("likeUpdate", handleLikeUpdate);
+        socket.off("newComment", handleNewComment);
+      };
+    }
+  }, [socket, postId, currentUser?._id]);
 
   const visibleComments = comments.slice(0, visibleCount);
   const hasMore = visibleCount < comments.length;

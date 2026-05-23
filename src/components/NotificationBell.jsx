@@ -2,10 +2,12 @@ import { useEffect, useState } from "react";
 import { FaBell } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import api from "../services/api";
+import { useSocket } from "../context/SocketContext";
 
 const NotificationBell = () => {
   const [count, setCount] = useState(0);
   const navigate = useNavigate();
+  const { socket } = useSocket();
 
   useEffect(() => {
     const fetchCount = async () => {
@@ -18,10 +20,19 @@ const NotificationBell = () => {
     };
 
     fetchCount();
-    // Poll every 30 seconds
-    const interval = setInterval(fetchCount, 30000);
-    return () => clearInterval(interval);
-  }, []);
+
+    if (socket) {
+      const handleNewNotification = () => {
+        setCount((prev) => prev + 1);
+      };
+
+      socket.on("newNotification", handleNewNotification);
+
+      return () => {
+        socket.off("newNotification", handleNewNotification);
+      };
+    }
+  }, [socket]);
 
   const handleClick = () => {
     setCount(0);
