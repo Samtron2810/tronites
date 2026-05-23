@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 
 import MainLayout from "../layouts/MainLayout";
+import toast from "react-hot-toast";
 
 import PostCard from "../components/PostCard";
 
@@ -13,6 +14,7 @@ import { useSocket } from "../context/SocketContext";
 
 const Profile = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
   // const { user: currentUser } = useAuth();
   const { user: currentUser, updateUser } = useAuth();
 
@@ -237,16 +239,24 @@ const Profile = () => {
 
           {/* Follow Button */}
           {!isOwnProfile && (
-            <button
-              onClick={handleFollow}
-              className={`px-6 py-2 rounded-lg font-semibold text-white transition ${
-                isFollowing
-                  ? "bg-gray-600 hover:bg-gray-700"
-                  : "bg-blue-500 hover:bg-blue-600"
-              }`}
-            >
-              {isFollowing ? "Following" : "Follow"}
-            </button>
+            <div className="flex gap-3">
+              <button
+                onClick={handleFollow}
+                className={`px-6 py-2 rounded-lg font-semibold text-white transition ${
+                  isFollowing
+                    ? "bg-gray-600 hover:bg-gray-700"
+                    : "bg-blue-500 hover:bg-blue-600"
+                }`}
+              >
+                {isFollowing ? "Following" : "Follow"}
+              </button>
+              <button
+                onClick={() => navigate(`/chat?user=${profile._id}`)}
+                className="px-6 py-2 rounded-lg font-semibold bg-green-500 hover:bg-green-600 text-white transition"
+              >
+                Message
+              </button>
+            </div>
           )}
         </div>
       </div>

@@ -1,5 +1,11 @@
 import { Link } from "react-router-dom";
-import { FaHome, FaCompass, FaUser, FaArrowLeft } from "react-icons/fa";
+import {
+  FaHome,
+  FaCompass,
+  FaUser,
+  FaComments,
+  FaArrowLeft,
+} from "react-icons/fa";
 import { useAuth } from "../context/AuthContext";
 import NotificationBell from "./NotificationBell";
 
@@ -33,6 +39,12 @@ const Navbar = () => {
         >
           Profile
         </Link>
+        <Link
+          to="/chat"
+          className="text-gray-800 hover:text-blue-500 font-medium"
+        >
+          Messages
+        </Link>
 
         <NotificationBell />
 
@@ -52,6 +64,10 @@ const Navbar = () => {
 
         <Link to="/explore" className="text-gray-800 hover:text-blue-500">
           <FaCompass />
+        </Link>
+
+        <Link to="/chat" className="text-gray-800 hover:text-blue-500">
+          <FaComments />
         </Link>
 
         <Link

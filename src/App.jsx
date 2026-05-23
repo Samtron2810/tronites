@@ -5,6 +5,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Profile from "./pages/Profile";
 import Explore from "./pages/Explore";
+import Chat from "./pages/Chat";
 import Navbar from "./components/Navbar";
 import Notifications from "./pages/Notifications";
 
@@ -58,6 +59,15 @@ const AppContent = () => {
           element={
             <ProtectedRoute>
               <Notifications />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/chat"
+          element={
+            <ProtectedRoute>
+              <Chat />
             </ProtectedRoute>
           }
         />
