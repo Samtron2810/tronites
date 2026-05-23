@@ -29,14 +29,20 @@ export const SocketProvider = ({ children }) => {
         setOnlineUsers(users);
       });
 
+      newSocket.on("disconnect", () => {
+        setOnlineUsers([]);
+      });
+
       return () => {
         newSocket.disconnect();
         setSocket(null);
+        setOnlineUsers([]);
       };
     } else {
       if (socket) {
         socket.disconnect();
         setSocket(null);
+        setOnlineUsers([]);
       }
     }
   }, [user]);

@@ -7,6 +7,7 @@ import MainLayout from "../layouts/MainLayout";
 import api from "../services/api";
 
 import { useAuth } from "../context/AuthContext";
+import { useSocket } from "../context/SocketContext";
 
 const Explore = () => {
   const { user: currentUser } = useAuth();
@@ -63,6 +64,8 @@ const Explore = () => {
     }
   };
 
+  const { onlineUsers } = useSocket();
+
   return (
     <MainLayout>
       <div className="space-y-6">
@@ -84,6 +87,7 @@ const Explore = () => {
           {!loading &&
             users.map((user) => {
               const isFollowing = user.followers.includes(currentUser._id);
+              const isOnline = onlineUsers.includes(user._id);
 
               return (
                 <div
@@ -96,11 +100,19 @@ const Explore = () => {
                     className="flex items-center gap-4"
                   >
                     {/* USER AVATAR */}
-                    <img
-                      src={user.profilePic || "https://i.pravatar.cc/"}
-                      alt="user"
-                      className="w-14 h-14 rounded-full object-cover"
-                    />
+                    <div className="relative">
+                      <img
+                        src={user.profilePic || "https://i.pravatar.cc/"}
+                        alt="user"
+                        className="w-14 h-14 rounded-full object-cover"
+                      />
+                      <span
+                        className={`absolute bottom-0 right-0 block h-3.5 w-3.5 rounded-full border-2 border-white ${
+                          isOnline ? "bg-green-500" : "bg-gray-300"
+                        }`}
+                        title={isOnline ? "Online" : "Offline"}
+                      />
+                    </div>
 
                     <div>
                       <h2 className="font-bold text-gray-900">{user.name}</h2>

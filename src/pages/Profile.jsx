@@ -9,6 +9,7 @@ import PostCard from "../components/PostCard";
 import api from "../services/api";
 
 import { useAuth } from "../context/AuthContext";
+import { useSocket } from "../context/SocketContext";
 
 const Profile = () => {
   const { id } = useParams();
@@ -23,6 +24,8 @@ const Profile = () => {
 
   const [editingBio, setEditingBio] = useState(false);
   const [bioText, setBioText] = useState("");
+
+  const { onlineUsers } = useSocket();
 
   const fetchProfile = async () => {
     try {
@@ -136,10 +139,18 @@ const Profile = () => {
             {/* Avatar */}
             <div className={editingBio ? "hidden" : "relative"}>
               <img
-                // src={profile.profilePic || "https://via.placeholder.com/150"}
                 src={profile.profilePic || "https://i.pravatar.cc/"}
                 alt="profile"
                 className="w-24 h-24 rounded-full object-cover border"
+              />
+
+              <span
+                className={`absolute bottom-1 right-1 block h-3.5 w-3.5 rounded-full border-2 border-white ${
+                  onlineUsers.includes(profile._id)
+                    ? "bg-green-500"
+                    : "bg-gray-300"
+                }`}
+                title={onlineUsers.includes(profile._id) ? "Online" : "Offline"}
               />
 
               {/* Upload Button */}
