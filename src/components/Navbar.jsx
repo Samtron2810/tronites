@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
 import {
   FaHome,
   FaCompass,
@@ -7,10 +8,53 @@ import {
   FaArrowLeft,
 } from "react-icons/fa";
 import { useAuth } from "../context/AuthContext";
+import { useSocket } from "../context/SocketContext";
 import NotificationBell from "./NotificationBell";
+import api from "../services/api";
 
 const Navbar = () => {
   const { user, logout } = useAuth();
+  const { socket } = useSocket();
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  const fetchUnreadCount = async () => {
+    try {
+      const res = await api.get("/messages/conversations");
+      const totalUnread = res.data.reduce(
+        (sum, conv) => sum + (conv.unreadCount || 0),
+        0,
+      );
+      setUnreadCount(totalUnread);
+    } catch (error) {
+      console.error("Fetch unread count failed:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchUnreadCount();
+  }, []);
+
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleReceiveMessage = (message) => {
+      if (message.receiver._id === user?._id) {
+        setUnreadCount((prev) => prev + 1);
+      }
+    };
+
+    const handleMessageDeleted = () => {
+      fetchUnreadCount();
+    };
+
+    socket.on("receiveMessage", handleReceiveMessage);
+    socket.on("messageDeleted", handleMessageDeleted);
+
+    return () => {
+      socket.off("receiveMessage", handleReceiveMessage);
+      socket.off("messageDeleted", handleMessageDeleted);
+    };
+  }, [socket, user?._id]);
 
   // Prevent crash while auth is loading
   if (!user) return null;
@@ -41,9 +85,14 @@ const Navbar = () => {
         </Link>
         <Link
           to="/chat"
-          className="text-gray-800 hover:text-blue-500 font-medium"
+          className="text-gray-800 hover:text-blue-500 font-medium relative"
         >
           Messages
+          {unreadCount > 0 && (
+            <span className="absolute -top-2 -right-4 inline-flex items-center justify-center min-w-5 h-5 rounded-full bg-red-500 text-white text-xs font-bold">
+              {unreadCount}
+            </span>
+          )}
         </Link>
 
         <NotificationBell />
@@ -66,8 +115,13 @@ const Navbar = () => {
           <FaCompass />
         </Link>
 
-        <Link to="/chat" className="text-gray-800 hover:text-blue-500">
+        <Link to="/chat" className="text-gray-800 hover:text-blue-500 relative">
           <FaComments />
+          {unreadCount > 0 && (
+            <span className="absolute -top-3 -right-3 inline-flex items-center justify-center min-w-5 h-5 rounded-full bg-red-500 text-white text-xs font-bold">
+              {unreadCount}
+            </span>
+          )}
         </Link>
 
         <Link

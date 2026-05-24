@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
+import { FaTrash } from "react-icons/fa";
 import MainLayout from "../layouts/MainLayout";
 import api from "../services/api";
 import { useAuth } from "../context/AuthContext";
@@ -18,8 +19,8 @@ const Chat = () => {
   const [messageText, setMessageText] = useState("");
   const [loading, setLoading] = useState(false);
   const [threadLoading, setThreadLoading] = useState(false);
+  const [isSending, setIsSending] = useState(false);
   const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
   const scrollRef = useRef(null);
 
   const fetchConversations = async () => {
@@ -64,6 +65,10 @@ const Chat = () => {
         otherUser,
         conversationId: buildConversationId(user._id, otherUser._id),
       });
+
+      // Refetch conversations to update unread count
+      const conversationsRes = await api.get("/messages/conversations");
+      setConversations(conversationsRes.data);
     } catch (error) {
       console.error("Load conversation failed:", error);
     } finally {
@@ -100,8 +105,9 @@ const Chat = () => {
   };
 
   const handleSendMessage = async () => {
-    if (!selectedChat || !messageText.trim()) return;
+    if (isSending || !selectedChat || !messageText.trim()) return;
 
+    setIsSending(true);
     try {
       const text = messageText.trim();
       const res = await api.post(`/messages/${selectedChat.otherUser._id}`, {
@@ -112,6 +118,17 @@ const Chat = () => {
       updateConversationPreview(res.data, false);
     } catch (error) {
       console.error("Send message failed:", error);
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  const handleDeleteMessage = async (messageId) => {
+    try {
+      await api.delete(`/messages/${messageId}`);
+      setMessages((prev) => prev.filter((msg) => msg._id !== messageId));
+    } catch (error) {
+      console.error("Delete message failed:", error);
     }
   };
 
@@ -133,10 +150,16 @@ const Chat = () => {
       updateConversationPreview(message, message.receiver._id === user._id);
     };
 
+    const handleMessageDeleted = ({ messageId }) => {
+      setMessages((prev) => prev.filter((msg) => msg._id !== messageId));
+    };
+
     socket.on("receiveMessage", handleReceiveMessage);
+    socket.on("messageDeleted", handleMessageDeleted);
 
     return () => {
       socket.off("receiveMessage", handleReceiveMessage);
+      socket.off("messageDeleted", handleMessageDeleted);
     };
   }, [socket, selectedChat, user._id]);
 
@@ -275,25 +298,50 @@ const Chat = () => {
               <div className="space-y-4">
                 {messages.map((message) => {
                   const isMine = message.sender._id === user._id;
+
                   return (
                     <div
                       key={message._id}
-                      className={`flex ${isMine ? "justify-end" : "justify-start"}`}
+                      className={`flex ${isMine ? "justify-end" : "justify-start"} group`}
                     >
-                      <div
-                        className={`max-w-[75%] rounded-2xl p-4 ${
-                          isMine
-                            ? "bg-orange-500 text-white"
-                            : "bg-gray-100 text-gray-900"
-                        }`}
-                      >
-                        <p className="whitespace-pre-wrap">{message.text}</p>
-                        <p className="text-[11px] mt-2 text-right text-gray-500">
-                          {new Date(message.createdAt).toLocaleTimeString([], {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
-                        </p>
+                      {/* MESSAGE WRAPPER */}
+                      <div className={`flex flex-col max-w-[80%]`}>
+                        {/* BUBBLE */}
+                        <div
+                          className={`w-fit px-4 py-3 rounded-2xl wrap-break-word whitespace-pre-wrap ${
+                            isMine
+                              ? "bg-orange-500 text-white self-end"
+                              : "bg-gray-100 text-gray-900 self-start"
+                          }`}
+                        >
+                          {message.text}
+                        </div>
+
+                        {/* TIME + DELETE ROW */}
+                        <div
+                          className={`flex items-center mt-1 gap-2 ${
+                            isMine ? "justify-end" : "justify-start"
+                          }`}
+                        >
+                          <p className="text-[11px] text-gray-500">
+                            {new Date(message.createdAt).toLocaleTimeString(
+                              [],
+                              {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              },
+                            )}
+                          </p>
+
+                          {isMine && (
+                            <button
+                              onClick={() => handleDeleteMessage(message._id)}
+                              className="opacity-0 group-hover:opacity-100 transition text-red-500 hover:text-red-700"
+                            >
+                              <FaTrash size={14} />
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </div>
                   );
@@ -321,9 +369,14 @@ const Chat = () => {
                 <button
                   type="button"
                   onClick={handleSendMessage}
-                  className="bg-orange-500 hover:bg-orange-600 text-white px-5 py-3 rounded-2xl font-semibold"
+                  disabled={!messageText.trim() || isSending}
+                  className={`px-5 py-3 rounded-2xl font-semibold text-white transition ${
+                    !messageText.trim() || isSending
+                      ? "bg-orange-300 cursor-not-allowed"
+                      : "bg-orange-500 hover:bg-orange-600"
+                  }`}
                 >
-                  Send
+                  {isSending ? "Sending..." : "Send"}
                 </button>
               </div>
             </div>

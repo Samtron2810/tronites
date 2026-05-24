@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { FaHeart, FaRegHeart, FaRegComment, FaTrash } from "react-icons/fa";
 import api from "../services/api";
 import { useAuth } from "../context/AuthContext";
@@ -27,6 +28,8 @@ const PostCard = ({
   const [commentCount, setCommentCount] = useState(commentsCount);
   const [showComments, setShowComments] = useState(false);
   const [commentText, setCommentText] = useState("");
+  const [isCommentSending, setIsCommentSending] = useState(false);
+  const [commentDeletingId, setCommentDeletingId] = useState(null);
   const [visibleCount, setVisibleCount] = useState(1);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [loadingComments, setLoadingComments] = useState(false);
@@ -46,15 +49,34 @@ const PostCard = ({
 
   // add comment
   const handleAddComment = async () => {
-    if (!commentText.trim()) return;
+    if (isCommentSending || !commentText.trim()) return;
+
+    setIsCommentSending(true);
     try {
-      const res = await api.post(`/comments/${postId}`, { text: commentText });
-      // setComments([res.data, ...comments]);
-      setComments((prev) => [res.data, ...prev]);
-      setCommentCount((prev) => prev + 1);
+      await api.post(`/comments/${postId}`, { text: commentText });
       setCommentText("");
+
+      // Don't adjust the local comment count here.
+      // The server emits the updated count via socket to this room.
     } catch (error) {
       console.log(error);
+    } finally {
+      setIsCommentSending(false);
+    }
+  };
+
+  const handleDeleteComment = async (commentId) => {
+    if (commentDeletingId) return;
+
+    setCommentDeletingId(commentId);
+    try {
+      const res = await api.delete(`/comments/${commentId}`);
+      setComments((prev) => prev.filter((c) => c._id !== commentId));
+      setCommentCount(res.data.commentCount ?? Math.max(commentCount - 1, 0));
+    } catch (error) {
+      console.log(error);
+    } finally {
+      setCommentDeletingId(null);
     }
   };
 
@@ -118,7 +140,6 @@ const PostCard = ({
       const handleNewComment = (data) => {
         if (data.postId === postId) {
           setCommentCount(data.commentCount);
-          // If comments section is expanded, append the new comment in real-time (no duplicates)
           setComments((prev) => {
             if (prev.some((c) => c._id === data.comment._id)) return prev;
             return [data.comment, ...prev];
@@ -126,14 +147,25 @@ const PostCard = ({
         }
       };
 
+      const handleCommentDeleted = (data) => {
+        if (data.postId !== postId) return;
+
+        setComments((prev) =>
+          prev.filter((comment) => comment._id !== data.commentId),
+        );
+        setCommentCount(data.commentCount);
+      };
+
       socket.on("likeUpdate", handleLikeUpdate);
       socket.on("newComment", handleNewComment);
+      socket.on("commentDeleted", handleCommentDeleted);
 
       return () => {
         // Clean up: leave room and unbind event listeners
         socket.emit("leavePost", postId);
         socket.off("likeUpdate", handleLikeUpdate);
         socket.off("newComment", handleNewComment);
+        socket.off("commentDeleted", handleCommentDeleted);
       };
     }
   }, [socket, postId, currentUser?._id]);
@@ -161,7 +193,12 @@ const PostCard = ({
               className="w-12 h-12 rounded-full object-cover"
             />
             <div>
-              <h2 className="font-bold text-gray-900">{name}</h2>
+              <Link
+                to={`/profile/${userId}`}
+                className="font-bold text-gray-900 hover:text-blue-500"
+              >
+                {name}
+              </Link>
               <p className="text-sm text-gray-500">{time}</p>
             </div>
           </div>
@@ -223,18 +260,16 @@ const PostCard = ({
               />
               <button
                 onClick={handleAddComment}
-                className="bg-blue-500 text-white px-4 rounded-lg text-sm"
+                disabled={!commentText.trim() || isCommentSending}
+                className={`px-4 rounded-lg text-sm text-white transition ${
+                  !commentText.trim() || isCommentSending
+                    ? "bg-blue-300 cursor-not-allowed"
+                    : "bg-blue-500 hover:bg-blue-600"
+                }`}
               >
-                Send
+                {isCommentSending ? "Sending..." : "Send"}
               </button>
             </div>
-
-            {/* loading comments skeleton */}
-            {loadingComments && (
-              <div className="mt-3 text-green-700 font-bold text-center">
-                Loading comments...
-              </div>
-            )}
 
             {!loadingComments && comments.length === 0 && (
               <div className="mt-3 text-gray-400 text-center text-sm">
@@ -245,7 +280,24 @@ const PostCard = ({
             <div className="mt-3 space-y-2">
               {visibleComments.map((c) => (
                 <div key={c._id} className="bg-gray-100 p-2 rounded-lg">
-                  <p className="text-sm font-semibold">{c.user.name}</p>
+                  <div className="flex items-center justify-between gap-4">
+                    <Link
+                      to={`/profile/${c.user._id}`}
+                      className="text-sm font-semibold text-gray-900 hover:text-blue-500"
+                    >
+                      {c.user.name}
+                    </Link>
+                    {c.user._id === currentUser?._id && (
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteComment(c._id)}
+                        disabled={commentDeletingId === c._id}
+                        className="text-red-500 hover:text-red-700 text-xs"
+                      >
+                        {commentDeletingId === c._id ? "Deleting..." : "Delete"}
+                      </button>
+                    )}
+                  </div>
                   <p className="text-sm">{c.text}</p>
                 </div>
               ))}

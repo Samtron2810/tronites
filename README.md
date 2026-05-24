@@ -44,3 +44,11 @@ WHICH WILL BE INSERTED INTO RENDER ENVIRONMENT DIRECTLY
 - in postcard.jsx
   old line: setComments([res.data, ...comments]);
   new line (changed to): setComments((prev) => [res.data, ...prev]);
+
+-
+-
+-
+-
+-
+-
+- disable send button when clicked or enter is pressed, so avoid sending duplicate message
