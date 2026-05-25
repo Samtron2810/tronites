@@ -6,7 +6,7 @@ import Register from "./pages/Register";
 import Profile from "./pages/Profile";
 import Explore from "./pages/Explore";
 import Chat from "./pages/Chat";
-import Navbar from "./components/Navbar";
+// import Navbar from "./components/Navbar";
 import Notifications from "./pages/Notifications";
 
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -15,11 +15,11 @@ const AppContent = () => {
   const location = useLocation();
 
   // Display navbar on all pages except login and signup
-  const showNavbar = !["/login", "/signup"].includes(location.pathname);
+  // const showNavbar = !["/login", "/signup"].includes(location.pathname);
 
   return (
     <>
-      {showNavbar && <Navbar />}
+      {/* {showNavbar && <Navbar />} */}
 
       <Routes>
         {/* Public */}

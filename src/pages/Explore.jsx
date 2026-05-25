@@ -15,17 +15,20 @@ const Explore = () => {
   const [search, setSearch] = useState("");
 
   const [users, setUsers] = useState([]);
+  const [suggestedUsers, setSuggestedUsers] = useState([]);
 
   const [loading, setLoading] = useState(false);
 
-  // Fetch users
-  const fetchUsers = async () => {
+  const fetchUsers = async (query) => {
     try {
       setLoading(true);
 
-      const res = await api.get(`/users/search?q=${search}`);
+      const res = await api.get(`/users/search?q=${encodeURIComponent(query)}`);
 
       setUsers(res.data);
+      if (query.trim().length === 0) {
+        setSuggestedUsers(res.data);
+      }
     } catch (error) {
       console.log(error);
     } finally {
@@ -34,8 +37,30 @@ const Explore = () => {
   };
 
   useEffect(() => {
-    fetchUsers();
-  }, [search]);
+    const trimmedSearch = search.trim();
+
+    if (trimmedSearch.length === 0) {
+      setUsers(suggestedUsers);
+      setLoading(false);
+      return;
+    }
+
+    if (trimmedSearch.length < 2) {
+      setUsers([]);
+      setLoading(false);
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      fetchUsers(trimmedSearch);
+    }, 400);
+
+    return () => window.clearTimeout(timer);
+  }, [search, suggestedUsers]);
+
+  useEffect(() => {
+    fetchUsers("");
+  }, []);
 
   // Follow toggle
   const handleFollow = async (userId) => {
@@ -83,6 +108,30 @@ const Explore = () => {
         {/* Users */}
         <div className="space-y-4">
           {loading && <p className="text-center text-gray-500">Searching...</p>}
+
+          {!loading && !search.trim() && (
+            <div className="text-center text-gray-500 py-10">
+              Search users by name. Type at least 2 characters to begin.
+            </div>
+          )}
+
+          {!loading && !search.trim() && suggestedUsers.length > 0 && (
+            <div className="text-sm text-gray-500 px-4 pb-1">
+              Suggested users
+            </div>
+          )}
+
+          {!loading && search.trim().length > 0 && search.trim().length < 2 && (
+            <div className="text-center text-gray-500 py-10">
+              Please enter at least 2 characters to search.
+            </div>
+          )}
+
+          {!loading && search.trim().length >= 2 && users.length === 0 && (
+            <div className="text-center text-gray-500 py-10">
+              No users found. Try another name.
+            </div>
+          )}
 
           {!loading &&
             users.map((user) => {

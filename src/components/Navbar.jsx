@@ -47,12 +47,18 @@ const Navbar = () => {
       fetchUnreadCount();
     };
 
+    const handleMessagesRead = () => {
+      fetchUnreadCount();
+    };
+
     socket.on("receiveMessage", handleReceiveMessage);
     socket.on("messageDeleted", handleMessageDeleted);
+    socket.on("messagesRead", handleMessagesRead);
 
     return () => {
       socket.off("receiveMessage", handleReceiveMessage);
       socket.off("messageDeleted", handleMessageDeleted);
+      socket.off("messagesRead", handleMessagesRead);
     };
   }, [socket, user?._id]);
 
@@ -60,85 +66,96 @@ const Navbar = () => {
   if (!user) return null;
 
   return (
-    <nav className="bg-orange-300/80 backdrop-blur-md border-b border-orange-200 px-6 py-4 flex items-center justify-between sticky top-0 z-50">
-      {/* Logo */}
-      <Link to="/" className="text-3xl font-extrabold text-gray-900">
-        Tron<span className="text-blue-500">ites</span>
-      </Link>
-
-      {/* Desktop Links */}
-      <div className="hidden md:flex items-center gap-6">
-        <Link to="/" className="text-gray-800 hover:text-blue-500 font-medium">
-          Feed
-        </Link>
+    <nav className="bg-orange-300/80 backdrop-blur-md border-b border-orange-200 px-4 sm:px-6 py-4 sticky top-0 z-50">
+      <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-4">
+        {/* Logo */}
         <Link
-          to="/explore"
-          className="text-gray-800 hover:text-blue-500 font-medium"
+          to="/"
+          className="min-w-0 shrink-0 text-xl sm:text-2xl md:text-3xl font-extrabold text-gray-900"
         >
-          Explore
-        </Link>
-        <Link
-          to={`/profile/${user._id}`}
-          className="text-gray-800 hover:text-blue-500 font-medium"
-        >
-          Profile
-        </Link>
-        <Link
-          to="/chat"
-          className="text-gray-800 hover:text-blue-500 font-medium relative"
-        >
-          Messages
-          {unreadCount > 0 && (
-            <span className="absolute -top-2 -right-4 inline-flex items-center justify-center min-w-5 h-5 rounded-full bg-red-500 text-white text-xs font-bold">
-              {unreadCount}
-            </span>
-          )}
+          Tron<span className="text-blue-500">ites</span>
         </Link>
 
-        <NotificationBell />
+        {/* Desktop Links */}
+        <div className="hidden md:flex items-center gap-6">
+          <Link
+            to="/"
+            className="text-gray-800 hover:text-blue-500 font-medium"
+          >
+            Feed
+          </Link>
+          <Link
+            to="/explore"
+            className="text-gray-800 hover:text-blue-500 font-medium"
+          >
+            Explore
+          </Link>
+          <Link
+            to={`/profile/${user._id}`}
+            className="text-gray-800 hover:text-blue-500 font-medium"
+          >
+            Profile
+          </Link>
+          <Link
+            to="/chat"
+            className="text-gray-800 hover:text-blue-500 font-medium relative"
+          >
+            Messages
+            {unreadCount > 0 && (
+              <span className="absolute -top-2 -right-4 inline-flex items-center justify-center min-w-5 h-5 rounded-full bg-red-500 text-white text-xs font-bold">
+                {unreadCount}
+              </span>
+            )}
+          </Link>
 
-        <button
-          onClick={logout}
-          className="flex items-center justify-center gap-3 bg-red-500 hover:bg-red-800 text-white font-semibold px-4 py-2 rounded-lg transition duration-200"
-        >
-          Logout <FaUser />
-        </button>
-      </div>
+          <NotificationBell />
 
-      {/* Mobile Icons */}
-      <div className="flex md:hidden items-center gap-5 text-xl">
-        <Link to="/" className="text-gray-800 hover:text-blue-500">
-          <FaHome />
-        </Link>
+          <button
+            onClick={logout}
+            className="flex items-center justify-center gap-3 bg-red-500 hover:bg-red-800 text-white font-semibold px-4 py-2 rounded-lg transition duration-200"
+          >
+            Logout <FaUser />
+          </button>
+        </div>
 
-        <Link to="/explore" className="text-gray-800 hover:text-blue-500">
-          <FaCompass />
-        </Link>
+        {/* Mobile Icons */}
+        <div className="flex md:hidden items-center gap-4 text-xl overflow-x-auto whitespace-nowrap">
+          <Link to="/" className="text-gray-800 hover:text-blue-500">
+            <FaHome />
+          </Link>
 
-        <Link to="/chat" className="text-gray-800 hover:text-blue-500 relative">
-          <FaComments />
-          {unreadCount > 0 && (
-            <span className="absolute -top-3 -right-3 inline-flex items-center justify-center min-w-5 h-5 rounded-full bg-red-500 text-white text-xs font-bold">
-              {unreadCount}
-            </span>
-          )}
-        </Link>
+          <Link to="/explore" className="text-gray-800 hover:text-blue-500">
+            <FaCompass />
+          </Link>
 
-        <Link
-          to={`/profile/${user._id}`}
-          className="text-gray-800 hover:text-blue-500"
-        >
-          <FaUser />
-        </Link>
+          <Link
+            to="/chat"
+            className="text-gray-800 hover:text-blue-500 relative"
+          >
+            <FaComments />
+            {unreadCount > 0 && (
+              <span className="absolute -top-3 -right-3 inline-flex items-center justify-center min-w-5 h-5 rounded-full bg-red-500 text-white text-xs font-bold">
+                {unreadCount}
+              </span>
+            )}
+          </Link>
 
-        <NotificationBell />
+          <Link
+            to={`/profile/${user._id}`}
+            className="text-gray-800 hover:text-blue-500"
+          >
+            <FaUser />
+          </Link>
 
-        <button
-          onClick={logout}
-          className="flex items-center justify-center gap-3 bg-red-500 hover:bg-red-800 text-white font-semibold px-4 py-2 rounded-lg transition duration-200"
-        >
-          <FaArrowLeft />
-        </button>
+          <NotificationBell />
+
+          <button
+            onClick={logout}
+            className="flex items-center justify-center gap-3 bg-red-500 hover:bg-red-800 text-white font-semibold px-4 py-2 rounded-lg transition duration-200"
+          >
+            <FaArrowLeft />
+          </button>
+        </div>
       </div>
     </nav>
   );

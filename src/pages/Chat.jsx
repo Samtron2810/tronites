@@ -5,6 +5,7 @@ import MainLayout from "../layouts/MainLayout";
 import api from "../services/api";
 import { useAuth } from "../context/AuthContext";
 import { useSocket } from "../context/SocketContext";
+import ChatModal from "../components/ChatModal";
 
 const buildConversationId = (userA, userB) => {
   return [userA.toString(), userB.toString()].sort().join("_");
@@ -24,6 +25,7 @@ const Chat = () => {
   const fileInputRef = useRef(null);
   const [searchParams] = useSearchParams();
   const scrollRef = useRef(null);
+  const hasScrolledToBottom = useRef(false);
 
   const fetchConversations = async () => {
     try {
@@ -217,10 +219,18 @@ const Chat = () => {
   }, [socket, selectedChat, user._id]);
 
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollIntoView({ behavior: "smooth" });
+    if (!scrollRef.current) return;
+
+    const behavior = hasScrolledToBottom.current ? "smooth" : "auto";
+    scrollRef.current.scrollIntoView({ behavior });
+    hasScrolledToBottom.current = true;
+  }, [messages, selectedChat?.conversationId]);
+
+  useEffect(() => {
+    if (!selectedChat) {
+      hasScrolledToBottom.current = false;
     }
-  }, [messages]);
+  }, [selectedChat?.conversationId]);
 
   const activeUser = selectedChat?.otherUser;
   const activeIsOnline = activeUser
@@ -229,7 +239,7 @@ const Chat = () => {
 
   return (
     <MainLayout>
-      <div className="grid gap-6 xl:grid-cols-[320px_1fr]">
+      <div className="grid gap-6">
         <div className="bg-white rounded-2xl shadow-md overflow-hidden">
           <div className="border-b px-5 py-4 flex items-center justify-between">
             <h2 className="font-bold text-lg">Messages</h2>
@@ -307,190 +317,28 @@ const Chat = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-md flex flex-col overflow-hidden">
-          <div className="border-b px-6 py-4 flex items-center justify-between">
-            <div>
-              <p className="text-lg font-bold">
-                {activeUser ? activeUser.name : "Select a chat"}
-              </p>
-              {activeUser && (
-                <p className="text-sm text-gray-500">
-                  {activeIsOnline ? "Online" : "Offline"}
-                </p>
-              )}
-            </div>
-            {activeUser && (
-              <img
-                src={activeUser.profilePic || "https://i.pravatar.cc/150"}
-                alt={activeUser.name}
-                className="w-12 h-12 rounded-full object-cover"
-              />
-            )}
-          </div>
-
-          <div className="flex-1 p-6 overflow-y-auto space-y-4">
-            {threadLoading && (
-              <div className="text-center text-gray-500">
-                Loading conversation...
-              </div>
-            )}
-
-            {!threadLoading && !activeUser && (
-              <div className="h-full flex flex-col items-center justify-center text-gray-500">
-                <p className="text-lg font-semibold">
-                  No conversation selected
-                </p>
-                <p className="text-sm mt-2">
-                  Pick a chat from the left or open a profile to start
-                  messaging.
-                </p>
-              </div>
-            )}
-
-            {!threadLoading && activeUser && (
-              <div className="space-y-4">
-                {messages.map((message) => {
-                  const isMine = message.sender._id === user._id;
-
-                  return (
-                    <div
-                      key={message._id}
-                      className={`flex ${isMine ? "justify-end" : "justify-start"} group`}
-                    >
-                      {/* MESSAGE WRAPPER */}
-                      <div className={`flex flex-col max-w-[80%]`}>
-                        {/* MESSAGE CONTENT */}
-                        {message.image && (
-                          <img
-                            src={message.image}
-                            alt="message"
-                            className={`rounded-2xl max-w-xs h-auto object-cover ${
-                              isMine ? "ml-auto" : ""
-                            }`}
-                          />
-                        )}
-                        {message.text && (
-                          <div
-                            className={`w-fit px-4 py-3 rounded-2xl wrap-break-word whitespace-pre-wrap ${
-                              isMine
-                                ? "bg-orange-500 text-white self-end"
-                                : "bg-gray-100 text-gray-900 self-start"
-                            }`}
-                          >
-                            {message.text}
-                          </div>
-                        )}
-
-                        {/* TIME + DELETE + READ STATUS ROW */}
-                        <div
-                          className={`flex items-center mt-1 gap-2 ${
-                            isMine ? "justify-end" : "justify-start"
-                          }`}
-                        >
-                          <p className="text-[11px] text-gray-500">
-                            {new Date(message.createdAt).toLocaleTimeString(
-                              [],
-                              {
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              },
-                            )}
-                          </p>
-
-                          {isMine && (
-                            <button
-                              onClick={() => handleDeleteMessage(message._id)}
-                              className="opacity-0 group-hover:opacity-100 transition text-red-500 hover:text-red-700"
-                            >
-                              <FaTrash size={14} />
-                            </button>
-                          )}
-
-                          {isMine && (
-                            <span
-                              className={`text-xs ${
-                                message.read ? "text-blue-500" : "text-gray-400"
-                              }`}
-                              title={message.read ? "Read" : "Sent"}
-                            >
-                              {message.read ? (
-                                <FaCheckDouble size={12} />
-                              ) : (
-                                <FaCheck size={12} />
-                              )}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-                <div ref={scrollRef} />
-              </div>
-            )}
-          </div>
-
-          {activeUser && (
-            <div className="border-t px-6 py-4">
-              {imagePreview && (
-                <div className="mb-3 relative">
-                  <img
-                    src={imagePreview}
-                    alt="preview"
-                    className="w-24 h-24 object-cover rounded-lg"
-                  />
-                  <button
-                    onClick={() => setImagePreview(null)}
-                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center"
-                  >
-                    ✕
-                  </button>
-                </div>
-              )}
-              <div className="flex items-center gap-3">
-                <input
-                  value={messageText}
-                  onChange={(e) => setMessageText(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && !e.shiftKey) {
-                      e.preventDefault();
-                      handleSendMessage();
-                    }
-                  }}
-                  placeholder="Write a message..."
-                  className="flex-1 border rounded-2xl px-4 py-3 outline-none focus:border-orange-400"
-                />
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="text-orange-500 hover:text-orange-600 text-xl transition"
-                  title="Attach image"
-                >
-                  <FaImage />
-                </button>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageSelect}
-                  className="hidden"
-                />
-                <button
-                  type="button"
-                  onClick={handleSendMessage}
-                  disabled={(!messageText.trim() && !imagePreview) || isSending}
-                  className={`px-5 py-3 rounded-2xl font-semibold text-white transition ${
-                    (!messageText.trim() && !imagePreview) || isSending
-                      ? "bg-orange-300 cursor-not-allowed"
-                      : "bg-orange-500 hover:bg-orange-600"
-                  }`}
-                >
-                  {isSending ? "Sending..." : "Send"}
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
+        {/* Modal-based conversation view */}
+        {selectedChat && (
+          <ChatModal
+            isOpen={!!selectedChat}
+            onClose={() => setSelectedChat(null)}
+            selectedChat={selectedChat}
+            messages={messages}
+            threadLoading={threadLoading}
+            user={user}
+            onlineUsers={onlineUsers}
+            handleSendMessage={handleSendMessage}
+            handleImageSelect={handleImageSelect}
+            handleDeleteMessage={handleDeleteMessage}
+            messageText={messageText}
+            setMessageText={setMessageText}
+            imagePreview={imagePreview}
+            setImagePreview={setImagePreview}
+            isSending={isSending}
+            fileInputRef={fileInputRef}
+            scrollRef={scrollRef}
+          />
+        )}
       </div>
     </MainLayout>
   );
