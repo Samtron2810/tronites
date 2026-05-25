@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { FaTrash } from "react-icons/fa";
+import { FaTrash, FaCheck, FaCheckDouble, FaImage } from "react-icons/fa";
 import MainLayout from "../layouts/MainLayout";
 import api from "../services/api";
 import { useAuth } from "../context/AuthContext";
@@ -20,6 +20,8 @@ const Chat = () => {
   const [loading, setLoading] = useState(false);
   const [threadLoading, setThreadLoading] = useState(false);
   const [isSending, setIsSending] = useState(false);
+  const [imagePreview, setImagePreview] = useState(null);
+  const fileInputRef = useRef(null);
   const [searchParams] = useSearchParams();
   const scrollRef = useRef(null);
 
@@ -105,21 +107,54 @@ const Chat = () => {
   };
 
   const handleSendMessage = async () => {
-    if (isSending || !selectedChat || !messageText.trim()) return;
+    if (isSending || !selectedChat || (!messageText.trim() && !imagePreview))
+      return;
 
     setIsSending(true);
     try {
-      const text = messageText.trim();
-      const res = await api.post(`/messages/${selectedChat.otherUser._id}`, {
-        text,
-      });
+      // Use FormData for better file handling
+      const formData = new FormData();
+      if (messageText.trim()) formData.append("text", messageText.trim());
+      if (imagePreview) {
+        // Convert base64 to blob
+        const response = await fetch(imagePreview);
+        const blob = await response.blob();
+        formData.append("image", blob);
+      }
+
+      const res = await api.post(
+        `/messages/${selectedChat.otherUser._id}`,
+        formData,
+        {
+          headers: { "Content-Type": "multipart/form-data" },
+        },
+      );
       setMessages((prev) => [...prev, res.data]);
       setMessageText("");
+      setImagePreview(null);
+      if (fileInputRef.current) fileInputRef.current.value = "";
       updateConversationPreview(res.data, false);
     } catch (error) {
-      console.error("Send message failed:", error);
+      console.error(
+        "Send message failed:",
+        error?.response?.data || error.message,
+      );
+      alert(
+        `Error sending message: ${error?.response?.data?.message || error.message}`,
+      );
     } finally {
       setIsSending(false);
+    }
+  };
+
+  const handleImageSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result);
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -156,10 +191,28 @@ const Chat = () => {
 
     socket.on("receiveMessage", handleReceiveMessage);
     socket.on("messageDeleted", handleMessageDeleted);
+    socket.on("messagesRead", (data) => {
+      if (data.conversationId === selectedChat?.conversationId) {
+        setMessages((prev) =>
+          prev.map((msg) => ({
+            ...msg,
+            read: msg.receiver._id === user._id ? msg.read : true,
+          })),
+        );
+      }
+    });
+
+    if (selectedChat?.conversationId) {
+      socket.emit("joinConversation", selectedChat.conversationId);
+    }
 
     return () => {
       socket.off("receiveMessage", handleReceiveMessage);
       socket.off("messageDeleted", handleMessageDeleted);
+      socket.off("messagesRead");
+      if (selectedChat?.conversationId) {
+        socket.emit("leaveConversation", selectedChat.conversationId);
+      }
     };
   }, [socket, selectedChat, user._id]);
 
@@ -306,18 +359,29 @@ const Chat = () => {
                     >
                       {/* MESSAGE WRAPPER */}
                       <div className={`flex flex-col max-w-[80%]`}>
-                        {/* BUBBLE */}
-                        <div
-                          className={`w-fit px-4 py-3 rounded-2xl wrap-break-word whitespace-pre-wrap ${
-                            isMine
-                              ? "bg-orange-500 text-white self-end"
-                              : "bg-gray-100 text-gray-900 self-start"
-                          }`}
-                        >
-                          {message.text}
-                        </div>
+                        {/* MESSAGE CONTENT */}
+                        {message.image && (
+                          <img
+                            src={message.image}
+                            alt="message"
+                            className={`rounded-2xl max-w-xs h-auto object-cover ${
+                              isMine ? "ml-auto" : ""
+                            }`}
+                          />
+                        )}
+                        {message.text && (
+                          <div
+                            className={`w-fit px-4 py-3 rounded-2xl wrap-break-word whitespace-pre-wrap ${
+                              isMine
+                                ? "bg-orange-500 text-white self-end"
+                                : "bg-gray-100 text-gray-900 self-start"
+                            }`}
+                          >
+                            {message.text}
+                          </div>
+                        )}
 
-                        {/* TIME + DELETE ROW */}
+                        {/* TIME + DELETE + READ STATUS ROW */}
                         <div
                           className={`flex items-center mt-1 gap-2 ${
                             isMine ? "justify-end" : "justify-start"
@@ -341,6 +405,21 @@ const Chat = () => {
                               <FaTrash size={14} />
                             </button>
                           )}
+
+                          {isMine && (
+                            <span
+                              className={`text-xs ${
+                                message.read ? "text-blue-500" : "text-gray-400"
+                              }`}
+                              title={message.read ? "Read" : "Sent"}
+                            >
+                              {message.read ? (
+                                <FaCheckDouble size={12} />
+                              ) : (
+                                <FaCheck size={12} />
+                              )}
+                            </span>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -353,6 +432,21 @@ const Chat = () => {
 
           {activeUser && (
             <div className="border-t px-6 py-4">
+              {imagePreview && (
+                <div className="mb-3 relative">
+                  <img
+                    src={imagePreview}
+                    alt="preview"
+                    className="w-24 h-24 object-cover rounded-lg"
+                  />
+                  <button
+                    onClick={() => setImagePreview(null)}
+                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center"
+                  >
+                    ✕
+                  </button>
+                </div>
+              )}
               <div className="flex items-center gap-3">
                 <input
                   value={messageText}
@@ -368,10 +462,25 @@ const Chat = () => {
                 />
                 <button
                   type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="text-orange-500 hover:text-orange-600 text-xl transition"
+                  title="Attach image"
+                >
+                  <FaImage />
+                </button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageSelect}
+                  className="hidden"
+                />
+                <button
+                  type="button"
                   onClick={handleSendMessage}
-                  disabled={!messageText.trim() || isSending}
+                  disabled={(!messageText.trim() && !imagePreview) || isSending}
                   className={`px-5 py-3 rounded-2xl font-semibold text-white transition ${
-                    !messageText.trim() || isSending
+                    (!messageText.trim() && !imagePreview) || isSending
                       ? "bg-orange-300 cursor-not-allowed"
                       : "bg-orange-500 hover:bg-orange-600"
                   }`}
