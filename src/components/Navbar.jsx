@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
+import logo from "../assets/tronite-logo.png";
 import {
   FaHome,
   FaCompass,
@@ -69,11 +70,15 @@ const Navbar = () => {
     <nav className="bg-orange-300/80 backdrop-blur-md border-b border-orange-200 px-4 sm:px-6 py-4 sticky top-0 z-50">
       <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-4">
         {/* Logo */}
-        <Link
-          to="/"
-          className="min-w-0 shrink-0 text-xl sm:text-2xl md:text-3xl font-extrabold text-gray-900"
-        >
-          Tron<span className="text-blue-500">ites</span>
+        <Link to="/" className="min-w-0 shrink-0 flex items-center gap-3">
+          <img
+            src={logo}
+            alt="Tronites logo"
+            className="h-8 sm:h-10 md:h-12 w-auto object-contain"
+          />
+          <span className="font-extrabold text-gray-900 text-lg sm:text-2xl md:text-3xl hidden md:inline-block">
+            Tron<span className="text-blue-500">ites</span>
+          </span>
         </Link>
 
         {/* Desktop Links */}
