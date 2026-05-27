@@ -26,6 +26,8 @@ const Profile = () => {
 
   const [editingBio, setEditingBio] = useState(false);
   const [bioText, setBioText] = useState("");
+  const [isFollowing_Loading, setIsFollowing_Loading] = useState(false);
+  const [isSavingBio, setIsSavingBio] = useState(false);
 
   const { onlineUsers } = useSocket();
 
@@ -46,6 +48,9 @@ const Profile = () => {
 
   // Follow toggle
   const handleFollow = async () => {
+    if (isFollowing_Loading) return;
+
+    setIsFollowing_Loading(true);
     try {
       const res = await api.put(`/users/follow/${id}`);
 
@@ -65,6 +70,8 @@ const Profile = () => {
       }));
     } catch (error) {
       console.log(error);
+    } finally {
+      setIsFollowing_Loading(false);
     }
   };
 
@@ -104,12 +111,17 @@ const Profile = () => {
       setEditingBio(false);
       return;
     }
+    if (isSavingBio) return;
+
+    setIsSavingBio(true);
     try {
       const res = await api.put("/users/bio", { bio: bioText });
       setProfile((prev) => ({ ...prev, bio: res.data.bio }));
       setEditingBio(false);
     } catch (error) {
       console.log(error);
+    } finally {
+      setIsSavingBio(false);
     }
   };
 
@@ -188,9 +200,14 @@ const Profile = () => {
                   />
                   <button
                     onClick={handleBioSave}
-                    className="text-sm bg-blue-500 text-white px-3 py-1 rounded-lg hover:bg-blue-600 transition"
+                    disabled={isSavingBio}
+                    className={`text-sm text-white px-3 py-1 rounded-lg transition ${
+                      isSavingBio
+                        ? "bg-blue-400 opacity-70 cursor-not-allowed"
+                        : "bg-blue-500 hover:bg-blue-600"
+                    }`}
                   >
-                    Save
+                    {isSavingBio ? "Saving..." : "Save"}
                   </button>
                   <button
                     onClick={() => setEditingBio(false)}
@@ -242,13 +259,22 @@ const Profile = () => {
             <div className="flex gap-3">
               <button
                 onClick={handleFollow}
+                disabled={isFollowing_Loading}
                 className={`px-6 py-2 rounded-lg font-semibold text-white transition ${
-                  isFollowing
-                    ? "bg-gray-600 hover:bg-gray-700"
-                    : "bg-blue-500 hover:bg-blue-600"
+                  isFollowing_Loading
+                    ? isFollowing
+                      ? "bg-gray-500 opacity-70 cursor-not-allowed"
+                      : "bg-blue-400 opacity-70 cursor-not-allowed"
+                    : isFollowing
+                      ? "bg-gray-600 hover:bg-gray-700"
+                      : "bg-blue-500 hover:bg-blue-600"
                 }`}
               >
-                {isFollowing ? "Following" : "Follow"}
+                {isFollowing_Loading
+                  ? "Loading..."
+                  : isFollowing
+                    ? "Following"
+                    : "Follow"}
               </button>
               <button
                 onClick={() => navigate(`/chat?user=${profile._id}`)}

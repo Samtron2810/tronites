@@ -33,6 +33,7 @@ const PostCard = ({
   const [visibleCount, setVisibleCount] = useState(1);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [loadingComments, setLoadingComments] = useState(false);
+  const [isLiking, setIsLiking] = useState(false);
 
   // fetch comments
   const fetchComments = async () => {
@@ -81,12 +82,17 @@ const PostCard = ({
   };
 
   const handleLike = async () => {
+    if (isLiking) return;
+
+    setIsLiking(true);
     try {
       const res = await api.put(`/posts/like/${postId}`);
       setLikeCount(res.data.likes);
       setLiked(res.data.liked);
     } catch (error) {
       console.log(error);
+    } finally {
+      setIsLiking(false);
     }
   };
 
@@ -223,7 +229,7 @@ const PostCard = ({
           <img
             src={image}
             alt="post"
-            className="mt-4 rounded-xl w-full h-auto object-cover"
+            className="mt-4 rounded-xl w-1/2 h-auto object-cover display-block mx-auto"
           />
         )}
 
@@ -231,8 +237,13 @@ const PostCard = ({
         <div className="flex items-center gap-6 mt-5">
           <button
             onClick={handleLike}
+            disabled={isLiking}
             className={`flex items-center gap-2 transition ${
-              liked ? "text-red-500" : "text-gray-700 hover:text-red-500"
+              isLiking
+                ? "opacity-50 cursor-not-allowed"
+                : liked
+                  ? "text-red-500 hover:text-red-600"
+                  : "text-gray-700 hover:text-red-500"
             }`}
           >
             {liked ? <FaHeart /> : <FaRegHeart />}

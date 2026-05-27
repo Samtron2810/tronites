@@ -22,6 +22,7 @@ const Chat = () => {
   const [threadLoading, setThreadLoading] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [imagePreview, setImagePreview] = useState(null);
+  const [messageDeletingId, setMessageDeletingId] = useState(null);
   const fileInputRef = useRef(null);
   const [searchParams] = useSearchParams();
   const scrollRef = useRef(null);
@@ -161,11 +162,16 @@ const Chat = () => {
   };
 
   const handleDeleteMessage = async (messageId) => {
+    if (messageDeletingId) return;
+
+    setMessageDeletingId(messageId);
     try {
       await api.delete(`/messages/${messageId}`);
       setMessages((prev) => prev.filter((msg) => msg._id !== messageId));
     } catch (error) {
       console.error("Delete message failed:", error);
+    } finally {
+      setMessageDeletingId(null);
     }
   };
 
@@ -330,6 +336,7 @@ const Chat = () => {
             handleSendMessage={handleSendMessage}
             handleImageSelect={handleImageSelect}
             handleDeleteMessage={handleDeleteMessage}
+            messageDeletingId={messageDeletingId}
             messageText={messageText}
             setMessageText={setMessageText}
             imagePreview={imagePreview}

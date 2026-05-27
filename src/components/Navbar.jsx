@@ -17,6 +17,17 @@ const Navbar = () => {
   const { user, logout } = useAuth();
   const { socket } = useSocket();
   const [unreadCount, setUnreadCount] = useState(0);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  const handleLogout = async () => {
+    if (isLoggingOut) return;
+    setIsLoggingOut(true);
+    try {
+      await logout();
+    } finally {
+      setIsLoggingOut(false);
+    }
+  };
 
   const fetchUnreadCount = async () => {
     try {
@@ -116,10 +127,15 @@ const Navbar = () => {
           <NotificationBell />
 
           <button
-            onClick={logout}
-            className="flex items-center justify-center gap-3 bg-red-500 hover:bg-red-800 text-white font-semibold px-4 py-2 rounded-lg transition duration-200"
+            onClick={handleLogout}
+            disabled={isLoggingOut}
+            className={`flex items-center justify-center gap-3 text-white font-semibold px-4 py-2 rounded-lg transition duration-200 ${
+              isLoggingOut
+                ? "bg-red-400 cursor-not-allowed opacity-70"
+                : "bg-red-500 hover:bg-red-800"
+            }`}
           >
-            Logout <FaUser />
+            {isLoggingOut ? "Logging out..." : "Logout"} <FaUser />
           </button>
         </div>
 
@@ -155,8 +171,13 @@ const Navbar = () => {
           <NotificationBell />
 
           <button
-            onClick={logout}
-            className="flex items-center justify-center gap-3 bg-red-500 hover:bg-red-800 text-white font-semibold px-4 py-2 rounded-lg transition duration-200"
+            onClick={handleLogout}
+            disabled={isLoggingOut}
+            className={`flex items-center justify-center gap-3 text-white font-semibold px-4 py-2 rounded-lg transition duration-200 ${
+              isLoggingOut
+                ? "bg-red-400 cursor-not-allowed opacity-70"
+                : "bg-red-500 hover:bg-red-800"
+            }`}
           >
             <FaArrowLeft />
           </button>

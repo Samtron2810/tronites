@@ -11,6 +11,8 @@ const CreatePostModal = ({ closeModal, fetchPosts }) => {
 
   const [preview, setPreview] = useState("");
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   // Handle Image
   const handleImage = (e) => {
     const file = e.target.files[0];
@@ -25,7 +27,9 @@ const CreatePostModal = ({ closeModal, fetchPosts }) => {
   // real submit
   const handleSubmit = async () => {
     if (!text.trim()) return toast.error("Post cannot be empty");
+    if (isSubmitting) return;
 
+    setIsSubmitting(true);
     try {
       const formData = new FormData();
       formData.append("text", text);
@@ -37,14 +41,15 @@ const CreatePostModal = ({ closeModal, fetchPosts }) => {
       fetchPosts();
     } catch (error) {
       toast.error("Failed to create post");
+    } finally {
+      setIsSubmitting(false);
+      closeModal();
     }
-
-    closeModal();
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
-      <div className="bg-white w-full max-w-lg rounded-2xl p-6 shadow-xl">
+    <div className="h-screen fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
+      <div className="overflow-y-auto bg-white w-full max-w-lg rounded-2xl p-6 shadow-xl">
         {/* Heading */}
         <div className="flex items-center justify-between">
           <h2 className="text-2xl font-bold text-gray-900">Create Post</h2>
@@ -62,7 +67,7 @@ const CreatePostModal = ({ closeModal, fetchPosts }) => {
           value={text}
           onChange={(e) => setText(e.target.value)}
           maxLength={280}
-          rows={5}
+          rows={3}
           placeholder="What's happening?"
           className="w-full border border-gray-300 rounded-xl p-4 mt-5 outline-none resize-none focus:border-blue-500"
         />
@@ -77,7 +82,7 @@ const CreatePostModal = ({ closeModal, fetchPosts }) => {
           <img
             src={preview}
             alt="preview"
-            className="mt-4 mx-auto rounded-xl w-3/4 h-auto object-cover"
+            className="mt-2 mx-auto rounded-xl w-1/2 h-auto object-cover"
           />
         )}
 
@@ -92,9 +97,14 @@ const CreatePostModal = ({ closeModal, fetchPosts }) => {
 
           <button
             onClick={handleSubmit}
-            className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold transition duration-200 cursor-pointer"
+            disabled={isSubmitting || !text.trim()}
+            className={`text-white px-6 py-2 rounded-lg font-semibold transition duration-200 ${
+              isSubmitting || !text.trim()
+                ? "bg-blue-300 cursor-not-allowed opacity-70"
+                : "bg-blue-500 hover:bg-blue-600 cursor-pointer"
+            }`}
           >
-            Post
+            {isSubmitting ? "Posting..." : "Post"}
           </button>
         </div>
       </div>

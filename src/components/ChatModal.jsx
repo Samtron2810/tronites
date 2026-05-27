@@ -18,6 +18,7 @@ const ChatModal = ({
   handleSendMessage,
   handleImageSelect,
   handleDeleteMessage,
+  messageDeletingId,
   messageText,
   setMessageText,
   imagePreview,
@@ -41,7 +42,12 @@ const ChatModal = ({
         <div className="flex items-center gap-3 px-4 py-3 border-b">
           <button
             onClick={onClose}
-            className="text-gray-600 hover:text-gray-900 p-2"
+            disabled={isSending}
+            className={`p-2 transition ${
+              isSending
+                ? "text-gray-400 opacity-50 cursor-not-allowed"
+                : "text-gray-600 hover:text-gray-900"
+            }`}
           >
             <FaArrowLeft />
           </button>
@@ -107,7 +113,12 @@ const ChatModal = ({
                     {isMine && (
                       <button
                         onClick={() => handleDeleteMessage(message._id)}
-                        className="text-red-500 hover:text-red-700"
+                        disabled={messageDeletingId === message._id}
+                        className={`transition ${
+                          messageDeletingId === message._id
+                            ? "text-red-400 opacity-50 cursor-not-allowed"
+                            : "text-red-500 hover:text-red-700"
+                        }`}
                       >
                         <FaTrash size={14} />
                       </button>
@@ -166,7 +177,12 @@ const ChatModal = ({
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="text-orange-500 border-3 border-orange-500 hover:bg-orange-200 rounded-full p-3 text-xl transition"
+              disabled={isSending}
+              className={`border-3 rounded-full p-3 text-xl transition ${
+                isSending
+                  ? "text-orange-300 border-orange-300 opacity-50 cursor-not-allowed"
+                  : "text-orange-500 border-orange-500 hover:bg-orange-200"
+              }`}
               title="Attach image"
             >
               <FaImage />

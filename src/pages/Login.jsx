@@ -13,6 +13,7 @@ const Login = () => {
 
   //show password functionality
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const [formData, setFormData] = useState({
     email: "",
@@ -28,7 +29,9 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isLoading) return;
 
+    setIsLoading(true);
     try {
       await login(formData);
 
@@ -36,9 +39,11 @@ const Login = () => {
 
       setTimeout(() => {
         navigate("/");
-      }, 2000);
+      }, 1000);
     } catch (error) {
       toast.error(error.response?.data?.message || "Login failed");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -81,8 +86,15 @@ const Login = () => {
             Show password
           </label>
 
-          <button className="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 rounded-lg transition duration-200">
-            Login
+          <button
+            disabled={isLoading}
+            className={`w-full text-white font-semibold py-3 rounded-lg transition duration-200 ${
+              isLoading
+                ? "bg-blue-300 cursor-not-allowed opacity-70"
+                : "bg-blue-500 hover:bg-blue-600"
+            }`}
+          >
+            {isLoading ? "Logging in..." : "Login"}
           </button>
         </form>
 

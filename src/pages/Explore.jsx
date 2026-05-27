@@ -18,6 +18,7 @@ const Explore = () => {
   const [suggestedUsers, setSuggestedUsers] = useState([]);
 
   const [loading, setLoading] = useState(false);
+  const [followingId, setFollowingId] = useState(null);
 
   const fetchUsers = async (query) => {
     try {
@@ -64,6 +65,9 @@ const Explore = () => {
 
   // Follow toggle
   const handleFollow = async (userId) => {
+    if (followingId) return;
+
+    setFollowingId(userId);
     try {
       const res = await api.put(`/users/follow/${userId}`);
 
@@ -86,6 +90,8 @@ const Explore = () => {
       );
     } catch (error) {
       console.log(error);
+    } finally {
+      setFollowingId(null);
     }
   };
 
@@ -175,13 +181,22 @@ const Explore = () => {
                   {/* Follow Button */}
                   <button
                     onClick={() => handleFollow(user._id)}
+                    disabled={followingId === user._id}
                     className={`px-5 py-2 rounded-lg text-white font-semibold transition ${
-                      isFollowing
-                        ? "bg-gray-600 hover:bg-gray-700"
-                        : "bg-blue-500 hover:bg-blue-600"
+                      followingId === user._id
+                        ? isFollowing
+                          ? "bg-gray-500 opacity-70 cursor-not-allowed"
+                          : "bg-blue-400 opacity-70 cursor-not-allowed"
+                        : isFollowing
+                          ? "bg-gray-600 hover:bg-gray-700"
+                          : "bg-blue-500 hover:bg-blue-600"
                     }`}
                   >
-                    {isFollowing ? "Following" : "Follow"}
+                    {followingId === user._id
+                      ? "Loading..."
+                      : isFollowing
+                        ? "Following"
+                        : "Follow"}
                   </button>
                 </div>
               );

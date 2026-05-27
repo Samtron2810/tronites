@@ -13,6 +13,7 @@ const Register = () => {
 
   //show password functionality
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -29,7 +30,9 @@ const Register = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isLoading) return;
 
+    setIsLoading(true);
     try {
       await register(formData);
 
@@ -37,9 +40,11 @@ const Register = () => {
 
       setTimeout(() => {
         navigate("/");
-      }, 2000);
+      }, 1000);
     } catch (error) {
       toast.error(error.response?.data?.message || "Registration failed");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -91,8 +96,15 @@ const Register = () => {
             Show password
           </label>
 
-          <button className="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 rounded-lg transition duration-200">
-            Create Account
+          <button
+            disabled={isLoading}
+            className={`w-full text-white font-semibold py-3 rounded-lg transition duration-200 ${
+              isLoading
+                ? "bg-blue-300 cursor-not-allowed opacity-70"
+                : "bg-blue-500 hover:bg-blue-600"
+            }`}
+          >
+            {isLoading ? "Creating..." : "Create Account"}
           </button>
         </form>
 
