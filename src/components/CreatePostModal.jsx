@@ -3,6 +3,7 @@ import { useState } from "react";
 import toast from "react-hot-toast";
 
 import api from "../services/api";
+import compressImage from "../utils/compressImage";
 
 const CreatePostModal = ({ closeModal, fetchPosts }) => {
   const [text, setText] = useState("");
@@ -33,17 +34,34 @@ const CreatePostModal = ({ closeModal, fetchPosts }) => {
     try {
       const formData = new FormData();
       formData.append("text", text);
-      if (image) formData.append("image", image);
+
+      // Compress image before uploading
+      if (image) {
+        const compressedImage = await compressImage(image);
+        formData.append("image", compressedImage);
+      }
 
       await api.post("/posts", formData);
 
       toast.success("Post created successfully");
       fetchPosts();
+      closeModal(); // Only close on success
     } catch (error) {
-      toast.error("Failed to create post");
+      const message =
+        error?.response?.data?.message ||
+        error.message ||
+        "Failed to create post";
+
+      // Check if it's a timeout error
+      if (error.code === "ECONNABORTED") {
+        toast.error(
+          "Upload is taking longer than expected. The post may still be processing — please check your feed after a moment.",
+        );
+      } else {
+        toast.error(message);
+      }
     } finally {
       setIsSubmitting(false);
-      closeModal();
     }
   };
 

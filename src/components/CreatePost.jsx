@@ -2,7 +2,7 @@ import { useState } from "react";
 import CreatePostModal from "./CreatePostModal";
 import { useAuth } from "../context/AuthContext";
 
-const CreatePost = () => {
+const CreatePost = ({ fetchPosts }) => {
   const [openModal, setOpenModal] = useState(false);
   const { user } = useAuth();
 
@@ -27,7 +27,12 @@ const CreatePost = () => {
       </div>
 
       {/* Modal */}
-      {openModal && <CreatePostModal closeModal={() => setOpenModal(false)} />}
+      {openModal && (
+        <CreatePostModal
+          closeModal={() => setOpenModal(false)}
+          fetchPosts={fetchPosts}
+        />
+      )}
     </>
   );
 };

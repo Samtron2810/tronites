@@ -8,6 +8,8 @@ const baseURL =
 const api = axios.create({
   baseURL,
   withCredentials: true,
+  timeout: 60000, // 60 second timeout for large image uploads
+  timeoutErrorMessage: "Request timed out. Please try again.",
 });
 
 // Fixes multipart/FormData uploads — lets browser set Content-Type + boundary
