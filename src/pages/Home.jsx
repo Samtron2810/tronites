@@ -141,7 +141,10 @@ const Home = () => {
         {/* Load More Trigger */}
         <div ref={observerTarget} className="py-8 text-center">
           {isLoadingMore && (
-            <p className="text-gray-500">Loading more posts...</p>
+            <div className="space-y-6">
+              <PostSkeleton />
+              <PostSkeleton />
+            </div>
           )}
           {!hasMore && posts.length > 0 && (
             <p className="text-gray-400">No more posts to load</p>

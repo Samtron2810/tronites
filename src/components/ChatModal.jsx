@@ -68,8 +68,16 @@ const ChatModal = ({
 
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {threadLoading && (
-            <div className="text-center text-gray-500">
-              Loading conversation...
+            <div className="space-y-4 p-4 animate-pulse">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="flex items-start gap-3 px-4">
+                  <div className="w-9 h-9 rounded-full bg-gray-300 shrink-0"></div>
+                  <div className="flex-1">
+                    <div className="h-4 bg-gray-300 rounded w-3/4"></div>
+                    <div className="h-3 bg-gray-200 rounded w-1/2 mt-2"></div>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
 

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import MainLayout from "../layouts/MainLayout";
+import NotificationSkeleton from "../components/NotificationSkeleton";
 import api from "../services/api";
 import { useSocket } from "../context/SocketContext";
 
@@ -69,7 +70,13 @@ const Notifications = () => {
       <div className="bg-white rounded-2xl shadow-md p-6">
         <h1 className="text-2xl font-bold text-gray-900 mb-6">Notifications</h1>
 
-        {loading && <p className="text-center text-gray-400">Loading...</p>}
+        {loading && (
+          <>
+            <NotificationSkeleton />
+            <NotificationSkeleton />
+            <NotificationSkeleton />
+          </>
+        )}
 
         {!loading && notifications.length === 0 && (
           <p className="text-center text-gray-400">No notifications yet.</p>

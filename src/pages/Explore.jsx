@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
 import MainLayout from "../layouts/MainLayout";
+import UserCardSkeleton from "../components/UserCardSkeleton";
 
 import api from "../services/api";
 
@@ -113,16 +114,26 @@ const Explore = () => {
 
         {/* Users */}
         <div className="space-y-4">
-          {loading && <p className="text-center text-gray-500">Searching...</p>}
+          {loading && (
+            <>
+              <UserCardSkeleton />
+              <UserCardSkeleton />
+              <UserCardSkeleton />
+            </>
+          )}
 
           {!loading && !search.trim() && (
-            <div className="text-center text-gray-500 py-10">
-              Search users by name. Type at least 2 characters to begin.
+            <div className="text-center text-gray-500">
+              <b>
+                <i>
+                  Search users by name. Type at least 2 characters to begin.
+                </i>
+              </b>
             </div>
           )}
 
           {!loading && !search.trim() && suggestedUsers.length > 0 && (
-            <div className="text-sm text-gray-500 px-4 pb-1">
+            <div className="text-sm text-gray-500 px-2 pb-1">
               Suggested users
             </div>
           )}

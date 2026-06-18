@@ -98,24 +98,28 @@ const Navbar = () => {
             to="/"
             className="text-gray-800 hover:text-blue-500 font-medium"
           >
+            <FaHome className="inline-block mr-1" />
             Feed
           </Link>
           <Link
             to="/explore"
             className="text-gray-800 hover:text-blue-500 font-medium"
           >
+            <FaCompass className="inline-block mr-1" />
             Explore
           </Link>
           <Link
             to={`/profile/${user._id}`}
             className="text-gray-800 hover:text-blue-500 font-medium"
           >
+            <FaUser className="inline-block mr-1" />
             Profile
           </Link>
           <Link
             to="/chat"
             className="text-gray-800 hover:text-blue-500 font-medium relative"
           >
+            <FaComments className="inline-block mr-1" />
             Messages
             {unreadCount > 0 && (
               <span className="absolute -top-2 -right-4 inline-flex items-center justify-center min-w-5 h-5 rounded-full bg-red-500 text-white text-xs font-bold">

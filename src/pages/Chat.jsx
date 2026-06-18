@@ -6,6 +6,7 @@ import api from "../services/api";
 import { useAuth } from "../context/AuthContext";
 import { useSocket } from "../context/SocketContext";
 import ChatModal from "../components/ChatModal";
+import ChatSkeleton from "../components/ChatSkeleton";
 
 const buildConversationId = (userA, userB) => {
   return [userA.toString(), userB.toString()].sort().join("_");
@@ -255,11 +256,7 @@ const Chat = () => {
           </div>
 
           <div className="divide-y">
-            {loading && (
-              <div className="p-6 text-center text-gray-500">
-                Loading chats...
-              </div>
-            )}
+            {loading && <ChatSkeleton />}
 
             {!loading && conversations.length === 0 && (
               <div className="p-6 text-center text-gray-500">
