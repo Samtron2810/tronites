@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, Link } from "react-router-dom";
 
 import MainLayout from "../layouts/MainLayout";
 import toast from "react-hot-toast";
@@ -267,20 +267,26 @@ const Profile = () => {
               )}
 
               {/* Stats */}
-              <div className="flex gap-6 mt-4 text-sm text-gray-700">
-                <p>
+              <div className="flex gap-6 mt-2 text-sm text-gray-700">
+                <p className="px-1">
                   <span className="font-bold">{posts.length}</span> Posts
                 </p>
 
-                <p>
+                <Link
+                  to={`/connections/${profile._id}?tab=followers`}
+                  className="hover:text-blue-600 transition cursor-pointer rounded-md border border-transparent hover:border-blue-600 hover:bg-blue-50 px-1"
+                >
                   <span className="font-bold">{profile.followers.length}</span>{" "}
                   Followers
-                </p>
+                </Link>
 
-                <p>
+                <Link
+                  to={`/connections/${profile._id}?tab=following`}
+                  className="hover:text-blue-600 transition cursor-pointer  rounded-md border border-transparent hover:border-blue-600 hover:bg-blue-50 px-1"
+                >
                   <span className="font-bold">{profile.following.length}</span>{" "}
                   Following
-                </p>
+                </Link>
               </div>
             </div>
           </div>

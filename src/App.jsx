@@ -6,7 +6,7 @@ import Register from "./pages/Register";
 import Profile from "./pages/Profile";
 import Explore from "./pages/Explore";
 import Chat from "./pages/Chat";
-// import Navbar from "./components/Navbar";
+import FollowersList from "./pages/FollowersList";
 import Notifications from "./pages/Notifications";
 
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -68,6 +68,15 @@ const AppContent = () => {
           element={
             <ProtectedRoute>
               <Chat />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/connections/:id"
+          element={
+            <ProtectedRoute>
+              <FollowersList />
             </ProtectedRoute>
           }
         />
