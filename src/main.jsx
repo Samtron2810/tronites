@@ -4,6 +4,7 @@ import ReactDOM from "react-dom/client";
 import { Toaster } from "react-hot-toast";
 
 import App from "./App";
+import ErrorBoundary from "./components/ErrorBoundary";
 import "./index.css";
 
 import { AuthProvider } from "./context/AuthContext";
@@ -15,7 +16,9 @@ ReactDOM.createRoot(document.getElementById("root")).render(
       <SocketProvider>
         <Toaster position="top-center" />
 
-        <App />
+        <ErrorBoundary>
+          <App />
+        </ErrorBoundary>
       </SocketProvider>
     </AuthProvider>
   </React.StrictMode>,
