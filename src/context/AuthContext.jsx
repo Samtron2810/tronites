@@ -13,7 +13,8 @@ export const AuthProvider = ({ children }) => {
   const register = async (userData) => {
     const res = await api.post("/auth/register", userData);
 
-    setUser(res.data);
+    // register now only sends OTP; do not set user here
+    return res.data;
   };
 
   // LOGIN
@@ -57,6 +58,7 @@ export const AuthProvider = ({ children }) => {
       value={{
         user,
         loading,
+        getMe,
         register,
         login,
         logout,

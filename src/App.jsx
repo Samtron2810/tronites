@@ -7,6 +7,7 @@ import Profile from "./pages/Profile";
 import Explore from "./pages/Explore";
 import Chat from "./pages/Chat";
 import FollowersList from "./pages/FollowersList";
+import VerifyOtp from "./pages/VerifyOtp";
 import Notifications from "./pages/Notifications";
 
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -25,6 +26,7 @@ const AppContent = () => {
         {/* Public */}
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Register />} />
+        <Route path="/verify-otp" element={<VerifyOtp />} />
 
         {/* Protected */}
         <Route

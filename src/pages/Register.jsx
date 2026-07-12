@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { Link, useNavigate } from "react-router-dom";
 
@@ -9,7 +9,7 @@ import { useAuth } from "../context/AuthContext";
 const Register = () => {
   const navigate = useNavigate();
 
-  const { register } = useAuth();
+  const { register, user, loading } = useAuth();
 
   //show password functionality
   const [showPassword, setShowPassword] = useState(false);
@@ -28,19 +28,23 @@ const Register = () => {
     });
   };
 
+  useEffect(() => {
+    if (!loading && user) {
+      navigate("/");
+    }
+  }, [loading, user, navigate]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (isLoading) return;
 
     setIsLoading(true);
     try {
-      await register(formData);
+      const res = await register(formData);
 
-      toast.success("Account created");
+      toast.success(res.message || "OTP sent to your email");
 
-      setTimeout(() => {
-        navigate("/");
-      }, 1000);
+      navigate(`/verify-otp?email=${encodeURIComponent(formData.email)}`);
     } catch (error) {
       toast.error(error.response?.data?.message || "Registration failed");
     } finally {

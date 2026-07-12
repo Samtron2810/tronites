@@ -78,7 +78,7 @@ const Navbar = () => {
   if (!user) return null;
 
   return (
-    <nav className="bg-orange-300/80 backdrop-blur-md border-b border-orange-200 px-4 sm:px-6 py-4 sticky top-0 z-50">
+    <nav className="bg-orange-300/80 backdrop-blur-md border-b border-orange-200 px-4 sm:px-6 py-2 sticky top-0 z-50">
       <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-4">
         {/* Logo */}
         <Link to="/" className="min-w-0 shrink-0 flex items-center gap-3">
