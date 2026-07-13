@@ -92,15 +92,21 @@ const Notifications = () => {
             >
               {/* Avatar */}
               <img
-                src={n.sender.profilePic || "https://i.pravatar.cc/"}
-                alt={n.sender.name}
+                src={
+                  n.sender
+                    ? n.sender.profilePic || "https://i.pravatar.cc/"
+                    : "https://i.pravatar.cc/"
+                }
+                alt={n.sender ? n.sender.name : "Unknown user"}
                 className="w-11 h-11 rounded-full object-cover"
               />
 
               {/* Message */}
               <div className="flex-1">
                 <p className="text-sm text-gray-800">
-                  <span className="font-semibold">{n.sender.name}</span>{" "}
+                  <span className="font-semibold">
+                    {n.sender ? n.sender.name : "Unknown user"}
+                  </span>{" "}
                   {getMessage(n)}
                 </p>
                 <p className="text-xs text-gray-400 mt-1">
