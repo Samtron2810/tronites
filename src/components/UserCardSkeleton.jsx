@@ -1,20 +1,14 @@
-const UserCardSkeleton = () => {
-  return (
-    <div className="bg-white rounded-2xl shadow-md p-4 flex items-center justify-between animate-pulse">
-      <div className="flex items-center gap-4">
-        {/* Avatar */}
-        <div className="w-14 h-14 rounded-full bg-gray-300"></div>
-
-        <div>
-          <div className="h-4 bg-gray-300 rounded w-32"></div>
-          <div className="h-3 bg-gray-200 rounded w-20 mt-2"></div>
-        </div>
+const UserCardSkeleton = () => (
+  <div className="bg-white border border-stroke rounded-2xl p-4 flex items-center justify-between animate-pulse">
+    <div className="flex items-center gap-3">
+      <div className="w-11 h-11 rounded-full bg-stroke shrink-0" />
+      <div className="space-y-2">
+        <div className="h-3 bg-stroke rounded w-28" />
+        <div className="h-2.5 bg-stroke rounded w-20" />
       </div>
-
-      {/* Button skeleton */}
-      <div className="w-24 h-10 bg-gray-300 rounded-lg"></div>
     </div>
-  );
-};
+    <div className="w-20 h-8 bg-stroke rounded-xl" />
+  </div>
+);
 
 export default UserCardSkeleton;

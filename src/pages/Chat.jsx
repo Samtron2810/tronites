@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { FaTrash, FaCheck, FaCheckDouble, FaImage } from "react-icons/fa";
 import MainLayout from "../layouts/MainLayout";
 import api from "../services/api";
 import { useAuth } from "../context/AuthContext";
@@ -8,9 +7,7 @@ import { useSocket } from "../context/SocketContext";
 import ChatModal from "../components/ChatModal";
 import ChatSkeleton from "../components/ChatSkeleton";
 
-const buildConversationId = (userA, userB) => {
-  return [userA.toString(), userB.toString()].sort().join("_");
-};
+const buildConversationId = (a, b) => [a.toString(), b.toString()].sort().join("_");
 
 const Chat = () => {
   const { user } = useAuth();
@@ -34,32 +31,19 @@ const Chat = () => {
       setLoading(true);
       const res = await api.get("/messages/conversations");
       setConversations(res.data);
-
       const urlUserId = searchParams.get("user");
       if (urlUserId) {
-        const existing = res.data.find(
-          (conv) => conv.otherUser._id === urlUserId,
-        );
-        if (existing) {
-          loadConversation(existing.otherUser);
-          return;
-        }
-
+        const existing = res.data.find((c) => c.otherUser._id === urlUserId);
+        if (existing) { loadConversation(existing.otherUser); return; }
         const profileRes = await api.get(`/users/profile/${urlUserId}`);
         const otherUser = profileRes.data.user;
         if (otherUser) {
-          setSelectedChat({
-            otherUser,
-            conversationId: buildConversationId(user._id, otherUser._id),
-          });
+          setSelectedChat({ otherUser, conversationId: buildConversationId(user._id, otherUser._id) });
           setMessages([]);
         }
       }
-    } catch (error) {
-      console.error("Fetch conversations failed:", error);
-    } finally {
-      setLoading(false);
-    }
+    } catch (e) { console.error(e); }
+    finally { setLoading(false); }
   };
 
   const loadConversation = async (otherUser) => {
@@ -67,283 +51,184 @@ const Chat = () => {
       setThreadLoading(true);
       const res = await api.get(`/messages/${otherUser._id}`);
       setMessages(res.data);
-      setSelectedChat({
-        otherUser,
-        conversationId: buildConversationId(user._id, otherUser._id),
-      });
-
-      // Refetch conversations to update unread count
-      const conversationsRes = await api.get("/messages/conversations");
-      setConversations(conversationsRes.data);
-    } catch (error) {
-      console.error("Load conversation failed:", error);
-    } finally {
-      setThreadLoading(false);
-    }
+      setSelectedChat({ otherUser, conversationId: buildConversationId(user._id, otherUser._id) });
+      const convsRes = await api.get("/messages/conversations");
+      setConversations(convsRes.data);
+    } catch (e) { console.error(e); }
+    finally { setThreadLoading(false); }
   };
 
   const updateConversationPreview = (message, incrementUnread = false) => {
-    const otherUser =
-      message.sender._id === user._id ? message.receiver : message.sender;
-    const conversationId =
-      message.conversationId ||
-      buildConversationId(message.sender._id, message.receiver._id);
-
+    const otherUser = message.sender._id === user._id ? message.receiver : message.sender;
+    const conversationId = message.conversationId || buildConversationId(message.sender._id, message.receiver._id);
     setConversations((prev) => {
-      const existing = prev.find(
-        (conv) => conv.conversationId === conversationId,
-      );
+      const existing = prev.find((c) => c.conversationId === conversationId);
       const preview = {
-        conversationId,
-        otherUser,
+        conversationId, otherUser,
         lastMessage: message.text,
         lastMessageAt: message.createdAt,
-        unreadCount: incrementUnread
-          ? (existing?.unreadCount || 0) + 1
-          : existing?.unreadCount || 0,
+        unreadCount: incrementUnread ? (existing?.unreadCount || 0) + 1 : existing?.unreadCount || 0,
       };
-
-      const filtered = prev.filter(
-        (conv) => conv.conversationId !== conversationId,
-      );
-      return [preview, ...filtered];
+      return [preview, ...prev.filter((c) => c.conversationId !== conversationId)];
     });
   };
 
   const handleSendMessage = async () => {
-    if (isSending || !selectedChat || (!messageText.trim() && !imagePreview))
-      return;
-
+    if (isSending || !selectedChat || (!messageText.trim() && !imagePreview)) return;
     setIsSending(true);
     try {
-      // Use FormData for better file handling
       const formData = new FormData();
       if (messageText.trim()) formData.append("text", messageText.trim());
       if (imagePreview) {
-        // Convert base64 to blob
-        const response = await fetch(imagePreview);
-        const blob = await response.blob();
+        const blob = await (await fetch(imagePreview)).blob();
         formData.append("image", blob);
       }
-
-      const res = await api.post(
-        `/messages/${selectedChat.otherUser._id}`,
-        formData,
-        {
-          headers: { "Content-Type": "multipart/form-data" },
-        },
-      );
+      const res = await api.post(`/messages/${selectedChat.otherUser._id}`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
       setMessages((prev) => [...prev, res.data]);
       setMessageText("");
       setImagePreview(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
       updateConversationPreview(res.data, false);
-    } catch (error) {
-      console.error(
-        "Send message failed:",
-        error?.response?.data || error.message,
-      );
-      alert(
-        `Error sending message: ${error?.response?.data?.message || error.message}`,
-      );
-    } finally {
-      setIsSending(false);
-    }
+    } catch (e) {
+      alert(`Error: ${e?.response?.data?.message || e.message}`);
+    } finally { setIsSending(false); }
   };
 
   const handleImageSelect = (e) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result);
-      };
-      reader.readAsDataURL(file);
-    }
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onloadend = () => setImagePreview(reader.result);
+    reader.readAsDataURL(file);
   };
 
   const handleDeleteMessage = async (messageId) => {
     if (messageDeletingId) return;
-
     setMessageDeletingId(messageId);
     try {
       await api.delete(`/messages/${messageId}`);
-      setMessages((prev) => prev.filter((msg) => msg._id !== messageId));
-    } catch (error) {
-      console.error("Delete message failed:", error);
-    } finally {
-      setMessageDeletingId(null);
-    }
+      setMessages((prev) => prev.filter((m) => m._id !== messageId));
+    } catch (e) { console.error(e); }
+    finally { setMessageDeletingId(null); }
   };
 
-  useEffect(() => {
-    fetchConversations();
-  }, []);
+  useEffect(() => { fetchConversations(); }, []);
 
   useEffect(() => {
     if (!socket) return;
-
-    const handleReceiveMessage = (message) => {
-      const incomingFromCurrent =
-        selectedChat?.otherUser?._id === message.sender._id ||
-        selectedChat?.otherUser?._id === message.receiver._id;
-
-      if (incomingFromCurrent && message.sender._id !== user._id) {
-        setMessages((prev) => [...prev, message]);
-      }
+    const handleReceive = (message) => {
+      const inCurrent = selectedChat?.otherUser?._id === message.sender._id || selectedChat?.otherUser?._id === message.receiver._id;
+      if (inCurrent && message.sender._id !== user._id) setMessages((prev) => [...prev, message]);
       updateConversationPreview(message, message.receiver._id === user._id);
     };
-
-    const handleMessageDeleted = ({ messageId }) => {
-      setMessages((prev) => prev.filter((msg) => msg._id !== messageId));
-    };
-
-    socket.on("receiveMessage", handleReceiveMessage);
-    socket.on("messageDeleted", handleMessageDeleted);
+    const handleDeleted = ({ messageId }) => setMessages((prev) => prev.filter((m) => m._id !== messageId));
+    socket.on("receiveMessage", handleReceive);
+    socket.on("messageDeleted", handleDeleted);
     socket.on("messagesRead", (data) => {
       if (data.conversationId === selectedChat?.conversationId) {
-        setMessages((prev) =>
-          prev.map((msg) => ({
-            ...msg,
-            read: msg.receiver._id === user._id ? msg.read : true,
-          })),
-        );
+        setMessages((prev) => prev.map((m) => ({ ...m, read: m.receiver._id === user._id ? m.read : true })));
       }
     });
-
-    if (selectedChat?.conversationId) {
-      socket.emit("joinConversation", selectedChat.conversationId);
-    }
-
+    if (selectedChat?.conversationId) socket.emit("joinConversation", selectedChat.conversationId);
     return () => {
-      socket.off("receiveMessage", handleReceiveMessage);
-      socket.off("messageDeleted", handleMessageDeleted);
+      socket.off("receiveMessage", handleReceive);
+      socket.off("messageDeleted", handleDeleted);
       socket.off("messagesRead");
-      if (selectedChat?.conversationId) {
-        socket.emit("leaveConversation", selectedChat.conversationId);
-      }
+      if (selectedChat?.conversationId) socket.emit("leaveConversation", selectedChat.conversationId);
     };
   }, [socket, selectedChat, user._id]);
 
   useEffect(() => {
     if (!scrollRef.current) return;
-
-    const behavior = hasScrolledToBottom.current ? "smooth" : "auto";
-    scrollRef.current.scrollIntoView({ behavior });
+    scrollRef.current.scrollIntoView({ behavior: hasScrolledToBottom.current ? "smooth" : "auto" });
     hasScrolledToBottom.current = true;
   }, [messages, selectedChat?.conversationId]);
 
   useEffect(() => {
-    if (!selectedChat) {
-      hasScrolledToBottom.current = false;
-    }
+    if (!selectedChat) hasScrolledToBottom.current = false;
   }, [selectedChat?.conversationId]);
-
-  const activeUser = selectedChat?.otherUser;
-  const activeIsOnline = activeUser
-    ? onlineUsers.includes(activeUser._id)
-    : false;
 
   return (
     <MainLayout>
-      <div className="grid gap-6">
-        <div className="bg-white rounded-2xl shadow-md overflow-hidden">
-          <div className="border-b px-5 py-4 flex items-center justify-between">
-            <h2 className="font-bold text-lg">Messages</h2>
-            <span className="text-sm text-gray-500">
-              {conversations.length} chats
-            </span>
-          </div>
-
-          <div className="divide-y">
-            {loading && <ChatSkeleton />}
-
-            {!loading && conversations.length === 0 && (
-              <div className="p-6 text-center text-gray-500">
-                No conversations yet. Open a profile to start messaging.
-              </div>
-            )}
-
-            {!loading &&
-              conversations.map((conversation) => {
-                const isSelected =
-                  selectedChat?.conversationId === conversation.conversationId;
-                const isOnline = onlineUsers.includes(
-                  conversation.otherUser._id,
-                );
-
-                return (
-                  <button
-                    key={conversation.conversationId}
-                    type="button"
-                    onClick={() => loadConversation(conversation.otherUser)}
-                    className={`w-full text-left px-5 py-4 transition ${
-                      isSelected ? "bg-orange-50" : "hover:bg-gray-50"
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="relative">
-                        <img
-                          src={
-                            conversation.otherUser.profilePic ||
-                            "https://i.pravatar.cc/150"
-                          }
-                          alt={conversation.otherUser.name}
-                          className="w-12 h-12 rounded-full object-cover"
-                        />
-                        <span
-                          className={`absolute bottom-0 right-0 h-3.5 w-3.5 rounded-full border-2 border-white ${
-                            isOnline ? "bg-green-500" : "bg-gray-300"
-                          }`}
-                        />
-                      </div>
-
-                      <div className="flex-1">
-                        <div className="flex items-center justify-between gap-2">
-                          <p className="font-semibold text-gray-900">
-                            {conversation.otherUser.name}
-                          </p>
-                          {conversation.unreadCount > 0 && (
-                            <span className="inline-flex items-center justify-center min-w-6 h-6 rounded-full bg-blue-500 text-white text-xs">
-                              {conversation.unreadCount}
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-sm text-gray-500 truncate">
-                          {conversation.lastMessage}
-                        </p>
-                      </div>
-                    </div>
-                  </button>
-                );
-              })}
-          </div>
+      <div className="bg-white border border-stroke rounded-2xl overflow-hidden">
+        {/* Header */}
+        <div className="px-5 py-4 border-b border-stroke flex items-center justify-between">
+          <h2 className="text-base font-semibold text-ink">Messages</h2>
+          <span className="text-xs text-ink-muted">{conversations.length} chats</span>
         </div>
 
-        {/* Modal-based conversation view */}
-        {selectedChat && (
-          <ChatModal
-            isOpen={!!selectedChat}
-            onClose={() => setSelectedChat(null)}
-            selectedChat={selectedChat}
-            messages={messages}
-            threadLoading={threadLoading}
-            user={user}
-            onlineUsers={onlineUsers}
-            handleSendMessage={handleSendMessage}
-            handleImageSelect={handleImageSelect}
-            handleDeleteMessage={handleDeleteMessage}
-            messageDeletingId={messageDeletingId}
-            messageText={messageText}
-            setMessageText={setMessageText}
-            imagePreview={imagePreview}
-            setImagePreview={setImagePreview}
-            isSending={isSending}
-            fileInputRef={fileInputRef}
-            scrollRef={scrollRef}
-          />
-        )}
+        {/* Conversation list */}
+        <div className="divide-y divide-stroke">
+          {loading && <ChatSkeleton />}
+
+          {!loading && conversations.length === 0 && (
+            <div className="py-16 text-center">
+              <p className="text-2xl mb-2">💬</p>
+              <p className="text-sm text-ink-muted">No conversations yet. Open a profile to start messaging.</p>
+            </div>
+          )}
+
+          {!loading && conversations.map((conv) => {
+            const isSelected = selectedChat?.conversationId === conv.conversationId;
+            const isOnline = onlineUsers.includes(conv.otherUser._id);
+            return (
+              <button
+                key={conv.conversationId}
+                type="button"
+                onClick={() => loadConversation(conv.otherUser)}
+                className={`w-full text-left px-5 py-4 transition ${isSelected ? "bg-primary-50" : "hover:bg-surface"}`}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="relative shrink-0">
+                    <img
+                      src={conv.otherUser.profilePic || "https://i.pravatar.cc/150"}
+                      alt={conv.otherUser.name}
+                      className="w-11 h-11 rounded-full object-cover ring-2 ring-primary-100"
+                    />
+                    <span className={`absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-white ${isOnline ? "bg-primary-400" : "bg-gray-300"}`} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-sm font-semibold text-ink truncate">{conv.otherUser.name}</p>
+                      {conv.unreadCount > 0 && (
+                        <span className="shrink-0 min-w-5 h-5 rounded-full bg-primary-600 text-white text-xs font-bold flex items-center justify-center px-1">
+                          {conv.unreadCount}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-ink-muted truncate">{conv.lastMessage}</p>
+                  </div>
+                </div>
+              </button>
+            );
+          })}
+        </div>
       </div>
+
+      {selectedChat && (
+        <ChatModal
+          isOpen={!!selectedChat}
+          onClose={() => setSelectedChat(null)}
+          selectedChat={selectedChat}
+          messages={messages}
+          threadLoading={threadLoading}
+          user={user}
+          onlineUsers={onlineUsers}
+          handleSendMessage={handleSendMessage}
+          handleImageSelect={handleImageSelect}
+          handleDeleteMessage={handleDeleteMessage}
+          messageDeletingId={messageDeletingId}
+          messageText={messageText}
+          setMessageText={setMessageText}
+          imagePreview={imagePreview}
+          setImagePreview={setImagePreview}
+          isSending={isSending}
+          fileInputRef={fileInputRef}
+          scrollRef={scrollRef}
+        />
+      )}
     </MainLayout>
   );
 };

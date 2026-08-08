@@ -1,19 +1,12 @@
-const NotificationSkeleton = () => {
-  return (
-    <div className="flex items-center gap-4 p-4 animate-pulse">
-      {/* Avatar */}
-      <div className="w-11 h-11 rounded-full bg-gray-300"></div>
-
-      {/* Message */}
-      <div className="flex-1">
-        <div className="h-4 bg-gray-300 rounded w-48"></div>
-        <div className="h-3 bg-gray-200 rounded w-24 mt-2"></div>
-      </div>
-
-      {/* Icon */}
-      <div className="w-8 h-8 bg-gray-300 rounded-full"></div>
+const NotificationSkeleton = () => (
+  <div className="flex items-center gap-3 px-5 py-4 animate-pulse">
+    <div className="w-10 h-10 rounded-full bg-stroke shrink-0" />
+    <div className="flex-1 space-y-2">
+      <div className="h-3 bg-stroke rounded w-48" />
+      <div className="h-2.5 bg-stroke rounded w-24" />
     </div>
-  );
-};
+    <div className="w-7 h-7 rounded-full bg-stroke shrink-0" />
+  </div>
+);
 
 export default NotificationSkeleton;

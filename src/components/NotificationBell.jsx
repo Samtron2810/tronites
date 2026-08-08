@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { FaBell } from "react-icons/fa";
+import { FiBell } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
 import api from "../services/api";
 import { useSocket } from "../context/SocketContext";
@@ -14,39 +14,23 @@ const NotificationBell = () => {
       try {
         const res = await api.get("/notifications/unread-count");
         setCount(res.data.count);
-      } catch (error) {
-        console.log(error);
-      }
+      } catch (e) { console.log(e); }
     };
-
     fetchCount();
-
-    if (socket) {
-      const handleNewNotification = () => {
-        setCount((prev) => prev + 1);
-      };
-
-      socket.on("newNotification", handleNewNotification);
-
-      return () => {
-        socket.off("newNotification", handleNewNotification);
-      };
-    }
+    if (!socket) return;
+    const handle = () => setCount((p) => p + 1);
+    socket.on("newNotification", handle);
+    return () => socket.off("newNotification", handle);
   }, [socket]);
-
-  const handleClick = () => {
-    setCount(0);
-    navigate("/notifications");
-  };
 
   return (
     <button
-      onClick={handleClick}
-      className="relative text-gray-700 hover:text-blue-500 transition"
+      onClick={() => { setCount(0); navigate("/notifications"); }}
+      className="relative flex items-center justify-center px-3 py-2 rounded-lg text-ink-sub hover:text-ink hover:bg-primary-50 transition"
     >
-      <FaBell size={22} />
+      <FiBell size={17} />
       {count > 0 && (
-        <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center">
+        <span className="absolute -top-1 -right-1 min-w-4 h-4 rounded-full bg-primary-600 text-white text-xs font-bold flex items-center justify-center px-1">
           {count > 9 ? "9+" : count}
         </span>
       )}
