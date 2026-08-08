@@ -14,7 +14,7 @@ const NotificationBell = () => {
       try {
         const res = await api.get("/notifications/unread-count");
         setCount(res.data.count);
-      } catch (e) { console.log(e); }
+      } catch (e) { console.error(e); }
     };
     fetchCount();
     if (!socket) return;

@@ -49,8 +49,11 @@ const Chat = () => {
   const loadConversation = async (otherUser) => {
     try {
       setThreadLoading(true);
-      const res = await api.get(`/messages/${otherUser._id}`);
-      setMessages(res.data);
+      // Server paginates thread history (most recent page, oldest-first)
+      const res = await api.get(`/messages/${otherUser._id}`, {
+        params: { page: 1, limit: 30 },
+      });
+      setMessages(res.data.messages);
       setSelectedChat({ otherUser, conversationId: buildConversationId(user._id, otherUser._id) });
       const convsRes = await api.get("/messages/conversations");
       setConversations(convsRes.data);

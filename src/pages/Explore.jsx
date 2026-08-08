@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import toast from "react-hot-toast";
 import MainLayout from "../layouts/MainLayout";
 import UserCardSkeleton from "../components/UserCardSkeleton";
 import api from "../services/api";
@@ -22,7 +23,7 @@ const Explore = () => {
       const res = await api.get(`/users/search?q=${encodeURIComponent(query)}`);
       setUsers(res.data);
       if (query.trim().length === 0) setSuggestedUsers(res.data);
-    } catch (e) { console.log(e); }
+    } catch (e) { console.error(e); }
     finally { setLoading(false); }
   };
 
@@ -40,20 +41,25 @@ const Explore = () => {
     if (followingId) return;
     setFollowingId(userId);
     try {
-      await api.put(`/users/follow/${userId}`);
+      const res = await api.put(`/users/follow/${userId}`);
+      // Trust the server's answer for whether we're now following,
+      // rather than re-deriving it from local state (which could be
+      // stale if this list hasn't refetched recently).
       setUsers((prev) =>
         prev.map((u) => {
           if (u._id !== userId) return u;
-          const alreadyFollowing = u.followers.includes(currentUser._id);
           return {
             ...u,
-            followers: alreadyFollowing
-              ? u.followers.filter((id) => id !== currentUser._id)
-              : [...u.followers, currentUser._id],
+            followers: res.data.following
+              ? [...u.followers, currentUser._id]
+              : u.followers.filter((id) => id !== currentUser._id),
           };
         })
       );
-    } catch (e) { console.log(e); }
+    } catch (e) {
+      console.error(e);
+      toast.error("Couldn't update follow status. Try again.");
+    }
     finally { setFollowingId(null); }
   };
 

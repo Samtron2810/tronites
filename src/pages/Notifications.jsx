@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import toast from "react-hot-toast";
 import MainLayout from "../layouts/MainLayout";
 import NotificationSkeleton from "../components/NotificationSkeleton";
 import api from "../services/api";
@@ -13,19 +14,38 @@ const typeConfig = {
 const Notifications = () => {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
   const { socket } = useSocket();
 
   useEffect(() => {
     const fetch = async () => {
       try {
-        const res = await api.get("/notifications");
-        setNotifications(res.data);
+        const res = await api.get("/notifications", { params: { page: 1, limit: 20 } });
+        setNotifications(res.data.notifications);
+        setPage(res.data.currentPage);
+        setHasMore(res.data.hasMore);
         await api.put("/notifications/mark-read");
-      } catch (e) { console.log(e); }
+      } catch (e) { console.error(e); }
       finally { setLoading(false); }
     };
     fetch();
   }, []);
+
+  const loadMore = async () => {
+    if (loadingMore || !hasMore) return;
+    setLoadingMore(true);
+    try {
+      const res = await api.get("/notifications", { params: { page: page + 1, limit: 20 } });
+      setNotifications((prev) => [...prev, ...res.data.notifications]);
+      setPage(res.data.currentPage);
+      setHasMore(res.data.hasMore);
+    } catch (e) {
+      console.error(e);
+      toast.error("Couldn't load more notifications. Try again.");
+    } finally { setLoadingMore(false); }
+  };
 
   useEffect(() => {
     if (!socket) return;
@@ -33,7 +53,7 @@ const Notifications = () => {
       setNotifications((prev) =>
         prev.some((n) => n._id === newNotif._id) ? prev : [{ ...newNotif, read: true }, ...prev]
       );
-      try { await api.put("/notifications/mark-read"); } catch (e) { console.log(e); }
+      try { await api.put("/notifications/mark-read"); } catch (e) { console.error(e); }
     };
     socket.on("newNotification", handle);
     return () => socket.off("newNotification", handle);
@@ -86,6 +106,18 @@ const Notifications = () => {
             );
           })}
         </div>
+
+        {!loading && hasMore && (
+          <div className="text-center py-4 border-t border-stroke">
+            <button
+              onClick={loadMore}
+              disabled={loadingMore}
+              className="text-sm font-semibold text-primary-600 hover:text-primary-800 disabled:opacity-50 disabled:cursor-not-allowed transition"
+            >
+              {loadingMore ? "Loading..." : "Load more"}
+            </button>
+          </div>
+        )}
       </div>
     </MainLayout>
   );

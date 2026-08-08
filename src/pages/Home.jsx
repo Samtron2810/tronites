@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from "react";
+import toast from "react-hot-toast";
 import MainLayout from "../layouts/MainLayout";
 import CreatePost from "../components/CreatePost";
 import PostCard from "../components/PostCard";
@@ -24,7 +25,13 @@ const Home = () => {
       else setPosts((prev) => [...prev, ...res.data.posts]);
       setHasMore(pageNum < res.data.totalPages);
       setPage(pageNum);
-    } catch (e) { console.log(e); }
+    } catch (e) {
+      console.error(e);
+      // Only surface a toast for "load more" failures — the initial load
+      // already has an empty-feed message in the UI, so a toast there
+      // would be redundant.
+      if (pageNum > 1) toast.error("Couldn't load more posts. Try again.");
+    }
     finally {
       if (pageNum === 1) setLoading(false);
       else setIsLoadingMore(false);

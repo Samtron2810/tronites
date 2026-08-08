@@ -17,9 +17,7 @@ export const SocketProvider = ({ children }) => {
       const socketUrl = apiURL.replace("/api", "");
 
       const newSocket = io(socketUrl, {
-        query: {
-          userId: user._id,
-        },
+        withCredentials: true, // send the httpOnly JWT cookie so the server can authenticate the connection
         transports: ["websocket"], // Enforce WebSocket only
       });
 
@@ -31,6 +29,11 @@ export const SocketProvider = ({ children }) => {
 
       newSocket.on("disconnect", () => {
         setOnlineUsers([]);
+      });
+
+      // Auth failed (expired/invalid cookie) — surface it instead of silently hanging
+      newSocket.on("connect_error", (err) => {
+        console.error("Socket connection error:", err.message);
       });
 
       return () => {

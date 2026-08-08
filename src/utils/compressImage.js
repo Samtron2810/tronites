@@ -1,15 +1,35 @@
 /**
  * Compresses an image file to reduce upload size.
- * Resizes to max 1920px width/height and reduces quality to 0.7.
+ * Resizes to max `maxWidth` and re-encodes at `quality`.
  * Returns a compressed File object.
+ *
+ * Preserves transparency: PNG/WebP inputs stay PNG/WebP so alpha
+ * channels survive; only formats without alpha (e.g. JPEG) are
+ * re-encoded as JPEG. Forcing everything to JPEG previously flattened
+ * transparent PNGs onto a black background.
  */
-const compressImage = (file, maxWidth = 1920, quality = 0.7) => {
+const TRANSPARENT_FORMATS = new Set(["image/png", "image/webp"]);
+
+const compressImage = (
+  file,
+  { maxWidth = 1920, quality = 0.7, skipBelowBytes = 500 * 1024 } = {},
+) => {
   return new Promise((resolve, reject) => {
     // If file is small enough, skip compression
-    if (file.size < 500 * 1024) {
+    if (file.size < skipBelowBytes) {
       resolve(file);
       return;
     }
+
+    const outputType = TRANSPARENT_FORMATS.has(file.type)
+      ? file.type
+      : "image/jpeg";
+    const outputExt =
+      outputType === "image/png"
+        ? "png"
+        : outputType === "image/webp"
+          ? "webp"
+          : "jpg";
 
     const reader = new FileReader();
     reader.readAsDataURL(file);
@@ -42,13 +62,18 @@ const compressImage = (file, maxWidth = 1920, quality = 0.7) => {
               reject(new Error("Canvas toBlob failed"));
               return;
             }
-            const compressedFile = new File([blob], file.name, {
-              type: "image/jpeg",
-              lastModified: Date.now(),
-            });
+            const baseName = file.name.replace(/\.[^.]+$/, "");
+            const compressedFile = new File(
+              [blob],
+              `${baseName}.${outputExt}`,
+              {
+                type: outputType,
+                lastModified: Date.now(),
+              },
+            );
             resolve(compressedFile);
           },
-          "image/jpeg",
+          outputType,
           quality,
         );
       };

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { FaHeart, FaRegHeart, FaRegComment, FaTrash } from "react-icons/fa";
+import toast from "react-hot-toast";
 import api from "../services/api";
 import { useAuth } from "../context/AuthContext";
 import DeletePostModal from "./DeletePostModal";
@@ -42,7 +43,8 @@ const PostCard = ({
       const res = await api.get(`/comments/${postId}`);
       setComments(res.data);
     } catch (e) {
-      console.log(e);
+      console.error(e);
+      toast.error("Couldn't load comments. Try again.");
     } finally {
       setLoadingComments(false);
     }
@@ -55,7 +57,8 @@ const PostCard = ({
       await api.post(`/comments/${postId}`, { text: commentText });
       setCommentText("");
     } catch (e) {
-      console.log(e);
+      console.error(e);
+      toast.error("Couldn't post your comment. Try again.");
     } finally {
       setIsCommentSending(false);
     }
@@ -69,7 +72,8 @@ const PostCard = ({
       setComments((prev) => prev.filter((c) => c._id !== commentId));
       setCommentCount(res.data.commentCount ?? Math.max(commentCount - 1, 0));
     } catch (e) {
-      console.log(e);
+      console.error(e);
+      toast.error("Couldn't delete comment. Try again.");
     } finally {
       setCommentDeletingId(null);
     }
@@ -83,7 +87,8 @@ const PostCard = ({
       setLikeCount(res.data.likes);
       setLiked(res.data.liked);
     } catch (e) {
-      console.log(e);
+      console.error(e);
+      toast.error("Couldn't update like. Try again.");
     } finally {
       setIsLiking(false);
     }
@@ -95,7 +100,8 @@ const PostCard = ({
       setShowDeleteModal(false);
       if (onDelete) onDelete(postId);
     } catch (e) {
-      console.log(e);
+      console.error(e);
+      toast.error("Couldn't delete post. Try again.");
     }
   };
 

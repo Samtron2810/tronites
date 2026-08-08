@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 
 import Home from "./pages/Home";
 import Login from "./pages/Login";
@@ -9,19 +9,13 @@ import Chat from "./pages/Chat";
 import FollowersList from "./pages/FollowersList";
 import VerifyOtp from "./pages/VerifyOtp";
 import Notifications from "./pages/Notifications";
+import NotFound from "./pages/NotFound";
 
 import ProtectedRoute from "./components/ProtectedRoute";
 
 const AppContent = () => {
-  const location = useLocation();
-
-  // Display navbar on all pages except login and signup
-  // const showNavbar = !["/login", "/signup"].includes(location.pathname);
-
   return (
     <>
-      {/* {showNavbar && <Navbar />} */}
-
       <Routes>
         {/* Public */}
         <Route path="/login" element={<Login />} />
@@ -82,6 +76,9 @@ const AppContent = () => {
             </ProtectedRoute>
           }
         />
+
+        {/* Catch-all — must stay last */}
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </>
   );

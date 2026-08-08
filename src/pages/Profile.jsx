@@ -5,6 +5,7 @@ import toast from "react-hot-toast";
 import PostCard from "../components/PostCard";
 import ProfileSkeleton from "../components/ProfileSkeleton";
 import api from "../services/api";
+import compressImage from "../utils/compressImage";
 import { useAuth } from "../context/AuthContext";
 import { useSocket } from "../context/SocketContext";
 import { FiEdit2, FiMessageCircle, FiCamera } from "react-icons/fi";
@@ -30,7 +31,7 @@ const Profile = () => {
       setProfile(res.data.user);
       setPosts(res.data.posts);
       setIsFollowing(res.data.isFollowing);
-    } catch (e) { console.log(e); }
+    } catch (e) { console.error(e); }
   };
 
   useEffect(() => { fetchProfile(); }, [id]);
@@ -41,13 +42,20 @@ const Profile = () => {
     try {
       const res = await api.put(`/users/follow/${id}`);
       setIsFollowing(res.data.following);
+      // `profile.followers` is an array of populated { _id } objects (see
+      // getUserProfile), so keep the shape consistent instead of pushing
+      // a raw id string — mixed shapes would break anything downstream
+      // that expects follower._id to exist.
       setProfile((prev) => ({
         ...prev,
         followers: res.data.following
-          ? [...prev.followers, currentUser._id]
+          ? [...prev.followers, { _id: currentUser._id }]
           : prev.followers.filter((f) => (f._id || f).toString() !== currentUser._id.toString()),
       }));
-    } catch (e) { console.log(e); }
+    } catch (e) {
+      console.error(e);
+      toast.error("Couldn't update follow status. Try again.");
+    }
     finally { setIsFollowingLoading(false); }
   };
 
@@ -56,13 +64,23 @@ const Profile = () => {
     if (!file) return;
     try {
       setUploading(true);
+      // Avatars only ever render small — compress client-side so we don't
+      // ship full-resolution camera photos (up to 10MB) over the wire.
+      const compressed = await compressImage(file, {
+        maxWidth: 512,
+        quality: 0.8,
+        skipBelowBytes: 150 * 1024,
+      });
       const formData = new FormData();
-      formData.append("image", file);
+      formData.append("image", compressed);
       const res = await api.put("/users/profile-picture", formData);
       setProfile((prev) => ({ ...prev, profilePic: res.data.profilePic }));
       updateUser({ profilePic: res.data.profilePic });
       toast.success("Profile picture updated!");
-    } catch (e) { console.log(e); }
+    } catch (e) {
+      console.error(e);
+      toast.error("Failed to update profile picture.");
+    }
     finally { setUploading(false); }
   };
 
@@ -74,7 +92,10 @@ const Profile = () => {
       const res = await api.put("/users/bio", { bio: bioText });
       setProfile((prev) => ({ ...prev, bio: res.data.bio }));
       setEditingBio(false);
-    } catch (e) { console.log(e); }
+    } catch (e) {
+      console.error(e);
+      toast.error("Couldn't save bio. Try again.");
+    }
     finally { setIsSavingBio(false); }
   };
 

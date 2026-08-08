@@ -23,7 +23,7 @@ const FollowersList = () => {
       const res = await api.get(`/users/${endpoint}/${id}`);
       setUsers(res.data);
     } catch (error) {
-      console.log(error);
+      console.error(error);
       setUsers([]);
     } finally {
       setLoading(false);
@@ -35,7 +35,7 @@ const FollowersList = () => {
       const res = await api.get(`/users/profile/${id}`);
       setProfileName(res.data.user.name);
     } catch (error) {
-      console.log(error);
+      console.error(error);
     }
   };
 
