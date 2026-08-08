@@ -8,30 +8,24 @@ const CreatePost = ({ fetchPosts }) => {
 
   return (
     <>
-      {/* Create Box */}
-      <div className="bg-white rounded-2xl shadow-md p-5">
+      <div className="bg-white border border-stroke rounded-2xl p-4">
         <div className="flex items-center gap-3">
           <img
             src={user?.profilePic || "https://i.pravatar.cc/"}
             alt="profile"
-            className="w-12 h-12 rounded-full object-cover border"
+            className="w-10 h-10 rounded-full object-cover ring-2 ring-primary-100 shrink-0"
           />
-
           <button
             onClick={() => setOpenModal(true)}
-            className="flex-1 border border-gray-300 rounded-xl p-4 text-left text-gray-500 hover:border-blue-500 transition cursor-text"
+            className="flex-1 text-left px-4 py-2.5 rounded-xl border border-stroke text-ink-muted text-sm bg-surface hover:border-primary-400 hover:bg-primary-50 transition cursor-text"
           >
             What's on your mind?
           </button>
         </div>
       </div>
 
-      {/* Modal */}
       {openModal && (
-        <CreatePostModal
-          closeModal={() => setOpenModal(false)}
-          fetchPosts={fetchPosts}
-        />
+        <CreatePostModal closeModal={() => setOpenModal(false)} fetchPosts={fetchPosts} />
       )}
     </>
   );
