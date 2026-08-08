@@ -34,10 +34,10 @@ const ChatModal = ({
     : false;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
 
-      <div className="relative bg-white rounded-2xl shadow-lg w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
+      <div className="relative bg-white rounded-2xl shadow-lg w-full max-w-3xl max-h-[90vh] overflow-hidden overflow-x-hidden flex flex-col">
         <div className="flex items-center gap-3 px-4 py-3 border-b">
           <button
             onClick={onClose}
@@ -60,7 +60,7 @@ const ChatModal = ({
           )}
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden min-w-0 p-4 space-y-4">
           {threadLoading && (
             <div className="space-y-4 p-4 animate-pulse">
               {[1, 2, 3].map((i) => (
@@ -88,12 +88,14 @@ const ChatModal = ({
                 key={message._id}
                 className={`flex ${isMine ? "justify-end" : "justify-start"}`}
               >
-                <div className="flex flex-col max-w-[80%]">
+                <div
+                  className={`flex flex-col max-w-[80%] min-w-0 wrap-break-word`}
+                >
                   {message.image && (
                     <img
                       src={message.image}
                       alt="message"
-                      className={`rounded-2xl max-w-xs h-auto object-cover ${isMine ? "ml-auto" : ""}`}
+                      className={`rounded-2xl max-w-full h-auto object-cover ${isMine ? "ml-auto" : ""}`}
                     />
                   )}
                   {message.text && (
@@ -122,7 +124,7 @@ const ChatModal = ({
                     )}
                     {isMine && (
                       <span
-                        className={`text-xs ${message.read ? "text-blue-500" : "text-gray-400"}`}
+                        className={`text-xs ${message.read ? "text-primary-400" : "text-gray-400"}`}
                         title={message.read ? "Read" : "Sent"}
                       >
                         {message.read ? (
