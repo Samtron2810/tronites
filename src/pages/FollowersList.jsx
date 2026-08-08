@@ -55,7 +55,7 @@ const FollowersList = () => {
     <MainLayout>
       <div className="bg-white rounded-2xl shadow-md p-2">
         {/* centerized Header */}
-        <h4 className="text-xl font-bold text-gray-900 mb-6 text-center">
+        <h4 className="text-xl font-bold text-ink mb-6 text-center">
           {profileName}'s{" "}
           {activeTab === "followers" ? "Followers" : "Following"}
         </h4>
@@ -66,8 +66,8 @@ const FollowersList = () => {
             onClick={() => handleTabChange("followers")}
             className={`px-6 py-2 font-semibold transition border-b-2 ${
               activeTab === "followers"
-                ? "text-blue-600 border-blue-600"
-                : "text-gray-500 border-transparent hover:text-gray-700"
+                ? "text-primary-600 border-primary-600"
+                : "text-ink-muted border-transparent hover:text-ink"
             }`}
           >
             Followers
@@ -76,8 +76,8 @@ const FollowersList = () => {
             onClick={() => handleTabChange("following")}
             className={`px-6 py-2 font-semibold transition border-b-2 ${
               activeTab === "following"
-                ? "text-blue-600 border-blue-600"
-                : "text-gray-500 border-transparent hover:text-gray-700"
+                ? "text-primary-600 border-primary-600"
+                : "text-ink-muted border-transparent hover:text-ink"
             }`}
           >
             Following
@@ -96,20 +96,20 @@ const FollowersList = () => {
             users.map((user) => (
               <div
                 key={user._id}
-                className="flex items-center justify-between px-4 py-2 mb-1 bg-gray-50 rounded-lg hover:bg-gray-100 transition cursor-pointer"
+                className="flex items-center justify-between px-4 py-2 mb-1 border border-stroke rounded-lg hover:border-primary-200 transition cursor-pointer"
                 onClick={() => navigate(`/profile/${user._id}`)}
               >
                 <div className="flex items-center gap-4">
                   <img
                     src={user.profilePic || "https://i.pravatar.cc/"}
                     alt={user.name}
-                    className="w-14 h-14 rounded-full object-cover border"
+                    className="w-11 h-11 rounded-full object-cover ring-2 ring-primary-100"
                   />
-                  <div>
-                    <h3 className="text-lg font-bold text-gray-900">
+                  <div className="min-w-0">
+                    <h3 className="text-sm font-semibold text-ink truncate">
                       {user.name}
                     </h3>
-                    <p className="text-sm text-gray-600">
+                    <p className="text-xs text-ink-muted truncate">
                       {user.bio || "No bio yet."}
                     </p>
                   </div>
@@ -117,7 +117,9 @@ const FollowersList = () => {
               </div>
             ))
           ) : (
-            <p className="text-center text-gray-500 py-8">No {activeTab} yet</p>
+            <p className="text-center text-ink-muted py-8">
+              No {activeTab} yet
+            </p>
           )}
         </div>
       </div>
