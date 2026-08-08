@@ -13,141 +13,83 @@ const Home = () => {
   const [hasMore, setHasMore] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const observerTarget = useRef(null);
+  const { socket } = useSocket();
 
-  // Fetch Posts
   const fetchPosts = async (pageNum = 1) => {
     try {
       if (pageNum === 1) setLoading(true);
       else setIsLoadingMore(true);
-
       const res = await api.get(`/posts/feed?page=${pageNum}&limit=10`);
-
-      if (pageNum === 1) {
-        setPosts(res.data.posts);
-      } else {
-        setPosts((prev) => [...prev, ...res.data.posts]);
-      }
-
+      if (pageNum === 1) setPosts(res.data.posts);
+      else setPosts((prev) => [...prev, ...res.data.posts]);
       setHasMore(pageNum < res.data.totalPages);
       setPage(pageNum);
-    } catch (error) {
-      console.log(error);
-    } finally {
+    } catch (e) { console.log(e); }
+    finally {
       if (pageNum === 1) setLoading(false);
       else setIsLoadingMore(false);
     }
   };
 
-  // Infinite scroll observer
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
-        if (
-          entries[0].isIntersecting &&
-          hasMore &&
-          !isLoadingMore &&
-          !loading
-        ) {
+        if (entries[0].isIntersecting && hasMore && !isLoadingMore && !loading)
           fetchPosts(page + 1);
-        }
       },
-      { threshold: 0.1 },
+      { threshold: 0.1 }
     );
-
-    if (observerTarget.current) {
-      observer.observe(observerTarget.current);
-    }
-
-    return () => {
-      if (observerTarget.current) {
-        observer.unobserve(observerTarget.current);
-      }
-    };
+    if (observerTarget.current) observer.observe(observerTarget.current);
+    return () => { if (observerTarget.current) observer.unobserve(observerTarget.current); };
   }, [page, hasMore, isLoadingMore, loading]);
 
-  const { socket } = useSocket();
+  useEffect(() => { fetchPosts(1); }, []);
 
   useEffect(() => {
-    fetchPosts(1);
-  }, []);
-
-  useEffect(() => {
-    if (socket) {
-      const handleNewPost = (newPost) => {
-        // Prepend new post in followers' feeds in real-time (prevent duplicates)
-        setPosts((prev) => {
-          if (prev.some((p) => p._id === newPost._id)) return prev;
-          return [newPost, ...prev];
-        });
-      };
-
-      socket.on("newPost", handleNewPost);
-
-      return () => {
-        // Clean up socket listener
-        socket.off("newPost", handleNewPost);
-      };
-    }
+    if (!socket) return;
+    const handleNewPost = (newPost) => {
+      setPosts((prev) => prev.some((p) => p._id === newPost._id) ? prev : [newPost, ...prev]);
+    };
+    socket.on("newPost", handleNewPost);
+    return () => socket.off("newPost", handleNewPost);
   }, [socket]);
 
   return (
     <MainLayout>
-      <div className="space-y-6">
-        {/* Create Post */}
-        <CreatePost fetchPosts={fetchPosts} />
+      <div className="space-y-4">
+        <CreatePost fetchPosts={() => fetchPosts(1)} />
 
-        {/* Loading Skeletons */}
-        {loading && (
-          <>
-            <PostSkeleton />
-            <PostSkeleton />
-          </>
-        )}
+        {loading && <><PostSkeleton /><PostSkeleton /></>}
 
-        {/* Feed */}
-        {!loading &&
-          posts.map((post) => (
-            <PostCard
-              key={post._id}
-              postId={post._id}
-              userId={post.user._id}
-              name={post.user.name}
-              profilePic={post.user.profilePic}
-              time={new Date(post.createdAt).toLocaleString()}
-              text={post.text}
-              image={post.image}
-              likes={post.likes.length}
-              commentsCount={post.commentsCount}
-              isLiked={post.isLiked}
-              onDelete={(id) =>
-                setPosts((prev) => prev.filter((p) => p._id !== id))
-              }
-            />
-          ))}
+        {!loading && posts.map((post) => (
+          <PostCard
+            key={post._id}
+            postId={post._id}
+            userId={post.user._id}
+            name={post.user.name}
+            profilePic={post.user.profilePic}
+            time={new Date(post.createdAt).toLocaleString()}
+            text={post.text}
+            image={post.image}
+            likes={post.likes.length}
+            commentsCount={post.commentsCount}
+            isLiked={post.isLiked}
+            onDelete={(id) => setPosts((prev) => prev.filter((p) => p._id !== id))}
+          />
+        ))}
 
-        {/* Empty Feed */}
         {!loading && posts.length === 0 && (
-          <div className="bg-white rounded-2xl shadow-md p-8 text-center">
-            <h2 className="text-xl font-bold text-gray-800">
-              Your feed is empty
-            </h2>
-
-            <p className="text-gray-500 mt-2">
-              Follow users to start seeing posts.
-            </p>
+          <div className="bg-white border border-stroke rounded-2xl p-10 text-center">
+            <p className="text-2xl mb-2">👋</p>
+            <h2 className="text-base font-semibold text-ink">Your feed is empty</h2>
+            <p className="text-sm text-ink-muted mt-1">Follow users to start seeing posts.</p>
           </div>
         )}
 
-        {/* Load More Trigger */}
-        <div ref={observerTarget} className="py-8 text-center">
-          {isLoadingMore && (
-            <div className="space-y-6">
-              <PostSkeleton />
-              <PostSkeleton />
-            </div>
-          )}
+        <div ref={observerTarget} className="py-4 text-center">
+          {isLoadingMore && <><PostSkeleton /><PostSkeleton /></>}
           {!hasMore && posts.length > 0 && (
-            <p className="text-gray-400">No more posts to load</p>
+            <p className="text-xs text-ink-muted">You're all caught up</p>
           )}
         </div>
       </div>
