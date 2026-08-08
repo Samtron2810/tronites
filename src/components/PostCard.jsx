@@ -6,7 +6,19 @@ import { useAuth } from "../context/AuthContext";
 import DeletePostModal from "./DeletePostModal";
 import { useSocket } from "../context/SocketContext";
 
-const PostCard = ({ postId, userId, name, profilePic, time, text, image, likes, commentsCount, isLiked, onDelete }) => {
+const PostCard = ({
+  postId,
+  userId,
+  name,
+  profilePic,
+  time,
+  text,
+  image,
+  likes,
+  commentsCount,
+  isLiked,
+  onDelete,
+}) => {
   const { user: currentUser } = useAuth();
   const isOwner = currentUser?._id === userId;
 
@@ -29,8 +41,11 @@ const PostCard = ({ postId, userId, name, profilePic, time, text, image, likes, 
       setLoadingComments(true);
       const res = await api.get(`/comments/${postId}`);
       setComments(res.data);
-    } catch (e) { console.log(e); }
-    finally { setLoadingComments(false); }
+    } catch (e) {
+      console.log(e);
+    } finally {
+      setLoadingComments(false);
+    }
   };
 
   const handleAddComment = async () => {
@@ -39,8 +54,11 @@ const PostCard = ({ postId, userId, name, profilePic, time, text, image, likes, 
     try {
       await api.post(`/comments/${postId}`, { text: commentText });
       setCommentText("");
-    } catch (e) { console.log(e); }
-    finally { setIsCommentSending(false); }
+    } catch (e) {
+      console.log(e);
+    } finally {
+      setIsCommentSending(false);
+    }
   };
 
   const handleDeleteComment = async (commentId) => {
@@ -50,8 +68,11 @@ const PostCard = ({ postId, userId, name, profilePic, time, text, image, likes, 
       const res = await api.delete(`/comments/${commentId}`);
       setComments((prev) => prev.filter((c) => c._id !== commentId));
       setCommentCount(res.data.commentCount ?? Math.max(commentCount - 1, 0));
-    } catch (e) { console.log(e); }
-    finally { setCommentDeletingId(null); }
+    } catch (e) {
+      console.log(e);
+    } finally {
+      setCommentDeletingId(null);
+    }
   };
 
   const handleLike = async () => {
@@ -61,8 +82,11 @@ const PostCard = ({ postId, userId, name, profilePic, time, text, image, likes, 
       const res = await api.put(`/posts/like/${postId}`);
       setLikeCount(res.data.likes);
       setLiked(res.data.liked);
-    } catch (e) { console.log(e); }
-    finally { setIsLiking(false); }
+    } catch (e) {
+      console.log(e);
+    } finally {
+      setIsLiking(false);
+    }
   };
 
   const handleDeleteConfirm = async () => {
@@ -70,14 +94,26 @@ const PostCard = ({ postId, userId, name, profilePic, time, text, image, likes, 
       await api.delete(`/posts/${postId}`);
       setShowDeleteModal(false);
       if (onDelete) onDelete(postId);
-    } catch (e) { console.log(e); }
+    } catch (e) {
+      console.log(e);
+    }
   };
 
-  useEffect(() => { setLiked(isLiked); }, [isLiked]);
-  useEffect(() => { setLikeCount(likes); }, [likes]);
-  useEffect(() => { setCommentCount(commentsCount); }, [commentsCount]);
-  useEffect(() => { if (showComments) fetchComments(); }, [showComments]);
-  useEffect(() => { if (showComments) setVisibleCount(1); }, [showComments]);
+  useEffect(() => {
+    setLiked(isLiked);
+  }, [isLiked]);
+  useEffect(() => {
+    setLikeCount(likes);
+  }, [likes]);
+  useEffect(() => {
+    setCommentCount(commentsCount);
+  }, [commentsCount]);
+  useEffect(() => {
+    if (showComments) fetchComments();
+  }, [showComments]);
+  useEffect(() => {
+    if (showComments) setVisibleCount(1);
+  }, [showComments]);
 
   useEffect(() => {
     if (!socket || !postId) return;
@@ -85,12 +121,18 @@ const PostCard = ({ postId, userId, name, profilePic, time, text, image, likes, 
     const handleLikeUpdate = (data) => {
       if (data.postId !== postId) return;
       setLikeCount(data.likesCount);
-      setLiked(data.likes.some((id) => id.toString() === currentUser?._id?.toString()));
+      setLiked(
+        data.likes.some((id) => id.toString() === currentUser?._id?.toString()),
+      );
     };
     const handleNewComment = (data) => {
       if (data.postId !== postId) return;
       setCommentCount(data.commentCount);
-      setComments((prev) => prev.some((c) => c._id === data.comment._id) ? prev : [data.comment, ...prev]);
+      setComments((prev) =>
+        prev.some((c) => c._id === data.comment._id)
+          ? prev
+          : [data.comment, ...prev],
+      );
     };
     const handleCommentDeleted = (data) => {
       if (data.postId !== postId) return;
@@ -114,7 +156,10 @@ const PostCard = ({ postId, userId, name, profilePic, time, text, image, likes, 
   return (
     <>
       {showDeleteModal && (
-        <DeletePostModal onConfirm={handleDeleteConfirm} onCancel={() => setShowDeleteModal(false)} />
+        <DeletePostModal
+          onConfirm={handleDeleteConfirm}
+          onCancel={() => setShowDeleteModal(false)}
+        />
       )}
 
       <div className="bg-white border border-stroke rounded-2xl p-5 transition hover:shadow-sm">
@@ -127,7 +172,10 @@ const PostCard = ({ postId, userId, name, profilePic, time, text, image, likes, 
               className="w-10 h-10 rounded-full object-cover ring-2 ring-primary-100"
             />
             <div>
-              <Link to={`/profile/${userId}`} className="text-sm font-semibold text-ink hover:text-primary-600 transition">
+              <Link
+                to={`/profile/${userId}`}
+                className="text-sm font-semibold text-ink hover:text-primary-600 transition"
+              >
                 {name}
               </Link>
               <p className="text-xs text-ink-muted">{time}</p>
@@ -149,7 +197,11 @@ const PostCard = ({ postId, userId, name, profilePic, time, text, image, likes, 
 
         {/* Image */}
         {image && (
-          <img src={image} alt="post" className="mt-4 rounded-xl w-full max-h-80 object-cover" />
+          <img
+            src={image}
+            alt="post"
+            className="mt-4 rounded-xl w-full max-h-96 object-contain bg-surface"
+          />
         )}
 
         {/* Actions */}
@@ -158,8 +210,11 @@ const PostCard = ({ postId, userId, name, profilePic, time, text, image, likes, 
             onClick={handleLike}
             disabled={isLiking}
             className={`flex items-center gap-1.5 text-sm transition ${
-              isLiking ? "opacity-50 cursor-not-allowed" :
-              liked ? "text-red-500" : "text-ink-muted hover:text-red-500"
+              isLiking
+                ? "opacity-50 cursor-not-allowed"
+                : liked
+                  ? "text-red-500"
+                  : "text-ink-muted hover:text-red-500"
             }`}
           >
             {liked ? <FaHeart size={15} /> : <FaRegHeart size={15} />}
@@ -197,7 +252,9 @@ const PostCard = ({ postId, userId, name, profilePic, time, text, image, likes, 
 
             {/* Empty state */}
             {!loadingComments && comments.length === 0 && (
-              <p className="text-ink-muted text-xs text-center py-2">No comments yet. Be the first!</p>
+              <p className="text-ink-muted text-xs text-center py-2">
+                No comments yet. Be the first!
+              </p>
             )}
 
             {/* Comment list */}
@@ -205,7 +262,10 @@ const PostCard = ({ postId, userId, name, profilePic, time, text, image, likes, 
               {visibleComments.map((c) => (
                 <div key={c._id} className="bg-surface rounded-xl px-3 py-2">
                   <div className="flex items-center justify-between">
-                    <Link to={`/profile/${c.user._id}`} className="text-xs font-semibold text-ink hover:text-primary-600 transition">
+                    <Link
+                      to={`/profile/${c.user._id}`}
+                      className="text-xs font-semibold text-ink hover:text-primary-600 transition"
+                    >
                       {c.user.name}
                     </Link>
                     {c.user._id === currentUser?._id && (
@@ -224,12 +284,18 @@ const PostCard = ({ postId, userId, name, profilePic, time, text, image, likes, 
             </div>
 
             {hasMore && (
-              <button onClick={() => setVisibleCount((p) => p + 9)} className="text-xs text-primary-600 font-semibold hover:underline">
+              <button
+                onClick={() => setVisibleCount((p) => p + 9)}
+                className="text-xs text-primary-600 font-semibold hover:underline"
+              >
                 Show more comments
               </button>
             )}
 
-            <button onClick={() => setShowComments(false)} className="text-xs text-ink-muted hover:underline">
+            <button
+              onClick={() => setShowComments(false)}
+              className="text-xs text-ink-muted hover:underline"
+            >
               Hide comments
             </button>
           </div>
