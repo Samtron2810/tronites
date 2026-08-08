@@ -3,6 +3,7 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import api from "../services/api";
 import { useAuth } from "../context/AuthContext";
+import { FiMail, FiRefreshCw } from "react-icons/fi";
 
 const VerifyOtp = () => {
   const [searchParams] = useSearchParams();
@@ -10,26 +11,20 @@ const VerifyOtp = () => {
   const { getMe } = useAuth();
 
   const emailFromQuery = searchParams.get("email") || "";
-
   const [email, setEmail] = useState(emailFromQuery);
   const [otp, setOtp] = useState("");
   const [loading, setLoading] = useState(false);
   const [resendLoading, setResendLoading] = useState(false);
 
-  useEffect(() => {
-    setEmail(emailFromQuery);
-  }, [emailFromQuery]);
+  useEffect(() => { setEmail(emailFromQuery); }, [emailFromQuery]);
 
   const handleVerify = async () => {
     if (loading) return;
     setLoading(true);
     try {
       await api.post("/auth/verify-otp", { email, otp });
-
-      // refresh auth state
       await getMe();
-
-      toast.success("Verified — welcome!");
+      toast.success("Verified. Welcome!");
       navigate("/");
     } catch (error) {
       toast.error(error.response?.data?.message || "Verification failed");
@@ -52,32 +47,33 @@ const VerifyOtp = () => {
   };
 
   return (
-    <div className="min-h-screen bg-orange-400 flex items-center justify-center px-6">
-      <div className="bg-white w-full max-w-md rounded-2xl shadow-lg p-8">
-        <h1 className="text-2xl font-bold text-center mb-4">Verify OTP</h1>
-
-        <div className="space-y-4">
-          <div className="w-full border border-gray-300 rounded-lg p-3 bg-gray-50 text-gray-700">
-            <p className="text-sm text-gray-500">6-digit OTP sent to </p>
-            <p className="mt-1 text-base font-medium break-all">{email}</p>
+    <div className="min-h-screen bg-surface flex items-center justify-center px-6">
+      <div className="w-full max-w-sm">
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-primary-100 mb-4">
+            <FiMail className="text-primary-600 text-2xl" />
           </div>
+          <h2 className="text-2xl font-bold text-ink">Check your email</h2>
+          <p className="text-ink-muted text-sm mt-1">
+            We sent a 6-digit code to
+          </p>
+          <p className="text-ink font-semibold text-sm mt-0.5 break-all">{email}</p>
+        </div>
 
+        <div className="bg-white border border-stroke rounded-2xl p-6 shadow-sm space-y-4">
           <input
             type="text"
-            placeholder="6-digit OTP"
+            placeholder="Enter 6-digit OTP"
             value={otp}
             onChange={(e) => setOtp(e.target.value)}
-            className="w-full border border-gray-300 rounded-lg p-3 outline-none focus:border-blue-500"
+            maxLength={6}
+            className="w-full px-4 py-3 rounded-xl border border-stroke bg-surface text-ink text-sm tracking-widest text-center placeholder:tracking-normal placeholder:text-ink-muted outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100 transition"
           />
 
           <button
             onClick={handleVerify}
-            disabled={loading}
-            className={`w-full text-white font-semibold py-3 rounded-lg transition duration-200 ${
-              loading
-                ? "bg-blue-300 cursor-not-allowed opacity-70"
-                : "bg-blue-500 hover:bg-blue-600"
-            }`}
+            disabled={loading || otp.length < 6}
+            className="w-full bg-primary-600 hover:bg-primary-800 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-xl text-sm transition-all duration-200 shadow-sm"
           >
             {loading ? "Verifying..." : "Verify"}
           </button>
@@ -85,12 +81,9 @@ const VerifyOtp = () => {
           <button
             onClick={handleResend}
             disabled={resendLoading}
-            className={`w-full text-gray-700 border rounded-lg py-2 ${
-              resendLoading
-                ? "opacity-60 cursor-not-allowed"
-                : "hover:bg-gray-100"
-            }`}
+            className="w-full flex items-center justify-center gap-2 text-ink-sub border border-stroke rounded-xl py-2.5 text-sm font-medium hover:bg-surface transition disabled:opacity-50 disabled:cursor-not-allowed"
           >
+            <FiRefreshCw className={resendLoading ? "animate-spin" : ""} size={14} />
             {resendLoading ? "Resending..." : "Resend OTP"}
           </button>
         </div>

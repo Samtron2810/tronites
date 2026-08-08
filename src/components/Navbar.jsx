@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
 import logo from "../assets/tronite-logo.png";
 import {
@@ -6,12 +6,35 @@ import {
   FaCompass,
   FaUser,
   FaComments,
-  FaArrowLeft,
+  FaSignOutAlt,
 } from "react-icons/fa";
 import { useAuth } from "../context/AuthContext";
 import { useSocket } from "../context/SocketContext";
 import NotificationBell from "./NotificationBell";
 import api from "../services/api";
+
+const NavLink = ({ to, icon: Icon, label, badge }) => {
+  const { pathname } = useLocation();
+  const active = pathname === to;
+  return (
+    <Link
+      to={to}
+      className={`relative flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+        active
+          ? "bg-primary-100 text-primary-600"
+          : "text-ink-sub hover:text-ink hover:bg-primary-50"
+      }`}
+    >
+      <Icon className="text-base" />
+      <span className="hidden lg:inline">{label}</span>
+      {badge > 0 && (
+        <span className="absolute -top-1 -right-1 flex items-center justify-center min-w-4 h-4 rounded-full bg-primary-600 text-white text-xs font-bold px-1">
+          {badge}
+        </span>
+      )}
+    </Link>
+  );
+};
 
 const Navbar = () => {
   const { user, logout } = useAuth();
@@ -32,14 +55,9 @@ const Navbar = () => {
   const fetchUnreadCount = async () => {
     try {
       const res = await api.get("/messages/conversations");
-      const totalUnread = res.data.reduce(
-        (sum, conv) => sum + (conv.unreadCount || 0),
-        0,
-      );
-      setUnreadCount(totalUnread);
-    } catch (error) {
-      console.error("Fetch unread count failed:", error);
-    }
+      const total = res.data.reduce((sum, c) => sum + (c.unreadCount || 0), 0);
+      setUnreadCount(total);
+    } catch {}
   };
 
   useEffect(() => {
@@ -48,142 +66,57 @@ const Navbar = () => {
 
   useEffect(() => {
     if (!socket) return;
-
-    const handleReceiveMessage = (message) => {
-      if (message.receiver._id === user?._id) {
-        setUnreadCount((prev) => prev + 1);
-      }
+    const onMsg = (msg) => {
+      if (msg.receiver._id === user?._id) setUnreadCount((p) => p + 1);
     };
-
-    const handleMessageDeleted = () => {
-      fetchUnreadCount();
-    };
-
-    const handleMessagesRead = () => {
-      fetchUnreadCount();
-    };
-
-    socket.on("receiveMessage", handleReceiveMessage);
-    socket.on("messageDeleted", handleMessageDeleted);
-    socket.on("messagesRead", handleMessagesRead);
-
+    const onRefresh = () => fetchUnreadCount();
+    socket.on("receiveMessage", onMsg);
+    socket.on("messageDeleted", onRefresh);
+    socket.on("messagesRead", onRefresh);
     return () => {
-      socket.off("receiveMessage", handleReceiveMessage);
-      socket.off("messageDeleted", handleMessageDeleted);
-      socket.off("messagesRead", handleMessagesRead);
+      socket.off("receiveMessage", onMsg);
+      socket.off("messageDeleted", onRefresh);
+      socket.off("messagesRead", onRefresh);
     };
   }, [socket, user?._id]);
 
-  // Prevent crash while auth is loading
   if (!user) return null;
 
   return (
-    <nav className="bg-orange-300/80 backdrop-blur-md border-b border-orange-200 px-4 sm:px-6 py-2 sticky top-0 z-50">
-      <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-4">
-        {/* Logo */}
-        <Link to="/" className="min-w-0 shrink-0 flex items-center gap-3">
+    <nav className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-stroke">
+      <div className="mx-auto flex max-w-5xl items-center justify-between px-4 sm:px-6 h-14">
+        <Link to="/" className="flex items-center gap-2 shrink-0">
           <img
             src={logo}
-            alt="Tronites logo"
-            className="h-8 sm:h-10 md:h-12 w-auto object-contain"
+            alt="Tronites"
+            className="h-8 w-auto object-contain"
           />
-          <span className="font-extrabold text-gray-900 text-lg sm:text-2xl md:text-3xl hidden md:inline-block">
-            Tron<span className="text-blue-500">ites</span>
+          <span className="font-bold text-ink text-lg hidden sm:inline">
+            Tron<span className="text-primary-600">ites</span>
           </span>
         </Link>
 
-        {/* Desktop Links */}
-        <div className="hidden md:flex items-center gap-6">
-          <Link
-            to="/"
-            className="text-gray-800 hover:text-blue-500 font-medium"
-          >
-            <FaHome className="inline-block mr-1" />
-            Feed
-          </Link>
-          <Link
-            to="/explore"
-            className="text-gray-800 hover:text-blue-500 font-medium"
-          >
-            <FaCompass className="inline-block mr-1" />
-            Explore
-          </Link>
-          <Link
-            to={`/profile/${user._id}`}
-            className="text-gray-800 hover:text-blue-500 font-medium"
-          >
-            <FaUser className="inline-block mr-1" />
-            Profile
-          </Link>
-          <Link
+        <div className="flex items-center gap-1">
+          <NavLink to="/" icon={FaHome} label="Feed" />
+          <NavLink to="/explore" icon={FaCompass} label="Explore" />
+          <NavLink to={`/profile/${user._id}`} icon={FaUser} label="Profile" />
+          <NavLink
             to="/chat"
-            className="text-gray-800 hover:text-blue-500 font-medium relative"
-          >
-            <FaComments className="inline-block mr-1" />
-            Messages
-            {unreadCount > 0 && (
-              <span className="absolute -top-2 -right-4 inline-flex items-center justify-center min-w-5 h-5 rounded-full bg-red-500 text-white text-xs font-bold">
-                {unreadCount}
-              </span>
-            )}
-          </Link>
-
+            icon={FaComments}
+            label="Messages"
+            badge={unreadCount}
+          />
           <NotificationBell />
 
           <button
             onClick={handleLogout}
             disabled={isLoggingOut}
-            className={`flex items-center justify-center gap-3 text-white font-semibold px-4 py-2 rounded-lg transition duration-200 ${
-              isLoggingOut
-                ? "bg-red-400 cursor-not-allowed opacity-70"
-                : "bg-red-500 hover:bg-red-800"
-            }`}
+            className="ml-2 flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-ink-sub hover:text-red-600 hover:bg-red-50 transition-all duration-200 disabled:opacity-50"
           >
-            {isLoggingOut ? "Logging out..." : "Logout"} <FaUser />
-          </button>
-        </div>
-
-        {/* Mobile Icons */}
-        <div className="flex md:hidden items-center gap-4 text-xl overflow-x-auto whitespace-nowrap">
-          <Link to="/" className="text-gray-800 hover:text-blue-500">
-            <FaHome />
-          </Link>
-
-          <Link to="/explore" className="text-gray-800 hover:text-blue-500">
-            <FaCompass />
-          </Link>
-
-          <Link
-            to="/chat"
-            className="text-gray-800 hover:text-blue-500 relative"
-          >
-            <FaComments />
-            {unreadCount > 0 && (
-              <span className="absolute -top-3 -right-3 inline-flex items-center justify-center min-w-5 h-5 rounded-full bg-red-500 text-white text-xs font-bold">
-                {unreadCount}
-              </span>
-            )}
-          </Link>
-
-          <Link
-            to={`/profile/${user._id}`}
-            className="text-gray-800 hover:text-blue-500"
-          >
-            <FaUser />
-          </Link>
-
-          <NotificationBell />
-
-          <button
-            onClick={handleLogout}
-            disabled={isLoggingOut}
-            className={`flex items-center justify-center gap-3 text-white font-semibold px-4 py-2 rounded-lg transition duration-200 ${
-              isLoggingOut
-                ? "bg-red-400 cursor-not-allowed opacity-70"
-                : "bg-red-500 hover:bg-red-800"
-            }`}
-          >
-            <FaArrowLeft />
+            <FaSignOutAlt />
+            <span className="hidden lg:inline">
+              {isLoggingOut ? "Logging out..." : "Logout"}
+            </span>
           </button>
         </div>
       </div>

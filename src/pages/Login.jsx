@@ -1,51 +1,31 @@
 import { useEffect, useState } from "react";
-
 import { Link, useNavigate } from "react-router-dom";
-
 import toast from "react-hot-toast";
-
 import { useAuth } from "../context/AuthContext";
+import { FiMail, FiLock, FiEye, FiEyeOff } from "react-icons/fi";
 
 const Login = () => {
   const navigate = useNavigate();
-
   const { login, user, loading } = useAuth();
-
-  //show password functionality
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [formData, setFormData] = useState({ email: "", password: "" });
 
-  const [formData, setFormData] = useState({
-    email: "",
-    password: "",
-  });
-
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
-  };
+  const handleChange = (e) =>
+    setFormData({ ...formData, [e.target.name]: e.target.value });
 
   useEffect(() => {
-    if (!loading && user) {
-      navigate("/");
-    }
+    if (!loading && user) navigate("/");
   }, [loading, user, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (isLoading) return;
-
     setIsLoading(true);
     try {
       await login(formData);
-
-      toast.success("Login successful");
-
-      setTimeout(() => {
-        navigate("/");
-      }, 1000);
+      toast.success("Welcome back!");
+      setTimeout(() => navigate("/"), 800);
     } catch (error) {
       toast.error(error.response?.data?.message || "Login failed");
     } finally {
@@ -54,65 +34,89 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-orange-400 flex items-center justify-center px-6">
-      <div className="bg-white w-full max-w-md rounded-2xl shadow-lg p-8">
-        <h1 className="text-4xl font-extrabold text-center text-gray-900">
-          Tron<span className="text-blue-500">ites</span>
-        </h1>
+    <div className="min-h-screen bg-surface flex">
+      {/* Left panel */}
+      <div className="hidden lg:flex w-1/2 bg-primary-600 flex-col justify-between p-12">
+        <span className="text-white font-bold text-2xl tracking-tight">
+          Tron<span className="text-primary-200">ites</span>
+        </span>
+        <div>
+          <p className="text-primary-100 text-4xl font-bold leading-tight max-w-xs">
+            Connect with your community.
+          </p>
+          <p className="text-primary-200 mt-4 text-base leading-relaxed max-w-sm">
+            Share posts, follow people, and stay in the loop with what matters to you.
+          </p>
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-full bg-primary-400" />
+          <div className="w-8 h-8 rounded-full bg-primary-200" />
+          <div className="w-8 h-8 rounded-full bg-white/30" />
+        </div>
+      </div>
 
-        <p className="text-center text-gray-600 mt-2">
-          Welcome back to the community.
-        </p>
+      {/* Right panel */}
+      <div className="flex-1 flex items-center justify-center px-6 py-12">
+        <div className="w-full max-w-sm">
+          <div className="lg:hidden mb-8 text-center">
+            <span className="text-ink font-bold text-3xl">
+              Tron<span className="text-primary-600">ites</span>
+            </span>
+          </div>
 
-        <form onSubmit={handleSubmit} className="mt-8 space-y-4">
-          <input
-            type="email"
-            name="email"
-            placeholder="Email"
-            value={formData.email}
-            onChange={handleChange}
-            className="w-full border border-gray-300 rounded-lg p-3 outline-none focus:border-blue-500"
-          />
+          <h2 className="text-2xl font-bold text-ink mb-1">Sign in</h2>
+          <p className="text-ink-muted text-sm mb-8">Welcome back. Good to see you.</p>
 
-          <input
-            type={showPassword ? "text" : "password"}
-            name="password"
-            placeholder="Password"
-            value={formData.password}
-            onChange={handleChange}
-            className="w-full border border-gray-300 rounded-lg p-3 outline-none focus:border-blue-500"
-          />
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="relative">
+              <FiMail className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted text-sm" />
+              <input
+                type="email"
+                name="email"
+                placeholder="Email"
+                value={formData.email}
+                onChange={handleChange}
+                required
+                className="w-full pl-9 pr-4 py-3 rounded-xl border border-stroke bg-white text-ink text-sm placeholder:text-ink-muted outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100 transition"
+              />
+            </div>
 
-          <label className="flex items-center gap-2 text-gray-700">
-            <input
-              type="checkbox"
-              checked={showPassword}
-              onChange={() => setShowPassword(!showPassword)}
-            />
-            Show password
-          </label>
+            <div className="relative">
+              <FiLock className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted text-sm" />
+              <input
+                type={showPassword ? "text" : "password"}
+                name="password"
+                placeholder="Password"
+                value={formData.password}
+                onChange={handleChange}
+                required
+                className="w-full pl-9 pr-10 py-3 rounded-xl border border-stroke bg-white text-ink text-sm placeholder:text-ink-muted outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100 transition"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-muted hover:text-ink transition"
+              >
+                {showPassword ? <FiEyeOff size={15} /> : <FiEye size={15} />}
+              </button>
+            </div>
 
-          <button
-            disabled={isLoading}
-            className={`w-full text-white font-semibold py-3 rounded-lg transition duration-200 ${
-              isLoading
-                ? "bg-blue-300 cursor-not-allowed opacity-70"
-                : "bg-blue-500 hover:bg-blue-600"
-            }`}
-          >
-            {isLoading ? "Logging in..." : "Login"}
-          </button>
-        </form>
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full bg-primary-600 hover:bg-primary-800 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-xl text-sm transition-all duration-200 shadow-sm hover:shadow-md"
+            >
+              {isLoading ? "Signing in..." : "Sign in"}
+            </button>
+          </form>
 
-        <p className="text-center text-gray-700 mt-6">
-          Don’t have an account?{" "}
-          <Link
-            to="/signup"
-            className="text-blue-500 font-semibold hover:underline"
-          >
-            Sign Up
-          </Link>
-        </p>
+          <p className="text-center text-ink-muted text-sm mt-6">
+            No account?{" "}
+            <Link to="/signup" className="text-primary-600 font-semibold hover:underline">
+              Create one
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   );
