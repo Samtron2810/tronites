@@ -8,7 +8,7 @@ const ProtectedRoute = ({ children }) => {
   // Wait for auth check
   if (loading) {
     return (
-      <div className="min-h-screen bg-orange-400 animate-pulse">
+      <div className="min-h-screen bg-surface animate-pulse">
         <div className="max-w-2xl mx-auto px-4 py-6">
           <div className="bg-white rounded-2xl shadow-md p-5">
             <div className="flex items-center gap-3">

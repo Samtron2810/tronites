@@ -98,7 +98,7 @@ const ChatModal = ({
                   )}
                   {message.text && (
                     <div
-                      className={`w-fit px-4 py-3 rounded-2xl whitespace-pre-wrap ${isMine ? "bg-orange-500 text-white self-end" : "bg-gray-100 text-gray-900 self-start"}`}
+                      className={`w-fit px-4 py-3 rounded-2xl whitespace-pre-wrap ${isMine ? "bg-primary-600 text-white self-end" : "bg-gray-100 text-gray-900 self-start"}`}
                     >
                       {message.text}
                     </div>
@@ -174,7 +174,7 @@ const ChatModal = ({
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="text-orange-500 border-3 border-orange-500 hover:bg-orange-200 rounded-full p-3 text-xl transition"
+              className="text-primary-600 border-3 border-primary-600 hover:bg-primary-100 rounded-full p-3 text-xl transition"
               title="Attach image"
             >
               <FaImage />
@@ -191,7 +191,7 @@ const ChatModal = ({
               type="button"
               onClick={handleSendMessage}
               disabled={(!messageText.trim() && !imagePreview) || isSending}
-              className={`px-5 py-3 rounded-2xl font-semibold text-white transition ${(!messageText.trim() && !imagePreview) || isSending ? "bg-orange-300 cursor-not-allowed" : "bg-orange-500 hover:bg-orange-600"}`}
+              className={`px-5 py-3 rounded-2xl font-semibold text-white transition ${(!messageText.trim() && !imagePreview) || isSending ? "bg-primary-200 cursor-not-allowed" : "bg-primary-600 hover:bg-primary-800"}`}
             >
               {isSending ? "Sending..." : "Send"}
             </button>
