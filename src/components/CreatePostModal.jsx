@@ -37,6 +37,8 @@ const CreatePostModal = ({ closeModal, fetchPosts }) => {
     } catch (error) {
       if (error.code === "ECONNABORTED") {
         toast.error("Upload is taking longer than expected — check your feed in a moment.");
+      } else if (error?.response?.data?.code === "UPLOAD_LOST" || error?.response?.data?.code === "UPLOAD_FAILED") {
+        toast.error(error.response.data.message || "Image upload failed — please try again.");
       } else {
         toast.error(error?.response?.data?.message || error.message || "Failed to create post");
       }

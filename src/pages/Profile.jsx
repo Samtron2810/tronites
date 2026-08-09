@@ -79,7 +79,7 @@ const Profile = () => {
       toast.success("Profile picture updated!");
     } catch (e) {
       console.error(e);
-      toast.error("Failed to update profile picture.");
+      toast.error(e?.response?.data?.message || "Failed to update profile picture.");
     }
     finally { setUploading(false); }
   };
