@@ -27,8 +27,29 @@ export const SocketProvider = ({ children }) => {
         setOnlineUsers(users);
       });
 
-      newSocket.on("disconnect", () => {
-        setOnlineUsers([]);
+      // Self-heal: right after a (re)connect, explicitly ask the server
+      // for the current list instead of only waiting on the next
+      // connect/disconnect broadcast from someone else. Covers the
+      // case where this client missed a broadcast while its own
+      // connection was blipping.
+      newSocket.on("connect", () => {
+        newSocket.emit("getOnlineUsers:request");
+      });
+
+      // A disconnect here can be a real logout OR a transient network
+      // blip that socket.io will auto-reconnect from. Don't blank the
+      // list on every blip — that causes a visible "everyone offline"
+      // flash on flaky connections. Only clear when the disconnect
+      // won't be retried by socket.io itself.
+      newSocket.on("disconnect", (reason) => {
+        if (
+          reason === "io server disconnect" ||
+          reason === "io client disconnect"
+        ) {
+          setOnlineUsers([]);
+        }
+        // otherwise: socket.io is auto-reconnecting — keep the last
+        // known list until "connect" fires and requests a fresh one.
       });
 
       // Auth failed (expired/invalid cookie) — surface it instead of silently hanging
