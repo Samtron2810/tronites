@@ -1,4 +1,6 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { useAuth } from "./context/AuthContext";
+import Navbar from "./components/Navbar";
 
 import Home from "./pages/Home";
 import Login from "./pages/Login";
@@ -14,8 +16,10 @@ import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 const AppContent = () => {
+  const { user } = useAuth();
   return (
     <>
+      {user && <Navbar />}
       <Routes>
         {/* Public */}
         <Route path="/login" element={<Login />} />
