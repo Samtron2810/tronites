@@ -6,6 +6,7 @@ import { useAuth } from "../context/AuthContext";
 import { useSocket } from "../context/SocketContext";
 import ChatModal from "../components/ChatModal";
 import ChatSkeleton from "../components/ChatSkeleton";
+import { FaComment } from "react-icons/fa";
 import sfx from "../assets/sfx.mp3";
 
 const buildConversationId = (a, b) =>
@@ -417,7 +418,7 @@ const Chat = () => {
 
           {!loading && conversations.length === 0 && (
             <div className="py-16 text-center">
-              <p className="text-2xl mb-2">💬</p>
+              <FaComment className="text-2xl mb-2 mx-auto" />
               <p className="text-sm text-ink-muted">
                 No conversations yet. Open a profile to start messaging.
               </p>
