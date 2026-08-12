@@ -39,7 +39,9 @@ const Profile = () => {
       setPostsPage(1);
       setPostsHasMore(res.data.hasMore);
       setIsFollowing(res.data.isFollowing);
-    } catch (e) { console.error(e); }
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   const fetchMorePosts = async () => {
@@ -47,7 +49,9 @@ const Profile = () => {
     try {
       setIsLoadingMorePosts(true);
       const nextPage = postsPage + 1;
-      const res = await api.get(`/users/profile/${id}?page=${nextPage}&limit=12`);
+      const res = await api.get(
+        `/users/profile/${id}?page=${nextPage}&limit=12`,
+      );
       setPosts((prev) => [...prev, ...res.data.posts]);
       setPostsPage(nextPage);
       setPostsHasMore(res.data.hasMore);
@@ -59,17 +63,24 @@ const Profile = () => {
     }
   };
 
-  useEffect(() => { fetchProfile(); }, [id]);
+  useEffect(() => {
+    fetchProfile();
+  }, [id]);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && postsHasMore && !isLoadingMorePosts) fetchMorePosts();
+        if (entries[0].isIntersecting && postsHasMore && !isLoadingMorePosts)
+          fetchMorePosts();
       },
-      { threshold: 0.1 }
+      { threshold: 0.1 },
     );
-    if (postsObserverTarget.current) observer.observe(postsObserverTarget.current);
-    return () => { if (postsObserverTarget.current) observer.unobserve(postsObserverTarget.current); };
+    if (postsObserverTarget.current)
+      observer.observe(postsObserverTarget.current);
+    return () => {
+      if (postsObserverTarget.current)
+        observer.unobserve(postsObserverTarget.current);
+    };
   }, [postsPage, postsHasMore, isLoadingMorePosts, id]);
 
   const handleFollow = async () => {
@@ -86,13 +97,16 @@ const Profile = () => {
         ...prev,
         followers: res.data.following
           ? [...prev.followers, { _id: currentUser._id }]
-          : prev.followers.filter((f) => (f._id || f).toString() !== currentUser._id.toString()),
+          : prev.followers.filter(
+              (f) => (f._id || f).toString() !== currentUser._id.toString(),
+            ),
       }));
     } catch (e) {
       console.error(e);
       toast.error("Couldn't update follow status. Try again.");
+    } finally {
+      setIsFollowingLoading(false);
     }
-    finally { setIsFollowingLoading(false); }
   };
 
   const handleProfileUpload = async (e) => {
@@ -115,13 +129,19 @@ const Profile = () => {
       toast.success("Profile picture updated!");
     } catch (e) {
       console.error(e);
-      toast.error(e?.response?.data?.message || "Failed to update profile picture.");
+      toast.error(
+        e?.response?.data?.message || "Failed to update profile picture.",
+      );
+    } finally {
+      setUploading(false);
     }
-    finally { setUploading(false); }
   };
 
   const handleBioSave = async () => {
-    if (bioText.trim() === (profile.bio || "")) { setEditingBio(false); return; }
+    if (bioText.trim() === (profile.bio || "")) {
+      setEditingBio(false);
+      return;
+    }
     if (isSavingBio) return;
     setIsSavingBio(true);
     try {
@@ -131,8 +151,9 @@ const Profile = () => {
     } catch (e) {
       console.error(e);
       toast.error("Couldn't save bio. Try again.");
+    } finally {
+      setIsSavingBio(false);
     }
-    finally { setIsSavingBio(false); }
   };
 
   if (!currentUser) return <ProfileSkeleton />;
@@ -146,7 +167,7 @@ const Profile = () => {
       {/* Profile card */}
       <div className="bg-white border border-stroke rounded-2xl overflow-hidden">
         {/* Cover strip */}
-        <div className="h-24 bg-gradient-to-r from-primary-600 to-primary-400" />
+        <div className="h-24 bg-linear-to-r from-primary-600 to-primary-400" />
 
         <div className="px-6 pb-6">
           {/* Avatar row */}
@@ -157,19 +178,28 @@ const Profile = () => {
                 alt="profile"
                 className="w-20 h-20 rounded-2xl object-cover ring-4 ring-white shadow-sm"
               />
-              <span
-                className={`absolute bottom-1 right-1 block h-3 w-3 rounded-full border-2 border-white ${isOnline ? "bg-primary-400" : "bg-gray-300"}`}
-                title={isOnline ? "Online" : "Offline"}
-              />
+              {/* only show this if not own profile */}
+              {!isOwnProfile && (
+                <span
+                  className={`absolute bottom-1 right-1 block h-3 w-3 rounded-full border-2 border-white ${isOnline ? "bg-primary-400" : "bg-gray-300"}`}
+                  title={isOnline ? "Online" : "Offline"}
+                />
+              )}
               {isOwnProfile && (
                 <label className="absolute -bottom-1 -right-1 bg-primary-600 text-white rounded-lg p-1 cursor-pointer hover:bg-primary-800 transition shadow">
                   <FiCamera size={11} />
-                  <input type="file" accept="image/*" hidden onChange={handleProfileUpload} />
+                  <input
+                    type="file"
+                    accept="image/*"
+                    hidden
+                    onChange={handleProfileUpload}
+                  />
                 </label>
               )}
             </div>
 
             {/* Action buttons */}
+
             {!isOwnProfile && (
               <div className="flex gap-2 mt-10">
                 <button
@@ -181,7 +211,11 @@ const Profile = () => {
                       : "bg-primary-600 text-white hover:bg-primary-800"
                   }`}
                 >
-                  {isFollowingLoading ? "..." : isFollowing ? "Following" : "Follow"}
+                  {isFollowingLoading
+                    ? "..."
+                    : isFollowing
+                      ? "Following"
+                      : "Follow"}
                 </button>
                 <button
                   onClick={() => navigate(`/chat?user=${profile._id}`)}
@@ -222,10 +256,15 @@ const Profile = () => {
             </div>
           ) : (
             <div className="flex items-center gap-2 mt-1">
-              <p className="text-sm text-ink-sub">{profile.bio || "No bio yet."}</p>
+              <p className="text-sm text-ink-sub">
+                {profile.bio || "No bio yet."}
+              </p>
               {isOwnProfile && (
                 <button
-                  onClick={() => { setBioText(profile.bio || ""); setEditingBio(true); }}
+                  onClick={() => {
+                    setBioText(profile.bio || "");
+                    setEditingBio(true);
+                  }}
                   className="text-ink-muted hover:text-primary-600 transition"
                   title="Edit bio"
                 >
@@ -237,18 +276,23 @@ const Profile = () => {
 
           {/* Stats */}
           <div className="flex gap-5 mt-4 text-sm">
-            <span className="text-ink font-semibold">{totalPosts} <span className="text-ink-muted font-normal">Posts</span></span>
+            <span className="text-ink font-semibold">
+              {totalPosts}{" "}
+              <span className="text-ink-muted font-normal">Posts</span>
+            </span>
             <Link
               to={`/connections/${profile._id}?tab=followers`}
               className="text-ink font-semibold hover:text-primary-600 transition"
             >
-              {profile.followers.length} <span className="text-ink-muted font-normal">Followers</span>
+              {profile.followers.length}{" "}
+              <span className="text-ink-muted font-normal">Followers</span>
             </Link>
             <Link
               to={`/connections/${profile._id}?tab=following`}
               className="text-ink font-semibold hover:text-primary-600 transition"
             >
-              {profile.following.length} <span className="text-ink-muted font-normal">Following</span>
+              {profile.following.length}{" "}
+              <span className="text-ink-muted font-normal">Following</span>
             </Link>
           </div>
         </div>
@@ -273,7 +317,9 @@ const Profile = () => {
             image={post.image}
             likes={post.likes.length}
             commentsCount={post.commentsCount}
-            isLiked={post.likes.some((id) => id.toString() === currentUser?._id)}
+            isLiked={post.likes.some(
+              (id) => id.toString() === currentUser?._id,
+            )}
             onDelete={(id) => {
               setPosts((prev) => prev.filter((p) => p._id !== id));
               setTotalPosts((prev) => Math.max(prev - 1, 0));
@@ -282,7 +328,9 @@ const Profile = () => {
         ))}
         {postsHasMore && posts.length > 0 && (
           <div ref={postsObserverTarget} className="py-4 text-center">
-            {isLoadingMorePosts && <p className="text-xs text-ink-muted">Loading more posts...</p>}
+            {isLoadingMorePosts && (
+              <p className="text-xs text-ink-muted">Loading more posts...</p>
+            )}
           </div>
         )}
       </div>
