@@ -1,5 +1,3 @@
-@import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap");
-
 @import "tailwindcss";
 
 @theme {
@@ -15,5 +13,18 @@
   --color-ink-sub: #4e5955;
   --color-ink-muted: #7a8580;
   --color-stroke: #dfe6e3;
-  --font-sans: "DM Sans", "sans-serif";
+  --font-sans:
+    "DM Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  /* Preflight's `html { font-family: ... }` reads --default-font-family,
+     not --font-sans — without this, --font-sans only applies via the
+     `font-sans` utility class, which isn't used anywhere in this app.
+     Setting it here makes DM Sans the actual base font in every browser. */
+  --default-font-family: var(--font-sans);
+}
+
+@layer base {
+  body {
+    font-family: var(--font-sans);
+  }
 }

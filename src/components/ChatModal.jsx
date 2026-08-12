@@ -20,6 +20,10 @@ const ChatModal = ({
   isSending,
   fileInputRef,
   scrollRef,
+  messagesContainerRef,
+  onMessagesScroll,
+  isLoadingOlderMessages,
+  messagesHasMore,
 }) => {
   if (!isOpen || !selectedChat) return null;
   const activeUser = selectedChat.otherUser;
@@ -67,7 +71,17 @@ const ChatModal = ({
         </div>
 
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto overflow-x-hidden min-w-0 px-4 py-4 space-y-3 bg-surface">
+        <div
+          ref={messagesContainerRef}
+          onScroll={onMessagesScroll}
+          className="flex-1 overflow-y-auto overflow-x-hidden min-w-0 px-4 py-4 space-y-3 bg-surface"
+        >
+          {isLoadingOlderMessages && (
+            <p className="text-center text-[11px] text-ink-muted py-1">Loading older messages...</p>
+          )}
+          {!threadLoading && !isLoadingOlderMessages && !messagesHasMore && messages.length > 0 && (
+            <p className="text-center text-[11px] text-ink-muted py-1">Start of conversation</p>
+          )}
           {threadLoading && (
             <div className="space-y-3 animate-pulse">
               {[1, 2, 3].map((i) => (

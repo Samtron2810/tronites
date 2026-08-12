@@ -54,8 +54,13 @@ const Navbar = () => {
 
   const fetchUnreadCount = async () => {
     try {
-      const res = await api.get("/messages/conversations");
-      const total = res.data.reduce((sum, c) => sum + (c.unreadCount || 0), 0);
+      // Note: sums unread across the first 50 conversations only. A
+      // user with more active threads than that would need a dedicated
+      // unread-count endpoint for a fully accurate badge.
+      const res = await api.get("/messages/conversations", {
+        params: { page: 1, limit: 50 },
+      });
+      const total = res.data.conversations.reduce((sum, c) => sum + (c.unreadCount || 0), 0);
       setUnreadCount(total);
     } catch {}
   };

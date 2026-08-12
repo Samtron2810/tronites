@@ -15,9 +15,19 @@ const Chat = () => {
   const { user } = useAuth();
   const { socket, onlineUsers } = useSocket();
   const audioRef = useRef(null);
+  const audioUnlockedRef = useRef(false);
+  const lastSoundPlayedAtRef = useRef(0);
   const [conversations, setConversations] = useState([]);
+  const [conversationsPage, setConversationsPage] = useState(1);
+  const [conversationsHasMore, setConversationsHasMore] = useState(false);
+  const [totalConversationsCount, setTotalConversationsCount] = useState(0);
+  const [isLoadingMoreConversations, setIsLoadingMoreConversations] =
+    useState(false);
   const [selectedChat, setSelectedChat] = useState(null);
   const [messages, setMessages] = useState([]);
+  const [messagesPage, setMessagesPage] = useState(1);
+  const [messagesHasMore, setMessagesHasMore] = useState(false);
+  const [isLoadingOlderMessages, setIsLoadingOlderMessages] = useState(false);
   const [messageText, setMessageText] = useState("");
   const [loading, setLoading] = useState(false);
   const [threadLoading, setThreadLoading] = useState(false);
@@ -27,16 +37,26 @@ const Chat = () => {
   const fileInputRef = useRef(null);
   const [searchParams] = useSearchParams();
   const scrollRef = useRef(null);
+  const messagesContainerRef = useRef(null);
+  const conversationsObserverTarget = useRef(null);
   const hasScrolledToBottom = useRef(false);
+  const isPrependingOlder = useRef(false);
 
   const fetchConversations = async () => {
     try {
       setLoading(true);
-      const res = await api.get("/messages/conversations");
-      setConversations(res.data);
+      const res = await api.get("/messages/conversations", {
+        params: { page: 1, limit: 20 },
+      });
+      setConversations(res.data.conversations);
+      setConversationsPage(1);
+      setConversationsHasMore(res.data.hasMore);
+      setTotalConversationsCount(res.data.totalConversations);
       const urlUserId = searchParams.get("user");
       if (urlUserId) {
-        const existing = res.data.find((c) => c.otherUser._id === urlUserId);
+        const existing = res.data.conversations.find(
+          (c) => c.otherUser._id === urlUserId,
+        );
         if (existing) {
           loadConversation(existing.otherUser);
           return;
@@ -58,6 +78,24 @@ const Chat = () => {
     }
   };
 
+  const fetchMoreConversations = async () => {
+    if (isLoadingMoreConversations || !conversationsHasMore) return;
+    try {
+      setIsLoadingMoreConversations(true);
+      const nextPage = conversationsPage + 1;
+      const res = await api.get("/messages/conversations", {
+        params: { page: nextPage, limit: 20 },
+      });
+      setConversations((prev) => [...prev, ...res.data.conversations]);
+      setConversationsPage(nextPage);
+      setConversationsHasMore(res.data.hasMore);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsLoadingMoreConversations(false);
+    }
+  };
+
   const loadConversation = async (otherUser) => {
     try {
       setThreadLoading(true);
@@ -66,16 +104,75 @@ const Chat = () => {
         params: { page: 1, limit: 30 },
       });
       setMessages(res.data.messages);
+      setMessagesPage(1);
+      setMessagesHasMore(res.data.hasMore);
       setSelectedChat({
         otherUser,
         conversationId: buildConversationId(user._id, otherUser._id),
       });
-      const convsRes = await api.get("/messages/conversations");
-      setConversations(convsRes.data);
+      // Refresh just the first page (for updated unread counts/order),
+      // then merge with whatever's already loaded via "load more" so we
+      // don't lose conversations further down the list.
+      const convsRes = await api.get("/messages/conversations", {
+        params: { page: 1, limit: 20 },
+      });
+      setConversations((prev) => {
+        const freshIds = new Set(
+          convsRes.data.conversations.map((c) => c.conversationId),
+        );
+        const rest = prev.filter((c) => !freshIds.has(c.conversationId));
+        return [...convsRes.data.conversations, ...rest];
+      });
+      setConversationsPage(1);
+      setConversationsHasMore(convsRes.data.hasMore);
+      setTotalConversationsCount(convsRes.data.totalConversations);
     } catch (e) {
       console.error(e);
     } finally {
       setThreadLoading(false);
+    }
+  };
+
+  const loadOlderMessages = async () => {
+    if (isLoadingOlderMessages || !messagesHasMore || !selectedChat) return;
+    const container = messagesContainerRef.current;
+    const prevScrollHeight = container?.scrollHeight || 0;
+    isPrependingOlder.current = true;
+    try {
+      setIsLoadingOlderMessages(true);
+      const nextPage = messagesPage + 1;
+      const res = await api.get(`/messages/${selectedChat.otherUser._id}`, {
+        params: { page: nextPage, limit: 30 },
+      });
+      setMessages((prev) => [...res.data.messages, ...prev]);
+      setMessagesPage(nextPage);
+      setMessagesHasMore(res.data.hasMore);
+      // Restore scroll position so prepending older messages doesn't
+      // jump the view — wait a tick for the DOM to grow first.
+      requestAnimationFrame(() => {
+        if (container) {
+          const newScrollHeight = container.scrollHeight;
+          container.scrollTop = newScrollHeight - prevScrollHeight;
+        }
+        isPrependingOlder.current = false;
+      });
+    } catch (e) {
+      console.error(e);
+      isPrependingOlder.current = false;
+    } finally {
+      setIsLoadingOlderMessages(false);
+    }
+  };
+
+  const handleMessagesScroll = () => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+    if (
+      container.scrollTop < 60 &&
+      messagesHasMore &&
+      !isLoadingOlderMessages
+    ) {
+      loadOlderMessages();
     }
   };
 
@@ -154,15 +251,102 @@ const Chat = () => {
     }
   };
 
+  // --- Notification sound setup ---
+  // Chrome (and Firefox/Safari to varying degrees) block audio.play()
+  // until the page has received a real user gesture (click, tap, or
+  // keypress). The old code called play() directly inside the socket
+  // handler, which isn't a user gesture, so Chrome silently rejected it.
+  // Edge is more lenient about this, which is why it "worked" there.
+  //
+  // Fix: play a muted, volume-0 primer on the first user gesture. This
+  // satisfies the browser's gesture requirement and marks the element as
+  // allowed to autoplay for the rest of the session — no Web Audio API
+  // or AudioContext needed for a simple one-shot ping.
   useEffect(() => {
     audioRef.current = new Audio(sfx);
     audioRef.current.preload = "auto";
-    audioRef.current.volume = 0.7;
+    audioRef.current.volume = 0.35;
+
+    const unlockAudio = () => {
+      if (audioUnlockedRef.current || !audioRef.current) return;
+      const el = audioRef.current;
+      const originalVolume = el.volume;
+      el.volume = 0;
+      el.play()
+        .then(() => {
+          el.pause();
+          el.currentTime = 0;
+          el.volume = originalVolume;
+          audioUnlockedRef.current = true;
+        })
+        .catch(() => {
+          // Still blocked (e.g. no gesture registered yet) — restore
+          // volume and try again on the next gesture.
+          el.volume = originalVolume;
+        });
+    };
+
+    window.addEventListener("click", unlockAudio);
+    window.addEventListener("touchstart", unlockAudio);
+    window.addEventListener("keydown", unlockAudio);
+
+    return () => {
+      window.removeEventListener("click", unlockAudio);
+      window.removeEventListener("touchstart", unlockAudio);
+      window.removeEventListener("keydown", unlockAudio);
+    };
   }, []);
+
+  const playMessageSound = () => {
+    if (!audioRef.current) return;
+    // Guard against the same sound firing twice within a short window
+    // (e.g. StrictMode's dev-only double-effect mount, or a stray
+    // duplicate socket event) — only allow one play per ~400ms.
+    const now = Date.now();
+    if (now - lastSoundPlayedAtRef.current < 400) return;
+    lastSoundPlayedAtRef.current = now;
+
+    audioRef.current.currentTime = 0;
+    // play() returns a Promise that rejects if the browser blocks it —
+    // must be handled or Chrome logs an "unhandled promise rejection"
+    // and the old `void` didn't actually catch anything.
+    audioRef.current.play().catch((err) => {
+      // Expected before the first user gesture unlocks audio; safe to
+      // ignore otherwise (e.g. tab not focused).
+      console.debug("Message sound blocked:", err?.message || err);
+    });
+  };
 
   useEffect(() => {
     fetchConversations();
   }, []);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (
+          entries[0].isIntersecting &&
+          conversationsHasMore &&
+          !isLoadingMoreConversations &&
+          !loading
+        ) {
+          fetchMoreConversations();
+        }
+      },
+      { threshold: 0.1 },
+    );
+    if (conversationsObserverTarget.current)
+      observer.observe(conversationsObserverTarget.current);
+    return () => {
+      if (conversationsObserverTarget.current)
+        observer.unobserve(conversationsObserverTarget.current);
+    };
+  }, [
+    conversationsPage,
+    conversationsHasMore,
+    isLoadingMoreConversations,
+    loading,
+  ]);
 
   useEffect(() => {
     if (!socket) return;
@@ -172,14 +356,7 @@ const Chat = () => {
         selectedChat?.otherUser?._id === message.receiver._id;
       if (inCurrent && message.sender._id !== user._id) {
         setMessages((prev) => [...prev, message]);
-        try {
-          if (audioRef.current) {
-            audioRef.current.currentTime = 0;
-            void audioRef.current.play();
-          }
-        } catch (error) {
-          // Ignore play failures due to browser autoplay restrictions.
-        }
+        playMessageSound();
       }
       updateConversationPreview(message, message.receiver._id === user._id);
     };
@@ -210,6 +387,9 @@ const Chat = () => {
 
   useEffect(() => {
     if (!scrollRef.current) return;
+    // Don't auto-scroll to bottom when older messages were just prepended
+    // via loadOlderMessages — that has its own scroll-position restore.
+    if (isPrependingOlder.current) return;
     scrollRef.current.scrollIntoView({
       behavior: hasScrolledToBottom.current ? "smooth" : "auto",
     });
@@ -227,7 +407,7 @@ const Chat = () => {
         <div className="px-5 py-4 border-b border-stroke flex items-center justify-between">
           <h2 className="text-base font-semibold text-ink">Messages</h2>
           <span className="text-xs text-ink-muted">
-            {conversations.length} chats
+            {totalConversationsCount} chats
           </span>
         </div>
 
@@ -289,6 +469,13 @@ const Chat = () => {
                 </button>
               );
             })}
+          {!loading && conversationsHasMore && conversations.length > 0 && (
+            <div ref={conversationsObserverTarget} className="py-4 text-center">
+              {isLoadingMoreConversations && (
+                <p className="text-xs text-ink-muted">Loading more chats...</p>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
@@ -312,6 +499,10 @@ const Chat = () => {
           isSending={isSending}
           fileInputRef={fileInputRef}
           scrollRef={scrollRef}
+          messagesContainerRef={messagesContainerRef}
+          onMessagesScroll={handleMessagesScroll}
+          isLoadingOlderMessages={isLoadingOlderMessages}
+          messagesHasMore={messagesHasMore}
         />
       )}
     </MainLayout>

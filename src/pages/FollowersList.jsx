@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams, useSearchParams, useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
 import MainLayout from "../layouts/MainLayout";
 import UserCardSkeleton from "../components/UserCardSkeleton";
 import api from "../services/api";
@@ -14,19 +15,35 @@ const FollowersList = () => {
   const activeTab = searchParams.get("tab") || "followers";
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
   const [profileName, setProfileName] = useState("");
+  const observerTarget = useRef(null);
 
-  const fetchConnectionsList = async () => {
-    setLoading(true);
+  const fetchConnectionsList = async (pageNum = 1) => {
     try {
+      if (pageNum === 1) setLoading(true);
+      else setIsLoadingMore(true);
+
       const endpoint = activeTab === "followers" ? "followers" : "following";
-      const res = await api.get(`/users/${endpoint}/${id}`);
-      setUsers(res.data);
+      const res = await api.get(`/users/${endpoint}/${id}`, {
+        params: { page: pageNum, limit: 20 },
+      });
+      const list = activeTab === "followers" ? res.data.followers : res.data.following;
+
+      if (pageNum === 1) setUsers(list);
+      else setUsers((prev) => [...prev, ...list]);
+
+      setHasMore(res.data.hasMore);
+      setPage(pageNum);
     } catch (error) {
       console.error(error);
-      setUsers([]);
+      if (pageNum === 1) setUsers([]);
+      else toast.error("Couldn't load more. Try again.");
     } finally {
-      setLoading(false);
+      if (pageNum === 1) setLoading(false);
+      else setIsLoadingMore(false);
     }
   };
 
@@ -44,8 +61,21 @@ const FollowersList = () => {
   }, [id]);
 
   useEffect(() => {
-    fetchConnectionsList();
+    fetchConnectionsList(1);
   }, [id, activeTab]);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !isLoadingMore && !loading) {
+          fetchConnectionsList(page + 1);
+        }
+      },
+      { threshold: 0.1 }
+    );
+    if (observerTarget.current) observer.observe(observerTarget.current);
+    return () => { if (observerTarget.current) observer.unobserve(observerTarget.current); };
+  }, [page, hasMore, isLoadingMore, loading, id, activeTab]);
 
   const handleTabChange = (tab) => {
     setSearchParams({ tab });
@@ -93,29 +123,36 @@ const FollowersList = () => {
               <UserCardSkeleton />
             </>
           ) : users.length > 0 ? (
-            users.map((user) => (
-              <div
-                key={user._id}
-                className="flex items-center justify-between px-4 py-2 mb-1 border border-stroke rounded-lg hover:border-primary-200 transition cursor-pointer"
-                onClick={() => navigate(`/profile/${user._id}`)}
-              >
-                <div className="flex items-center gap-4">
-                  <img
-                    src={user.profilePic || "https://i.pravatar.cc/"}
-                    alt={user.name}
-                    className="w-11 h-11 rounded-full object-cover ring-2 ring-primary-100"
-                  />
-                  <div className="min-w-0">
-                    <h3 className="text-sm font-semibold text-ink truncate">
-                      {user.name}
-                    </h3>
-                    <p className="text-xs text-ink-muted truncate">
-                      {user.bio || "No bio yet."}
-                    </p>
+            <>
+              {users.map((user) => (
+                <div
+                  key={user._id}
+                  className="flex items-center justify-between px-4 py-2 mb-1 border border-stroke rounded-lg hover:border-primary-200 transition cursor-pointer"
+                  onClick={() => navigate(`/profile/${user._id}`)}
+                >
+                  <div className="flex items-center gap-4">
+                    <img
+                      src={user.profilePic || "https://i.pravatar.cc/"}
+                      alt={user.name}
+                      className="w-11 h-11 rounded-full object-cover ring-2 ring-primary-100"
+                    />
+                    <div className="min-w-0">
+                      <h3 className="text-sm font-semibold text-ink truncate">
+                        {user.name}
+                      </h3>
+                      <p className="text-xs text-ink-muted truncate">
+                        {user.bio || "No bio yet."}
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))
+              ))}
+              {hasMore && (
+                <div ref={observerTarget} className="py-4 text-center">
+                  {isLoadingMore && <p className="text-xs text-ink-muted">Loading more...</p>}
+                </div>
+              )}
+            </>
           ) : (
             <p className="text-center text-ink-muted py-8">
               No {activeTab} yet

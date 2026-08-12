@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
 import MainLayout from "../layouts/MainLayout";
@@ -13,29 +13,60 @@ const Explore = () => {
   const { onlineUsers } = useSocket();
   const [search, setSearch] = useState("");
   const [users, setUsers] = useState([]);
-  const [suggestedUsers, setSuggestedUsers] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
   const [followingId, setFollowingId] = useState(null);
+  const observerTarget = useRef(null);
 
-  const fetchUsers = async (query) => {
+  const fetchUsers = async (query, pageNum = 1) => {
     try {
-      setLoading(true);
-      const res = await api.get(`/users/search?q=${encodeURIComponent(query)}`);
-      setUsers(res.data);
-      if (query.trim().length === 0) setSuggestedUsers(res.data);
-    } catch (e) { console.error(e); }
-    finally { setLoading(false); }
+      if (pageNum === 1) setLoading(true);
+      else setIsLoadingMore(true);
+
+      const res = await api.get(`/users/search`, {
+        params: { q: query, page: pageNum, limit: 10 },
+      });
+
+      if (pageNum === 1) setUsers(res.data.users);
+      else setUsers((prev) => [...prev, ...res.data.users]);
+
+      setHasMore(res.data.hasMore);
+      setPage(pageNum);
+    } catch (e) {
+      console.error(e);
+      if (pageNum > 1) toast.error("Couldn't load more users. Try again.");
+    } finally {
+      if (pageNum === 1) setLoading(false);
+      else setIsLoadingMore(false);
+    }
   };
 
   useEffect(() => {
     const trimmed = search.trim();
-    if (trimmed.length === 0) { setUsers(suggestedUsers); setLoading(false); return; }
-    if (trimmed.length < 2) { setUsers([]); setLoading(false); return; }
-    const t = window.setTimeout(() => fetchUsers(trimmed), 400);
+    if (trimmed.length > 0 && trimmed.length < 2) {
+      setUsers([]);
+      setHasMore(false);
+      setLoading(false);
+      return;
+    }
+    const t = window.setTimeout(() => fetchUsers(trimmed, 1), trimmed.length === 0 ? 0 : 400);
     return () => window.clearTimeout(t);
-  }, [search, suggestedUsers]);
+  }, [search]);
 
-  useEffect(() => { fetchUsers(""); }, []);
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !isLoadingMore && !loading) {
+          fetchUsers(search.trim(), page + 1);
+        }
+      },
+      { threshold: 0.1 }
+    );
+    if (observerTarget.current) observer.observe(observerTarget.current);
+    return () => { if (observerTarget.current) observer.unobserve(observerTarget.current); };
+  }, [page, hasMore, isLoadingMore, loading, search]);
 
   const handleFollow = async (userId) => {
     if (followingId) return;
@@ -79,7 +110,7 @@ const Explore = () => {
         </div>
 
         {/* Hint */}
-        {!loading && !search.trim() && suggestedUsers.length > 0 && (
+        {!loading && !search.trim() && users.length > 0 && (
           <p className="text-xs text-ink-muted px-1">Suggested users</p>
         )}
         {!loading && search.trim().length > 0 && search.trim().length < 2 && (
@@ -130,6 +161,12 @@ const Explore = () => {
             </div>
           );
         })}
+
+        {!loading && hasMore && users.length > 0 && (
+          <div ref={observerTarget} className="py-4 text-center">
+            {isLoadingMore && <p className="text-xs text-ink-muted">Loading more...</p>}
+          </div>
+        )}
       </div>
     </MainLayout>
   );
