@@ -4,31 +4,57 @@ import api from "../services/api";
 import compressImage from "../utils/compressImage";
 import { FiX, FiImage } from "react-icons/fi";
 
+const MAX_IMAGES = 4;
+
 const CreatePostModal = ({ closeModal, fetchPosts }) => {
   const [text, setText] = useState("");
-  const [image, setImage] = useState(null);
-  const [preview, setPreview] = useState("");
+  const [images, setImages] = useState([]); // File[]
+  const [previews, setPreviews] = useState([]); // objectURL[]
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleImage = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    setImage(file);
-    setPreview(URL.createObjectURL(file));
+  const handleImages = (e) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+
+    const room = MAX_IMAGES - images.length;
+    if (room <= 0) {
+      toast.error(`You can add up to ${MAX_IMAGES} images`);
+      e.target.value = "";
+      return;
+    }
+    const accepted = files.slice(0, room);
+    if (files.length > room) {
+      toast.error(`Only ${room} more image${room === 1 ? "" : "s"} allowed`);
+    }
+
+    setImages((prev) => [...prev, ...accepted]);
+    setPreviews((prev) => [
+      ...prev,
+      ...accepted.map((f) => URL.createObjectURL(f)),
+    ]);
+    e.target.value = "";
   };
 
-  const removeImage = () => { setImage(null); setPreview(""); };
+  const removeImage = (index) => {
+    setPreviews((prev) => {
+      URL.revokeObjectURL(prev[index]);
+      return prev.filter((_, i) => i !== index);
+    });
+    setImages((prev) => prev.filter((_, i) => i !== index));
+  };
 
   const handleSubmit = async () => {
-    if (!text.trim()) return toast.error("Post cannot be empty");
+    if (!text.trim() && images.length === 0) {
+      return toast.error("Post cannot be empty");
+    }
     if (isSubmitting) return;
     setIsSubmitting(true);
     try {
       const formData = new FormData();
-      formData.append("text", text);
-      if (image) {
-        const compressed = await compressImage(image);
-        formData.append("image", compressed);
+      if (text.trim()) formData.append("text", text);
+      if (images.length) {
+        const compressed = await Promise.all(images.map(compressImage));
+        compressed.forEach((file) => formData.append("images", file));
       }
       await api.post("/posts", formData);
       toast.success("Post created!");
@@ -46,6 +72,8 @@ const CreatePostModal = ({ closeModal, fetchPosts }) => {
       setIsSubmitting(false);
     }
   };
+
+  const gridClass = previews.length === 1 ? "grid-cols-1" : "grid-cols-2";
 
   return (
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 px-4">
@@ -74,31 +102,50 @@ const CreatePostModal = ({ closeModal, fetchPosts }) => {
             </span>
           </div>
 
-          {/* Image preview */}
-          {preview && (
-            <div className="relative inline-block">
-              <img src={preview} alt="preview" className="rounded-xl max-h-52 object-cover" />
-              <button
-                onClick={removeImage}
-                className="absolute top-2 right-2 bg-black/50 text-white rounded-full p-1 hover:bg-black/70 transition"
-              >
-                <FiX size={12} />
-              </button>
+          {/* Image previews — carousel grid */}
+          {previews.length > 0 && (
+            <div className={`grid ${gridClass} gap-2`}>
+              {previews.map((src, i) => (
+                <div key={src} className="relative rounded-xl overflow-hidden bg-surface">
+                  <img src={src} alt={`preview-${i}`} className="w-full h-40 object-cover" />
+                  <button
+                    onClick={() => removeImage(i)}
+                    className="absolute top-2 right-2 bg-black/50 text-white rounded-full p-1 hover:bg-black/70 transition"
+                  >
+                    <FiX size={12} />
+                  </button>
+                </div>
+              ))}
             </div>
           )}
         </div>
 
         {/* Footer */}
         <div className="flex items-center justify-between px-5 py-4 border-t border-stroke">
-          <label className="flex items-center gap-2 text-sm text-primary-600 font-medium cursor-pointer hover:text-primary-800 transition">
+          <label
+            className={`flex items-center gap-2 text-sm font-medium transition ${
+              images.length >= MAX_IMAGES
+                ? "text-ink-muted cursor-not-allowed opacity-50"
+                : "text-primary-600 cursor-pointer hover:text-primary-800"
+            }`}
+          >
             <FiImage size={16} />
-            <span>Photo</span>
-            <input type="file" accept="image/*" onChange={handleImage} className="hidden" />
+            <span>
+              Photo {images.length > 0 && `(${images.length}/${MAX_IMAGES})`}
+            </span>
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={handleImages}
+              disabled={images.length >= MAX_IMAGES}
+              className="hidden"
+            />
           </label>
 
           <button
             onClick={handleSubmit}
-            disabled={isSubmitting || !text.trim()}
+            disabled={isSubmitting || (!text.trim() && images.length === 0)}
             className="px-5 py-2 rounded-xl text-sm font-semibold text-white bg-primary-600 hover:bg-primary-800 disabled:opacity-50 disabled:cursor-not-allowed transition shadow-sm"
           >
             {isSubmitting ? "Posting..." : "Post"}

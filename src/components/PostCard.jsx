@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { FaHeart, FaRegHeart, FaRegComment, FaTrash } from "react-icons/fa";
+import { FaHeart, FaRegHeart, FaRegComment, FaTrash, FaChevronLeft, FaChevronRight } from "react-icons/fa";
 import toast from "react-hot-toast";
 import api from "../services/api";
 import { useAuth } from "../context/AuthContext";
@@ -15,6 +15,7 @@ const PostCard = ({
   time,
   text,
   image,
+  images,
   likes,
   commentsCount,
   isLiked,
@@ -35,7 +36,11 @@ const PostCard = ({
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [loadingComments, setLoadingComments] = useState(false);
   const [isLiking, setIsLiking] = useState(false);
+  const [activeSlide, setActiveSlide] = useState(0);
   const { socket } = useSocket();
+
+  // New posts use `images` (carousel); old posts fall back to `image`.
+  const media = images?.length ? images : image ? [image] : [];
 
   const fetchComments = async () => {
     try {
@@ -201,13 +206,51 @@ const PostCard = ({
         {/* Text */}
         <p className="text-ink-sub text-sm leading-relaxed">{text}</p>
 
-        {/* Image */}
-        {image && (
-          <img
-            src={image}
-            alt="post"
-            className="mt-4 rounded-xl w-full max-h-96 object-contain bg-surface"
-          />
+        {/* Media carousel */}
+        {media.length > 0 && (
+          <div className="mt-4 relative rounded-xl overflow-hidden bg-surface">
+            <img
+              src={media[activeSlide]}
+              alt={`post-${activeSlide + 1}`}
+              className="w-full max-h-96 object-contain bg-surface"
+            />
+
+            {media.length > 1 && (
+              <>
+                <button
+                  onClick={() =>
+                    setActiveSlide((i) => (i - 1 + media.length) % media.length)
+                  }
+                  className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 text-white rounded-full p-1.5 hover:bg-black/70 transition"
+                  aria-label="Previous image"
+                >
+                  <FaChevronLeft size={12} />
+                </button>
+                <button
+                  onClick={() => setActiveSlide((i) => (i + 1) % media.length)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 text-white rounded-full p-1.5 hover:bg-black/70 transition"
+                  aria-label="Next image"
+                >
+                  <FaChevronRight size={12} />
+                </button>
+                <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5">
+                  {media.map((_, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setActiveSlide(i)}
+                      className={`h-1.5 rounded-full transition-all ${
+                        i === activeSlide ? "w-4 bg-white" : "w-1.5 bg-white/50"
+                      }`}
+                      aria-label={`Go to image ${i + 1}`}
+                    />
+                  ))}
+                </div>
+                <span className="absolute top-2 right-2 bg-black/50 text-white text-xs px-2 py-0.5 rounded-full">
+                  {activeSlide + 1}/{media.length}
+                </span>
+              </>
+            )}
+          </div>
         )}
 
         {/* Actions */}

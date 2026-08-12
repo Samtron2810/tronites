@@ -315,6 +315,7 @@ const Profile = () => {
             time={new Date(post.createdAt).toLocaleString()}
             text={post.text}
             image={post.image}
+            images={post.images}
             likes={post.likes.length}
             commentsCount={post.commentsCount}
             isLiked={post.likes.some(

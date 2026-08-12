@@ -1,5 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import logo from "../assets/tronite-logo.png";
 import {
   FaHome,
@@ -11,6 +12,7 @@ import {
 import { useAuth } from "../context/AuthContext";
 import { useSocket } from "../context/SocketContext";
 import NotificationBell from "./NotificationBell";
+import LogoutModal from "./LogoutModal";
 import api from "../services/api";
 
 const NavLink = ({ to, icon: Icon, label, badge }) => {
@@ -41,6 +43,7 @@ const Navbar = () => {
   const { socket } = useSocket();
   const [unreadCount, setUnreadCount] = useState(0);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   const handleLogout = async () => {
     if (isLoggingOut) return;
@@ -49,6 +52,7 @@ const Navbar = () => {
       await logout();
     } finally {
       setIsLoggingOut(false);
+      setShowLogoutModal(false);
     }
   };
 
@@ -60,7 +64,10 @@ const Navbar = () => {
       const res = await api.get("/messages/conversations", {
         params: { page: 1, limit: 50 },
       });
-      const total = res.data.conversations.reduce((sum, c) => sum + (c.unreadCount || 0), 0);
+      const total = res.data.conversations.reduce(
+        (sum, c) => sum + (c.unreadCount || 0),
+        0,
+      );
       setUnreadCount(total);
     } catch {}
   };
@@ -114,7 +121,7 @@ const Navbar = () => {
           <NotificationBell />
 
           <button
-            onClick={handleLogout}
+            onClick={() => setShowLogoutModal(true)}
             disabled={isLoggingOut}
             className="ml-2 flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-ink-sub hover:text-red-600 hover:bg-red-50 transition-all duration-200 disabled:opacity-50"
           >
@@ -125,6 +132,15 @@ const Navbar = () => {
           </button>
         </div>
       </div>
+
+      {showLogoutModal &&
+        createPortal(
+          <LogoutModal
+            onConfirm={handleLogout}
+            onCancel={() => setShowLogoutModal(false)}
+          />,
+          document.body,
+        )}
     </nav>
   );
 };
