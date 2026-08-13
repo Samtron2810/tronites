@@ -25,6 +25,10 @@ const Register = () => {
     try {
       const res = await register(formData);
       toast.success(res.message || "OTP sent to your email");
+      // Proves to VerifyOtp that this is a real, just-initiated signup —
+      // not someone who typed /verify-otp?email=... directly. Expires
+      // with the tab/session, and is cleared once verification succeeds.
+      sessionStorage.setItem("pendingOtpEmail", formData.email);
       navigate(`/verify-otp?email=${encodeURIComponent(formData.email)}`);
     } catch (error) {
       toast.error(error.response?.data?.message || "Registration failed");

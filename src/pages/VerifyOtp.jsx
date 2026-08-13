@@ -18,11 +18,26 @@ const VerifyOtp = () => {
 
   useEffect(() => { setEmail(emailFromQuery); }, [emailFromQuery]);
 
+  // Guard against opening this page cold — directly typing the URL,
+  // an old bookmark, or a stale tab — where there's no real signup in
+  // flight. sessionStorage is set by Register.jsx right after it
+  // actually sends the OTP, so its absence (or a mismatched email)
+  // means this wasn't reached through the real flow.
+  useEffect(() => {
+    const pendingEmail = sessionStorage.getItem("pendingOtpEmail");
+    if (!emailFromQuery || !pendingEmail || pendingEmail !== emailFromQuery) {
+      toast.error("Please start by creating an account or logging in.");
+      navigate("/login", { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const handleVerify = async () => {
     if (loading) return;
     setLoading(true);
     try {
       await api.post("/auth/verify-otp", { email, otp });
+      sessionStorage.removeItem("pendingOtpEmail");
       await getMe();
       toast.success("Verified. Welcome!");
       navigate("/choose-username");
