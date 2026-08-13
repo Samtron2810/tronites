@@ -3,16 +3,17 @@ import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import api from "../services/api";
 import { useAuth } from "../context/AuthContext";
-import { FiHash, FiCheck, FiX, FiLoader } from "react-icons/fi";
+import { FiHash, FiCheck, FiX, FiLoader, FiLogOut } from "react-icons/fi";
 
 const USERNAME_RE = /^[a-z0-9_]{3,20}$/;
 
 const ChooseUsername = () => {
   const navigate = useNavigate();
-  const { updateUser } = useAuth();
+  const { updateUser, logout } = useAuth();
 
   const [username, setUsername] = useState("");
   const [status, setStatus] = useState("idle"); // idle | checking | available | taken | invalid
+  const [cancelling, setCancelling] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const debounceRef = useRef(null);
 
@@ -61,6 +62,19 @@ const ChooseUsername = () => {
       if (error.response?.status === 409) setStatus("taken");
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleCancel = async () => {
+    if (cancelling) return;
+    setCancelling(true);
+    try {
+      await logout();
+      toast.success("Signed out");
+      navigate("/login", { replace: true });
+    } catch (error) {
+      toast.error("Couldn't sign out. Try again.");
+      setCancelling(false);
     }
   };
 
@@ -131,6 +145,15 @@ const ChooseUsername = () => {
             className="w-full bg-primary-600 hover:bg-primary-800 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-xl text-sm transition-all duration-200 shadow-sm"
           >
             {submitting ? "Saving..." : "Continue"}
+          </button>
+
+          <button
+            onClick={handleCancel}
+            disabled={cancelling || submitting}
+            className="w-full flex items-center justify-center gap-2 text-ink-muted hover:text-red-500 text-xs font-medium py-2 transition disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <FiLogOut size={13} />
+            {cancelling ? "Signing out..." : "Cancel and sign out"}
           </button>
         </div>
       </div>

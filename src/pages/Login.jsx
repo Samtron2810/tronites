@@ -2,14 +2,14 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { useAuth } from "../context/AuthContext";
-import { FiMail, FiLock, FiEye, FiEyeOff } from "react-icons/fi";
+import { FiUser, FiLock, FiEye, FiEyeOff } from "react-icons/fi";
 
 const Login = () => {
   const navigate = useNavigate();
   const { login, user, loading } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [formData, setFormData] = useState({ email: "", password: "" });
+  const [formData, setFormData] = useState({ identifier: "", password: "" });
 
   const handleChange = (e) =>
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -69,14 +69,15 @@ const Login = () => {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="relative">
-              <FiMail className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted text-sm" />
+              <FiUser className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted text-sm" />
               <input
-                type="email"
-                name="email"
-                placeholder="Email"
-                value={formData.email}
+                type="text"
+                name="identifier"
+                placeholder="Email or username"
+                value={formData.identifier}
                 onChange={handleChange}
                 required
+                autoCapitalize="none"
                 className="w-full pl-9 pr-4 py-3 rounded-xl border border-stroke bg-white text-ink text-sm placeholder:text-ink-muted outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100 transition"
               />
             </div>
