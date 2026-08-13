@@ -24,6 +24,11 @@ const Chat = () => {
   const [totalConversationsCount, setTotalConversationsCount] = useState(0);
   const [isLoadingMoreConversations, setIsLoadingMoreConversations] =
     useState(false);
+  const [activeTab, setActiveTab] = useState("messages"); // "messages" | "requests"
+  const [requests, setRequests] = useState([]);
+  const [requestsLoading, setRequestsLoading] = useState(false);
+  const [requestActionId, setRequestActionId] = useState(null); // conversationId being accepted/declined
+  const [requestInfo, setRequestInfo] = useState(null); // gating state for the open thread
   const [selectedChat, setSelectedChat] = useState(null);
   const [messages, setMessages] = useState([]);
   const [messagesPage, setMessagesPage] = useState(1);
@@ -97,6 +102,57 @@ const Chat = () => {
     }
   };
 
+  const fetchRequests = async () => {
+    try {
+      setRequestsLoading(true);
+      const res = await api.get("/messages/requests");
+      setRequests(res.data.requests);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setRequestsLoading(false);
+    }
+  };
+
+  const handleAcceptRequest = async (req) => {
+    if (requestActionId) return;
+    setRequestActionId(req.conversationId);
+    try {
+      await api.put(`/messages/requests/${req.otherUser._id}`, {
+        action: "accept",
+      });
+      setRequests((prev) =>
+        prev.filter((r) => r.conversationId !== req.conversationId),
+      );
+      // Open the now-accepted thread directly.
+      setActiveTab("messages");
+      loadConversation(req.otherUser);
+    } catch (e) {
+      console.error(e);
+      alert(e?.response?.data?.message || "Couldn't accept request.");
+    } finally {
+      setRequestActionId(null);
+    }
+  };
+
+  const handleDeclineRequest = async (req) => {
+    if (requestActionId) return;
+    setRequestActionId(req.conversationId);
+    try {
+      await api.put(`/messages/requests/${req.otherUser._id}`, {
+        action: "decline",
+      });
+      setRequests((prev) =>
+        prev.filter((r) => r.conversationId !== req.conversationId),
+      );
+    } catch (e) {
+      console.error(e);
+      alert(e?.response?.data?.message || "Couldn't decline request.");
+    } finally {
+      setRequestActionId(null);
+    }
+  };
+
   const loadConversation = async (otherUser) => {
     try {
       setThreadLoading(true);
@@ -107,6 +163,7 @@ const Chat = () => {
       setMessages(res.data.messages);
       setMessagesPage(1);
       setMessagesHasMore(res.data.hasMore);
+      setRequestInfo(res.data.requestInfo || null);
       setSelectedChat({
         otherUser,
         conversationId: buildConversationId(user._id, otherUser._id),
@@ -224,8 +281,22 @@ const Chat = () => {
       setImagePreview(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
       updateConversationPreview(res.data, false);
+      // A pending request just got its first (and only) message sent —
+      // reflect that in local gating state without waiting for a refetch.
+      if (requestInfo?.status !== "accepted") {
+        setRequestInfo((prev) =>
+          prev?.status === "pending"
+            ? prev
+            : { status: "pending", isInitiator: true },
+        );
+      }
     } catch (e) {
-      alert(`Error: ${e?.response?.data?.message || e.message}`);
+      const code = e?.response?.data?.code;
+      if (code === "REQUEST_PENDING" || code === "DECLINED" || code === "BLOCKED") {
+        alert(e.response.data.message);
+      } else {
+        alert(`Error: ${e?.response?.data?.message || e.message}`);
+      }
     } finally {
       setIsSending(false);
     }
@@ -320,6 +391,7 @@ const Chat = () => {
 
   useEffect(() => {
     fetchConversations();
+    fetchRequests();
   }, []);
 
   useEffect(() => {
@@ -365,6 +437,14 @@ const Chat = () => {
       setMessages((prev) => prev.filter((m) => m._id !== messageId));
     socket.on("receiveMessage", handleReceive);
     socket.on("messageDeleted", handleDeleted);
+    const handleRequestAccepted = (data) => {
+      // If we're currently viewing the thread that just got accepted,
+      // refresh the gating state so the composer unlocks immediately.
+      if (data.conversationId === selectedChat?.conversationId) {
+        setRequestInfo({ status: "accepted", isInitiator: true });
+      }
+    };
+    socket.on("messageRequestAccepted", handleRequestAccepted);
     socket.on("messagesRead", (data) => {
       if (data.conversationId === selectedChat?.conversationId) {
         setMessages((prev) =>
@@ -381,6 +461,7 @@ const Chat = () => {
       socket.off("receiveMessage", handleReceive);
       socket.off("messageDeleted", handleDeleted);
       socket.off("messagesRead");
+      socket.off("messageRequestAccepted", handleRequestAccepted);
       if (selectedChat?.conversationId)
         socket.emit("leaveConversation", selectedChat.conversationId);
     };
@@ -412,72 +493,155 @@ const Chat = () => {
           </span>
         </div>
 
+        {/* Tabs */}
+        <div className="flex border-b border-stroke">
+          <button
+            onClick={() => setActiveTab("messages")}
+            className={`flex-1 py-3 text-sm font-medium transition ${
+              activeTab === "messages"
+                ? "text-primary-600 border-b-2 border-primary-600"
+                : "text-ink-muted hover:text-ink"
+            }`}
+          >
+            Messages
+          </button>
+          <button
+            onClick={() => setActiveTab("requests")}
+            className={`flex-1 py-3 text-sm font-medium transition relative ${
+              activeTab === "requests"
+                ? "text-primary-600 border-b-2 border-primary-600"
+                : "text-ink-muted hover:text-ink"
+            }`}
+          >
+            Requests
+            {requests.length > 0 && (
+              <span className="ml-1.5 inline-flex items-center justify-center min-w-4 h-4 rounded-full bg-primary-600 text-white text-[10px] font-bold px-1">
+                {requests.length}
+              </span>
+            )}
+          </button>
+        </div>
+
         {/* Conversation list */}
-        <div className="divide-y divide-stroke">
-          {loading && <ChatSkeleton />}
+        {activeTab === "messages" && (
+          <div className="divide-y divide-stroke">
+            {loading && <ChatSkeleton />}
 
-          {!loading && conversations.length === 0 && (
-            <div className="py-16 text-center">
-              <FaComment className="text-2xl mb-2 mx-auto" />
-              <p className="text-sm text-ink-muted">
-                No conversations yet. Open a profile to start messaging.
-              </p>
-            </div>
-          )}
+            {!loading && conversations.length === 0 && (
+              <div className="py-16 text-center">
+                <FaComment className="text-2xl mb-2 mx-auto" />
+                <p className="text-sm text-ink-muted">
+                  No conversations yet. Open a profile to start messaging.
+                </p>
+              </div>
+            )}
 
-          {!loading &&
-            conversations.map((conv) => {
-              const isSelected =
-                selectedChat?.conversationId === conv.conversationId;
-              const isOnline = onlineUsers.includes(conv.otherUser._id);
-              return (
-                <button
-                  key={conv.conversationId}
-                  type="button"
-                  onClick={() => loadConversation(conv.otherUser)}
-                  className={`w-full text-left px-5 py-4 transition ${isSelected ? "bg-primary-50" : "hover:bg-surface"}`}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="relative shrink-0">
-                      <img
-                        src={
-                          conv.otherUser.profilePic ||
-                          "https://i.pravatar.cc/150"
-                        }
-                        alt={conv.otherUser.name}
-                        className="w-11 h-11 rounded-full object-cover ring-2 ring-primary-100"
-                      />
-                      <span
-                        className={`absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-white ${isOnline ? "bg-primary-400" : "bg-gray-300"}`}
-                      />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between gap-2">
-                        <p className="text-sm font-semibold text-ink truncate">
-                          {conv.otherUser.name}
-                        </p>
-                        {conv.unreadCount > 0 && (
-                          <span className="shrink-0 min-w-5 h-5 rounded-full bg-primary-600 text-white text-xs font-bold flex items-center justify-center px-1">
-                            {conv.unreadCount}
-                          </span>
-                        )}
+            {!loading &&
+              conversations.map((conv) => {
+                const isSelected =
+                  selectedChat?.conversationId === conv.conversationId;
+                const isOnline = onlineUsers.includes(conv.otherUser._id);
+                const isPendingSent = conv.requestStatus === "pending";
+                return (
+                  <button
+                    key={conv.conversationId}
+                    type="button"
+                    onClick={() => loadConversation(conv.otherUser)}
+                    className={`w-full text-left px-5 py-4 transition ${isSelected ? "bg-primary-50" : "hover:bg-surface"}`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="relative shrink-0">
+                        <img
+                          src={
+                            conv.otherUser.profilePic ||
+                            "https://i.pravatar.cc/150"
+                          }
+                          alt={conv.otherUser.name}
+                          className="w-11 h-11 rounded-full object-cover ring-2 ring-primary-100"
+                        />
+                        <span
+                          className={`absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-white ${isOnline ? "bg-primary-400" : "bg-gray-300"}`}
+                        />
                       </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="text-sm font-semibold text-ink truncate">
+                            {conv.otherUser.name}
+                          </p>
+                          {conv.unreadCount > 0 && (
+                            <span className="shrink-0 min-w-5 h-5 rounded-full bg-primary-600 text-white text-xs font-bold flex items-center justify-center px-1">
+                              {conv.unreadCount}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-ink-muted truncate">
+                          {isPendingSent ? "Message request sent" : conv.lastMessage}
+                        </p>
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            {!loading && conversationsHasMore && conversations.length > 0 && (
+              <div ref={conversationsObserverTarget} className="py-4 text-center">
+                {isLoadingMoreConversations && (
+                  <p className="text-xs text-ink-muted">Loading more chats...</p>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Requests list */}
+        {activeTab === "requests" && (
+          <div className="divide-y divide-stroke">
+            {requestsLoading && <ChatSkeleton />}
+
+            {!requestsLoading && requests.length === 0 && (
+              <div className="py-16 text-center">
+                <FaComment className="text-2xl mb-2 mx-auto" />
+                <p className="text-sm text-ink-muted">No message requests.</p>
+              </div>
+            )}
+
+            {!requestsLoading &&
+              requests.map((req) => (
+                <div key={req.conversationId} className="px-5 py-4">
+                  <div className="flex items-center gap-3">
+                    <img
+                      src={req.otherUser.profilePic || "https://i.pravatar.cc/150"}
+                      alt={req.otherUser.name}
+                      className="w-11 h-11 rounded-full object-cover ring-2 ring-primary-100 shrink-0"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-ink truncate">
+                        {req.otherUser.name}
+                      </p>
                       <p className="text-xs text-ink-muted truncate">
-                        {conv.lastMessage}
+                        {req.message?.text || (req.message?.image ? "Sent a photo" : "")}
                       </p>
                     </div>
                   </div>
-                </button>
-              );
-            })}
-          {!loading && conversationsHasMore && conversations.length > 0 && (
-            <div ref={conversationsObserverTarget} className="py-4 text-center">
-              {isLoadingMoreConversations && (
-                <p className="text-xs text-ink-muted">Loading more chats...</p>
-              )}
-            </div>
-          )}
-        </div>
+                  <div className="flex gap-2 mt-3">
+                    <button
+                      onClick={() => handleAcceptRequest(req)}
+                      disabled={requestActionId === req.conversationId}
+                      className="flex-1 py-2 rounded-lg text-xs font-semibold text-white bg-primary-600 hover:bg-primary-800 disabled:opacity-50 transition"
+                    >
+                      {requestActionId === req.conversationId ? "..." : "Accept"}
+                    </button>
+                    <button
+                      onClick={() => handleDeclineRequest(req)}
+                      disabled={requestActionId === req.conversationId}
+                      className="flex-1 py-2 rounded-lg text-xs font-semibold text-ink-sub border border-stroke hover:bg-surface disabled:opacity-50 transition"
+                    >
+                      Decline
+                    </button>
+                  </div>
+                </div>
+              ))}
+          </div>
+        )}
       </div>
 
       {selectedChat && (
@@ -504,6 +668,20 @@ const Chat = () => {
           onMessagesScroll={handleMessagesScroll}
           isLoadingOlderMessages={isLoadingOlderMessages}
           messagesHasMore={messagesHasMore}
+          requestInfo={requestInfo}
+          onAcceptRequest={() =>
+            handleAcceptRequest({
+              conversationId: selectedChat.conversationId,
+              otherUser: selectedChat.otherUser,
+            })
+          }
+          onDeclineRequest={() =>
+            handleDeclineRequest({
+              conversationId: selectedChat.conversationId,
+              otherUser: selectedChat.otherUser,
+            })
+          }
+          requestActionPending={requestActionId === selectedChat.conversationId}
         />
       )}
     </MainLayout>

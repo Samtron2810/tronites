@@ -8,7 +8,8 @@ import api from "../services/api";
 import compressImage from "../utils/compressImage";
 import { useAuth } from "../context/AuthContext";
 import { useSocket } from "../context/SocketContext";
-import { FiEdit2, FiMessageCircle, FiCamera } from "react-icons/fi";
+import { FiEdit2, FiMessageCircle, FiCamera, FiMoreVertical, FiSlash } from "react-icons/fi";
+import BlockUserModal from "../components/BlockUserModal";
 
 const Profile = () => {
   const { id } = useParams();
@@ -28,6 +29,10 @@ const Profile = () => {
   const [bioText, setBioText] = useState("");
   const [isFollowingLoading, setIsFollowingLoading] = useState(false);
   const [isSavingBio, setIsSavingBio] = useState(false);
+  const [iBlockedThem, setIBlockedThem] = useState(false);
+  const [theyBlockedMe, setTheyBlockedMe] = useState(false);
+  const [showOptionsMenu, setShowOptionsMenu] = useState(false);
+  const [showBlockModal, setShowBlockModal] = useState(false);
   const postsObserverTarget = useRef(null);
 
   const fetchProfile = async () => {
@@ -39,6 +44,11 @@ const Profile = () => {
       setPostsPage(1);
       setPostsHasMore(res.data.hasMore);
       setIsFollowing(res.data.isFollowing);
+      if (currentUser?._id !== id) {
+        const blockRes = await api.get(`/users/${id}/block-status`);
+        setIBlockedThem(blockRes.data.iBlockedThem);
+        setTheyBlockedMe(blockRes.data.theyBlockedMe);
+      }
     } catch (e) {
       console.error(e);
     }
@@ -106,6 +116,24 @@ const Profile = () => {
       toast.error("Couldn't update follow status. Try again.");
     } finally {
       setIsFollowingLoading(false);
+    }
+  };
+
+  const handleBlockToggle = async () => {
+    try {
+      if (iBlockedThem) {
+        await api.delete(`/users/${id}/block`);
+        setIBlockedThem(false);
+        toast.success(`Unblocked ${profile.name}`);
+      } else {
+        await api.post(`/users/${id}/block`);
+        setIBlockedThem(true);
+        toast.success(`Blocked ${profile.name}`);
+      }
+      setShowBlockModal(false);
+    } catch (e) {
+      console.error(e);
+      toast.error("Couldn't update block status. Try again.");
     }
   };
 
@@ -201,7 +229,7 @@ const Profile = () => {
             {/* Action buttons */}
 
             {!isOwnProfile && (
-              <div className="flex gap-2 mt-10">
+              <div className="flex gap-2 mt-10 relative">
                 <button
                   onClick={handleFollow}
                   disabled={isFollowingLoading}
@@ -219,12 +247,60 @@ const Profile = () => {
                 </button>
                 <button
                   onClick={() => navigate(`/chat?user=${profile._id}`)}
-                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold border border-stroke text-ink-sub hover:border-primary-400 hover:text-primary-600 transition"
+                  disabled={iBlockedThem || theyBlockedMe}
+                  title={
+                    iBlockedThem
+                      ? "You've blocked this user"
+                      : theyBlockedMe
+                        ? "You can't message this user"
+                        : undefined
+                  }
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold border border-stroke text-ink-sub hover:border-primary-400 hover:text-primary-600 transition disabled:opacity-40 disabled:hover:border-stroke disabled:hover:text-ink-sub disabled:cursor-not-allowed"
                 >
                   <FiMessageCircle size={14} />
                   Message
                 </button>
+
+                {/* More options — kept behind a dropdown so block/unblock
+                    isn't a bare tappable button next to Follow/Message. */}
+                <button
+                  onClick={() => setShowOptionsMenu((v) => !v)}
+                  className="p-2 rounded-xl border border-stroke text-ink-muted hover:text-ink hover:bg-surface transition"
+                  aria-label="More options"
+                >
+                  <FiMoreVertical size={16} />
+                </button>
+
+                {showOptionsMenu && (
+                  <>
+                    <div
+                      className="fixed inset-0 z-10"
+                      onClick={() => setShowOptionsMenu(false)}
+                    />
+                    <div className="absolute top-full right-0 mt-1 w-44 bg-white border border-stroke rounded-xl shadow-lg z-20 overflow-hidden">
+                      <button
+                        onClick={() => {
+                          setShowOptionsMenu(false);
+                          setShowBlockModal(true);
+                        }}
+                        className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 transition"
+                      >
+                        <FiSlash size={14} />
+                        {iBlockedThem ? "Unblock user" : "Block user"}
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
+            )}
+
+            {showBlockModal && (
+              <BlockUserModal
+                userName={profile.name}
+                isBlocked={iBlockedThem}
+                onConfirm={handleBlockToggle}
+                onCancel={() => setShowBlockModal(false)}
+              />
             )}
           </div>
 

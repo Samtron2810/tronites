@@ -24,6 +24,10 @@ const ChatModal = ({
   onMessagesScroll,
   isLoadingOlderMessages,
   messagesHasMore,
+  requestInfo,
+  onAcceptRequest,
+  onDeclineRequest,
+  requestActionPending,
 }) => {
   if (!isOpen || !selectedChat) return null;
   const activeUser = selectedChat.otherUser;
@@ -173,59 +177,99 @@ const ChatModal = ({
 
         {/* Input */}
         <div className="border-t border-stroke px-4 py-3 bg-white">
-          {imagePreview && (
-            <div className="mb-3 relative inline-block">
-              <img
-                src={imagePreview}
-                alt="preview"
-                className="w-20 h-20 object-cover rounded-xl"
-              />
-              <button
-                onClick={() => setImagePreview(null)}
-                className="absolute -top-1.5 -right-1.5 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs"
-              >
-                ✕
-              </button>
+          {requestInfo?.status === "pending" && !requestInfo.isInitiator && (
+            <div>
+              <p className="text-xs text-ink-muted mb-2 text-center">
+                {activeUser?.name} sent you a message request
+              </p>
+              <div className="flex gap-2">
+                <button
+                  onClick={onAcceptRequest}
+                  disabled={requestActionPending}
+                  className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white bg-primary-600 hover:bg-primary-800 disabled:opacity-50 transition"
+                >
+                  {requestActionPending ? "..." : "Accept"}
+                </button>
+                <button
+                  onClick={onDeclineRequest}
+                  disabled={requestActionPending}
+                  className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-ink-sub border border-stroke hover:bg-surface disabled:opacity-50 transition"
+                >
+                  Decline
+                </button>
+              </div>
             </div>
           )}
-          <div className="flex items-center gap-2">
-            <input
-              value={messageText}
-              onChange={(e) => setMessageText(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  handleSendMessage();
-                }
-              }}
-              placeholder="Write a message..."
-              className="flex-1 border border-stroke rounded-xl px-4 py-2.5 text-sm text-ink placeholder:text-ink-muted outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100 transition"
-            />
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={isSending}
-              className="p-2.5 rounded-xl border border-stroke text-ink-muted hover:text-primary-600 hover:border-primary-400 transition disabled:opacity-40"
-              title="Attach image"
-            >
-              <FiImage size={16} />
-            </button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              onChange={handleImageSelect}
-              className="hidden"
-            />
-            <button
-              type="button"
-              onClick={handleSendMessage}
-              disabled={(!messageText.trim() && !imagePreview) || isSending}
-              className="px-4 py-2.5 rounded-xl text-sm font-semibold text-white bg-primary-600 hover:bg-primary-800 disabled:opacity-50 disabled:cursor-not-allowed transition"
-            >
-              {isSending ? "..." : "Send"}
-            </button>
-          </div>
+
+          {requestInfo?.status === "pending" && requestInfo.isInitiator && (
+            <p className="text-xs text-ink-muted text-center py-2">
+              Message request sent — waiting for {activeUser?.name} to accept.
+            </p>
+          )}
+
+          {(requestInfo?.status === "declined" || requestInfo?.status === "blocked") && (
+            <p className="text-xs text-ink-muted text-center py-2">
+              You can't message this user.
+            </p>
+          )}
+
+          {(!requestInfo || requestInfo.status === "accepted") && (
+            <>
+              {imagePreview && (
+                <div className="mb-3 relative inline-block">
+                  <img
+                    src={imagePreview}
+                    alt="preview"
+                    className="w-20 h-20 object-cover rounded-xl"
+                  />
+                  <button
+                    onClick={() => setImagePreview(null)}
+                    className="absolute -top-1.5 -right-1.5 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs"
+                  >
+                    ✕
+                  </button>
+                </div>
+              )}
+              <div className="flex items-center gap-2">
+                <input
+                  value={messageText}
+                  onChange={(e) => setMessageText(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSendMessage();
+                    }
+                  }}
+                  placeholder="Write a message..."
+                  className="flex-1 border border-stroke rounded-xl px-4 py-2.5 text-sm text-ink placeholder:text-ink-muted outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100 transition"
+                />
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isSending}
+                  className="p-2.5 rounded-xl border border-stroke text-ink-muted hover:text-primary-600 hover:border-primary-400 transition disabled:opacity-40"
+                  title="Attach image"
+                >
+                  <FiImage size={16} />
+                </button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageSelect}
+                  className="hidden"
+                />
+                <button
+                  type="button"
+                  onClick={handleSendMessage}
+                  disabled={(!messageText.trim() && !imagePreview) || isSending}
+                  className="px-4 py-2.5 rounded-xl text-sm font-semibold text-white bg-primary-600 hover:bg-primary-800 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                >
+                  {isSending ? "..." : "Send"}
+                </button>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>
