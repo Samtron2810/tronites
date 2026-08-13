@@ -6,6 +6,7 @@ import api from "../services/api";
 import { useAuth } from "../context/AuthContext";
 import DeletePostModal from "./DeletePostModal";
 import { useSocket } from "../context/SocketContext";
+import TextWithLinks from "./TextWithLinks";
 
 const PostCard = ({
   postId,
@@ -37,6 +38,12 @@ const PostCard = ({
   const [loadingComments, setLoadingComments] = useState(false);
   const [isLiking, setIsLiking] = useState(false);
   const [activeSlide, setActiveSlide] = useState(0);
+  const [replyingTo, setReplyingTo] = useState(null); // commentId or null
+  const [replyText, setReplyText] = useState("");
+  const [isReplySending, setIsReplySending] = useState(false);
+  const [openReplies, setOpenReplies] = useState({}); // { [commentId]: boolean }
+  const [repliesByComment, setRepliesByComment] = useState({}); // { [commentId]: replies[] }
+  const [loadingReplies, setLoadingReplies] = useState({}); // { [commentId]: boolean }
   const { socket } = useSocket();
 
   // New posts use `images` (carousel); old posts fall back to `image`.
@@ -75,10 +82,83 @@ const PostCard = ({
     try {
       const res = await api.delete(`/comments/${commentId}`);
       setComments((prev) => prev.filter((c) => c._id !== commentId));
+      // Backend cascades: deleting a top-level comment deletes its replies
+      // too. Drop that comment's cached reply list locally to match.
+      setRepliesByComment((prev) => {
+        const next = { ...prev };
+        delete next[commentId];
+        return next;
+      });
       setCommentCount(res.data.commentCount ?? Math.max(commentCount - 1, 0));
     } catch (e) {
       console.error(e);
       toast.error("Couldn't delete comment. Try again.");
+    } finally {
+      setCommentDeletingId(null);
+    }
+  };
+
+  const fetchReplies = async (commentId) => {
+    try {
+      setLoadingReplies((prev) => ({ ...prev, [commentId]: true }));
+      const res = await api.get(`/comments/${commentId}/replies`);
+      setRepliesByComment((prev) => ({ ...prev, [commentId]: res.data }));
+    } catch (e) {
+      console.error(e);
+      toast.error("Couldn't load replies. Try again.");
+    } finally {
+      setLoadingReplies((prev) => ({ ...prev, [commentId]: false }));
+    }
+  };
+
+  const toggleReplies = (commentId) => {
+    const willOpen = !openReplies[commentId];
+    setOpenReplies((prev) => ({ ...prev, [commentId]: willOpen }));
+    if (willOpen && !repliesByComment[commentId]) fetchReplies(commentId);
+  };
+
+  const handleAddReply = async (parentCommentId) => {
+    if (isReplySending || !replyText.trim()) return;
+    setIsReplySending(true);
+    try {
+      await api.post(`/comments/${postId}`, {
+        text: replyText,
+        parentCommentId,
+      });
+      setReplyText("");
+      setReplyingTo(null);
+      // Make sure the thread is open so the new reply is visible.
+      setOpenReplies((prev) => ({ ...prev, [parentCommentId]: true }));
+    } catch (e) {
+      console.error(e);
+      toast.error("Couldn't post your reply. Try again.");
+    } finally {
+      setIsReplySending(false);
+    }
+  };
+
+  const handleDeleteReply = async (replyId, parentCommentId) => {
+    if (commentDeletingId) return;
+    setCommentDeletingId(replyId);
+    try {
+      const res = await api.delete(`/comments/${replyId}`);
+      setRepliesByComment((prev) => ({
+        ...prev,
+        [parentCommentId]: (prev[parentCommentId] || []).filter(
+          (r) => r._id !== replyId,
+        ),
+      }));
+      setComments((prev) =>
+        prev.map((c) =>
+          c._id === parentCommentId
+            ? { ...c, repliesCount: Math.max((c.repliesCount || 1) - 1, 0) }
+            : c,
+        ),
+      );
+      setCommentCount(res.data.commentCount ?? Math.max(commentCount - 1, 0));
+    } catch (e) {
+      console.error(e);
+      toast.error("Couldn't delete reply. Try again.");
     } finally {
       setCommentDeletingId(null);
     }
@@ -139,16 +219,70 @@ const PostCard = ({
     const handleNewComment = (data) => {
       if (data.postId !== postId) return;
       setCommentCount(data.commentCount);
-      setComments((prev) =>
-        prev.some((c) => c._id === data.comment._id)
-          ? prev
-          : [data.comment, ...prev],
-      );
+      if (data.parentCommentId) {
+        // It's a reply — bump the parent's repliesCount, and append to
+        // the cached reply list only if that thread is already loaded
+        // (avoids fetching a thread the user never opened).
+        setComments((prev) =>
+          prev.map((c) =>
+            c._id === data.parentCommentId
+              ? { ...c, repliesCount: (c.repliesCount || 0) + 1 }
+              : c,
+          ),
+        );
+        setRepliesByComment((prev) =>
+          prev[data.parentCommentId]
+            ? {
+                ...prev,
+                [data.parentCommentId]: prev[data.parentCommentId].some(
+                  (r) => r._id === data.comment._id,
+                )
+                  ? prev[data.parentCommentId]
+                  : [...prev[data.parentCommentId], data.comment],
+              }
+            : prev,
+        );
+      } else {
+        setComments((prev) =>
+          prev.some((c) => c._id === data.comment._id)
+            ? prev
+            : [data.comment, ...prev],
+        );
+      }
     };
     const handleCommentDeleted = (data) => {
       if (data.postId !== postId) return;
-      setComments((prev) => prev.filter((c) => c._id !== data.commentId));
       setCommentCount(data.commentCount);
+      if (data.parentCommentId) {
+        // A reply was deleted — remove it from that thread's cache and
+        // decrement the parent's count.
+        setRepliesByComment((prev) =>
+          prev[data.parentCommentId]
+            ? {
+                ...prev,
+                [data.parentCommentId]: prev[data.parentCommentId].filter(
+                  (r) => r._id !== data.commentId,
+                ),
+              }
+            : prev,
+        );
+        setComments((prev) =>
+          prev.map((c) =>
+            c._id === data.parentCommentId
+              ? { ...c, repliesCount: Math.max((c.repliesCount || 1) - 1, 0) }
+              : c,
+          ),
+        );
+      } else {
+        // A top-level comment was deleted — remove it, and its cascaded
+        // replies (deletedReplyIds), from local state.
+        setComments((prev) => prev.filter((c) => c._id !== data.commentId));
+        setRepliesByComment((prev) => {
+          const next = { ...prev };
+          delete next[data.commentId];
+          return next;
+        });
+      }
     };
     socket.on("likeUpdate", handleLikeUpdate);
     socket.on("newComment", handleNewComment);
@@ -204,7 +338,9 @@ const PostCard = ({
         </div>
 
         {/* Text */}
-        <p className="text-ink-sub text-sm leading-relaxed">{text}</p>
+        <p className="text-ink-sub text-sm leading-relaxed">
+          <TextWithLinks text={text} />
+        </p>
 
         {/* Media carousel */}
         {media.length > 0 && (
@@ -327,7 +463,88 @@ const PostCard = ({
                       </button>
                     )}
                   </div>
-                  <p className="text-xs text-ink-sub mt-0.5">{c.text}</p>
+                  <p className="text-xs text-ink-sub mt-0.5">
+                    <TextWithLinks text={c.text} />
+                  </p>
+
+                  {/* Reply / thread controls */}
+                  <div className="flex items-center gap-3 mt-1.5">
+                    <button
+                      onClick={() =>
+                        setReplyingTo(replyingTo === c._id ? null : c._id)
+                      }
+                      className="text-xs text-ink-muted hover:text-primary-600 transition"
+                    >
+                      Reply
+                    </button>
+                    {c.repliesCount > 0 && (
+                      <button
+                        onClick={() => toggleReplies(c._id)}
+                        className="text-xs text-primary-600 font-medium hover:underline"
+                      >
+                        {openReplies[c._id]
+                          ? "Hide replies"
+                          : `View ${c.repliesCount} ${c.repliesCount === 1 ? "reply" : "replies"}`}
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Reply input */}
+                  {replyingTo === c._id && (
+                    <div className="flex gap-2 mt-2">
+                      <input
+                        value={replyText}
+                        onChange={(e) => setReplyText(e.target.value)}
+                        placeholder={`Reply to ${c.user.name}...`}
+                        autoFocus
+                        onKeyDown={(e) =>
+                          e.key === "Enter" && handleAddReply(c._id)
+                        }
+                        className="flex-1 border border-stroke rounded-lg px-3 py-1.5 text-xs text-ink placeholder:text-ink-muted outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100 transition"
+                      />
+                      <button
+                        onClick={() => handleAddReply(c._id)}
+                        disabled={!replyText.trim() || isReplySending}
+                        className="px-3 py-1.5 rounded-lg text-xs font-medium text-white bg-primary-600 hover:bg-primary-800 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                      >
+                        {isReplySending ? "..." : "Reply"}
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Reply thread */}
+                  {openReplies[c._id] && (
+                    <div className="mt-2 pl-3 border-l-2 border-stroke space-y-2">
+                      {loadingReplies[c._id] && (
+                        <p className="text-xs text-ink-muted">Loading replies...</p>
+                      )}
+                      {!loadingReplies[c._id] &&
+                        (repliesByComment[c._id] || []).map((r) => (
+                          <div key={r._id} className="bg-white rounded-lg px-3 py-2">
+                            <div className="flex items-center justify-between">
+                              <Link
+                                to={`/profile/${r.user._id}`}
+                                className="text-xs font-semibold text-ink hover:text-primary-600 transition"
+                              >
+                                {r.user.name}
+                              </Link>
+                              {r.user._id === currentUser?._id && (
+                                <button
+                                  onClick={() => handleDeleteReply(r._id, c._id)}
+                                  disabled={commentDeletingId === r._id}
+                                  className="text-xs text-ink-muted hover:text-red-500 transition disabled:opacity-50"
+                                >
+                                  {commentDeletingId === r._id ? "..." : "Delete"}
+                                </button>
+                              )}
+                            </div>
+                            <p className="text-xs text-ink-sub mt-0.5">
+                              <TextWithLinks text={r.text} />
+                            </p>
+                          </div>
+                        ))}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

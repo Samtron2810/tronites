@@ -25,7 +25,7 @@ const VerifyOtp = () => {
       await api.post("/auth/verify-otp", { email, otp });
       await getMe();
       toast.success("Verified. Welcome!");
-      navigate("/");
+      navigate("/choose-username");
     } catch (error) {
       toast.error(error.response?.data?.message || "Verification failed");
     } finally {

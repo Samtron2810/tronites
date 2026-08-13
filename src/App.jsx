@@ -10,6 +10,9 @@ import Explore from "./pages/Explore";
 import Chat from "./pages/Chat";
 import FollowersList from "./pages/FollowersList";
 import VerifyOtp from "./pages/VerifyOtp";
+import ChooseUsername from "./pages/ChooseUsername";
+import UsernameRedirect from "./pages/UsernameRedirect";
+import Hashtag from "./pages/Hashtag";
 import Notifications from "./pages/Notifications";
 import NotFound from "./pages/NotFound";
 
@@ -19,7 +22,7 @@ const AppContent = () => {
   const { user } = useAuth();
   return (
     <>
-      {user && <Navbar />}
+      {user && user.username && <Navbar />}
       <Routes>
         {/* Public */}
         <Route path="/login" element={<Login />} />
@@ -27,6 +30,15 @@ const AppContent = () => {
         <Route path="/verify-otp" element={<VerifyOtp />} />
 
         {/* Protected */}
+        <Route
+          path="/choose-username"
+          element={
+            <ProtectedRoute allowIncompleteOnboarding>
+              <ChooseUsername />
+            </ProtectedRoute>
+          }
+        />
+
         <Route
           path="/"
           element={
@@ -77,6 +89,24 @@ const AppContent = () => {
           element={
             <ProtectedRoute>
               <FollowersList />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/u/:username"
+          element={
+            <ProtectedRoute>
+              <UsernameRedirect />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/hashtag/:tag"
+          element={
+            <ProtectedRoute>
+              <Hashtag />
             </ProtectedRoute>
           }
         />
