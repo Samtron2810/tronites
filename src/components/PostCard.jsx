@@ -156,14 +156,28 @@ const PostCard = ({
     if (isReplySending || !replyText.trim()) return;
     setIsReplySending(true);
     try {
-      await api.post(`/comments/${postId}`, {
+      const res = await api.post(`/comments/${postId}`, {
         text: replyText,
         parentCommentId,
       });
       setReplyText("");
       setReplyingTo(null);
-      // Make sure the thread is open so the new reply is visible.
+      // Open the thread and make sure it actually has data — either
+      // append the reply we just got back (fast path), or fall back to
+      // a fetch if for some reason it's missing from the response.
       setOpenReplies((prev) => ({ ...prev, [parentCommentId]: true }));
+      if (res.data?._id) {
+        setRepliesByComment((prev) => ({
+          ...prev,
+          [parentCommentId]: prev[parentCommentId]
+            ? prev[parentCommentId].some((r) => r._id === res.data._id)
+              ? prev[parentCommentId]
+              : [...prev[parentCommentId], res.data]
+            : [res.data],
+        }));
+      } else {
+        fetchReplies(parentCommentId);
+      }
     } catch (e) {
       console.error(e);
       toast.error("Couldn't post your reply. Try again.");
