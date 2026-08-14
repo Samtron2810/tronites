@@ -83,6 +83,7 @@ const Hashtag = () => {
               postId={post._id}
               userId={post.user._id}
               name={post.user.name}
+              username={post.user.username}
               profilePic={post.user.profilePic}
               time={new Date(post.createdAt).toLocaleString()}
               text={post.text}

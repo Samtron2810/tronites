@@ -1,8 +1,10 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import toast from "react-hot-toast";
 import api from "../services/api";
 import compressImage from "../utils/compressImage";
 import { FiX, FiImage } from "react-icons/fi";
+import useMentionAutocomplete from "../hooks/useMentionAutocomplete";
+import MentionSuggestions from "./MentionSuggestions";
 
 const MAX_IMAGES = 4;
 
@@ -11,6 +13,22 @@ const CreatePostModal = ({ closeModal, fetchPosts }) => {
   const [images, setImages] = useState([]); // File[]
   const [previews, setPreviews] = useState([]); // objectURL[]
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const textareaRef = useRef(null);
+  const mention = useMentionAutocomplete();
+
+  const handleTextChange = (e) => {
+    setText(e.target.value);
+    mention.handleTextChange(e.target.value, e.target.selectionStart);
+  };
+
+  const handleSelectMention = (username) => {
+    const { text: newText, cursorPos } = mention.applySuggestion(text, username);
+    setText(newText);
+    requestAnimationFrame(() => {
+      textareaRef.current?.focus();
+      textareaRef.current?.setSelectionRange(cursorPos, cursorPos);
+    });
+  };
 
   const handleImages = (e) => {
     const files = Array.from(e.target.files || []);
@@ -88,14 +106,24 @@ const CreatePostModal = ({ closeModal, fetchPosts }) => {
 
         {/* Body */}
         <div className="p-5 space-y-4">
-          <textarea
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            maxLength={280}
-            rows={4}
-            placeholder="What's happening?"
-            className="w-full border border-stroke rounded-xl p-4 text-sm text-ink placeholder:text-ink-muted outline-none resize-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100 transition"
-          />
+          <div className="relative">
+            <textarea
+              ref={textareaRef}
+              value={text}
+              onChange={handleTextChange}
+              onBlur={mention.closeSuggestions}
+              maxLength={280}
+              rows={4}
+              placeholder="What's happening?"
+              className="w-full border border-stroke rounded-xl p-4 text-sm text-ink placeholder:text-ink-muted outline-none resize-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100 transition"
+            />
+            {mention.showSuggestions && (
+              <MentionSuggestions
+                suggestions={mention.suggestions}
+                onSelect={handleSelectMention}
+              />
+            )}
+          </div>
           <div className="flex justify-end">
             <span className={`text-xs ${text.length >= 260 ? "text-red-400" : "text-ink-muted"}`}>
               {text.length}/280

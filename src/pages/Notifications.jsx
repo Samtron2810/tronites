@@ -1,14 +1,18 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
 import MainLayout from "../layouts/MainLayout";
 import NotificationSkeleton from "../components/NotificationSkeleton";
 import api from "../services/api";
 import { useSocket } from "../context/SocketContext";
+import { FaHeart, FaRegComment, FaUserPlus, FaAt, FaReply, FaBell } from "react-icons/fa";
 
 const typeConfig = {
-  like:    { icon: "❤️", label: "liked your post" },
-  comment: { icon: "💬", label: "commented on your post" },
-  follow:  { icon: "👤", label: "started following you" },
+  like:    { icon: FaHeart, color: "text-red-500", label: "liked your post" },
+  comment: { icon: FaRegComment, color: "text-primary-600", label: "commented on your post" },
+  follow:  { icon: FaUserPlus, color: "text-primary-600", label: "started following you" },
+  mention: { icon: FaAt, color: "text-primary-600", label: "mentioned you" },
+  reply:   { icon: FaReply, color: "text-primary-600", label: "replied to your comment" },
 };
 
 const Notifications = () => {
@@ -74,34 +78,45 @@ const Notifications = () => {
 
         {!loading && notifications.length === 0 && (
           <div className="py-16 text-center">
-            <p className="text-2xl mb-2">🔔</p>
+            <FaBell className="text-2xl mb-2 mx-auto text-ink-muted" />
             <p className="text-sm text-ink-muted">No notifications yet.</p>
           </div>
         )}
 
         <div className="divide-y divide-stroke">
           {notifications.map((n) => {
-            const cfg = typeConfig[n.type] || { icon: "🔔", label: "" };
+            const cfg = typeConfig[n.type] || { icon: FaBell, color: "text-ink-muted", label: "" };
+            const Icon = cfg.icon;
             return (
               <div
                 key={n._id}
                 className={`flex items-center gap-3 px-5 py-4 transition ${n.read ? "" : "bg-primary-50"}`}
               >
-                <img
-                  src={n.sender?.profilePic || "https://i.pravatar.cc/"}
-                  alt={n.sender?.name || "User"}
-                  className="w-10 h-10 rounded-full object-cover ring-2 ring-primary-100 shrink-0"
-                />
+                <Link to={`/profile/${n.sender?._id}`} className="shrink-0">
+                  <img
+                    src={n.sender?.profilePic || "https://i.pravatar.cc/"}
+                    alt={n.sender?.name || "User"}
+                    className="w-10 h-10 rounded-full object-cover ring-2 ring-primary-100"
+                  />
+                </Link>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm text-ink">
-                    <span className="font-semibold">{n.sender?.name || "Someone"}</span>{" "}
+                    <Link
+                      to={`/profile/${n.sender?._id}`}
+                      className="font-semibold hover:text-primary-600 transition"
+                    >
+                      {n.sender?.name || "Someone"}
+                    </Link>
+                    {n.sender?.username && (
+                      <span className="text-ink-muted text-xs"> @{n.sender.username}</span>
+                    )}{" "}
                     <span className="text-ink-sub">{cfg.label}</span>
                   </p>
                   <p className="text-xs text-ink-muted mt-0.5">
                     {new Date(n.createdAt).toLocaleString()}
                   </p>
                 </div>
-                <span className="text-lg shrink-0">{cfg.icon}</span>
+                <Icon className={`${cfg.color} shrink-0`} size={16} />
               </div>
             );
           })}

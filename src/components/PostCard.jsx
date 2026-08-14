@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Link } from "react-router-dom";
 import { FaHeart, FaRegHeart, FaRegComment, FaTrash, FaChevronLeft, FaChevronRight } from "react-icons/fa";
 import toast from "react-hot-toast";
@@ -7,11 +7,14 @@ import { useAuth } from "../context/AuthContext";
 import DeletePostModal from "./DeletePostModal";
 import { useSocket } from "../context/SocketContext";
 import TextWithLinks from "./TextWithLinks";
+import useMentionAutocomplete from "../hooks/useMentionAutocomplete";
+import MentionSuggestions from "./MentionSuggestions";
 
 const PostCard = ({
   postId,
   userId,
   name,
+  username,
   profilePic,
   time,
   text,
@@ -40,6 +43,10 @@ const PostCard = ({
   const [activeSlide, setActiveSlide] = useState(0);
   const [replyingTo, setReplyingTo] = useState(null); // commentId or null
   const [replyText, setReplyText] = useState("");
+  const commentInputRef = useRef(null);
+  const replyInputRef = useRef(null);
+  const commentMention = useMentionAutocomplete();
+  const replyMention = useMentionAutocomplete();
   const [isReplySending, setIsReplySending] = useState(false);
   const [openReplies, setOpenReplies] = useState({}); // { [commentId]: boolean }
   const [repliesByComment, setRepliesByComment] = useState({}); // { [commentId]: replies[] }
@@ -74,6 +81,34 @@ const PostCard = ({
     } finally {
       setIsCommentSending(false);
     }
+  };
+
+  const handleCommentTextChange = (e) => {
+    setCommentText(e.target.value);
+    commentMention.handleTextChange(e.target.value, e.target.selectionStart);
+  };
+
+  const handleSelectCommentMention = (uname) => {
+    const { text: newText, cursorPos } = commentMention.applySuggestion(commentText, uname);
+    setCommentText(newText);
+    requestAnimationFrame(() => {
+      commentInputRef.current?.focus();
+      commentInputRef.current?.setSelectionRange(cursorPos, cursorPos);
+    });
+  };
+
+  const handleReplyTextChange = (e) => {
+    setReplyText(e.target.value);
+    replyMention.handleTextChange(e.target.value, e.target.selectionStart);
+  };
+
+  const handleSelectReplyMention = (uname) => {
+    const { text: newText, cursorPos } = replyMention.applySuggestion(replyText, uname);
+    setReplyText(newText);
+    requestAnimationFrame(() => {
+      replyInputRef.current?.focus();
+      replyInputRef.current?.setSelectionRange(cursorPos, cursorPos);
+    });
   };
 
   const handleDeleteComment = async (commentId) => {
@@ -317,12 +352,17 @@ const PostCard = ({
               className="w-10 h-10 rounded-full object-cover ring-2 ring-primary-100"
             />
             <div>
-              <Link
-                to={`/profile/${userId}`}
-                className="text-sm font-semibold text-ink hover:text-primary-600 transition"
-              >
-                {name}
-              </Link>
+              <div className="flex items-center gap-1.5">
+                <Link
+                  to={`/profile/${userId}`}
+                  className="text-sm font-semibold text-ink hover:text-primary-600 transition"
+                >
+                  {name}
+                </Link>
+                {username && (
+                  <span className="text-xs text-ink-muted">@{username}</span>
+                )}
+              </div>
               <p className="text-xs text-ink-muted">{time}</p>
             </div>
           </div>
@@ -419,13 +459,23 @@ const PostCard = ({
         {showComments && (
           <div className="mt-4 space-y-3">
             {/* Input */}
-            <div className="flex gap-2">
-              <input
-                value={commentText}
-                onChange={(e) => setCommentText(e.target.value)}
-                placeholder="Write a comment..."
-                className="flex-1 border border-stroke rounded-xl px-3 py-2 text-sm text-ink placeholder:text-ink-muted outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100 transition"
-              />
+            <div className="flex gap-2 relative">
+              <div className="flex-1 relative">
+                <input
+                  ref={commentInputRef}
+                  value={commentText}
+                  onChange={handleCommentTextChange}
+                  onBlur={commentMention.closeSuggestions}
+                  placeholder="Write a comment..."
+                  className="w-full border border-stroke rounded-xl px-3 py-2 text-sm text-ink placeholder:text-ink-muted outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100 transition"
+                />
+                {commentMention.showSuggestions && (
+                  <MentionSuggestions
+                    suggestions={commentMention.suggestions}
+                    onSelect={handleSelectCommentMention}
+                  />
+                )}
+              </div>
               <button
                 onClick={handleAddComment}
                 disabled={!commentText.trim() || isCommentSending}
@@ -447,12 +497,17 @@ const PostCard = ({
               {visibleComments.map((c) => (
                 <div key={c._id} className="bg-surface rounded-xl px-3 py-2">
                   <div className="flex items-center justify-between">
-                    <Link
-                      to={`/profile/${c.user._id}`}
-                      className="text-xs font-semibold text-ink hover:text-primary-600 transition"
-                    >
-                      {c.user.name}
-                    </Link>
+                    <div className="flex items-center gap-1">
+                      <Link
+                        to={`/profile/${c.user._id}`}
+                        className="text-xs font-semibold text-ink hover:text-primary-600 transition"
+                      >
+                        {c.user.name}
+                      </Link>
+                      {c.user.username && (
+                        <span className="text-[11px] text-ink-muted">@{c.user.username}</span>
+                      )}
+                    </div>
                     {c.user._id === currentUser?._id && (
                       <button
                         onClick={() => handleDeleteComment(c._id)}
@@ -491,17 +546,27 @@ const PostCard = ({
 
                   {/* Reply input */}
                   {replyingTo === c._id && (
-                    <div className="flex gap-2 mt-2">
-                      <input
-                        value={replyText}
-                        onChange={(e) => setReplyText(e.target.value)}
-                        placeholder={`Reply to ${c.user.name}...`}
-                        autoFocus
-                        onKeyDown={(e) =>
-                          e.key === "Enter" && handleAddReply(c._id)
-                        }
-                        className="flex-1 border border-stroke rounded-lg px-3 py-1.5 text-xs text-ink placeholder:text-ink-muted outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100 transition"
-                      />
+                    <div className="flex gap-2 mt-2 relative">
+                      <div className="flex-1 relative">
+                        <input
+                          ref={replyInputRef}
+                          value={replyText}
+                          onChange={handleReplyTextChange}
+                          onBlur={replyMention.closeSuggestions}
+                          placeholder={`Reply to ${c.user.name}...`}
+                          autoFocus
+                          onKeyDown={(e) =>
+                            e.key === "Enter" && !replyMention.showSuggestions && handleAddReply(c._id)
+                          }
+                          className="w-full border border-stroke rounded-lg px-3 py-1.5 text-xs text-ink placeholder:text-ink-muted outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100 transition"
+                        />
+                        {replyMention.showSuggestions && (
+                          <MentionSuggestions
+                            suggestions={replyMention.suggestions}
+                            onSelect={handleSelectReplyMention}
+                          />
+                        )}
+                      </div>
                       <button
                         onClick={() => handleAddReply(c._id)}
                         disabled={!replyText.trim() || isReplySending}
@@ -522,12 +587,17 @@ const PostCard = ({
                         (repliesByComment[c._id] || []).map((r) => (
                           <div key={r._id} className="bg-white rounded-lg px-3 py-2">
                             <div className="flex items-center justify-between">
-                              <Link
-                                to={`/profile/${r.user._id}`}
-                                className="text-xs font-semibold text-ink hover:text-primary-600 transition"
-                              >
-                                {r.user.name}
-                              </Link>
+                              <div className="flex items-center gap-1">
+                                <Link
+                                  to={`/profile/${r.user._id}`}
+                                  className="text-xs font-semibold text-ink hover:text-primary-600 transition"
+                                >
+                                  {r.user.name}
+                                </Link>
+                                {r.user.username && (
+                                  <span className="text-[11px] text-ink-muted">@{r.user.username}</span>
+                                )}
+                              </div>
                               {r.user._id === currentUser?._id && (
                                 <button
                                   onClick={() => handleDeleteReply(r._id, c._id)}

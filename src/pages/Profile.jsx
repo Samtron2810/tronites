@@ -306,6 +306,9 @@ const Profile = () => {
 
           {/* Name + bio */}
           <h1 className="text-xl font-bold text-ink">{profile.name}</h1>
+          {profile.username && (
+            <p className="text-sm text-ink-muted -mt-0.5">@{profile.username}</p>
+          )}
 
           {editingBio ? (
             <div className="flex items-center gap-2 mt-2">
@@ -387,6 +390,7 @@ const Profile = () => {
             postId={post._id}
             userId={post.user?._id || profile._id}
             name={profile.name}
+            username={profile.username}
             profilePic={profile.profilePic}
             time={new Date(post.createdAt).toLocaleString()}
             text={post.text}

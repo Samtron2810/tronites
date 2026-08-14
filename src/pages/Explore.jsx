@@ -143,6 +143,9 @@ const Explore = () => {
                 </div>
                 <div className="min-w-0">
                   <p className="text-sm font-semibold text-ink truncate">{user.name}</p>
+                  {user.username && (
+                    <p className="text-xs text-primary-600 truncate">@{user.username}</p>
+                  )}
                   <p className="text-xs text-ink-muted truncate">{user.bio || "No bio"}</p>
                 </div>
               </Link>

@@ -65,6 +65,11 @@ const ChatModal = ({
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-ink truncate">
               {activeUser?.name}
+              {activeUser?.username && (
+                <span className="ml-1 font-normal text-xs text-ink-muted">
+                  @{activeUser.username}
+                </span>
+              )}
             </p>
             <p
               className={`text-xs ${activeIsOnline ? "text-primary-600" : "text-ink-muted"}`}
