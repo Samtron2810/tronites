@@ -12,13 +12,26 @@ export const SocketProvider = ({ children }) => {
 
   useEffect(() => {
     if (user) {
-      // Dynamically extract socket host based on api.defaults.baseURL
-      const apiURL = api.defaults.baseURL || "http://localhost:5000/api";
-      const socketUrl = apiURL.replace("/api", "");
+      // Derive the socket origin via URL parsing, not string replacement.
+      // api.defaults.baseURL can be an absolute URL (e.g.
+      // "https://api.example.com/api") or a bare relative path ("/api"),
+      // and the old `apiURL.replace("/api", "")` broke on the absolute
+      // case: the FIRST "/api" substring in
+      // "https://api.example.com/api" is the slash right before the
+      // "api." hostname, not the trailing path — replacing it produced an
+      // invalid origin. new URL()'s second argument only applies when the
+      // first is relative, so this correctly handles both shapes.
+      const socketOrigin = new URL(
+        api.defaults.baseURL || "http://localhost:5000/api",
+        window.location.origin,
+      ).origin;
 
-      const newSocket = io(socketUrl, {
+      const newSocket = io(socketOrigin, {
         withCredentials: true, // send the httpOnly JWT cookie so the server can authenticate the connection
-        transports: ["websocket"], // Enforce WebSocket only
+        // Not forcing websocket-only here: that skips Socket.IO's normal
+        // polling-first-then-upgrade handshake, which is more resilient
+        // to proxies/load balancers that don't cleanly support a
+        // WebSocket upgrade on the first request.
       });
 
       setSocket(newSocket);
