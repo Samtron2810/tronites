@@ -25,11 +25,19 @@ const Register = () => {
     try {
       const res = await register(formData);
       toast.success(res.message || "OTP sent to your email");
-      // Proves to VerifyOtp that this is a real, just-initiated signup —
-      // not someone who typed /verify-otp?email=... directly. Expires
-      // with the tab/session, and is cleared once verification succeeds.
-      sessionStorage.setItem("pendingOtpEmail", formData.email);
-      navigate(`/verify-otp?email=${encodeURIComponent(formData.email)}`);
+      // challengeId is an opaque, server-issued, single-use handle — not
+      // the email itself, and not a security control on its own. It just
+      // lets VerifyOtp know which pending challenge to show without
+      // putting an email address in the URL. All real enforcement
+      // (attempt limits, expiry, hashed comparison) happens server-side
+      // regardless of what's carried here. Router state avoids the URL
+      // entirely; sessionStorage is only a fallback so a page refresh
+      // (which clears router state) doesn't strand the user.
+      sessionStorage.setItem("otpChallengeId", res.challengeId);
+      sessionStorage.setItem("otpEmail", res.email);
+      navigate("/verify-otp", {
+        state: { challengeId: res.challengeId, email: res.email },
+      });
     } catch (error) {
       toast.error(error.response?.data?.message || "Registration failed");
     } finally {
@@ -107,6 +115,7 @@ const Register = () => {
                 value={formData.password}
                 onChange={handleChange}
                 required
+                minLength={10}
                 className="w-full pl-9 pr-10 py-3 rounded-xl border border-stroke bg-white text-ink text-sm placeholder:text-ink-muted outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100 transition"
               />
               <button
@@ -117,6 +126,7 @@ const Register = () => {
                 {showPassword ? <FiEyeOff size={15} /> : <FiEye size={15} />}
               </button>
             </div>
+            <p className="text-xs text-ink-muted -mt-2 pl-1">At least 10 characters.</p>
 
             <button
               type="submit"

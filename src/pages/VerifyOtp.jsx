@@ -1,31 +1,38 @@
 import { useEffect, useState } from "react";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import api from "../services/api";
 import { useAuth } from "../context/AuthContext";
 import { FiMail, FiRefreshCw } from "react-icons/fi";
 
 const VerifyOtp = () => {
-  const [searchParams] = useSearchParams();
+  const location = useLocation();
   const navigate = useNavigate();
   const { getMe } = useAuth();
 
-  const emailFromQuery = searchParams.get("email") || "";
-  const [email, setEmail] = useState(emailFromQuery);
+  // Router state is the primary source (never touches the URL); session
+  // storage is only a fallback so a page refresh — which clears router
+  // state — doesn't strand someone mid-flow. Neither one is a security
+  // control: the challengeId is just a UI handle for "which pending
+  // challenge is this page showing". Every real check (rate limits,
+  // attempt limits, expiry, hashed comparison) happens server-side
+  // regardless of what's held here or how it got here.
+  const [challengeId] = useState(
+    () => location.state?.challengeId || sessionStorage.getItem("otpChallengeId") || "",
+  );
+  const [email] = useState(
+    () => location.state?.email || sessionStorage.getItem("otpEmail") || "",
+  );
   const [otp, setOtp] = useState("");
   const [loading, setLoading] = useState(false);
   const [resendLoading, setResendLoading] = useState(false);
 
-  useEffect(() => { setEmail(emailFromQuery); }, [emailFromQuery]);
-
-  // Guard against opening this page cold — directly typing the URL,
-  // an old bookmark, or a stale tab — where there's no real signup in
-  // flight. sessionStorage is set by Register.jsx right after it
-  // actually sends the OTP, so its absence (or a mismatched email)
-  // means this wasn't reached through the real flow.
+  // If there's nothing to verify (cold URL open, old bookmark, stale
+  // tab), there's no point showing this page — send them back to start
+  // a real flow. This is purely for a sane UX; it changes nothing about
+  // what the server will accept.
   useEffect(() => {
-    const pendingEmail = sessionStorage.getItem("pendingOtpEmail");
-    if (!emailFromQuery || !pendingEmail || pendingEmail !== emailFromQuery) {
+    if (!challengeId) {
       toast.error("Please start by creating an account or logging in.");
       navigate("/login", { replace: true });
     }
@@ -36,8 +43,9 @@ const VerifyOtp = () => {
     if (loading) return;
     setLoading(true);
     try {
-      await api.post("/auth/verify-otp", { email, otp });
-      sessionStorage.removeItem("pendingOtpEmail");
+      await api.post("/auth/verify-otp", { challengeId, otp });
+      sessionStorage.removeItem("otpChallengeId");
+      sessionStorage.removeItem("otpEmail");
       await getMe();
       toast.success("Verified. Welcome!");
       navigate("/choose-username");
@@ -52,7 +60,7 @@ const VerifyOtp = () => {
     if (resendLoading) return;
     setResendLoading(true);
     try {
-      await api.post("/auth/resend-otp", { email });
+      await api.post("/auth/resend-otp", { challengeId });
       toast.success("OTP resent");
     } catch (error) {
       toast.error(error.response?.data?.message || "Resend failed");
