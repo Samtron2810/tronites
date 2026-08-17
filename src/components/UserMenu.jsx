@@ -1,0 +1,166 @@
+import { useRef, useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import {
+  FaUser,
+  FaCog,
+  FaChartBar,
+  FaBullhorn,
+  FaQuestionCircle,
+  FaFileContract,
+  FaSignOutAlt,
+} from "react-icons/fa";
+
+const UserMenu = ({ user, onLogoutClick }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const menuRef = useRef(null);
+  const triggerRef = useRef(null);
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        menuRef.current &&
+        !menuRef.current.contains(event.target) &&
+        triggerRef.current &&
+        !triggerRef.current.contains(event.target)
+      ) {
+        setIsOpen(false);
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => {
+        document.removeEventListener("mousedown", handleClickOutside);
+      };
+    }
+  }, [isOpen]);
+
+  const menuItems = [
+    {
+      icon: FaUser,
+      label: "Profile",
+      href: `/profile/${user._id}`,
+      disabled: false,
+      isLink: true,
+      onClick: () => setIsOpen(false),
+    },
+    {
+      icon: FaCog,
+      label: "Settings",
+      disabled: true,
+      isLink: false,
+    },
+    {
+      icon: FaChartBar,
+      label: "Dashboard",
+      disabled: true,
+      isLink: false,
+    },
+    {
+      icon: FaBullhorn,
+      label: "Ads",
+      disabled: true,
+      isLink: false,
+    },
+    {
+      icon: FaQuestionCircle,
+      label: "Help and Support",
+      disabled: true,
+      isLink: false,
+    },
+    {
+      icon: FaFileContract,
+      label: "Privacy & Terms of Use",
+      disabled: true,
+      isLink: false,
+    },
+    {
+      icon: FaSignOutAlt,
+      label: "Logout",
+      disabled: false,
+      isLink: false,
+      onClick: () => {
+        setIsOpen(false);
+        onLogoutClick();
+      },
+      isLogout: true,
+    },
+  ];
+
+  return (
+    <div className="relative">
+      {/* Trigger Button */}
+      <button
+        ref={triggerRef}
+        onClick={() => setIsOpen(!isOpen)}
+        className="ml-2 flex items-center justify-center w-9 h-9 rounded-full border-2 border-primary-600 text-ink-sub hover:text-ink hover:bg-primary-50 transition-all duration-200"
+        title="User menu"
+      >
+        <img
+          src={user.profilePic || `https://i.pravatar.cc/150?u=${user._id}`}
+          alt={user.name}
+          className="w-full h-full rounded-full object-cover"
+        />
+      </button>
+
+      {/* Dropdown Menu */}
+      {isOpen && (
+        <div
+          ref={menuRef}
+          className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-stroke z-40 py-1"
+        >
+          {menuItems.map((item, index) => {
+            const Icon = item.icon;
+            const isLastItem = index === menuItems.length - 1;
+
+            // Add separator before logout
+            const addSeparator = isLastItem && index > 0;
+
+            return (
+              <div key={index}>
+                {addSeparator && <div className="h-px bg-stroke my-1" />}
+
+                {item.isLink ? (
+                  <Link
+                    to={item.href}
+                    onClick={item.onClick}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-primary-50 transition"
+                  >
+                    <Icon className="text-base text-primary-600" />
+                    <span className="text-ink font-medium">{item.label}</span>
+                  </Link>
+                ) : (
+                  <button
+                    onClick={item.onClick}
+                    disabled={item.disabled}
+                    className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm transition ${
+                      item.isLogout
+                        ? "text-red-600 hover:bg-red-50"
+                        : item.disabled
+                          ? "text-ink-muted cursor-not-allowed"
+                          : "hover:bg-primary-50"
+                    }`}
+                  >
+                    <Icon
+                      className={`text-base ${
+                        item.isLogout
+                          ? "text-red-600"
+                          : item.disabled
+                            ? "text-ink-muted"
+                            : "text-primary-600"
+                      }`}
+                    />
+                    <span>{item.label}</span>
+                  </button>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default UserMenu;

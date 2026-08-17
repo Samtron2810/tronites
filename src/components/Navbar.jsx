@@ -2,17 +2,12 @@ import { Link, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import logo from "../assets/tronite-logo.png";
-import {
-  FaHome,
-  FaCompass,
-  FaUser,
-  FaComments,
-  FaSignOutAlt,
-} from "react-icons/fa";
+import { FaHome, FaCompass, FaComments } from "react-icons/fa";
 import { useAuth } from "../context/AuthContext";
 import { useSocket } from "../context/SocketContext";
 import NotificationBell from "./NotificationBell";
 import LogoutModal from "./LogoutModal";
+import UserMenu from "./UserMenu";
 import api from "../services/api";
 
 const NavLink = ({ to, icon: Icon, label, badge }) => {
@@ -111,7 +106,6 @@ const Navbar = () => {
         <div className="flex items-center gap-1">
           <NavLink to="/" icon={FaHome} label="Feed" />
           <NavLink to="/explore" icon={FaCompass} label="Explore" />
-          <NavLink to={`/profile/${user._id}`} icon={FaUser} label="Profile" />
           <NavLink
             to="/chat"
             icon={FaComments}
@@ -119,17 +113,10 @@ const Navbar = () => {
             badge={unreadCount}
           />
           <NotificationBell />
-
-          <button
-            onClick={() => setShowLogoutModal(true)}
-            disabled={isLoggingOut}
-            className="ml-2 flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-ink-sub hover:text-red-600 hover:bg-red-50 transition-all duration-200 disabled:opacity-50"
-          >
-            <FaSignOutAlt />
-            <span className="hidden lg:inline">
-              {isLoggingOut ? "Logging out..." : "Logout"}
-            </span>
-          </button>
+          <UserMenu
+            user={user}
+            onLogoutClick={() => setShowLogoutModal(true)}
+          />
         </div>
       </div>
 
