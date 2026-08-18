@@ -14,7 +14,7 @@ const buildConversationId = (a, b) =>
 
 const Chat = () => {
   const { user } = useAuth();
-  const { socket, onlineUsers } = useSocket();
+  const { socket, onlineUsers, refreshUnreadCount } = useSocket();
   const audioRef = useRef(null);
   const audioUnlockedRef = useRef(false);
   const lastSoundPlayedAtRef = useRef(0);
@@ -157,6 +157,8 @@ const Chat = () => {
     try {
       setThreadLoading(true);
       // Server paginates thread history (most recent page, oldest-first)
+      // and marks the thread's messages as read as a side effect of
+      // this GET.
       const res = await api.get(`/messages/${otherUser._id}`, {
         params: { page: 1, limit: 30 },
       });
@@ -184,6 +186,14 @@ const Chat = () => {
       setConversationsPage(1);
       setConversationsHasMore(convsRes.data.hasMore);
       setTotalConversationsCount(convsRes.data.totalConversations);
+      // Tell the navbar badge directly that this thread was just read,
+      // rather than waiting on a "messagesRead" socket event to round
+      // -trip back. That event is emitted by the server as a side
+      // effect of the GET above, but this client doesn't join the
+      // conversation's socket room until the *next* effect run (after
+      // selectedChat updates) — so it reliably missed its own read
+      // event and the badge only ever caught up on a full page reload.
+      refreshUnreadCount();
     } catch (e) {
       console.error(e);
     } finally {
@@ -292,7 +302,11 @@ const Chat = () => {
       }
     } catch (e) {
       const code = e?.response?.data?.code;
-      if (code === "REQUEST_PENDING" || code === "DECLINED" || code === "BLOCKED") {
+      if (
+        code === "REQUEST_PENDING" ||
+        code === "DECLINED" ||
+        code === "BLOCKED"
+      ) {
         alert(e.response.data.message);
       } else {
         alert(`Error: ${e?.response?.data?.message || e.message}`);
@@ -446,6 +460,15 @@ const Chat = () => {
     };
     socket.on("messageRequestAccepted", handleRequestAccepted);
     socket.on("messagesRead", (data) => {
+      // Always update the conversation list to clear unread count
+      setConversations((prev) =>
+        prev.map((c) =>
+          c.conversationId === data.conversationId
+            ? { ...c, unreadCount: 0 }
+            : c,
+        ),
+      );
+      // Also update current message thread if viewing it
       if (data.conversationId === selectedChat?.conversationId) {
         setMessages((prev) =>
           prev.map((m) => ({
@@ -580,7 +603,9 @@ const Chat = () => {
                           )}
                         </div>
                         <p className="text-xs text-ink-muted truncate">
-                          {isPendingSent ? "Message request sent" : conv.lastMessage}
+                          {isPendingSent
+                            ? "Message request sent"
+                            : conv.lastMessage}
                         </p>
                       </div>
                     </div>
@@ -588,9 +613,14 @@ const Chat = () => {
                 );
               })}
             {!loading && conversationsHasMore && conversations.length > 0 && (
-              <div ref={conversationsObserverTarget} className="py-4 text-center">
+              <div
+                ref={conversationsObserverTarget}
+                className="py-4 text-center"
+              >
                 {isLoadingMoreConversations && (
-                  <p className="text-xs text-ink-muted">Loading more chats...</p>
+                  <p className="text-xs text-ink-muted">
+                    Loading more chats...
+                  </p>
                 )}
               </div>
             )}
@@ -614,7 +644,9 @@ const Chat = () => {
                 <div key={req.conversationId} className="px-5 py-4">
                   <div className="flex items-center gap-3">
                     <img
-                      src={req.otherUser.profilePic || "https://i.pravatar.cc/150"}
+                      src={
+                        req.otherUser.profilePic || "https://i.pravatar.cc/150"
+                      }
                       alt={req.otherUser.name}
                       className="w-11 h-11 rounded-full object-cover ring-2 ring-primary-100 shrink-0"
                     />
@@ -628,7 +660,8 @@ const Chat = () => {
                         )}
                       </p>
                       <p className="text-xs text-ink-muted truncate">
-                        {req.message?.text || (req.message?.image ? "Sent a photo" : "")}
+                        {req.message?.text ||
+                          (req.message?.image ? "Sent a photo" : "")}
                       </p>
                     </div>
                   </div>
@@ -638,7 +671,9 @@ const Chat = () => {
                       disabled={requestActionId === req.conversationId}
                       className="flex-1 py-2 rounded-lg text-xs font-semibold text-white bg-primary-600 hover:bg-primary-800 disabled:opacity-50 transition"
                     >
-                      {requestActionId === req.conversationId ? "..." : "Accept"}
+                      {requestActionId === req.conversationId
+                        ? "..."
+                        : "Accept"}
                     </button>
                     <button
                       onClick={() => handleDeclineRequest(req)}

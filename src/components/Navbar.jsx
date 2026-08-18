@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { createPortal } from "react-dom";
 import logo from "../assets/tronite-logo.png";
 import { FaHome, FaCompass, FaComments } from "react-icons/fa";
@@ -8,7 +8,6 @@ import { useSocket } from "../context/SocketContext";
 import NotificationBell from "./NotificationBell";
 import LogoutModal from "./LogoutModal";
 import UserMenu from "./UserMenu";
-import api from "../services/api";
 
 const NavLink = ({ to, icon: Icon, label, badge }) => {
   const { pathname } = useLocation();
@@ -35,8 +34,14 @@ const NavLink = ({ to, icon: Icon, label, badge }) => {
 
 const Navbar = () => {
   const { user, logout } = useAuth();
-  const { socket } = useSocket();
-  const [unreadCount, setUnreadCount] = useState(0);
+  // unreadCount now lives in SocketContext, shared with the Chat page.
+  // Chat calls refreshUnreadCount() itself right after marking a thread
+  // read, so the badge no longer depends on a "messagesRead" socket
+  // event round-tripping back before it updates — that round trip was
+  // the source of the stale-badge-until-refresh bug, since Chat's own
+  // socket didn't join the conversation room until after the read
+  // request (and its resulting event) had already gone out.
+  const { unreadCount } = useSocket();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
 
@@ -50,42 +55,6 @@ const Navbar = () => {
       setShowLogoutModal(false);
     }
   };
-
-  const fetchUnreadCount = async () => {
-    try {
-      // Note: sums unread across the first 50 conversations only. A
-      // user with more active threads than that would need a dedicated
-      // unread-count endpoint for a fully accurate badge.
-      const res = await api.get("/messages/conversations", {
-        params: { page: 1, limit: 50 },
-      });
-      const total = res.data.conversations.reduce(
-        (sum, c) => sum + (c.unreadCount || 0),
-        0,
-      );
-      setUnreadCount(total);
-    } catch {}
-  };
-
-  useEffect(() => {
-    fetchUnreadCount();
-  }, []);
-
-  useEffect(() => {
-    if (!socket) return;
-    const onMsg = (msg) => {
-      if (msg.receiver._id === user?._id) setUnreadCount((p) => p + 1);
-    };
-    const onRefresh = () => fetchUnreadCount();
-    socket.on("receiveMessage", onMsg);
-    socket.on("messageDeleted", onRefresh);
-    socket.on("messagesRead", onRefresh);
-    return () => {
-      socket.off("receiveMessage", onMsg);
-      socket.off("messageDeleted", onRefresh);
-      socket.off("messagesRead", onRefresh);
-    };
-  }, [socket, user?._id]);
 
   if (!user) return null;
 
