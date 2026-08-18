@@ -1,8 +1,7 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import api from "../services/api";
-
-const AuthContext = createContext();
+import { AuthContext } from "./authContextObject";
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
@@ -37,21 +36,22 @@ export const AuthProvider = ({ children }) => {
   };
 
   // GET CURRENT USER
-  const getMe = async () => {
+  const getMe = useCallback(async () => {
     try {
       const res = await api.get("/auth/me");
 
       setUser(res.data);
-    } catch (error) {
+    } catch {
       setUser(null);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch-on-mount; setState happens inside the async fn, not synchronously here
     getMe();
-  }, []);
+  }, [getMe]);
 
   return (
     <AuthContext.Provider
@@ -69,5 +69,3 @@ export const AuthProvider = ({ children }) => {
     </AuthContext.Provider>
   );
 };
-
-export const useAuth = () => useContext(AuthContext);

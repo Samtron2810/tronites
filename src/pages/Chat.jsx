@@ -3,8 +3,8 @@ import { useSearchParams } from "react-router-dom";
 import MainLayout from "../layouts/MainLayout";
 import api from "../services/api";
 import compressImage from "../utils/compressImage";
-import { useAuth } from "../context/AuthContext";
-import { useSocket } from "../context/SocketContext";
+import { useAuth } from "../context/useAuth";
+import { useSocket } from "../context/useSocket";
 import ChatModal from "../components/ChatModal";
 import ChatSkeleton from "../components/ChatSkeleton";
 import { FaComment } from "react-icons/fa";
@@ -417,11 +417,14 @@ const Chat = () => {
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch-on-mount
     fetchConversations();
     fetchRequests();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
+    const target = conversationsObserverTarget.current;
     const observer = new IntersectionObserver(
       (entries) => {
         if (
@@ -435,12 +438,11 @@ const Chat = () => {
       },
       { threshold: 0.1 },
     );
-    if (conversationsObserverTarget.current)
-      observer.observe(conversationsObserverTarget.current);
+    if (target) observer.observe(target);
     return () => {
-      if (conversationsObserverTarget.current)
-        observer.unobserve(conversationsObserverTarget.current);
+      if (target) observer.unobserve(target);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     conversationsPage,
     conversationsHasMore,
@@ -501,6 +503,12 @@ const Chat = () => {
       if (selectedChat?.conversationId)
         socket.emit("leaveConversation", selectedChat.conversationId);
     };
+    // selectedChat/updateConversationPreview intentionally omitted: this
+    // effect manages the socket subscription lifecycle (join/leave room),
+    // which should only re-run on socket/user identity change — not on
+    // every selectedChat update, which the handlers already read fresh
+    // via closure re-creation each render anyway.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [socket, selectedChat, user._id]);
 
   useEffect(() => {
@@ -516,6 +524,8 @@ const Chat = () => {
 
   useEffect(() => {
     if (!selectedChat) hasScrolledToBottom.current = false;
+    // Only .conversationId identity matters here, not the whole object.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedChat?.conversationId]);
 
   return (

@@ -4,7 +4,7 @@ import toast from "react-hot-toast";
 import MainLayout from "../layouts/MainLayout";
 import NotificationSkeleton from "../components/NotificationSkeleton";
 import api from "../services/api";
-import { useSocket } from "../context/SocketContext";
+import { useSocket } from "../context/useSocket";
 import { FaHeart, FaRegComment, FaUserPlus, FaAt, FaReply, FaBell } from "react-icons/fa";
 
 const typeConfig = {

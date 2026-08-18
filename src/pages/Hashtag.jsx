@@ -35,11 +35,13 @@ const Hashtag = () => {
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch-on-mount/tag-change
     fetchPosts(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tag]);
 
   useEffect(() => {
+    const target = observerTarget.current;
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting && hasMore && !isLoadingMore && !loading)
@@ -47,10 +49,11 @@ const Hashtag = () => {
       },
       { threshold: 0.1 },
     );
-    if (observerTarget.current) observer.observe(observerTarget.current);
+    if (target) observer.observe(target);
     return () => {
-      if (observerTarget.current) observer.unobserve(observerTarget.current);
+      if (target) observer.unobserve(target);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, hasMore, isLoadingMore, loading]);
 
   return (

@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import MainLayout from "../layouts/MainLayout";
 import toast from "react-hot-toast";
@@ -6,8 +6,8 @@ import PostCard from "../components/PostCard";
 import ProfileSkeleton from "../components/ProfileSkeleton";
 import api from "../services/api";
 import compressImage from "../utils/compressImage";
-import { useAuth } from "../context/AuthContext";
-import { useSocket } from "../context/SocketContext";
+import { useAuth } from "../context/useAuth";
+import { useSocket } from "../context/useSocket";
 import { FiEdit2, FiMessageCircle, FiCamera, FiMoreVertical, FiSlash, FiFlag, FiBellOff, FiBell } from "react-icons/fi";
 import BlockUserModal from "../components/BlockUserModal";
 import ReportModal from "../components/ReportModal";
@@ -38,7 +38,7 @@ const Profile = () => {
   const [isMuted, setIsMuted] = useState(false);
   const postsObserverTarget = useRef(null);
 
-  const fetchProfile = async () => {
+  const fetchProfile = useCallback(async () => {
     try {
       const res = await api.get(`/users/profile/${id}?page=1&limit=12`);
       setProfile(res.data.user);
@@ -59,9 +59,9 @@ const Profile = () => {
     } catch (e) {
       console.error(e);
     }
-  };
+  }, [id, currentUser]);
 
-  const fetchMorePosts = async () => {
+  const fetchMorePosts = useCallback(async () => {
     if (isLoadingMorePosts || !postsHasMore) return;
     try {
       setIsLoadingMorePosts(true);
@@ -78,13 +78,19 @@ const Profile = () => {
     } finally {
       setIsLoadingMorePosts(false);
     }
-  };
+  }, [id, isLoadingMorePosts, postsHasMore, postsPage]);
 
+  // Fetch on mount / when the viewed profile id changes. Data-fetch-in-effect
+  // is the documented React pattern; the lint rule flags it because
+  // fetchProfile eventually calls setState, but there's no synchronous
+  // setState in the effect body itself.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- documented data-fetch-on-mount pattern; no sync setState in the effect body itself
     fetchProfile();
-  }, [id]);
+  }, [fetchProfile]);
 
   useEffect(() => {
+    const target = postsObserverTarget.current;
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting && postsHasMore && !isLoadingMorePosts)
@@ -92,13 +98,11 @@ const Profile = () => {
       },
       { threshold: 0.1 },
     );
-    if (postsObserverTarget.current)
-      observer.observe(postsObserverTarget.current);
+    if (target) observer.observe(target);
     return () => {
-      if (postsObserverTarget.current)
-        observer.unobserve(postsObserverTarget.current);
+      if (target) observer.unobserve(target);
     };
-  }, [postsPage, postsHasMore, isLoadingMorePosts, id]);
+  }, [postsHasMore, isLoadingMorePosts, fetchMorePosts]);
 
   const handleFollow = async () => {
     if (isFollowingLoading) return;
@@ -244,8 +248,13 @@ const Profile = () => {
               <img
                 src={profile.profilePic || "https://i.pravatar.cc/"}
                 alt="profile"
-                className="w-20 h-20 rounded-2xl object-cover ring-4 ring-white shadow-sm"
+                className={`w-20 h-20 rounded-2xl object-cover ring-4 ring-white shadow-sm ${uploading ? "opacity-50" : ""}`}
               />
+              {uploading && (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="h-5 w-5 border-2 border-primary-600 border-t-transparent rounded-full animate-spin" />
+                </div>
+              )}
               {/* only show this if not own profile */}
               {!isOwnProfile && (
                 <span
@@ -260,6 +269,7 @@ const Profile = () => {
                     type="file"
                     accept="image/*"
                     hidden
+                    disabled={uploading}
                     onChange={handleProfileUpload}
                   />
                 </label>

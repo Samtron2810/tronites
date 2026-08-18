@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import api from "../services/api";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/useAuth";
 import { FiHash, FiCheck, FiX, FiLoader, FiLogOut } from "react-icons/fi";
 
 const USERNAME_RE = /^[a-z0-9_]{3,20}$/;
@@ -23,14 +23,17 @@ const ChooseUsername = () => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
 
     if (!clean) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- immediate sync feedback for a debounced input; not a prop-mirror
       setStatus("idle");
       return;
     }
     if (!USERNAME_RE.test(clean)) {
+       
       setStatus("invalid");
       return;
     }
 
+     
     setStatus("checking");
     debounceRef.current = setTimeout(async () => {
       try {
@@ -72,7 +75,7 @@ const ChooseUsername = () => {
       await logout();
       toast.success("Signed out");
       navigate("/login", { replace: true });
-    } catch (error) {
+    } catch {
       toast.error("Couldn't sign out. Try again.");
       setCancelling(false);
     }

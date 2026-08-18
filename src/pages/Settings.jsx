@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import toast from "react-hot-toast";
 import MainLayout from "../layouts/MainLayout";
 import api from "../services/api";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/useAuth";
 import { FiEye, FiEyeOff, FiUsers } from "react-icons/fi";
 
 const VISIBILITY_OPTIONS = [
@@ -28,12 +28,21 @@ const VISIBILITY_OPTIONS = [
 
 const Settings = () => {
   const { user, updateUser } = useAuth();
-  const [visibility, setVisibility] = useState(user?.presenceVisibility || "everyone");
+  // Track both the local (possibly optimistic) value and the last server
+  // value we synced from, in one state object — avoids a useEffect sync
+  // and avoids reading/writing refs during render.
+  const [state, setState] = useState(() => ({
+    visibility: user?.presenceVisibility || "everyone",
+    syncedFrom: user?.presenceVisibility,
+  }));
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    if (user?.presenceVisibility) setVisibility(user.presenceVisibility);
-  }, [user?.presenceVisibility]);
+  if (user?.presenceVisibility && user.presenceVisibility !== state.syncedFrom) {
+    setState({ visibility: user.presenceVisibility, syncedFrom: user.presenceVisibility });
+  }
+  const visibility = state.visibility;
+  const setVisibility = (value) =>
+    setState((prev) => ({ ...prev, visibility: value }));
 
   const handleChange = async (value) => {
     if (value === visibility || saving) return;

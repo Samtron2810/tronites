@@ -3,7 +3,7 @@ import { Link, Navigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import MainLayout from "../layouts/MainLayout";
 import api from "../services/api";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/useAuth";
 import { FiExternalLink, FiCheck, FiX, FiInbox } from "react-icons/fi";
 
 const REASON_LABELS = {
@@ -198,6 +198,7 @@ const ModerationQueue = () => {
   }, [status, page]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch-on-mount/filter-change
     if (isModerator) fetchReports();
   }, [isModerator, fetchReports]);
 

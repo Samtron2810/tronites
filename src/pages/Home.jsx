@@ -5,7 +5,7 @@ import CreatePost from "../components/CreatePost";
 import PostCard from "../components/PostCard";
 import PostSkeleton from "../components/PostSkeleton";
 import api from "../services/api";
-import { useSocket } from "../context/SocketContext";
+import { useSocket } from "../context/useSocket";
 
 const Home = () => {
   const [posts, setPosts] = useState([]);
@@ -39,6 +39,7 @@ const Home = () => {
   };
 
   useEffect(() => {
+    const target = observerTarget.current;
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting && hasMore && !isLoadingMore && !loading)
@@ -46,11 +47,14 @@ const Home = () => {
       },
       { threshold: 0.1 }
     );
-    if (observerTarget.current) observer.observe(observerTarget.current);
-    return () => { if (observerTarget.current) observer.unobserve(observerTarget.current); };
+    if (target) observer.observe(target);
+    return () => { if (target) observer.unobserve(target); };
   }, [page, hasMore, isLoadingMore, loading]);
 
-  useEffect(() => { fetchPosts(1); }, []);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch-on-mount
+    fetchPosts(1);
+  }, []);
 
   useEffect(() => {
     if (!socket) return;

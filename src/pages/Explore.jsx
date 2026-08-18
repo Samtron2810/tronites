@@ -4,8 +4,8 @@ import toast from "react-hot-toast";
 import MainLayout from "../layouts/MainLayout";
 import UserCardSkeleton from "../components/UserCardSkeleton";
 import api from "../services/api";
-import { useAuth } from "../context/AuthContext";
-import { useSocket } from "../context/SocketContext";
+import { useAuth } from "../context/useAuth";
+import { useSocket } from "../context/useSocket";
 import { FiSearch } from "react-icons/fi";
 
 const Explore = () => {
@@ -46,6 +46,7 @@ const Explore = () => {
   useEffect(() => {
     const trimmed = search.trim();
     if (trimmed.length > 0 && trimmed.length < 2) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- clears stale results while user is mid-typing a too-short query
       setUsers([]);
       setHasMore(false);
       setLoading(false);
@@ -56,6 +57,7 @@ const Explore = () => {
   }, [search]);
 
   useEffect(() => {
+    const target = observerTarget.current;
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting && hasMore && !isLoadingMore && !loading) {
@@ -64,8 +66,8 @@ const Explore = () => {
       },
       { threshold: 0.1 }
     );
-    if (observerTarget.current) observer.observe(observerTarget.current);
-    return () => { if (observerTarget.current) observer.unobserve(observerTarget.current); };
+    if (target) observer.observe(target);
+    return () => { if (target) observer.unobserve(target); };
   }, [page, hasMore, isLoadingMore, loading, search]);
 
   const handleFollow = async (userId) => {

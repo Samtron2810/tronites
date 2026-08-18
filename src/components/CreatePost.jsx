@@ -1,6 +1,6 @@
 import { useState } from "react";
 import CreatePostModal from "./CreatePostModal";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/useAuth";
 
 const CreatePost = ({ fetchPosts }) => {
   const [openModal, setOpenModal] = useState(false);

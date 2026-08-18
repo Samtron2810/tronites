@@ -4,13 +4,11 @@ import toast from "react-hot-toast";
 import MainLayout from "../layouts/MainLayout";
 import UserCardSkeleton from "../components/UserCardSkeleton";
 import api from "../services/api";
-import { useAuth } from "../context/AuthContext";
 
 const FollowersList = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { user: currentUser } = useAuth();
 
   const activeTab = searchParams.get("tab") || "followers";
   const [users, setUsers] = useState([]);
@@ -57,14 +55,19 @@ const FollowersList = () => {
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch-on-mount
     fetchProfileName();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch-on-mount/tab-change
     fetchConnectionsList(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, activeTab]);
 
   useEffect(() => {
+    const target = observerTarget.current;
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting && hasMore && !isLoadingMore && !loading) {
@@ -73,8 +76,9 @@ const FollowersList = () => {
       },
       { threshold: 0.1 }
     );
-    if (observerTarget.current) observer.observe(observerTarget.current);
-    return () => { if (observerTarget.current) observer.unobserve(observerTarget.current); };
+    if (target) observer.observe(target);
+    return () => { if (target) observer.unobserve(target); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, hasMore, isLoadingMore, loading, id, activeTab]);
 
   const handleTabChange = (tab) => {

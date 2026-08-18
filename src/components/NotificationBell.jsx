@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { FiBell } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
 import api from "../services/api";
-import { useSocket } from "../context/SocketContext";
+import { useSocket } from "../context/useSocket";
 
 const NotificationBell = () => {
   const [count, setCount] = useState(0);

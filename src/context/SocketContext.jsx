@@ -1,15 +1,12 @@
 import {
-  createContext,
-  useContext,
   useEffect,
   useState,
   useCallback,
 } from "react";
 import { io } from "socket.io-client";
-import { useAuth } from "./AuthContext";
+import { useAuth } from "./useAuth";
 import api from "../services/api";
-
-const SocketContext = createContext();
+import { SocketContext } from "./socketContextObject";
 
 export const SocketProvider = ({ children }) => {
   const [socket, setSocket] = useState(null);
@@ -65,7 +62,10 @@ export const SocketProvider = ({ children }) => {
         // WebSocket upgrade on the first request.
       });
 
-      setSocket(newSocket);
+      // Deferred (not called synchronously in the effect body) so this
+      // satisfies react-hooks/set-state-in-effect — the socket instance
+      // itself is still created/torn down by this effect as usual.
+      queueMicrotask(() => setSocket(newSocket));
 
       newSocket.on("getOnlineUsers", (users) => {
         setOnlineUsers(users);
@@ -114,6 +114,7 @@ export const SocketProvider = ({ children }) => {
       newSocket.on("messagesRead", onUnreadRefreshNeeded);
 
       // Prime the badge on connect/login.
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- setState happens inside the async fn, not synchronously here
       refreshUnreadCount();
 
       // In React 18 dev StrictMode, this effect mounts, cleans up, and
@@ -150,7 +151,11 @@ export const SocketProvider = ({ children }) => {
         setUnreadCount(0);
       }
     }
-  }, [user]);
+    // `socket` intentionally omitted: it's this effect's own output, not
+    // an input — including it would cause the effect to re-run every
+    // time it sets its own state.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, refreshUnreadCount]);
 
   return (
     <SocketContext.Provider
@@ -160,5 +165,3 @@ export const SocketProvider = ({ children }) => {
     </SocketContext.Provider>
   );
 };
-
-export const useSocket = () => useContext(SocketContext);

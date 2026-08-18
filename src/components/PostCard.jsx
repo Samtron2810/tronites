@@ -3,9 +3,9 @@ import { Link } from "react-router-dom";
 import { FaHeart, FaRegHeart, FaRegComment, FaTrash, FaChevronLeft, FaChevronRight } from "react-icons/fa";
 import toast from "react-hot-toast";
 import api from "../services/api";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/useAuth";
 import DeletePostModal from "./DeletePostModal";
-import { useSocket } from "../context/SocketContext";
+import { useSocket } from "../context/useSocket";
 import TextWithLinks from "./TextWithLinks";
 import useMentionAutocomplete from "../hooks/useMentionAutocomplete";
 import MentionSuggestions from "./MentionSuggestions";
@@ -32,11 +32,35 @@ const PostCard = ({
   const [likeCount, setLikeCount] = useState(likes);
   const [comments, setComments] = useState([]);
   const [commentCount, setCommentCount] = useState(commentsCount);
+  // Track the prop values last synced into state, so a real prop change
+  // (parent refetch/pagination) resets local state without a useEffect.
+  // Optimistic local mutations (from liking/commenting) aren't affected
+  // since they don't touch these `synced*` refs.
+  const [syncedIsLiked, setSyncedIsLiked] = useState(isLiked);
+  const [syncedLikes, setSyncedLikes] = useState(likes);
+  const [syncedCommentsCount, setSyncedCommentsCount] = useState(commentsCount);
+  if (isLiked !== syncedIsLiked) {
+    setSyncedIsLiked(isLiked);
+    setLiked(isLiked);
+  }
+  if (likes !== syncedLikes) {
+    setSyncedLikes(likes);
+    setLikeCount(likes);
+  }
+  if (commentsCount !== syncedCommentsCount) {
+    setSyncedCommentsCount(commentsCount);
+    setCommentCount(commentsCount);
+  }
   const [showComments, setShowComments] = useState(false);
   const [commentText, setCommentText] = useState("");
   const [isCommentSending, setIsCommentSending] = useState(false);
   const [commentDeletingId, setCommentDeletingId] = useState(null);
   const [visibleCount, setVisibleCount] = useState(1);
+  const [syncedShowComments, setSyncedShowComments] = useState(showComments);
+  if (showComments !== syncedShowComments) {
+    setSyncedShowComments(showComments);
+    if (showComments) setVisibleCount(1);
+  }
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [loadingComments, setLoadingComments] = useState(false);
   const [isLiking, setIsLiking] = useState(false);
@@ -240,19 +264,9 @@ const PostCard = ({
   };
 
   useEffect(() => {
-    setLiked(isLiked);
-  }, [isLiked]);
-  useEffect(() => {
-    setLikeCount(likes);
-  }, [likes]);
-  useEffect(() => {
-    setCommentCount(commentsCount);
-  }, [commentsCount]);
-  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch-on-open; setState happens inside the async fn
     if (showComments) fetchComments();
-  }, [showComments]);
-  useEffect(() => {
-    if (showComments) setVisibleCount(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showComments]);
 
   useEffect(() => {

@@ -25,7 +25,7 @@ class ErrorBoundary extends React.Component {
             <p className="text-gray-600 mb-2">
               Tronites encountered an unexpected error.
             </p>
-            {process.env.NODE_ENV !== "production" && this.state.error && (
+            {import.meta.env.DEV && this.state.error && (
               <pre className="text-left text-xs bg-gray-100 p-3 rounded overflow-auto mt-3">
                 {this.state.error.toString()}
               </pre>
