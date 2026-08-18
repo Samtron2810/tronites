@@ -2,18 +2,16 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { useAuth } from "../context/AuthContext";
-import { FiUser, FiLock, FiEye, FiEyeOff } from "react-icons/fi";
+import api from "../services/api";
+import { FiMail, FiArrowLeft } from "react-icons/fi";
 
-const Login = () => {
+const ForgotPassword = () => {
   const navigate = useNavigate();
-  const { login, user, loading } = useAuth();
-  const [showPassword, setShowPassword] = useState(false);
+  const { user, loading } = useAuth();
+  const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [formData, setFormData] = useState({ identifier: "", password: "" });
 
-  const handleChange = (e) =>
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-
+  // Already signed in — nothing to recover.
   useEffect(() => {
     if (!loading && user) navigate("/");
   }, [loading, user, navigate]);
@@ -23,11 +21,27 @@ const Login = () => {
     if (isLoading) return;
     setIsLoading(true);
     try {
-      await login(formData);
-      toast.success("Welcome back!");
-      setTimeout(() => navigate("/"), 800);
+      const res = await api.post("/auth/forgot-password", { email });
+
+      toast.success(
+        res.data.message || "If this address is registered, we've sent a code.",
+      );
+
+      // challengeId is an opaque, server-issued, single-use handle — not
+      // the email itself, and not a security control on its own. It just
+      // lets ResetPassword know which pending challenge to show without
+      // putting an email address in the URL. Same pattern as Register.jsx.
+      sessionStorage.setItem("otpChallengeId", res.data.challengeId);
+      sessionStorage.setItem("otpEmail", res.data.email);
+
+      navigate("/reset-password", {
+        state: { challengeId: res.data.challengeId, email: res.data.email },
+      });
     } catch (error) {
-      toast.error(error.response?.data?.message || "Login failed");
+      toast.error(
+        error.response?.data?.message ||
+          "Something went wrong. Please try again.",
+      );
     } finally {
       setIsLoading(false);
     }
@@ -42,11 +56,11 @@ const Login = () => {
         </span>
         <div>
           <p className="text-primary-100 text-4xl font-bold leading-tight max-w-xs">
-            Connect with your community.
+            We'll get you back in.
           </p>
           <p className="text-primary-200 mt-4 text-base leading-relaxed max-w-sm">
-            Share posts, follow people, and stay in the loop with what matters
-            to you.
+            Enter your account email and we'll send you a code to reset your
+            password.
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -65,53 +79,26 @@ const Login = () => {
             </span>
           </div>
 
-          <h2 className="text-2xl font-bold text-ink mb-1">Sign in</h2>
+          <h2 className="text-2xl font-bold text-ink mb-1">
+            Forgot your password?
+          </h2>
           <p className="text-ink-muted text-sm mb-8">
-            Welcome back. Good to see you.
+            Enter your email and we'll send you a code to reset it.
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="relative">
-              <FiUser className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted text-sm" />
+              <FiMail className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted text-sm" />
               <input
-                type="text"
-                name="identifier"
-                placeholder="Email or username"
-                value={formData.identifier}
-                onChange={handleChange}
+                type="email"
+                name="email"
+                placeholder="Email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 required
                 autoCapitalize="none"
                 className="w-full pl-9 pr-4 py-3 rounded-xl border border-stroke bg-white text-ink text-sm placeholder:text-ink-muted outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100 transition"
               />
-            </div>
-
-            <div className="relative">
-              <FiLock className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted text-sm" />
-              <input
-                type={showPassword ? "text" : "password"}
-                name="password"
-                placeholder="Password"
-                value={formData.password}
-                onChange={handleChange}
-                required
-                className="w-full pl-9 pr-10 py-3 rounded-xl border border-stroke bg-white text-ink text-sm placeholder:text-ink-muted outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100 transition"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-muted hover:text-ink transition"
-              >
-                {showPassword ? <FiEyeOff size={15} /> : <FiEye size={15} />}
-              </button>
-            </div>
-
-            <div className="flex justify-end -mt-1">
-              <Link
-                to="/forgot-password"
-                className="text-sm font-medium text-primary-600 hover:text-primary-800 hover:underline transition"
-              >
-                Forgot password?
-              </Link>
             </div>
 
             <button
@@ -119,17 +106,17 @@ const Login = () => {
               disabled={isLoading}
               className="w-full bg-primary-600 hover:bg-primary-800 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-xl text-sm transition-all duration-200 shadow-sm hover:shadow-md"
             >
-              {isLoading ? "Signing in..." : "Sign in"}
+              {isLoading ? "Sending..." : "Send reset code"}
             </button>
           </form>
 
           <p className="text-center text-ink-muted text-sm mt-6">
-            No account?{" "}
             <Link
-              to="/signup"
-              className="text-primary-600 font-semibold hover:underline"
+              to="/login"
+              className="inline-flex items-center gap-1.5 text-primary-600 font-semibold hover:underline"
             >
-              Create one
+              <FiArrowLeft size={14} />
+              Back to sign in
             </Link>
           </p>
         </div>
@@ -138,4 +125,4 @@ const Login = () => {
   );
 };
 
-export default Login;
+export default ForgotPassword;
