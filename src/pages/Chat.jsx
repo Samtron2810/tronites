@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import MainLayout from "../layouts/MainLayout";
 import api from "../services/api";
+import compressImage from "../utils/compressImage";
 import { useAuth } from "../context/AuthContext";
 import { useSocket } from "../context/SocketContext";
 import ChatModal from "../components/ChatModal";
@@ -277,7 +278,19 @@ const Chat = () => {
       if (messageText.trim()) formData.append("text", messageText.trim());
       if (imagePreview) {
         const blob = await (await fetch(imagePreview)).blob();
-        formData.append("image", blob);
+        // Compress before upload — chat images can be full-resolution
+        // camera photos (multi-MB) which are expensive to store and slow
+        // to send. Wrap in a File so compressImage has a name/size/type
+        // to work with.
+        const file = new File([blob], "chat-image", {
+          type: blob.type || "image/jpeg",
+        });
+        const compressed = await compressImage(file, {
+          maxWidth: 1280,
+          quality: 0.7,
+          skipBelowBytes: 300 * 1024,
+        });
+        formData.append("image", compressed);
       }
       const res = await api.post(
         `/messages/${selectedChat.otherUser._id}`,
