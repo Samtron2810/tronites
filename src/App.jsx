@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { useAuth } from "./context/AuthContext";
 import Navbar from "./components/Navbar";
+import SplashScreen from "./components/SplashScreen";
 
 import Home from "./pages/Home";
 import Login from "./pages/Login";
@@ -23,7 +24,13 @@ import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 const AppContent = () => {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
+
+  // Show splash screen on fresh app load while the auth check runs
+  if (loading) {
+    return <SplashScreen />;
+  }
+
   return (
     <>
       {user && user.username && <Navbar />}

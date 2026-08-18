@@ -12,8 +12,58 @@
     />
     <title>Tronites</title>
   </head>
-  <body>
-    <div id="root"></div>
+  <body style="background-color: #04342c">
+    <div id="root">
+      <div
+        id="static-splash"
+        style="
+          position: fixed;
+          inset: 0;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          background-color: #04342c;
+          z-index: 9999;
+        "
+      >
+        <img
+          src="/src/assets/tronite-logo.png"
+          alt="Tronites"
+          style="height: 64px; width: auto; object-fit: contain"
+        />
+        <span
+          style="
+            margin-top: 16px;
+            color: #ffffff;
+            font-family: &quot;DM Sans&quot;, sans-serif;
+            font-weight: 700;
+            font-size: 24px;
+            letter-spacing: -0.02em;
+          "
+        >
+          Tron<span style="color: #9fe1cb">ites</span>
+        </span>
+        <style>
+          #static-splash img,
+          #static-splash span {
+            animation: staticSplashPulse 1.2s ease-in-out infinite;
+          }
+          #static-splash span {
+            animation-delay: 0.15s;
+          }
+          @keyframes staticSplashPulse {
+            0%,
+            100% {
+              opacity: 1;
+            }
+            50% {
+              opacity: 0.6;
+            }
+          }
+        </style>
+      </div>
+    </div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
