@@ -8,6 +8,7 @@ import {
   FaQuestionCircle,
   FaFileContract,
   FaSignOutAlt,
+  FaShieldAlt,
 } from "react-icons/fa";
 
 const UserMenu = ({ user, onLogoutClick }) => {
@@ -48,9 +49,26 @@ const UserMenu = ({ user, onLogoutClick }) => {
     {
       icon: FaCog,
       label: "Settings",
-      disabled: true,
-      isLink: false,
+      href: "/settings",
+      disabled: false,
+      isLink: true,
+      onClick: () => setIsOpen(false),
     },
+    // Only shown to moderators/admins — role isn't in toPublicUserDTO,
+    // so this can never appear for a viewer looking at someone else's
+    // menu; `user` here is always the logged-in account's own data.
+    ...(["moderator", "admin"].includes(user.role)
+      ? [
+          {
+            icon: FaShieldAlt,
+            label: "Moderation queue",
+            href: "/moderation",
+            disabled: false,
+            isLink: true,
+            onClick: () => setIsOpen(false),
+          },
+        ]
+      : []),
     {
       icon: FaChartBar,
       label: "Dashboard",

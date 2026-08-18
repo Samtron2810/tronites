@@ -27,8 +27,8 @@ const BlockUserModal = ({ userName, isBlocked, onConfirm, onCancel }) => {
         </div>
         <p className="text-sm text-ink-muted leading-relaxed">
           {isBlocked
-            ? `${userName} will be able to message you again.`
-            : `${userName} won't be able to message you anymore. Your follow status and profile visibility won't change.`}
+            ? `${userName} will be able to follow, message, and see your profile again.`
+            : `${userName} won't be able to message you, see your profile, or follow you. Any existing follow between you will end.`}
         </p>
         <div className="flex gap-3 mt-6">
           <button

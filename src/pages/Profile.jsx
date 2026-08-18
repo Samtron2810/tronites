@@ -8,8 +8,9 @@ import api from "../services/api";
 import compressImage from "../utils/compressImage";
 import { useAuth } from "../context/AuthContext";
 import { useSocket } from "../context/SocketContext";
-import { FiEdit2, FiMessageCircle, FiCamera, FiMoreVertical, FiSlash } from "react-icons/fi";
+import { FiEdit2, FiMessageCircle, FiCamera, FiMoreVertical, FiSlash, FiFlag, FiBellOff, FiBell } from "react-icons/fi";
 import BlockUserModal from "../components/BlockUserModal";
+import ReportModal from "../components/ReportModal";
 
 const Profile = () => {
   const { id } = useParams();
@@ -33,6 +34,8 @@ const Profile = () => {
   const [theyBlockedMe, setTheyBlockedMe] = useState(false);
   const [showOptionsMenu, setShowOptionsMenu] = useState(false);
   const [showBlockModal, setShowBlockModal] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
   const postsObserverTarget = useRef(null);
 
   const fetchProfile = async () => {
@@ -45,9 +48,13 @@ const Profile = () => {
       setPostsHasMore(res.data.hasMore);
       setIsFollowing(res.data.isFollowing);
       if (currentUser?._id !== id) {
-        const blockRes = await api.get(`/users/${id}/block-status`);
+        const [blockRes, muteRes] = await Promise.all([
+          api.get(`/users/${id}/block-status`),
+          api.get(`/users/${id}/mute-status`),
+        ]);
         setIBlockedThem(blockRes.data.iBlockedThem);
         setTheyBlockedMe(blockRes.data.theyBlockedMe);
+        setIsMuted(muteRes.data.muted);
       }
     } catch (e) {
       console.error(e);
@@ -134,6 +141,39 @@ const Profile = () => {
     } catch (e) {
       console.error(e);
       toast.error("Couldn't update block status. Try again.");
+    }
+  };
+
+  const handleMuteToggle = async () => {
+    try {
+      if (isMuted) {
+        await api.delete(`/users/${id}/mute`);
+        setIsMuted(false);
+        toast.success(`Unmuted ${profile.name}`);
+      } else {
+        await api.post(`/users/${id}/mute`);
+        setIsMuted(true);
+        toast.success(`Muted ${profile.name}. They won't know.`);
+      }
+    } catch (e) {
+      console.error(e);
+      toast.error("Couldn't update mute status. Try again.");
+    }
+  };
+
+  const handleReportSubmit = async ({ reason, details }) => {
+    try {
+      await api.post("/reports", {
+        targetType: "user",
+        targetId: id,
+        reason,
+        details,
+      });
+      toast.success("Report submitted. Thanks for the heads up.");
+      setShowReportModal(false);
+    } catch (e) {
+      console.error(e);
+      toast.error(e.response?.data?.message || "Couldn't submit report. Try again.");
     }
   };
 
@@ -281,6 +321,26 @@ const Profile = () => {
                       <button
                         onClick={() => {
                           setShowOptionsMenu(false);
+                          handleMuteToggle();
+                        }}
+                        className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-ink-sub hover:bg-surface transition"
+                      >
+                        {isMuted ? <FiBell size={14} /> : <FiBellOff size={14} />}
+                        {isMuted ? "Unmute user" : "Mute user"}
+                      </button>
+                      <button
+                        onClick={() => {
+                          setShowOptionsMenu(false);
+                          setShowReportModal(true);
+                        }}
+                        className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-ink-sub hover:bg-surface transition"
+                      >
+                        <FiFlag size={14} />
+                        Report user
+                      </button>
+                      <button
+                        onClick={() => {
+                          setShowOptionsMenu(false);
                           setShowBlockModal(true);
                         }}
                         className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 transition"
@@ -300,6 +360,14 @@ const Profile = () => {
                 isBlocked={iBlockedThem}
                 onConfirm={handleBlockToggle}
                 onCancel={() => setShowBlockModal(false)}
+              />
+            )}
+
+            {showReportModal && (
+              <ReportModal
+                targetLabel={profile.name}
+                onConfirm={handleReportSubmit}
+                onCancel={() => setShowReportModal(false)}
               />
             )}
           </div>

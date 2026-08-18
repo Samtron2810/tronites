@@ -14,6 +14,8 @@ import ChooseUsername from "./pages/ChooseUsername";
 import UsernameRedirect from "./pages/UsernameRedirect";
 import Hashtag from "./pages/Hashtag";
 import Notifications from "./pages/Notifications";
+import Settings from "./pages/Settings";
+import ModerationQueue from "./pages/ModerationQueue";
 import NotFound from "./pages/NotFound";
 
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -107,6 +109,24 @@ const AppContent = () => {
           element={
             <ProtectedRoute>
               <Hashtag />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/settings"
+          element={
+            <ProtectedRoute>
+              <Settings />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/moderation"
+          element={
+            <ProtectedRoute>
+              <ModerationQueue />
             </ProtectedRoute>
           }
         />
