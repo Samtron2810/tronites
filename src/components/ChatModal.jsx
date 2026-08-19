@@ -1,5 +1,6 @@
 import { FiArrowLeft, FiTrash2, FiImage, FiCheck } from "react-icons/fi";
 import { FaCheckDouble } from "react-icons/fa";
+import defaultAvatar from "../assets/defaultAvatar";
 
 const ChatModal = ({
   isOpen,
@@ -54,7 +55,7 @@ const ChatModal = ({
           </button>
           <div className="relative shrink-0">
             <img
-              src={activeUser?.profilePic || "https://i.pravatar.cc/150"}
+              src={activeUser?.profilePic || defaultAvatar}
               alt={activeUser?.name}
               className="w-9 h-9 rounded-full object-cover ring-2 ring-primary-100"
             />

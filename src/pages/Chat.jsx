@@ -9,6 +9,7 @@ import ChatModal from "../components/ChatModal";
 import ChatSkeleton from "../components/ChatSkeleton";
 import { FaComment } from "react-icons/fa";
 import sfx from "../assets/sfx.mp3";
+import defaultAvatar from "../assets/defaultAvatar";
 
 const buildConversationId = (a, b) =>
   [a.toString(), b.toString()].sort().join("_");
@@ -600,7 +601,7 @@ const Chat = () => {
                         <img
                           src={
                             conv.otherUser.profilePic ||
-                            "https://i.pravatar.cc/150"
+                            defaultAvatar
                           }
                           alt={conv.otherUser.name}
                           className="w-11 h-11 rounded-full object-cover ring-2 ring-primary-100"
@@ -668,7 +669,7 @@ const Chat = () => {
                   <div className="flex items-center gap-3">
                     <img
                       src={
-                        req.otherUser.profilePic || "https://i.pravatar.cc/150"
+                        req.otherUser.profilePic || defaultAvatar
                       }
                       alt={req.otherUser.name}
                       className="w-11 h-11 rounded-full object-cover ring-2 ring-primary-100 shrink-0"

@@ -92,7 +92,7 @@ const Hashtag = () => {
               text={post.text}
               image={post.image}
               images={post.images}
-              likes={post.likes.length}
+              likes={post.likesCount}
               commentsCount={post.commentsCount}
               isLiked={post.isLiked}
               onDelete={(id) => setPosts((prev) => prev.filter((p) => p._id !== id))}

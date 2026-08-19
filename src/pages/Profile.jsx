@@ -10,6 +10,7 @@ import { useAuth } from "../context/useAuth";
 import { useSocket } from "../context/useSocket";
 import { FiEdit2, FiMessageCircle, FiCamera, FiMoreVertical, FiSlash, FiFlag, FiBellOff, FiBell } from "react-icons/fi";
 import BlockUserModal from "../components/BlockUserModal";
+import defaultAvatar from "../assets/defaultAvatar";
 import ReportModal from "../components/ReportModal";
 
 const Profile = () => {
@@ -246,7 +247,7 @@ const Profile = () => {
           <div className="flex items-end justify-between -mt-10 mb-4">
             <div className="relative">
               <img
-                src={profile.profilePic || "https://i.pravatar.cc/"}
+                src={profile.profilePic || defaultAvatar}
                 alt="profile"
                 className={`w-20 h-20 rounded-2xl object-cover ring-4 ring-white shadow-sm ${uploading ? "opacity-50" : ""}`}
               />
@@ -474,11 +475,9 @@ const Profile = () => {
             text={post.text}
             image={post.image}
             images={post.images}
-            likes={post.likes.length}
+            likes={post.likesCount}
             commentsCount={post.commentsCount}
-            isLiked={post.likes.some(
-              (id) => id.toString() === currentUser?._id,
-            )}
+            isLiked={post.isLiked}
             onDelete={(id) => {
               setPosts((prev) => prev.filter((p) => p._id !== id));
               setTotalPosts((prev) => Math.max(prev - 1, 0));

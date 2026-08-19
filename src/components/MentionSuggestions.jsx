@@ -1,5 +1,7 @@
 // Renders the floating suggestion list under/near an input. Positioned by
 // the parent (relative wrapper); this just fills that wrapper's width.
+import defaultAvatar from "../assets/defaultAvatar";
+
 const MentionSuggestions = ({ suggestions, onSelect, loading }) => {
   if (!suggestions.length && !loading) return null;
 
@@ -20,7 +22,7 @@ const MentionSuggestions = ({ suggestions, onSelect, loading }) => {
           className="w-full flex items-center gap-2 px-3 py-2 hover:bg-surface transition text-left"
         >
           <img
-            src={u.profilePic || "https://i.pravatar.cc/150"}
+            src={u.profilePic || defaultAvatar}
             alt={u.name}
             className="w-6 h-6 rounded-full object-cover shrink-0"
           />

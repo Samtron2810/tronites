@@ -6,6 +6,7 @@ import {
   FaCheckDouble,
   FaImage,
 } from "react-icons/fa";
+import defaultAvatar from "../assets/defaultAvatar";
 
 const ChatModal = ({
   isOpen,
@@ -53,7 +54,7 @@ const ChatModal = ({
           </div>
           {activeUser && (
             <img
-              src={activeUser.profilePic || "https://i.pravatar.cc/150"}
+              src={activeUser.profilePic || defaultAvatar}
               alt={activeUser.name}
               className="w-10 h-10 rounded-full object-cover"
             />

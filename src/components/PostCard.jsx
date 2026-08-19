@@ -9,6 +9,7 @@ import { useSocket } from "../context/useSocket";
 import TextWithLinks from "./TextWithLinks";
 import useMentionAutocomplete from "../hooks/useMentionAutocomplete";
 import MentionSuggestions from "./MentionSuggestions";
+import defaultAvatar from "../assets/defaultAvatar";
 
 const PostCard = ({
   postId,
@@ -275,9 +276,12 @@ const PostCard = ({
     const handleLikeUpdate = (data) => {
       if (data.postId !== postId) return;
       setLikeCount(data.likesCount);
-      setLiked(
-        data.likes.some((id) => id.toString() === currentUser?._id?.toString()),
-      );
+      // Only update our own `liked` state if this event is about our own
+      // like/unlike action — another viewer's like on this post changes
+      // the count but not whether *we* have liked it.
+      if (data.userId === currentUser?._id?.toString()) {
+        setLiked(data.liked);
+      }
     };
     const handleNewComment = (data) => {
       if (data.postId !== postId) return;
@@ -375,7 +379,7 @@ const PostCard = ({
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
             <img
-              src={profilePic || "https://i.pravatar.cc/"}
+              src={profilePic || defaultAvatar}
               alt="user"
               className="w-10 h-10 rounded-full object-cover ring-2 ring-primary-100"
             />

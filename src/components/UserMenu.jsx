@@ -10,6 +10,7 @@ import {
   FaSignOutAlt,
   FaShieldAlt,
 } from "react-icons/fa";
+import defaultAvatar from "../assets/defaultAvatar";
 
 const UserMenu = ({ user, onLogoutClick }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -116,7 +117,7 @@ const UserMenu = ({ user, onLogoutClick }) => {
         title="User menu"
       >
         <img
-          src={user.profilePic || `https://i.pravatar.cc/150?u=${user._id}`}
+          src={user.profilePic || defaultAvatar}
           alt={user.name}
           className="w-full h-full rounded-full object-cover"
         />
