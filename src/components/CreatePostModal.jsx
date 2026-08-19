@@ -5,6 +5,7 @@ import compressImage from "../utils/compressImage";
 import { FiX, FiImage, FiVideo } from "react-icons/fi";
 import useMentionAutocomplete from "../hooks/useMentionAutocomplete";
 import MentionSuggestions from "./MentionSuggestions";
+import ConfirmDiscardModal from "./ConfirmDiscardModal";
 
 const MAX_IMAGES = 4;
 const MAX_VIDEO_DURATION_SECONDS = 30;
@@ -18,6 +19,7 @@ const CreatePostModal = ({ closeModal, fetchPosts }) => {
   const [videoPreview, setVideoPreview] = useState(null); // objectURL | null
   const [videoDuration, setVideoDuration] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
   const textareaRef = useRef(null);
   const mention = useMentionAutocomplete();
 
@@ -27,7 +29,10 @@ const CreatePostModal = ({ closeModal, fetchPosts }) => {
   };
 
   const handleSelectMention = (username) => {
-    const { text: newText, cursorPos } = mention.applySuggestion(text, username);
+    const { text: newText, cursorPos } = mention.applySuggestion(
+      text,
+      username,
+    );
     setText(newText);
     requestAnimationFrame(() => {
       textareaRef.current?.focus();
@@ -121,6 +126,22 @@ const CreatePostModal = ({ closeModal, fetchPosts }) => {
     setVideoDuration(null);
   };
 
+  const hasDraft = text.trim() || images.length > 0 || Boolean(video);
+
+  const handleClose = () => {
+    if (hasDraft) {
+      setShowDiscardConfirm(true);
+    } else {
+      closeModal();
+    }
+  };
+
+  const handleDiscard = () => {
+    previews.forEach((url) => URL.revokeObjectURL(url));
+    if (videoPreview) URL.revokeObjectURL(videoPreview);
+    closeModal();
+  };
+
   const handleSubmit = async () => {
     if (!text.trim() && images.length === 0 && !video) {
       return toast.error("Post cannot be empty");
@@ -148,13 +169,28 @@ const CreatePostModal = ({ closeModal, fetchPosts }) => {
       closeModal();
     } catch (error) {
       if (error.code === "ECONNABORTED") {
-        toast.error("Upload is taking longer than expected — check your feed in a moment.");
-      } else if (error?.response?.data?.code === "UPLOAD_LOST" || error?.response?.data?.code === "UPLOAD_FAILED") {
-        toast.error(error.response.data.message || "Image upload failed — please try again.");
+        toast.error(
+          "Upload is taking longer than expected — check your feed in a moment.",
+        );
+      } else if (
+        error?.response?.data?.code === "UPLOAD_LOST" ||
+        error?.response?.data?.code === "UPLOAD_FAILED"
+      ) {
+        toast.error(
+          error.response.data.message ||
+            "Image upload failed — please try again.",
+        );
       } else if (error?.response?.data?.code === "VIDEO_QUEUE_UNAVAILABLE") {
-        toast.error(error.response.data.message || "Video upload is temporarily unavailable.");
+        toast.error(
+          error.response.data.message ||
+            "Video upload is temporarily unavailable.",
+        );
       } else {
-        toast.error(error?.response?.data?.message || error.message || "Failed to create post");
+        toast.error(
+          error?.response?.data?.message ||
+            error.message ||
+            "Failed to create post",
+        );
       }
     } finally {
       setIsSubmitting(false);
@@ -165,17 +201,20 @@ const CreatePostModal = ({ closeModal, fetchPosts }) => {
 
   return (
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 px-4">
-      <div className="bg-white w-full max-w-lg rounded-2xl shadow-xl overflow-hidden">
+      <div className="bg-white w-full max-w-lg rounded-2xl shadow-xl overflow-hidden max-h-[90vh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-stroke">
           <h2 className="text-base font-semibold text-ink">Create Post</h2>
-          <button onClick={closeModal} className="text-ink-muted hover:text-ink transition p-1 rounded-lg hover:bg-surface">
+          <button
+            onClick={handleClose}
+            className="text-ink-muted hover:text-ink transition p-1 rounded-lg hover:bg-surface"
+          >
             <FiX size={18} />
           </button>
         </div>
 
         {/* Body */}
-        <div className="p-5 space-y-4">
+        <div className="p-5 space-y-4 overflow-y-auto flex-1">
           <div className="relative">
             <textarea
               ref={textareaRef}
@@ -195,7 +234,9 @@ const CreatePostModal = ({ closeModal, fetchPosts }) => {
             )}
           </div>
           <div className="flex justify-end">
-            <span className={`text-xs ${text.length >= 260 ? "text-red-400" : "text-ink-muted"}`}>
+            <span
+              className={`text-xs ${text.length >= 260 ? "text-red-400" : "text-ink-muted"}`}
+            >
               {text.length}/280
             </span>
           </div>
@@ -204,8 +245,15 @@ const CreatePostModal = ({ closeModal, fetchPosts }) => {
           {previews.length > 0 && (
             <div className={`grid ${gridClass} gap-2`}>
               {previews.map((src, i) => (
-                <div key={src} className="relative rounded-xl overflow-hidden bg-surface">
-                  <img src={src} alt={`preview-${i}`} className="w-full h-40 object-cover" />
+                <div
+                  key={src}
+                  className="relative rounded-xl overflow-hidden bg-surface"
+                >
+                  <img
+                    src={src}
+                    alt={`preview-${i}`}
+                    className="w-full h-40 object-cover"
+                  />
                   <button
                     onClick={() => removeImage(i)}
                     className="absolute top-2 right-2 bg-black/50 text-white rounded-full p-1 hover:bg-black/70 transition"
@@ -285,13 +333,22 @@ const CreatePostModal = ({ closeModal, fetchPosts }) => {
 
           <button
             onClick={handleSubmit}
-            disabled={isSubmitting || (!text.trim() && images.length === 0 && !video)}
+            disabled={
+              isSubmitting || (!text.trim() && images.length === 0 && !video)
+            }
             className="px-5 py-2 rounded-xl text-sm font-semibold text-white bg-primary-600 hover:bg-primary-800 disabled:opacity-50 disabled:cursor-not-allowed transition shadow-sm"
           >
             {isSubmitting ? "Posting..." : "Post"}
           </button>
         </div>
       </div>
+
+      {showDiscardConfirm && (
+        <ConfirmDiscardModal
+          onConfirm={handleDiscard}
+          onCancel={() => setShowDiscardConfirm(false)}
+        />
+      )}
     </div>
   );
 };
