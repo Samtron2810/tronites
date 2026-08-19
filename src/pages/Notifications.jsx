@@ -14,6 +14,7 @@ const typeConfig = {
   follow:  { icon: FaUserPlus, color: "text-primary-600", label: "started following you" },
   mention: { icon: FaAt, color: "text-primary-600", label: "mentioned you" },
   reply:   { icon: FaReply, color: "text-primary-600", label: "replied to your comment" },
+  commentLike: { icon: FaHeart, color: "text-red-500", label: "liked your comment" },
 };
 
 const Notifications = () => {

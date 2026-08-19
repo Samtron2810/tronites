@@ -2,16 +2,21 @@ import { useState, useRef } from "react";
 import toast from "react-hot-toast";
 import api from "../services/api";
 import compressImage from "../utils/compressImage";
-import { FiX, FiImage } from "react-icons/fi";
+import { FiX, FiImage, FiVideo } from "react-icons/fi";
 import useMentionAutocomplete from "../hooks/useMentionAutocomplete";
 import MentionSuggestions from "./MentionSuggestions";
 
 const MAX_IMAGES = 4;
+const MAX_VIDEO_DURATION_SECONDS = 30;
+const MAX_VIDEO_SIZE_BYTES = 100 * 1024 * 1024;
 
 const CreatePostModal = ({ closeModal, fetchPosts }) => {
   const [text, setText] = useState("");
   const [images, setImages] = useState([]); // File[]
   const [previews, setPreviews] = useState([]); // objectURL[]
+  const [video, setVideo] = useState(null); // File | null
+  const [videoPreview, setVideoPreview] = useState(null); // objectURL | null
+  const [videoDuration, setVideoDuration] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const textareaRef = useRef(null);
   const mention = useMentionAutocomplete();
@@ -31,6 +36,11 @@ const CreatePostModal = ({ closeModal, fetchPosts }) => {
   };
 
   const handleImages = (e) => {
+    if (video) {
+      toast.error("Remove the video first to add images");
+      e.target.value = "";
+      return;
+    }
     const files = Array.from(e.target.files || []);
     if (!files.length) return;
 
@@ -61,8 +71,58 @@ const CreatePostModal = ({ closeModal, fetchPosts }) => {
     setImages((prev) => prev.filter((_, i) => i !== index));
   };
 
+  const handleVideoSelect = (e) => {
+    if (images.length > 0) {
+      toast.error("Remove your images first to add a video");
+      e.target.value = "";
+      return;
+    }
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+
+    if (file.size > MAX_VIDEO_SIZE_BYTES) {
+      toast.error("Video must be under 100MB");
+      return;
+    }
+
+    const url = URL.createObjectURL(file);
+    // Read actual duration client-side before uploading — catches an
+    // obviously-too-long video immediately instead of making the person
+    // wait through an upload only to find out the server trimmed it.
+    // The server's eager transformation (see videoUploadWorker.js) is
+    // still the authoritative 30s cap either way; this is just faster
+    // feedback, not a substitute for it.
+    const probe = document.createElement("video");
+    probe.preload = "metadata";
+    probe.onloadedmetadata = () => {
+      URL.revokeObjectURL(probe.src);
+      setVideo(file);
+      setVideoPreview(url);
+      setVideoDuration(probe.duration);
+      if (probe.duration > MAX_VIDEO_DURATION_SECONDS) {
+        toast(
+          `Video is ${Math.round(probe.duration)}s — it'll be trimmed to the first ${MAX_VIDEO_DURATION_SECONDS}s.`,
+          { icon: "✂️" },
+        );
+      }
+    };
+    probe.onerror = () => {
+      toast.error("Couldn't read that video file");
+      URL.revokeObjectURL(url);
+    };
+    probe.src = url;
+  };
+
+  const removeVideo = () => {
+    if (videoPreview) URL.revokeObjectURL(videoPreview);
+    setVideo(null);
+    setVideoPreview(null);
+    setVideoDuration(null);
+  };
+
   const handleSubmit = async () => {
-    if (!text.trim() && images.length === 0) {
+    if (!text.trim() && images.length === 0 && !video) {
       return toast.error("Post cannot be empty");
     }
     if (isSubmitting) return;
@@ -70,12 +130,20 @@ const CreatePostModal = ({ closeModal, fetchPosts }) => {
     try {
       const formData = new FormData();
       if (text.trim()) formData.append("text", text);
-      if (images.length) {
-        const compressed = await Promise.all(images.map(compressImage));
-        compressed.forEach((file) => formData.append("images", file));
+
+      if (video) {
+        formData.append("video", video);
+        await api.post("/posts/video", formData);
+        toast.success("Video uploading — it'll appear in your feed shortly.");
+      } else {
+        if (images.length) {
+          const compressed = await Promise.all(images.map(compressImage));
+          compressed.forEach((file) => formData.append("images", file));
+        }
+        await api.post("/posts", formData);
+        toast.success("Post created!");
       }
-      await api.post("/posts", formData);
-      toast.success("Post created!");
+
       fetchPosts();
       closeModal();
     } catch (error) {
@@ -83,6 +151,8 @@ const CreatePostModal = ({ closeModal, fetchPosts }) => {
         toast.error("Upload is taking longer than expected — check your feed in a moment.");
       } else if (error?.response?.data?.code === "UPLOAD_LOST" || error?.response?.data?.code === "UPLOAD_FAILED") {
         toast.error(error.response.data.message || "Image upload failed — please try again.");
+      } else if (error?.response?.data?.code === "VIDEO_QUEUE_UNAVAILABLE") {
+        toast.error(error.response.data.message || "Video upload is temporarily unavailable.");
       } else {
         toast.error(error?.response?.data?.message || error.message || "Failed to create post");
       }
@@ -146,34 +216,76 @@ const CreatePostModal = ({ closeModal, fetchPosts }) => {
               ))}
             </div>
           )}
+
+          {/* Video preview */}
+          {videoPreview && (
+            <div className="relative rounded-xl overflow-hidden bg-black">
+              <video
+                src={videoPreview}
+                controls
+                className="w-full max-h-72 object-contain"
+              />
+              <button
+                onClick={removeVideo}
+                className="absolute top-2 right-2 bg-black/50 text-white rounded-full p-1 hover:bg-black/70 transition"
+              >
+                <FiX size={12} />
+              </button>
+              {videoDuration && videoDuration > MAX_VIDEO_DURATION_SECONDS && (
+                <div className="absolute bottom-2 left-2 bg-black/60 text-white text-[11px] px-2 py-1 rounded-lg">
+                  Will trim to first {MAX_VIDEO_DURATION_SECONDS}s
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Footer */}
         <div className="flex items-center justify-between px-5 py-4 border-t border-stroke">
-          <label
-            className={`flex items-center gap-2 text-sm font-medium transition ${
-              images.length >= MAX_IMAGES
-                ? "text-ink-muted cursor-not-allowed opacity-50"
-                : "text-primary-600 cursor-pointer hover:text-primary-800"
-            }`}
-          >
-            <FiImage size={16} />
-            <span>
-              Photo {images.length > 0 && `(${images.length}/${MAX_IMAGES})`}
-            </span>
-            <input
-              type="file"
-              accept="image/*"
-              multiple
-              onChange={handleImages}
-              disabled={images.length >= MAX_IMAGES}
-              className="hidden"
-            />
-          </label>
+          <div className="flex items-center gap-4">
+            <label
+              className={`flex items-center gap-2 text-sm font-medium transition ${
+                images.length >= MAX_IMAGES || Boolean(video)
+                  ? "text-ink-muted cursor-not-allowed opacity-50"
+                  : "text-primary-600 cursor-pointer hover:text-primary-800"
+              }`}
+            >
+              <FiImage size={16} />
+              <span>
+                Photo {images.length > 0 && `(${images.length}/${MAX_IMAGES})`}
+              </span>
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={handleImages}
+                disabled={images.length >= MAX_IMAGES || Boolean(video)}
+                className="hidden"
+              />
+            </label>
+
+            <label
+              className={`flex items-center gap-2 text-sm font-medium transition ${
+                Boolean(video) || images.length > 0
+                  ? "text-ink-muted cursor-not-allowed opacity-50"
+                  : "text-primary-600 cursor-pointer hover:text-primary-800"
+              }`}
+            >
+              <FiVideo size={16} />
+              <span>Video</span>
+              <input
+                type="file"
+                accept="video/*"
+                onChange={handleVideoSelect}
+                disabled={Boolean(video) || images.length > 0}
+                className="hidden"
+              />
+            </label>
+          </div>
 
           <button
             onClick={handleSubmit}
-            disabled={isSubmitting || (!text.trim() && images.length === 0)}
+            disabled={isSubmitting || (!text.trim() && images.length === 0 && !video)}
             className="px-5 py-2 rounded-xl text-sm font-semibold text-white bg-primary-600 hover:bg-primary-800 disabled:opacity-50 disabled:cursor-not-allowed transition shadow-sm"
           >
             {isSubmitting ? "Posting..." : "Post"}

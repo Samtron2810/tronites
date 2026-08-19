@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { Link } from "react-router-dom";
-import { FaHeart, FaRegHeart, FaRegComment, FaTrash, FaChevronLeft, FaChevronRight } from "react-icons/fa";
+import { FaHeart, FaRegHeart, FaRegComment, FaTrash, FaPen, FaBookmark, FaRegBookmark, FaChevronLeft, FaChevronRight } from "react-icons/fa";
 import toast from "react-hot-toast";
 import api from "../services/api";
 import { useAuth } from "../context/useAuth";
@@ -21,16 +21,23 @@ const PostCard = ({
   text,
   image,
   images,
+  video,
   likes,
   commentsCount,
   isLiked,
+  isBookmarked,
+  edited,
+  editedAt,
   onDelete,
+  onUnbookmark,
 }) => {
   const { user: currentUser } = useAuth();
   const isOwner = currentUser?._id === userId;
 
   const [liked, setLiked] = useState(isLiked);
   const [likeCount, setLikeCount] = useState(likes);
+  const [bookmarked, setBookmarked] = useState(isBookmarked);
+  const [isBookmarking, setIsBookmarking] = useState(false);
   const [comments, setComments] = useState([]);
   const [commentCount, setCommentCount] = useState(commentsCount);
   // Track the prop values last synced into state, so a real prop change
@@ -40,6 +47,7 @@ const PostCard = ({
   const [syncedIsLiked, setSyncedIsLiked] = useState(isLiked);
   const [syncedLikes, setSyncedLikes] = useState(likes);
   const [syncedCommentsCount, setSyncedCommentsCount] = useState(commentsCount);
+  const [syncedIsBookmarked, setSyncedIsBookmarked] = useState(isBookmarked);
   if (isLiked !== syncedIsLiked) {
     setSyncedIsLiked(isLiked);
     setLiked(isLiked);
@@ -52,6 +60,10 @@ const PostCard = ({
     setSyncedCommentsCount(commentsCount);
     setCommentCount(commentsCount);
   }
+  if (isBookmarked !== syncedIsBookmarked) {
+    setSyncedIsBookmarked(isBookmarked);
+    setBookmarked(isBookmarked);
+  }
   const [showComments, setShowComments] = useState(false);
   const [commentText, setCommentText] = useState("");
   const [isCommentSending, setIsCommentSending] = useState(false);
@@ -63,9 +75,33 @@ const PostCard = ({
     if (showComments) setVisibleCount(1);
   }
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editText, setEditText] = useState(text);
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
+  const [postText, setPostText] = useState(text);
+  const [postHasBeenEdited, setPostHasBeenEdited] = useState(edited);
+  const [postEditedAt, setPostEditedAt] = useState(editedAt);
+  // Same derive-during-render sync pattern as liked/likeCount above — a
+  // real prop change (parent refetch) should update the displayed text;
+  // an in-flight local edit shouldn't be clobbered by it either, since
+  // isEditing gates the textarea vs. the rendered text separately.
+  const [syncedText, setSyncedText] = useState(text);
+  if (text !== syncedText) {
+    setSyncedText(text);
+    setPostText(text);
+    setEditText(text);
+    setPostHasBeenEdited(edited);
+    setPostEditedAt(editedAt);
+  }
   const [loadingComments, setLoadingComments] = useState(false);
   const [isLiking, setIsLiking] = useState(false);
   const [activeSlide, setActiveSlide] = useState(0);
+  const [postVideo, setPostVideo] = useState(video);
+  const [syncedVideoStatus, setSyncedVideoStatus] = useState(video?.status);
+  if (video?.status !== syncedVideoStatus) {
+    setSyncedVideoStatus(video?.status);
+    setPostVideo(video);
+  }
   const [replyingTo, setReplyingTo] = useState(null); // commentId or null
   const [replyText, setReplyText] = useState("");
   const commentInputRef = useRef(null);
@@ -177,6 +213,33 @@ const PostCard = ({
     if (willOpen && !repliesByComment[commentId]) fetchReplies(commentId);
   };
 
+  const [commentLikingId, setCommentLikingId] = useState(null);
+
+  const handleCommentLike = async (commentId, parentCommentId) => {
+    if (commentLikingId) return;
+    setCommentLikingId(commentId);
+    try {
+      const res = await api.put(`/comments/like/${commentId}`);
+      const applyLike = (c) =>
+        c._id === commentId
+          ? { ...c, likesCount: res.data.likes, isLiked: res.data.liked }
+          : c;
+      if (parentCommentId) {
+        setRepliesByComment((prev) => ({
+          ...prev,
+          [parentCommentId]: (prev[parentCommentId] || []).map(applyLike),
+        }));
+      } else {
+        setComments((prev) => prev.map(applyLike));
+      }
+    } catch (e) {
+      console.error(e);
+      toast.error("Couldn't update like. Try again.");
+    } finally {
+      setCommentLikingId(null);
+    }
+  };
+
   const handleAddReply = async (parentCommentId) => {
     if (isReplySending || !replyText.trim()) return;
     setIsReplySending(true);
@@ -253,6 +316,21 @@ const PostCard = ({
     }
   };
 
+  const handleBookmark = async () => {
+    if (isBookmarking) return;
+    setIsBookmarking(true);
+    try {
+      const res = await api.put(`/posts/bookmark/${postId}`);
+      setBookmarked(res.data.bookmarked);
+      if (!res.data.bookmarked && onUnbookmark) onUnbookmark();
+    } catch (e) {
+      console.error(e);
+      toast.error("Couldn't update saved posts. Try again.");
+    } finally {
+      setIsBookmarking(false);
+    }
+  };
+
   const handleDeleteConfirm = async () => {
     try {
       await api.delete(`/posts/${postId}`);
@@ -261,6 +339,37 @@ const PostCard = ({
     } catch (e) {
       console.error(e);
       toast.error("Couldn't delete post. Try again.");
+    }
+  };
+
+  const handleEditCancel = () => {
+    setEditText(postText);
+    setIsEditing(false);
+  };
+
+  const handleEditSave = async () => {
+    const trimmed = editText.trim();
+    if (!trimmed && media.length === 0) {
+      toast.error("Post must contain text or image");
+      return;
+    }
+    if (trimmed === postText.trim()) {
+      setIsEditing(false);
+      return;
+    }
+    try {
+      setIsSavingEdit(true);
+      const res = await api.put(`/posts/${postId}`, { text: trimmed });
+      setPostText(res.data.text);
+      setEditText(res.data.text);
+      setPostHasBeenEdited(true);
+      setPostEditedAt(res.data.editedAt);
+      setIsEditing(false);
+    } catch (e) {
+      console.error(e);
+      toast.error(e.response?.data?.message || "Couldn't save changes. Try again.");
+    } finally {
+      setIsSavingEdit(false);
     }
   };
 
@@ -351,16 +460,60 @@ const PostCard = ({
         });
       }
     };
+    const handlePostUpdated = (data) => {
+      if (data.postId !== postId) return;
+      // Don't clobber this viewer's own in-progress edit with the
+      // server echo of the save that's already in flight — handleEditSave
+      // applies its own response directly.
+      if (isEditing) return;
+      setPostText(data.text);
+      setEditText(data.text);
+      setPostHasBeenEdited(data.edited);
+      setPostEditedAt(data.editedAt);
+    };
+    const handleVideoReady = (data) => {
+      if (data.postId !== postId) return;
+      setPostVideo((prev) => ({ ...prev, ...data.video }));
+    };
+    const handleCommentLikeUpdate = (data) => {
+      if (data.postId !== postId) return;
+      const isSelf = data.userId === currentUser?._id?.toString();
+      const applyUpdate = (c) => {
+        if (c._id !== data.commentId) return c;
+        // Only trust the server's `liked` flag for our own action —
+        // other viewers' likes should bump the count without touching
+        // whether *we* have liked it.
+        return {
+          ...c,
+          likesCount: data.likesCount,
+          isLiked: isSelf ? data.liked : c.isLiked,
+        };
+      };
+      setComments((prev) => prev.map(applyUpdate));
+      setRepliesByComment((prev) => {
+        const next = { ...prev };
+        for (const parentId of Object.keys(next)) {
+          next[parentId] = next[parentId].map(applyUpdate);
+        }
+        return next;
+      });
+    };
     socket.on("likeUpdate", handleLikeUpdate);
     socket.on("newComment", handleNewComment);
     socket.on("commentDeleted", handleCommentDeleted);
+    socket.on("postUpdated", handlePostUpdated);
+    socket.on("commentLikeUpdate", handleCommentLikeUpdate);
+    socket.on("videoReady", handleVideoReady);
     return () => {
       socket.emit("leavePost", postId);
       socket.off("likeUpdate", handleLikeUpdate);
       socket.off("newComment", handleNewComment);
       socket.off("commentDeleted", handleCommentDeleted);
+      socket.off("postUpdated", handlePostUpdated);
+      socket.off("commentLikeUpdate", handleCommentLikeUpdate);
+      socket.off("videoReady", handleVideoReady);
     };
-  }, [socket, postId, currentUser?._id]);
+  }, [socket, postId, currentUser?._id, isEditing]);
 
   const visibleComments = comments.slice(0, visibleCount);
   const hasMore = visibleCount < comments.length;
@@ -399,20 +552,97 @@ const PostCard = ({
             </div>
           </div>
           {isOwner && (
-            <button
-              onClick={() => setShowDeleteModal(true)}
-              className="text-ink-muted hover:text-red-500 transition p-1.5 rounded-lg hover:bg-red-50"
-              title="Delete post"
-            >
-              <FaTrash size={13} />
-            </button>
+            <div className="flex items-center gap-1">
+              {!isEditing && (
+                <button
+                  onClick={() => setIsEditing(true)}
+                  className="text-ink-muted hover:text-primary-600 transition p-1.5 rounded-lg hover:bg-primary-50"
+                  title="Edit post"
+                >
+                  <FaPen size={12} />
+                </button>
+              )}
+              <button
+                onClick={() => setShowDeleteModal(true)}
+                className="text-ink-muted hover:text-red-500 transition p-1.5 rounded-lg hover:bg-red-50"
+                title="Delete post"
+              >
+                <FaTrash size={13} />
+              </button>
+            </div>
           )}
         </div>
 
         {/* Text */}
-        <p className="text-ink-sub text-sm leading-relaxed">
-          <TextWithLinks text={text} />
-        </p>
+        {isEditing ? (
+          <div className="mt-1">
+            <textarea
+              value={editText}
+              onChange={(e) => setEditText(e.target.value)}
+              maxLength={280}
+              rows={3}
+              autoFocus
+              className="w-full text-sm text-ink-sub leading-relaxed border border-primary-200 rounded-xl p-3 outline-none focus:ring-2 focus:ring-primary-200 resize-none"
+            />
+            <div className="flex items-center justify-between mt-2">
+              <span className="text-[11px] text-ink-muted">
+                {editText.length}/280
+              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleEditCancel}
+                  disabled={isSavingEdit}
+                  className="text-xs font-medium text-ink-muted hover:text-ink px-3 py-1.5 rounded-lg transition disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleEditSave}
+                  disabled={isSavingEdit}
+                  className="text-xs font-semibold text-white bg-primary-600 hover:bg-primary-700 px-3 py-1.5 rounded-lg transition disabled:opacity-50"
+                >
+                  {isSavingEdit ? "Saving..." : "Save"}
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <p className="text-ink-sub text-sm leading-relaxed">
+            <TextWithLinks text={postText} />
+            {postHasBeenEdited && (
+              <span
+                className="text-[11px] text-ink-muted ml-1.5 align-middle"
+                title={postEditedAt ? new Date(postEditedAt).toLocaleString() : undefined}
+              >
+                (edited)
+              </span>
+            )}
+          </p>
+        )}
+
+        {/* Video */}
+        {postVideo?.status === "processing" && (
+          <div className="mt-4 rounded-xl overflow-hidden bg-surface aspect-video flex flex-col items-center justify-center gap-2 text-ink-muted">
+            <div className="h-6 w-6 border-2 border-primary-600 border-t-transparent rounded-full animate-spin" />
+            <span className="text-xs">Processing video...</span>
+          </div>
+        )}
+        {postVideo?.status === "failed" && (
+          <div className="mt-4 rounded-xl overflow-hidden bg-surface aspect-video flex flex-col items-center justify-center gap-1 text-ink-muted">
+            <span className="text-xs">Video processing failed.</span>
+          </div>
+        )}
+        {postVideo?.status === "ready" && postVideo.url && (
+          <div className="mt-4 rounded-xl overflow-hidden bg-black">
+            <video
+              src={postVideo.url}
+              poster={postVideo.thumbnailUrl || undefined}
+              controls
+              playsInline
+              className="w-full max-h-96 object-contain"
+            />
+          </div>
+        )}
 
         {/* Media carousel */}
         {media.length > 0 && (
@@ -485,6 +715,21 @@ const PostCard = ({
             <FaRegComment size={15} />
             <span>{commentCount}</span>
           </button>
+
+          <button
+            onClick={handleBookmark}
+            disabled={isBookmarking}
+            title={bookmarked ? "Remove from saved" : "Save post"}
+            className={`ml-auto flex items-center text-sm transition ${
+              isBookmarking
+                ? "opacity-50 cursor-not-allowed"
+                : bookmarked
+                  ? "text-primary-600"
+                  : "text-ink-muted hover:text-primary-600"
+            }`}
+          >
+            {bookmarked ? <FaBookmark size={15} /> : <FaRegBookmark size={15} />}
+          </button>
         </div>
 
         {/* Comments */}
@@ -554,8 +799,18 @@ const PostCard = ({
                     <TextWithLinks text={c.text} />
                   </p>
 
-                  {/* Reply / thread controls */}
+                  {/* Reply / thread / like controls */}
                   <div className="flex items-center gap-3 mt-1.5">
+                    <button
+                      onClick={() => handleCommentLike(c._id, null)}
+                      disabled={commentLikingId === c._id}
+                      className={`flex items-center gap-1 text-xs transition disabled:opacity-50 ${
+                        c.isLiked ? "text-red-500" : "text-ink-muted hover:text-red-500"
+                      }`}
+                    >
+                      {c.isLiked ? <FaHeart size={11} /> : <FaRegHeart size={11} />}
+                      {c.likesCount > 0 && <span>{c.likesCount}</span>}
+                    </button>
                     <button
                       onClick={() =>
                         setReplyingTo(replyingTo === c._id ? null : c._id)
@@ -643,6 +898,16 @@ const PostCard = ({
                             <p className="text-xs text-ink-sub mt-0.5">
                               <TextWithLinks text={r.text} />
                             </p>
+                            <button
+                              onClick={() => handleCommentLike(r._id, c._id)}
+                              disabled={commentLikingId === r._id}
+                              className={`flex items-center gap-1 text-xs mt-1.5 transition disabled:opacity-50 ${
+                                r.isLiked ? "text-red-500" : "text-ink-muted hover:text-red-500"
+                              }`}
+                            >
+                              {r.isLiked ? <FaHeart size={10} /> : <FaRegHeart size={10} />}
+                              {r.likesCount > 0 && <span>{r.likesCount}</span>}
+                            </button>
                           </div>
                         ))}
                     </div>

@@ -9,6 +9,8 @@ import {
   FaFileContract,
   FaSignOutAlt,
   FaShieldAlt,
+  FaUserShield,
+  FaRegBookmark,
 } from "react-icons/fa";
 import defaultAvatar from "../assets/defaultAvatar";
 
@@ -55,6 +57,14 @@ const UserMenu = ({ user, onLogoutClick }) => {
       isLink: true,
       onClick: () => setIsOpen(false),
     },
+    {
+      icon: FaRegBookmark,
+      label: "Saved posts",
+      href: "/bookmarks",
+      disabled: false,
+      isLink: true,
+      onClick: () => setIsOpen(false),
+    },
     // Only shown to moderators/admins — role isn't in toPublicUserDTO,
     // so this can never appear for a viewer looking at someone else's
     // menu; `user` here is always the logged-in account's own data.
@@ -64,6 +74,21 @@ const UserMenu = ({ user, onLogoutClick }) => {
             icon: FaShieldAlt,
             label: "Moderation queue",
             href: "/moderation",
+            disabled: false,
+            isLink: true,
+            onClick: () => setIsOpen(false),
+          },
+        ]
+      : []),
+    // Role management is admin-only (stricter than the moderator gate
+    // above) — a moderator promoting peers to admin would be a
+    // privilege-escalation path.
+    ...(user.role === "admin"
+      ? [
+          {
+            icon: FaUserShield,
+            label: "Manage roles",
+            href: "/admin/users",
             disabled: false,
             isLink: true,
             onClick: () => setIsOpen(false),

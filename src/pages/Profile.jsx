@@ -475,9 +475,13 @@ const Profile = () => {
             text={post.text}
             image={post.image}
             images={post.images}
+            video={post.video}
             likes={post.likesCount}
             commentsCount={post.commentsCount}
             isLiked={post.isLiked}
+            isBookmarked={post.isBookmarked}
+            edited={post.edited}
+            editedAt={post.editedAt}
             onDelete={(id) => {
               setPosts((prev) => prev.filter((p) => p._id !== id));
               setTotalPosts((prev) => Math.max(prev - 1, 0));

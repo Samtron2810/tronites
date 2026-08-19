@@ -16,9 +16,11 @@ import VerifyOtp from "./pages/VerifyOtp";
 import ChooseUsername from "./pages/ChooseUsername";
 import UsernameRedirect from "./pages/UsernameRedirect";
 import Hashtag from "./pages/Hashtag";
+import Bookmarks from "./pages/Bookmarks";
 import Notifications from "./pages/Notifications";
 import Settings from "./pages/Settings";
 import ModerationQueue from "./pages/ModerationQueue";
+import AdminUsers from "./pages/AdminUsers";
 import NotFound from "./pages/NotFound";
 
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -125,6 +127,15 @@ const AppContent = () => {
         />
 
         <Route
+          path="/bookmarks"
+          element={
+            <ProtectedRoute>
+              <Bookmarks />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
           path="/settings"
           element={
             <ProtectedRoute>
@@ -138,6 +149,15 @@ const AppContent = () => {
           element={
             <ProtectedRoute>
               <ModerationQueue />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admin/users"
+          element={
+            <ProtectedRoute>
+              <AdminUsers />
             </ProtectedRoute>
           }
         />
