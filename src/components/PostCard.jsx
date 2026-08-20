@@ -1,6 +1,17 @@
 import { useEffect, useState, useRef } from "react";
 import { Link } from "react-router-dom";
-import { FaHeart, FaRegHeart, FaRegComment, FaTrash, FaPen, FaBookmark, FaRegBookmark, FaChevronLeft, FaChevronRight } from "react-icons/fa";
+import {
+  FaHeart,
+  FaRegHeart,
+  FaRegComment,
+  FaTrash,
+  FaPen,
+  FaBookmark,
+  FaRegBookmark,
+  FaChevronLeft,
+  FaChevronRight,
+  FaEllipsisV,
+} from "react-icons/fa";
 import toast from "react-hot-toast";
 import api from "../services/api";
 import { useAuth } from "../context/useAuth";
@@ -75,6 +86,9 @@ const PostCard = ({
     if (showComments) setVisibleCount(1);
   }
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef(null);
+  const triggerRef = useRef(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState(text);
   const [isSavingEdit, setIsSavingEdit] = useState(false);
@@ -150,7 +164,10 @@ const PostCard = ({
   };
 
   const handleSelectCommentMention = (uname) => {
-    const { text: newText, cursorPos } = commentMention.applySuggestion(commentText, uname);
+    const { text: newText, cursorPos } = commentMention.applySuggestion(
+      commentText,
+      uname,
+    );
     setCommentText(newText);
     requestAnimationFrame(() => {
       commentInputRef.current?.focus();
@@ -164,7 +181,10 @@ const PostCard = ({
   };
 
   const handleSelectReplyMention = (uname) => {
-    const { text: newText, cursorPos } = replyMention.applySuggestion(replyText, uname);
+    const { text: newText, cursorPos } = replyMention.applySuggestion(
+      replyText,
+      uname,
+    );
     setReplyText(newText);
     requestAnimationFrame(() => {
       replyInputRef.current?.focus();
@@ -367,7 +387,9 @@ const PostCard = ({
       setIsEditing(false);
     } catch (e) {
       console.error(e);
-      toast.error(e.response?.data?.message || "Couldn't save changes. Try again.");
+      toast.error(
+        e.response?.data?.message || "Couldn't save changes. Try again.",
+      );
     } finally {
       setIsSavingEdit(false);
     }
@@ -378,6 +400,27 @@ const PostCard = ({
     if (showComments) fetchComments();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showComments]);
+
+  // Close the post menu when clicking outside it
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        menuRef.current &&
+        !menuRef.current.contains(event.target) &&
+        triggerRef.current &&
+        !triggerRef.current.contains(event.target)
+      ) {
+        setMenuOpen(false);
+      }
+    };
+
+    if (menuOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => {
+        document.removeEventListener("mousedown", handleClickOutside);
+      };
+    }
+  }, [menuOpen]);
 
   useEffect(() => {
     if (!socket || !postId) return;
@@ -552,23 +595,46 @@ const PostCard = ({
             </div>
           </div>
           {isOwner && (
-            <div className="flex items-center gap-1">
-              {!isEditing && (
-                <button
-                  onClick={() => setIsEditing(true)}
-                  className="text-ink-muted hover:text-primary-600 transition p-1.5 rounded-lg hover:bg-primary-50"
-                  title="Edit post"
-                >
-                  <FaPen size={12} />
-                </button>
-              )}
+            <div className="relative">
               <button
-                onClick={() => setShowDeleteModal(true)}
-                className="text-ink-muted hover:text-red-500 transition p-1.5 rounded-lg hover:bg-red-50"
-                title="Delete post"
+                ref={triggerRef}
+                onClick={() => setMenuOpen((o) => !o)}
+                className="text-ink-muted hover:text-ink transition p-1.5 rounded-lg hover:bg-surface"
+                title="Post options"
+                aria-label="Post options"
               >
-                <FaTrash size={13} />
+                <FaEllipsisV size={14} />
               </button>
+
+              {menuOpen && (
+                <div
+                  ref={menuRef}
+                  className="absolute right-0 mt-2 w-40 bg-white rounded-lg shadow-lg border border-stroke z-40 py-1"
+                >
+                  {!isEditing && (
+                    <button
+                      onClick={() => {
+                        setIsEditing(true);
+                        setMenuOpen(false);
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-ink hover:bg-primary-50 transition"
+                    >
+                      <FaPen className="text-primary-600" size={13} />
+                      <span className="font-medium">Edit post</span>
+                    </button>
+                  )}
+                  <button
+                    onClick={() => {
+                      setShowDeleteModal(true);
+                      setMenuOpen(false);
+                    }}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition"
+                  >
+                    <FaTrash size={13} />
+                    <span className="font-medium">Delete post</span>
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -612,7 +678,11 @@ const PostCard = ({
             {postHasBeenEdited && (
               <span
                 className="text-[11px] text-ink-muted ml-1.5 align-middle"
-                title={postEditedAt ? new Date(postEditedAt).toLocaleString() : undefined}
+                title={
+                  postEditedAt
+                    ? new Date(postEditedAt).toLocaleString()
+                    : undefined
+                }
               >
                 (edited)
               </span>
@@ -728,7 +798,11 @@ const PostCard = ({
                   : "text-ink-muted hover:text-primary-600"
             }`}
           >
-            {bookmarked ? <FaBookmark size={15} /> : <FaRegBookmark size={15} />}
+            {bookmarked ? (
+              <FaBookmark size={15} />
+            ) : (
+              <FaRegBookmark size={15} />
+            )}
           </button>
         </div>
 
@@ -782,7 +856,9 @@ const PostCard = ({
                         {c.user.name}
                       </Link>
                       {c.user.username && (
-                        <span className="text-[11px] text-ink-muted">@{c.user.username}</span>
+                        <span className="text-[11px] text-ink-muted">
+                          @{c.user.username}
+                        </span>
                       )}
                     </div>
                     {c.user._id === currentUser?._id && (
@@ -805,10 +881,16 @@ const PostCard = ({
                       onClick={() => handleCommentLike(c._id, null)}
                       disabled={commentLikingId === c._id}
                       className={`flex items-center gap-1 text-xs transition disabled:opacity-50 ${
-                        c.isLiked ? "text-red-500" : "text-ink-muted hover:text-red-500"
+                        c.isLiked
+                          ? "text-red-500"
+                          : "text-ink-muted hover:text-red-500"
                       }`}
                     >
-                      {c.isLiked ? <FaHeart size={11} /> : <FaRegHeart size={11} />}
+                      {c.isLiked ? (
+                        <FaHeart size={11} />
+                      ) : (
+                        <FaRegHeart size={11} />
+                      )}
                       {c.likesCount > 0 && <span>{c.likesCount}</span>}
                     </button>
                     <button
@@ -843,7 +925,9 @@ const PostCard = ({
                           placeholder={`Reply to ${c.user.name}...`}
                           autoFocus
                           onKeyDown={(e) =>
-                            e.key === "Enter" && !replyMention.showSuggestions && handleAddReply(c._id)
+                            e.key === "Enter" &&
+                            !replyMention.showSuggestions &&
+                            handleAddReply(c._id)
                           }
                           className="w-full border border-stroke rounded-lg px-3 py-1.5 text-xs text-ink placeholder:text-ink-muted outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100 transition"
                         />
@@ -868,11 +952,16 @@ const PostCard = ({
                   {openReplies[c._id] && (
                     <div className="mt-2 pl-3 border-l-2 border-stroke space-y-2">
                       {loadingReplies[c._id] && (
-                        <p className="text-xs text-ink-muted">Loading replies...</p>
+                        <p className="text-xs text-ink-muted">
+                          Loading replies...
+                        </p>
                       )}
                       {!loadingReplies[c._id] &&
                         (repliesByComment[c._id] || []).map((r) => (
-                          <div key={r._id} className="bg-white rounded-lg px-3 py-2">
+                          <div
+                            key={r._id}
+                            className="bg-white rounded-lg px-3 py-2"
+                          >
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-1">
                                 <Link
@@ -882,16 +971,22 @@ const PostCard = ({
                                   {r.user.name}
                                 </Link>
                                 {r.user.username && (
-                                  <span className="text-[11px] text-ink-muted">@{r.user.username}</span>
+                                  <span className="text-[11px] text-ink-muted">
+                                    @{r.user.username}
+                                  </span>
                                 )}
                               </div>
                               {r.user._id === currentUser?._id && (
                                 <button
-                                  onClick={() => handleDeleteReply(r._id, c._id)}
+                                  onClick={() =>
+                                    handleDeleteReply(r._id, c._id)
+                                  }
                                   disabled={commentDeletingId === r._id}
                                   className="text-xs text-ink-muted hover:text-red-500 transition disabled:opacity-50"
                                 >
-                                  {commentDeletingId === r._id ? "..." : "Delete"}
+                                  {commentDeletingId === r._id
+                                    ? "..."
+                                    : "Delete"}
                                 </button>
                               )}
                             </div>
@@ -902,10 +997,16 @@ const PostCard = ({
                               onClick={() => handleCommentLike(r._id, c._id)}
                               disabled={commentLikingId === r._id}
                               className={`flex items-center gap-1 text-xs mt-1.5 transition disabled:opacity-50 ${
-                                r.isLiked ? "text-red-500" : "text-ink-muted hover:text-red-500"
+                                r.isLiked
+                                  ? "text-red-500"
+                                  : "text-ink-muted hover:text-red-500"
                               }`}
                             >
-                              {r.isLiked ? <FaHeart size={10} /> : <FaRegHeart size={10} />}
+                              {r.isLiked ? (
+                                <FaHeart size={10} />
+                              ) : (
+                                <FaRegHeart size={10} />
+                              )}
                               {r.likesCount > 0 && <span>{r.likesCount}</span>}
                             </button>
                           </div>
