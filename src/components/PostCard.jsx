@@ -111,6 +111,7 @@ const PostCard = ({
   const [isLiking, setIsLiking] = useState(false);
   const [activeSlide, setActiveSlide] = useState(0);
   const [postVideo, setPostVideo] = useState(video);
+  const videoRef = useRef(null);
   const [syncedVideoStatus, setSyncedVideoStatus] = useState(video?.status);
   if (video?.status !== syncedVideoStatus) {
     setSyncedVideoStatus(video?.status);
@@ -552,6 +553,29 @@ const PostCard = ({
     };
   }, [socket, postId, currentUser?._id, isEditing]);
 
+  // Auto-pause the video when it's scrolled out of view — an off-screen
+  // playing video would otherwise keep blaring audio indefinitely. Only
+  // pauses; never auto-plays (playback still requires an explicit user
+  // action while the post is on screen).
+  useEffect(() => {
+    const videoEl = videoRef.current;
+    if (!videoEl || !postVideo?.url) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (!entry.isIntersecting && !videoEl.paused) {
+            videoEl.pause();
+          }
+        }
+      },
+      // Pauses once less than a quarter of the video is visible.
+      { threshold: 0.25 },
+    );
+    observer.observe(videoEl);
+    return () => observer.disconnect();
+  }, [postVideo?.url]);
+
   const visibleComments = comments.slice(0, visibleCount);
   const hasMore = visibleCount < comments.length;
 
@@ -699,10 +723,15 @@ const PostCard = ({
         {postVideo?.status === "ready" && postVideo.url && (
           <div className="mt-4 rounded-xl overflow-hidden bg-black">
             <video
-              src={postVideo.url}
+              ref={videoRef}
+              src={`${postVideo.url}#t=0.1`}
               poster={postVideo.thumbnailUrl || undefined}
               controls
               playsInline
+              preload="metadata"
+              disablePictureInPicture
+              controlsList="nodownload nofullscreen noplaybackrate"
+              onContextMenu={(e) => e.preventDefault()}
               className="w-full max-h-96 object-contain"
             />
           </div>
