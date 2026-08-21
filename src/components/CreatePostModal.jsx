@@ -1,21 +1,20 @@
 import { useState, useRef } from "react";
 import toast from "react-hot-toast";
-import { FiX, FiImage, FiVideo } from "react-icons/fi";
+import { FiX, FiImage, FiVideo, FiLoader } from "react-icons/fi";
 import useMentionAutocomplete from "../hooks/useMentionAutocomplete";
 import MentionSuggestions from "./MentionSuggestions";
 import ConfirmDiscardModal from "./ConfirmDiscardModal";
+import { openVideoUploadWidget } from "../services/cloudinaryWidget";
+import api from "../services/api";
 
 const MAX_IMAGES = 4;
-const MAX_VIDEO_DURATION_SECONDS = 30;
-const MAX_VIDEO_SIZE_BYTES = 100 * 1024 * 1024;
 
-const CreatePostModal = ({ closeModal, onSubmit }) => {
+const CreatePostModal = ({ closeModal, onSubmit, onVideoPosted }) => {
   const [text, setText] = useState("");
   const [images, setImages] = useState([]); // File[]
   const [previews, setPreviews] = useState([]); // objectURL[]
-  const [video, setVideo] = useState(null); // File | null
-  const [videoPreview, setVideoPreview] = useState(null); // objectURL | null
-  const [videoDuration, setVideoDuration] = useState(null);
+  const [videoUploading, setVideoUploading] = useState(false);
+  const [videoResult, setVideoResult] = useState(null); // Cloudinary widget `info` object | null
   const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
   const textareaRef = useRef(null);
   const mention = useMentionAutocomplete();
@@ -38,7 +37,7 @@ const CreatePostModal = ({ closeModal, onSubmit }) => {
   };
 
   const handleImages = (e) => {
-    if (video) {
+    if (videoResult) {
       toast.error("Remove the video first to add images");
       e.target.value = "";
       return;
@@ -73,56 +72,80 @@ const CreatePostModal = ({ closeModal, onSubmit }) => {
     setImages((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const handleVideoSelect = (e) => {
+  const handleOpenVideoWidget = async () => {
     if (images.length > 0) {
       toast.error("Remove your images first to add a video");
-      e.target.value = "";
-      return;
-    }
-    const file = e.target.files?.[0];
-    e.target.value = "";
-    if (!file) return;
-
-    if (file.size > MAX_VIDEO_SIZE_BYTES) {
-      toast.error("Video must be under 100MB");
       return;
     }
 
-    const url = URL.createObjectURL(file);
-    // Read actual duration client-side before uploading — catches an
-    // obviously-too-long video immediately instead of making the person
-    // wait through an upload only to find out the server trimmed it.
-    // The server's eager transformation is still the authoritative 30s
-    // cap either way; this is just faster feedback, not a substitute.
-    const probe = document.createElement("video");
-    probe.preload = "metadata";
-    probe.onloadedmetadata = () => {
-      URL.revokeObjectURL(probe.src);
-      setVideo(file);
-      setVideoPreview(url);
-      setVideoDuration(probe.duration);
-      if (probe.duration > MAX_VIDEO_DURATION_SECONDS) {
-        toast(
-          `Video is ${Math.round(probe.duration)}s — it'll be trimmed to the first ${MAX_VIDEO_DURATION_SECONDS}s.`,
-          { icon: "✂️" },
-        );
-      }
-    };
-    probe.onerror = () => {
-      toast.error("Couldn't read that video file");
-      URL.revokeObjectURL(url);
-    };
-    probe.src = url;
+    setVideoUploading(true);
+    const toastId = toast.loading("Preparing upload…");
+
+    try {
+      // Creates the post shell server-side (status: "processing") and
+      // returns the folder/eager/notificationUrl/context config the
+      // widget needs. The widget signs each attempt itself via
+      // uploadSignature (see cloudinaryWidget.js) — no signature is
+      // returned from this call.
+      const res = await api.post("/posts/signature/video", { text });
+      const signatureConfig = res.data;
+      toast.dismiss(toastId);
+
+      openVideoUploadWidget({
+        signatureConfig,
+        onSuccess: (info) => {
+          setVideoResult({ ...info, postId: signatureConfig.postId });
+          setVideoUploading(false);
+          toast.success("Video uploaded — processing will finish shortly.");
+          onVideoPosted?.();
+        },
+        onError: async (error) => {
+          setVideoUploading(false);
+          toast.error(error.message || "Video upload failed");
+          try {
+            await api.delete(`/posts/${signatureConfig.postId}`);
+          } catch (cleanupError) {
+            console.error(
+              "Failed to clean up failed video post shell:",
+              cleanupError.message,
+            );
+          }
+        },
+        onClose: async () => {
+          // Widget closed without a completed upload (user cancelled,
+          // or closed after an error). The post shell was already
+          // created server-side with status "processing" and no video
+          // attached — clean it up now rather than leaving an orphaned
+          // draft that never reaches "ready" and never shows up
+          // anywhere, but still sits in the database and counts toward
+          // the user's post history.
+          setVideoUploading(false);
+          try {
+            await api.delete(`/posts/${signatureConfig.postId}`);
+          } catch (cleanupError) {
+            // Not user-facing — the shell just lingers as "processing"
+            // forever if this fails, same as before this fix existed.
+            console.error(
+              "Failed to clean up abandoned video post shell:",
+              cleanupError.message,
+            );
+          }
+        },
+      });
+    } catch (error) {
+      setVideoUploading(false);
+      toast.error(
+        error?.response?.data?.message || "Couldn't start video upload",
+        { id: toastId },
+      );
+    }
   };
 
   const removeVideo = () => {
-    if (videoPreview) URL.revokeObjectURL(videoPreview);
-    setVideo(null);
-    setVideoPreview(null);
-    setVideoDuration(null);
+    setVideoResult(null);
   };
 
-  const hasDraft = text.trim() || images.length > 0 || Boolean(video);
+  const hasDraft = text.trim() || images.length > 0 || Boolean(videoResult);
 
   const handleClose = () => {
     if (hasDraft) {
@@ -134,12 +157,20 @@ const CreatePostModal = ({ closeModal, onSubmit }) => {
 
   const handleDiscard = () => {
     previews.forEach((url) => URL.revokeObjectURL(url));
-    if (videoPreview) URL.revokeObjectURL(videoPreview);
     closeModal();
   };
 
   const handleSubmit = () => {
-    if (!text.trim() && images.length === 0 && !video) {
+    // Video posts are already created server-side by the time
+    // videoResult is set (see handleOpenVideoWidget) — the webhook
+    // flips them to "ready" independently of this modal, so submitting
+    // here just closes the modal.
+    if (videoResult) {
+      closeModal();
+      return;
+    }
+
+    if (!text.trim() && images.length === 0) {
       return toast.error("Post cannot be empty");
     }
 
@@ -147,7 +178,7 @@ const CreatePostModal = ({ closeModal, onSubmit }) => {
     // the background (see CreatePost.jsx). Close the modal immediately
     // so the user isn't left waiting on a loading spinner — toasts from
     // the background upload surface progress/completion.
-    onSubmit({ text, video, images });
+    onSubmit({ text, images });
     closeModal();
   };
 
@@ -219,11 +250,13 @@ const CreatePostModal = ({ closeModal, onSubmit }) => {
             </div>
           )}
 
-          {/* Video preview */}
-          {videoPreview && (
+          {/* Video preview — uses the Cloudinary-hosted eager thumbnail
+              (so_1,f_jpg) since the widget already uploaded the file;
+              there's no local blob to preview from anymore. */}
+          {videoResult && (
             <div className="relative rounded-xl overflow-hidden bg-black">
               <video
-                src={videoPreview}
+                src={videoResult.secure_url}
                 controls
                 className="w-full max-h-72 object-contain"
               />
@@ -233,11 +266,13 @@ const CreatePostModal = ({ closeModal, onSubmit }) => {
               >
                 <FiX size={12} />
               </button>
-              {videoDuration && videoDuration > MAX_VIDEO_DURATION_SECONDS && (
-                <div className="absolute bottom-2 left-2 bg-black/60 text-white text-[11px] px-2 py-1 rounded-lg">
-                  Will trim to first {MAX_VIDEO_DURATION_SECONDS}s
-                </div>
-              )}
+            </div>
+          )}
+
+          {videoUploading && (
+            <div className="flex items-center justify-center gap-2 rounded-xl border border-stroke bg-surface py-6 text-sm text-ink-muted">
+              <FiLoader size={16} className="animate-spin" />
+              Waiting for upload widget…
             </div>
           )}
         </div>
@@ -247,7 +282,7 @@ const CreatePostModal = ({ closeModal, onSubmit }) => {
           <div className="flex items-center gap-4">
             <label
               className={`flex items-center gap-2 text-sm font-medium transition ${
-                images.length >= MAX_IMAGES || Boolean(video)
+                images.length >= MAX_IMAGES || Boolean(videoResult) || videoUploading
                   ? "text-ink-muted cursor-not-allowed opacity-50"
                   : "text-primary-600 cursor-pointer hover:text-primary-800"
               }`}
@@ -261,36 +296,32 @@ const CreatePostModal = ({ closeModal, onSubmit }) => {
                 accept="image/*"
                 multiple
                 onChange={handleImages}
-                disabled={images.length >= MAX_IMAGES || Boolean(video)}
+                disabled={images.length >= MAX_IMAGES || Boolean(videoResult) || videoUploading}
                 className="hidden"
               />
             </label>
 
-            <label
+            <button
+              type="button"
+              onClick={handleOpenVideoWidget}
+              disabled={Boolean(videoResult) || videoUploading || images.length > 0}
               className={`flex items-center gap-2 text-sm font-medium transition ${
-                Boolean(video) || images.length > 0
+                Boolean(videoResult) || videoUploading || images.length > 0
                   ? "text-ink-muted cursor-not-allowed opacity-50"
-                  : "text-primary-600 cursor-pointer hover:text-primary-800"
+                  : "text-primary-600 hover:text-primary-800"
               }`}
             >
               <FiVideo size={16} />
               <span>Video</span>
-              <input
-                type="file"
-                accept="video/*"
-                onChange={handleVideoSelect}
-                disabled={Boolean(video) || images.length > 0}
-                className="hidden"
-              />
-            </label>
+            </button>
           </div>
 
           <button
             onClick={handleSubmit}
-            disabled={!text.trim() && images.length === 0 && !video}
+            disabled={!text.trim() && images.length === 0 && !videoResult}
             className="px-5 py-2 rounded-xl text-sm font-semibold text-white bg-primary-600 hover:bg-primary-800 disabled:opacity-50 disabled:cursor-not-allowed transition shadow-sm"
           >
-            Post
+            {videoResult ? "Done" : "Post"}
           </button>
         </div>
       </div>

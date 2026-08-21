@@ -11,24 +11,17 @@ const CreatePost = ({ fetchPosts }) => {
   const [openModal, setOpenModal] = useState(false);
   const { user } = useAuth();
 
-  // Background post submission — the modal closes immediately and this
-  // runs the actual upload in the background so the user isn't left
-  // staring at a loading spinner. Toasts surface progress/completion.
-  const handleSubmit = async ({ text, video, images }) => {
+  // Background post submission for text/image posts — the modal closes
+  // immediately and this runs the actual upload in the background so the
+  // user isn't left staring at a loading spinner. Toasts surface
+  // progress/completion. Video posts are handled entirely inside
+  // CreatePostModal (the Cloudinary widget uploads directly and the post
+  // is already created server-side before onSubmit ever fires for
+  // video), so this only ever receives { text, images }.
+  const handleSubmit = async ({ text, images }) => {
     const toastId = toast.loading("Posting…");
     try {
-      if (video) {
-        // Video: get a signed upload request from the backend (which also
-        // creates the post shell with status "processing"), then upload
-        // the video directly to Cloudinary. The webhook flips the post to
-        // "ready" when Cloudinary's async processing finishes.
-        const sigRes = await api.post("/posts/signature/video", { text });
-        const signatureData = sigRes.data;
-        await uploadToCloudinary({ file: video, signatureData });
-        toast.success("Video posted — processing will finish shortly.", {
-          id: toastId,
-        });
-      } else if (images.length) {
+      if (images.length) {
         // Images: get a signed upload request, upload each image directly
         // to Cloudinary, then create the post with the returned URLs.
         const sigRes = await api.post("/posts/signature/image", {
@@ -98,6 +91,7 @@ const CreatePost = ({ fetchPosts }) => {
         <CreatePostModal
           closeModal={() => setOpenModal(false)}
           onSubmit={handleSubmit}
+          onVideoPosted={fetchPosts}
         />
       )}
     </>

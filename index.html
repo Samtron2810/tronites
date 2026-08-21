@@ -64,6 +64,11 @@
         </style>
       </div>
     </div>
+    <!-- Cloudinary Upload Widget — used only for video uploads (see
+         src/services/cloudinaryWidget.js). Loaded here rather than as an
+         npm package since Cloudinary ships it as a browser global
+         (`window.cloudinary`), not an ES module. -->
+    <script src="https://upload-widget.cloudinary.com/latest/global/all.js"></script>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
