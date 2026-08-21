@@ -9,10 +9,25 @@ const Register = () => {
   const { register, user, loading } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [formData, setFormData] = useState({ name: "", email: "", password: "" });
+  const [formData, setFormData] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    password: "",
+  });
 
-  const handleChange = (e) =>
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+  // Letters only, typed live — strips anything else (numbers, symbols,
+  // spaces) as the user types rather than rejecting on submit.
+  const NAME_PATTERN = /[^A-Za-z]/g;
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    if (name === "firstName" || name === "lastName") {
+      setFormData({ ...formData, [name]: value.replace(NAME_PATTERN, "") });
+      return;
+    }
+    setFormData({ ...formData, [name]: value });
+  };
 
   useEffect(() => {
     if (!loading && user) navigate("/");
@@ -80,17 +95,38 @@ const Register = () => {
           <p className="text-ink-muted text-sm mb-8">Join the community today.</p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="relative">
-              <FiUser className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted text-sm" />
-              <input
-                type="text"
-                name="name"
-                placeholder="Full Name"
-                value={formData.name}
-                onChange={handleChange}
-                required
-                className="w-full pl-9 pr-4 py-3 rounded-xl border border-stroke bg-white text-ink text-sm placeholder:text-ink-muted outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100 transition"
-              />
+            <div className="flex gap-3">
+              <div className="relative flex-1">
+                <FiUser className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted text-sm" />
+                <input
+                  type="text"
+                  name="firstName"
+                  placeholder="First Name"
+                  value={formData.firstName}
+                  onChange={handleChange}
+                  required
+                  minLength={2}
+                  maxLength={30}
+                  pattern="[A-Za-z]+"
+                  title="Letters only"
+                  className="w-full pl-9 pr-4 py-3 rounded-xl border border-stroke bg-white text-ink text-sm placeholder:text-ink-muted outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100 transition"
+                />
+              </div>
+              <div className="relative flex-1">
+                <input
+                  type="text"
+                  name="lastName"
+                  placeholder="Last Name"
+                  value={formData.lastName}
+                  onChange={handleChange}
+                  required
+                  minLength={2}
+                  maxLength={30}
+                  pattern="[A-Za-z]+"
+                  title="Letters only"
+                  className="w-full pl-4 pr-4 py-3 rounded-xl border border-stroke bg-white text-ink text-sm placeholder:text-ink-muted outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100 transition"
+                />
+              </div>
             </div>
 
             <div className="relative">
