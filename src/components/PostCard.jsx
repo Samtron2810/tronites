@@ -514,14 +514,6 @@ const PostCard = ({
       setPostHasBeenEdited(data.edited);
       setPostEditedAt(data.editedAt);
     };
-    const handleVideoReady = (data) => {
-      if (data.postId !== postId) return;
-      setPostVideo((prev) => ({ ...prev, ...data.video }));
-    };
-    const handleVideoFailed = (data) => {
-      if (data.postId !== postId) return;
-      setPostVideo((prev) => ({ ...prev, ...data.video }));
-    };
     const handleCommentLikeUpdate = (data) => {
       if (data.postId !== postId) return;
       const isSelf = data.userId === currentUser?._id?.toString();
@@ -550,8 +542,6 @@ const PostCard = ({
     socket.on("commentDeleted", handleCommentDeleted);
     socket.on("postUpdated", handlePostUpdated);
     socket.on("commentLikeUpdate", handleCommentLikeUpdate);
-    socket.on("videoReady", handleVideoReady);
-    socket.on("videoFailed", handleVideoFailed);
     return () => {
       socket.emit("leavePost", postId);
       socket.off("likeUpdate", handleLikeUpdate);
@@ -559,8 +549,6 @@ const PostCard = ({
       socket.off("commentDeleted", handleCommentDeleted);
       socket.off("postUpdated", handlePostUpdated);
       socket.off("commentLikeUpdate", handleCommentLikeUpdate);
-      socket.off("videoReady", handleVideoReady);
-      socket.off("videoFailed", handleVideoFailed);
     };
   }, [socket, postId, currentUser?._id, isEditing]);
 

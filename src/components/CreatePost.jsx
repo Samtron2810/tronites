@@ -15,9 +15,9 @@ const CreatePost = ({ fetchPosts }) => {
   // immediately and this runs the actual upload in the background so the
   // user isn't left staring at a loading spinner. Toasts surface
   // progress/completion. Video posts are handled entirely inside
-  // CreatePostModal (the Cloudinary widget uploads directly and the post
-  // is already created server-side before onSubmit ever fires for
-  // video), so this only ever receives { text, images }.
+  // CreatePostModal (the custom uploader uploads to Cloudinary with a
+  // progress bar, then creates the post via POST /posts/video before
+  // closing), so this only ever receives { text, images }.
   const handleSubmit = async ({ text, images }) => {
     const toastId = toast.loading("Posting…");
     try {
