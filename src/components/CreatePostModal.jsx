@@ -1,7 +1,5 @@
 import { useState, useRef } from "react";
 import toast from "react-hot-toast";
-import api from "../services/api";
-import compressImage from "../utils/compressImage";
 import { FiX, FiImage, FiVideo } from "react-icons/fi";
 import useMentionAutocomplete from "../hooks/useMentionAutocomplete";
 import MentionSuggestions from "./MentionSuggestions";
@@ -11,14 +9,13 @@ const MAX_IMAGES = 4;
 const MAX_VIDEO_DURATION_SECONDS = 30;
 const MAX_VIDEO_SIZE_BYTES = 100 * 1024 * 1024;
 
-const CreatePostModal = ({ closeModal, fetchPosts }) => {
+const CreatePostModal = ({ closeModal, onSubmit }) => {
   const [text, setText] = useState("");
   const [images, setImages] = useState([]); // File[]
   const [previews, setPreviews] = useState([]); // objectURL[]
   const [video, setVideo] = useState(null); // File | null
   const [videoPreview, setVideoPreview] = useState(null); // objectURL | null
   const [videoDuration, setVideoDuration] = useState(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
   const textareaRef = useRef(null);
   const mention = useMentionAutocomplete();
@@ -95,9 +92,8 @@ const CreatePostModal = ({ closeModal, fetchPosts }) => {
     // Read actual duration client-side before uploading — catches an
     // obviously-too-long video immediately instead of making the person
     // wait through an upload only to find out the server trimmed it.
-    // The server's eager transformation (see videoUploadWorker.js) is
-    // still the authoritative 30s cap either way; this is just faster
-    // feedback, not a substitute for it.
+    // The server's eager transformation is still the authoritative 30s
+    // cap either way; this is just faster feedback, not a substitute.
     const probe = document.createElement("video");
     probe.preload = "metadata";
     probe.onloadedmetadata = () => {
@@ -142,59 +138,17 @@ const CreatePostModal = ({ closeModal, fetchPosts }) => {
     closeModal();
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = () => {
     if (!text.trim() && images.length === 0 && !video) {
       return toast.error("Post cannot be empty");
     }
-    if (isSubmitting) return;
-    setIsSubmitting(true);
-    try {
-      const formData = new FormData();
-      if (text.trim()) formData.append("text", text);
 
-      if (video) {
-        formData.append("video", video);
-        await api.post("/posts/video", formData);
-        toast.success("Video uploading — it'll appear in your feed shortly.");
-      } else {
-        if (images.length) {
-          const compressed = await Promise.all(images.map(compressImage));
-          compressed.forEach((file) => formData.append("images", file));
-        }
-        await api.post("/posts", formData);
-        toast.success("Post created!");
-      }
-
-      fetchPosts();
-      closeModal();
-    } catch (error) {
-      if (error.code === "ECONNABORTED") {
-        toast.error(
-          "Upload is taking longer than expected — check your feed in a moment.",
-        );
-      } else if (
-        error?.response?.data?.code === "UPLOAD_LOST" ||
-        error?.response?.data?.code === "UPLOAD_FAILED"
-      ) {
-        toast.error(
-          error.response.data.message ||
-            "Image upload failed — please try again.",
-        );
-      } else if (error?.response?.data?.code === "VIDEO_QUEUE_UNAVAILABLE") {
-        toast.error(
-          error.response.data.message ||
-            "Video upload is temporarily unavailable.",
-        );
-      } else {
-        toast.error(
-          error?.response?.data?.message ||
-            error.message ||
-            "Failed to create post",
-        );
-      }
-    } finally {
-      setIsSubmitting(false);
-    }
+    // Hand the draft off to the parent, which runs the actual upload in
+    // the background (see CreatePost.jsx). Close the modal immediately
+    // so the user isn't left waiting on a loading spinner — toasts from
+    // the background upload surface progress/completion.
+    onSubmit({ text, video, images });
+    closeModal();
   };
 
   const gridClass = previews.length === 1 ? "grid-cols-1" : "grid-cols-2";
@@ -333,12 +287,10 @@ const CreatePostModal = ({ closeModal, fetchPosts }) => {
 
           <button
             onClick={handleSubmit}
-            disabled={
-              isSubmitting || (!text.trim() && images.length === 0 && !video)
-            }
+            disabled={!text.trim() && images.length === 0 && !video}
             className="px-5 py-2 rounded-xl text-sm font-semibold text-white bg-primary-600 hover:bg-primary-800 disabled:opacity-50 disabled:cursor-not-allowed transition shadow-sm"
           >
-            {isSubmitting ? "Posting..." : "Post"}
+            Post
           </button>
         </div>
       </div>

@@ -12,7 +12,7 @@ if (!baseURL) {
 const api = axios.create({
   baseURL,
   withCredentials: true,
-  timeout: 60000, // 60 second timeout for large image uploads
+  timeout: 180000, // 180 second timeout for large video uploads
   timeoutErrorMessage: "Request timed out. Please try again.",
 });
 
