@@ -3,6 +3,7 @@ import { Navigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import MainLayout from "../layouts/MainLayout";
 import api from "../services/api";
+import ConfirmRoleChangeModal from "../components/ConfirmRoleChangeModal";
 import { useAuth } from "../context/useAuth";
 import defaultAvatar from "../assets/defaultAvatar";
 import { FiSearch, FiShield } from "react-icons/fi";
@@ -20,19 +21,13 @@ const ROLE_STYLES = {
   admin: "bg-red-50 text-red-600",
 };
 
-const RoleRow = ({ target, currentUserId, onRoleChange }) => {
-  const [saving, setSaving] = useState(false);
+const RoleRow = ({ target, currentUserId, onRequestRoleChange }) => {
   const isSelf = target._id === currentUserId;
 
-  const handleChange = async (e) => {
+  const handleChange = (e) => {
     const newRole = e.target.value;
     if (newRole === target.role) return;
-    setSaving(true);
-    try {
-      await onRoleChange(target._id, newRole);
-    } finally {
-      setSaving(false);
-    }
+    onRequestRoleChange(target, newRole);
   };
 
   return (
@@ -45,20 +40,24 @@ const RoleRow = ({ target, currentUserId, onRoleChange }) => {
         />
         <div className="min-w-0">
           <p className="text-sm font-semibold text-ink truncate">
-            {target.name} {isSelf && <span className="text-xs text-ink-muted font-normal">(you)</span>}
+            {target.name}{" "}
+            {isSelf && (
+              <span className="text-xs text-ink-muted font-normal">(you)</span>
+            )}
           </p>
           <p className="text-xs text-ink-muted truncate">{target.email}</p>
         </div>
       </div>
 
       <div className="flex items-center gap-2 shrink-0">
-        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${ROLE_STYLES[target.role]}`}>
+        <span
+          className={`text-xs font-semibold px-2 py-0.5 rounded-full ${ROLE_STYLES[target.role]}`}
+        >
           {target.role}
         </span>
         <select
           value={target.role}
           onChange={handleChange}
-          disabled={saving}
           className="text-xs border border-stroke rounded-lg px-2 py-1.5 text-ink bg-white outline-none focus:ring-2 focus:ring-primary-200 disabled:opacity-50"
         >
           <option value="user">user</option>
@@ -79,40 +78,37 @@ const AdminUsers = () => {
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
+  const [pendingRoleChange, setPendingRoleChange] = useState(null);
   const observerTarget = useRef(null);
 
   const isAdmin = user && user.role === "admin";
 
-  const fetchUsers = useCallback(
-    async (query, role, pageNum = 1) => {
-      try {
-        if (pageNum === 1) setLoading(true);
-        else setIsLoadingMore(true);
+  const fetchUsers = useCallback(async (query, role, pageNum = 1) => {
+    try {
+      if (pageNum === 1) setLoading(true);
+      else setIsLoadingMore(true);
 
-        const res = await api.get("/admin/users", {
-          params: { q: query, role: role || undefined, page: pageNum, limit: 20 },
-        });
+      const res = await api.get("/admin/users", {
+        params: { q: query, role: role || undefined, page: pageNum, limit: 20 },
+      });
 
-        if (pageNum === 1) setUsers(res.data.users);
-        else setUsers((prev) => [...prev, ...res.data.users]);
+      if (pageNum === 1) setUsers(res.data.users);
+      else setUsers((prev) => [...prev, ...res.data.users]);
 
-        setHasMore(res.data.hasMore);
-        setPage(pageNum);
-      } catch (e) {
-        console.error(e);
-        toast.error("Couldn't load users.");
-      } finally {
-        if (pageNum === 1) setLoading(false);
-        else setIsLoadingMore(false);
-      }
-    },
-    [],
-  );
+      setHasMore(res.data.hasMore);
+      setPage(pageNum);
+    } catch (e) {
+      console.error(e);
+      toast.error("Couldn't load users.");
+    } finally {
+      if (pageNum === 1) setLoading(false);
+      else setIsLoadingMore(false);
+    }
+  }, []);
 
   useEffect(() => {
     if (!isAdmin) return;
     const t = window.setTimeout(() => {
-       
       fetchUsers(search.trim(), roleFilter, 1);
     }, 300);
     return () => window.clearTimeout(t);
@@ -124,7 +120,12 @@ const AdminUsers = () => {
     const target = observerTarget.current;
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && hasMore && !isLoadingMore && !loading) {
+        if (
+          entries[0].isIntersecting &&
+          hasMore &&
+          !isLoadingMore &&
+          !loading
+        ) {
           fetchUsers(search.trim(), roleFilter, page + 1);
         }
       },
@@ -134,7 +135,16 @@ const AdminUsers = () => {
     return () => {
       if (target) observer.unobserve(target);
     };
-  }, [isAdmin, page, hasMore, isLoadingMore, loading, search, roleFilter, fetchUsers]);
+  }, [
+    isAdmin,
+    page,
+    hasMore,
+    isLoadingMore,
+    loading,
+    search,
+    roleFilter,
+    fetchUsers,
+  ]);
 
   // Guard client-side too — the endpoints already 403 non-admins, this
   // just avoids rendering a role-management UI that would only ever
@@ -145,9 +155,13 @@ const AdminUsers = () => {
 
   const handleRoleChange = async (targetId, newRole) => {
     try {
-      const res = await api.put(`/admin/users/${targetId}/role`, { role: newRole });
+      const res = await api.put(`/admin/users/${targetId}/role`, {
+        role: newRole,
+      });
       setUsers((prev) =>
-        prev.map((u) => (u._id === targetId ? { ...u, role: res.data.user.role } : u)),
+        prev.map((u) =>
+          u._id === targetId ? { ...u, role: res.data.user.role } : u,
+        ),
       );
       toast.success(`Role updated to ${res.data.user.role}.`);
     } catch (e) {
@@ -156,13 +170,32 @@ const AdminUsers = () => {
     }
   };
 
+  const handleConfirmRoleChange = async () => {
+    if (!pendingRoleChange) return;
+    await handleRoleChange(
+      pendingRoleChange.user._id,
+      pendingRoleChange.newRole,
+    );
+    setPendingRoleChange(null);
+  };
+
   return (
     <MainLayout>
+      {pendingRoleChange && (
+        <ConfirmRoleChangeModal
+          targetUser={pendingRoleChange.user}
+          newRole={pendingRoleChange.newRole}
+          onConfirm={handleConfirmRoleChange}
+          onCancel={() => setPendingRoleChange(null)}
+        />
+      )}
       <div className="flex items-center gap-2 mb-1">
         <FiShield className="text-primary-600" size={18} />
         <h1 className="text-xl font-bold text-ink">Manage roles</h1>
       </div>
-      <p className="text-sm text-ink-muted mb-5">Grant or revoke moderator and admin access.</p>
+      <p className="text-sm text-ink-muted mb-5">
+        Grant or revoke moderator and admin access.
+      </p>
 
       <div className="bg-white border border-stroke rounded-2xl px-4 py-3 flex items-center gap-3 mb-3">
         <FiSearch className="text-ink-muted shrink-0" size={16} />
@@ -194,18 +227,29 @@ const AdminUsers = () => {
       {loading ? (
         <p className="text-sm text-ink-muted">Loading...</p>
       ) : users.length === 0 ? (
-        <p className="text-sm text-ink-muted text-center py-10">No users found.</p>
+        <p className="text-sm text-ink-muted text-center py-10">
+          No users found.
+        </p>
       ) : (
         <div className="space-y-2">
           {users.map((u) => (
-            <RoleRow key={u._id} target={u} currentUserId={user._id} onRoleChange={handleRoleChange} />
+            <RoleRow
+              key={u._id}
+              target={u}
+              currentUserId={user._id}
+              onRequestRoleChange={(target, newRole) =>
+                setPendingRoleChange({ user: target, newRole })
+              }
+            />
           ))}
         </div>
       )}
 
       {hasMore && users.length > 0 && (
         <div ref={observerTarget} className="py-4 text-center">
-          {isLoadingMore && <p className="text-xs text-ink-muted">Loading more...</p>}
+          {isLoadingMore && (
+            <p className="text-xs text-ink-muted">Loading more...</p>
+          )}
         </div>
       )}
     </MainLayout>

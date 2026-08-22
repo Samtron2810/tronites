@@ -16,8 +16,13 @@ export const MAX_VIDEO_DURATION_SECONDS = 30;
 const ALLOWED_FORMATS = ["mp4", "mov", "webm", "avi", "mkv"];
 
 // Returns an error message string if the file is unacceptable, or null if
-// it passes. Cheap synchronous checks only (format + size) — duration
-// needs a metadata probe, see probeVideoDuration below.
+// it passes. Format + size only — no local decode/duration probe.
+// Browsers can't reliably decode every codec these containers can hold
+// (HEVC MOV, AVI/MKV with non-web codecs), which made client-side
+// probing reject valid files inconsistently. Cloudinary decodes and
+// transcodes server-side regardless of source codec, so we upload
+// first and let its eager transform (f_mp4,vc_h264) be the real
+// gatekeeper — trimming to 30s and normalizing format in the same step.
 export const validateVideoFile = (file) => {
   if (!file) return "No file selected";
 
@@ -36,38 +41,6 @@ export const validateVideoFile = (file) => {
 
   return null;
 };
-
-// Reads the video's duration from its metadata without uploading anything.
-// Resolves with the duration in seconds; rejects if the file can't be
-// decoded as video at all.
-export const probeVideoDuration = (file) =>
-  new Promise((resolve, reject) => {
-    const objectUrl = URL.createObjectURL(file);
-    const video = document.createElement("video");
-    video.preload = "metadata";
-
-    const cleanup = () => {
-      URL.revokeObjectURL(objectUrl);
-      video.removeAttribute("src");
-      video.load();
-    };
-
-    video.onloadedmetadata = () => {
-      const duration = video.duration;
-      cleanup();
-      if (!Number.isFinite(duration) || duration <= 0) {
-        reject(new Error("Couldn't read the video's duration"));
-        return;
-      }
-      resolve(duration);
-    };
-    video.onerror = () => {
-      cleanup();
-      reject(new Error("This file doesn't appear to be a valid video"));
-    };
-
-    video.src = objectUrl;
-  });
 
 // Uploads the file to Cloudinary and resolves with the finished asset:
 // { publicId, url, durationSeconds }. `url` is the eager-transformed MP4

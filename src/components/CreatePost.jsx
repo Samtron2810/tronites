@@ -6,6 +6,7 @@ import defaultAvatar from "../assets/defaultAvatar";
 import api from "../services/api";
 import compressImage from "../utils/compressImage";
 import { uploadToCloudinary } from "../services/cloudinary";
+import { uploadVideoToCloudinary, MAX_VIDEO_DURATION_SECONDS } from "../services/videoUpload";
 
 const CreatePost = ({ fetchPosts }) => {
   const [openModal, setOpenModal] = useState(false);
@@ -14,10 +15,7 @@ const CreatePost = ({ fetchPosts }) => {
   // Background post submission for text/image posts — the modal closes
   // immediately and this runs the actual upload in the background so the
   // user isn't left staring at a loading spinner. Toasts surface
-  // progress/completion. Video posts are handled entirely inside
-  // CreatePostModal (the custom uploader uploads to Cloudinary with a
-  // progress bar, then creates the post via POST /posts/video before
-  // closing), so this only ever receives { text, images }.
+  // progress/completion.
   const handleSubmit = async ({ text, images }) => {
     const toastId = toast.loading("Posting…");
     try {
@@ -69,6 +67,49 @@ const CreatePost = ({ fetchPosts }) => {
     }
   };
 
+  // Background video post submission — mirrors handleSubmit above. The
+  // modal has already closed by the time this runs; upload + eager
+  // transform (server-side trim to 30s) happen here with toast progress,
+  // so the user is free to browse/post again while it finishes.
+  const handleSubmitVideo = async ({ text, videoFile }) => {
+    const toastId = toast.loading("Uploading video… 0%");
+    try {
+      const video = await uploadVideoToCloudinary({
+        file: videoFile,
+        onProgress: (pct) => {
+          toast.loading(
+            pct >= 100 ? "Processing video…" : `Uploading video… ${pct}%`,
+            { id: toastId },
+          );
+        },
+      });
+
+      await api.post("/posts/video", { text, video });
+
+      // durationSeconds is the SOURCE video's duration (Cloudinary's
+      // top-level `duration` field, read before the eager transform)
+      // — not the trimmed clip's. Comparing it against the cap is how
+      // we know, after the fact, whether the eager transform actually
+      // cut anything.
+      if (video.durationSeconds > MAX_VIDEO_DURATION_SECONDS) {
+        toast.success(
+          `Video posted — trimmed to the first ${MAX_VIDEO_DURATION_SECONDS}s`,
+          { id: toastId, icon: "✂️", duration: 4000 },
+        );
+      } else {
+        toast.success("Video posted!", { id: toastId });
+      }
+      fetchPosts();
+    } catch (error) {
+      toast.error(
+        error?.response?.data?.message ||
+          error.message ||
+          "Couldn't post your video",
+        { id: toastId },
+      );
+    }
+  };
+
   return (
     <>
       <div className="bg-white border border-stroke rounded-2xl p-4">
@@ -91,7 +132,7 @@ const CreatePost = ({ fetchPosts }) => {
         <CreatePostModal
           closeModal={() => setOpenModal(false)}
           onSubmit={handleSubmit}
-          onVideoPosted={fetchPosts}
+          onSubmitVideo={handleSubmitVideo}
         />
       )}
     </>

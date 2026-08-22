@@ -1,29 +1,27 @@
 import { useState, useRef } from "react";
 import toast from "react-hot-toast";
-import { FiX, FiImage, FiVideo } from "react-icons/fi";
+import { FiX, FiImage, FiVideo, FiFilm } from "react-icons/fi";
 import useMentionAutocomplete from "../hooks/useMentionAutocomplete";
 import MentionSuggestions from "./MentionSuggestions";
 import ConfirmDiscardModal from "./ConfirmDiscardModal";
-import {
-  validateVideoFile,
-  probeVideoDuration,
-  uploadVideoToCloudinary,
-  MAX_VIDEO_DURATION_SECONDS,
-} from "../services/videoUpload";
-import api from "../services/api";
+import { validateVideoFile } from "../services/videoUpload";
 
 const MAX_IMAGES = 4;
 
-const CreatePostModal = ({ closeModal, onSubmit, onVideoPosted }) => {
+const CreatePostModal = ({ closeModal, onSubmit, onSubmitVideo }) => {
   const [text, setText] = useState("");
   const [images, setImages] = useState([]); // File[]
   const [previews, setPreviews] = useState([]); // objectURL[]
-  // Custom video uploader state — the file is validated + previewed
-  // locally first, then uploaded to Cloudinary when the user hits Post.
+  // Video is only validated (format/size) + previewed locally here — no
+  // local decode/duration probe. The browser's <video> support doesn't
+  // match what Cloudinary can actually accept (HEVC MOV, AVI/MKV with
+  // exotic codecs all upload and transcode fine server-side even when
+  // the browser can't play them), so we trust the upload and let
+  // Cloudinary's eager transform be the real validator. The preview
+  // below degrades gracefully if the browser can't render it.
   const [videoFile, setVideoFile] = useState(null); // File | null
   const [videoPreviewUrl, setVideoPreviewUrl] = useState(null); // objectURL | null
-  const [videoUploading, setVideoUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0); // 0–100 (bytes sent)
+  const [videoPreviewFailed, setVideoPreviewFailed] = useState(false);
   const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
   const textareaRef = useRef(null);
   const videoInputRef = useRef(null);
@@ -82,10 +80,10 @@ const CreatePostModal = ({ closeModal, onSubmit, onVideoPosted }) => {
     setImages((prev) => prev.filter((_, i) => i !== index));
   };
 
-  // Video selection: validate synchronously (format/size), then probe the
-  // duration from metadata — all before anything is uploaded, so bad files
-  // are rejected instantly with no bandwidth spent.
-  const handleSelectVideo = async (e) => {
+  // Video selection: format/size validation only, no decode probe. Any
+  // file that passes gets uploaded — Cloudinary transcodes/trims
+  // whatever codec is inside regardless of what the browser can preview.
+  const handleSelectVideo = (e) => {
     if (images.length > 0) {
       toast.error("Remove your images first to add a video");
       e.target.value = "";
@@ -102,23 +100,7 @@ const CreatePostModal = ({ closeModal, onSubmit, onVideoPosted }) => {
       return;
     }
 
-    let duration;
-    try {
-      duration = await probeVideoDuration(file);
-    } catch (error) {
-      toast.error(error.message || "Couldn't read this video");
-      return;
-    }
-    if (duration > MAX_VIDEO_DURATION_SECONDS) {
-      toast.error(
-        `Video is too long — the maximum duration is ${MAX_VIDEO_DURATION_SECONDS}s`,
-      );
-      return;
-    }
-
-    // Local blob preview — playable immediately, no upload required to
-    // see what you're posting (an upgrade over the old widget, which only
-    // previewed after the file had been uploaded).
+    setVideoPreviewFailed(false);
     setVideoPreviewUrl(URL.createObjectURL(file));
     setVideoFile(file);
   };
@@ -126,15 +108,13 @@ const CreatePostModal = ({ closeModal, onSubmit, onVideoPosted }) => {
   const removeVideo = () => {
     if (videoPreviewUrl) URL.revokeObjectURL(videoPreviewUrl);
     setVideoPreviewUrl(null);
+    setVideoPreviewFailed(false);
     setVideoFile(null);
   };
 
   const hasDraft = text.trim() || images.length > 0 || Boolean(videoFile);
 
   const handleClose = () => {
-    // Don't let the modal close mid-upload — that would orphan an
-    // in-flight Cloudinary upload with no post attached to it.
-    if (videoUploading) return;
     if (hasDraft) {
       setShowDiscardConfirm(true);
     } else {
@@ -147,50 +127,19 @@ const CreatePostModal = ({ closeModal, onSubmit, onVideoPosted }) => {
     closeModal();
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = () => {
     if (!text.trim() && images.length === 0 && !videoFile) {
       return toast.error("Post cannot be empty");
     }
 
-    // ── Video path: upload → create post → done ──────────────────────
-    // The post is created in one shot AFTER the asset is fully uploaded
-    // AND transformed (synchronous eager), so it appears in feeds as
-    // "ready" immediately — no processing state, no webhook dependency.
+    // Both paths now close the modal immediately and hand off to the
+    // parent, which runs the upload in the background and reports
+    // progress/result via toast — matches the image post UX.
     if (videoFile) {
-      if (videoUploading) return;
-      setVideoUploading(true);
-      setUploadProgress(0);
-
-      try {
-        const video = await uploadVideoToCloudinary({
-          file: videoFile,
-          onProgress: setUploadProgress,
-        });
-
-        await api.post("/posts/video", { text, video });
-
-        toast.success("Video posted!");
-        onVideoPosted?.();
-        removeVideo();
-        closeModal();
-      } catch (error) {
-        // Keep the draft intact so the user can retry without re-selecting
-        // the file. The failed Cloudinary asset (if any bytes made it up)
-        // is simply never referenced by any post.
-        toast.error(
-          error?.response?.data?.message ||
-            error.message ||
-            "Couldn't post your video",
-        );
-      } finally {
-        setVideoUploading(false);
-        setUploadProgress(0);
-      }
-      return;
+      onSubmitVideo({ text, videoFile });
+    } else {
+      onSubmit({ text, images });
     }
-
-    // ── Image path: hand off to the parent (unchanged) ────────────────
-    onSubmit({ text, images });
     closeModal();
   };
 
@@ -204,8 +153,7 @@ const CreatePostModal = ({ closeModal, onSubmit, onVideoPosted }) => {
           <h2 className="text-base font-semibold text-ink">Create Post</h2>
           <button
             onClick={handleClose}
-            disabled={videoUploading}
-            className="text-ink-muted hover:text-ink transition p-1 rounded-lg hover:bg-surface disabled:opacity-50 disabled:cursor-not-allowed"
+            className="text-ink-muted hover:text-ink transition p-1 rounded-lg hover:bg-surface"
           >
             <FiX size={18} />
           </button>
@@ -263,48 +211,40 @@ const CreatePostModal = ({ closeModal, onSubmit, onVideoPosted }) => {
             </div>
           )}
 
-          {/* Video preview — local blob, playable before any upload */}
+          {/* Video preview — local blob when the browser can decode it;
+              falls back to a file chip when it can't (HEVC MOV, exotic
+              AVI/MKV codecs, etc). Either way the file still uploads and
+              Cloudinary transcodes it server-side. */}
           {videoPreviewUrl && (
             <div className="relative rounded-xl overflow-hidden bg-black">
-              <video
-                src={videoPreviewUrl}
-                controls
-                playsInline
-                className={`w-full max-h-72 object-contain ${
-                  videoUploading ? "opacity-60" : ""
-                }`}
-              />
-              {!videoUploading && (
-                <button
-                  onClick={removeVideo}
-                  className="absolute top-2 right-2 bg-black/50 text-white rounded-full p-1 hover:bg-black/70 transition"
-                >
-                  <FiX size={12} />
-                </button>
-              )}
-            </div>
-          )}
-
-          {/* Custom upload progress bar — replaces the widget's own UI.
-              Progress tracks bytes sent; once it hits 100% the label
-              switches to "Processing…" for the final transformation step
-              (trimming to 30s / mp4 conversion) before the post resolves. */}
-          {videoUploading && (
-            <div className="rounded-xl border border-stroke bg-surface px-4 py-3 space-y-2">
-              <div className="flex items-center justify-between text-xs text-ink-muted">
-                <span>
-                  {uploadProgress >= 100
-                    ? "Processing video…"
-                    : `Uploading video… ${uploadProgress}%`}
-                </span>
-                <span>{uploadProgress}%</span>
-              </div>
-              <div className="h-2 rounded-full bg-stroke overflow-hidden">
-                <div
-                  className="h-full rounded-full bg-primary-600 transition-all duration-200"
-                  style={{ width: `${Math.max(uploadProgress, 4)}%` }}
+              {videoPreviewFailed ? (
+                <div className="flex items-center gap-3 px-4 py-6 bg-surface">
+                  <FiFilm size={28} className="text-primary-600 shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-ink truncate">
+                      {videoFile?.name}
+                    </p>
+                    <p className="text-xs text-ink-muted">
+                      Preview isn't available in this browser — it'll still
+                      upload and post normally.
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <video
+                  src={videoPreviewUrl}
+                  controls
+                  playsInline
+                  onError={() => setVideoPreviewFailed(true)}
+                  className="w-full max-h-72 object-contain"
                 />
-              </div>
+              )}
+              <button
+                onClick={removeVideo}
+                className="absolute top-2 right-2 bg-black/50 text-white rounded-full p-1 hover:bg-black/70 transition"
+              >
+                <FiX size={12} />
+              </button>
             </div>
           )}
         </div>
@@ -314,9 +254,7 @@ const CreatePostModal = ({ closeModal, onSubmit, onVideoPosted }) => {
           <div className="flex items-center gap-4">
             <label
               className={`flex items-center gap-2 text-sm font-medium transition ${
-                images.length >= MAX_IMAGES ||
-                Boolean(videoFile) ||
-                videoUploading
+                images.length >= MAX_IMAGES || Boolean(videoFile)
                   ? "text-ink-muted cursor-not-allowed opacity-50"
                   : "text-primary-600 cursor-pointer hover:text-primary-800"
               }`}
@@ -330,11 +268,7 @@ const CreatePostModal = ({ closeModal, onSubmit, onVideoPosted }) => {
                 accept="image/*"
                 multiple
                 onChange={handleImages}
-                disabled={
-                  images.length >= MAX_IMAGES ||
-                  Boolean(videoFile) ||
-                  videoUploading
-                }
+                disabled={images.length >= MAX_IMAGES || Boolean(videoFile)}
                 className="hidden"
               />
             </label>
@@ -342,11 +276,9 @@ const CreatePostModal = ({ closeModal, onSubmit, onVideoPosted }) => {
             <button
               type="button"
               onClick={() => videoInputRef.current?.click()}
-              disabled={
-                Boolean(videoFile) || videoUploading || images.length > 0
-              }
+              disabled={Boolean(videoFile) || images.length > 0}
               className={`flex items-center gap-2 text-sm font-medium transition ${
-                Boolean(videoFile) || videoUploading || images.length > 0
+                Boolean(videoFile) || images.length > 0
                   ? "text-ink-muted cursor-not-allowed opacity-50"
                   : "text-primary-600 hover:text-primary-800"
               }`}
@@ -359,22 +291,17 @@ const CreatePostModal = ({ closeModal, onSubmit, onVideoPosted }) => {
               type="file"
               accept="video/mp4,video/quicktime,video/webm,video/x-msvideo,video/x-matroska,.mp4,.mov,.webm,.avi,.mkv"
               onChange={handleSelectVideo}
-              disabled={
-                Boolean(videoFile) || videoUploading || images.length > 0
-              }
+              disabled={Boolean(videoFile) || images.length > 0}
               className="hidden"
             />
           </div>
 
           <button
             onClick={handleSubmit}
-            disabled={
-              videoUploading ||
-              (!text.trim() && images.length === 0 && !videoFile)
-            }
+            disabled={!text.trim() && images.length === 0 && !videoFile}
             className="px-5 py-2 rounded-xl text-sm font-semibold text-white bg-primary-600 hover:bg-primary-800 disabled:opacity-50 disabled:cursor-not-allowed transition shadow-sm"
           >
-            {videoUploading ? "Posting…" : videoFile ? "Post video" : "Post"}
+            {videoFile ? "Post video" : "Post"}
           </button>
         </div>
       </div>
