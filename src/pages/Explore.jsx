@@ -37,7 +37,10 @@ const Explore = () => {
   // direct jump to that hashtag's dedicated page instead of (or in
   // addition to) a content-search match.
   const hashtagMatch = search.trim().match(/^#?([a-z0-9_]{2,})$/i);
-  const possibleHashtag = activeTab === "posts" && hashtagMatch ? hashtagMatch[1].toLowerCase() : null;
+  const possibleHashtag =
+    activeTab === "posts" && hashtagMatch
+      ? hashtagMatch[1].toLowerCase()
+      : null;
 
   const fetchPosts = async (query, pageNum = 1) => {
     try {
@@ -103,7 +106,6 @@ const Explore = () => {
       else fetchPosts(trimmed, 1);
     }, delay);
     return () => window.clearTimeout(t);
-     
   }, [search, activeTab]);
 
   useEffect(() => {
@@ -111,14 +113,21 @@ const Explore = () => {
     const target = observerTarget.current;
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && hasMore && !isLoadingMore && !loading) {
+        if (
+          entries[0].isIntersecting &&
+          hasMore &&
+          !isLoadingMore &&
+          !loading
+        ) {
           fetchUsers(search.trim(), page + 1);
         }
       },
-      { threshold: 0.1 }
+      { threshold: 0.1 },
     );
     if (target) observer.observe(target);
-    return () => { if (target) observer.unobserve(target); };
+    return () => {
+      if (target) observer.unobserve(target);
+    };
   }, [activeTab, page, hasMore, isLoadingMore, loading, search]);
 
   useEffect(() => {
@@ -126,15 +135,29 @@ const Explore = () => {
     const target = postsObserverTarget.current;
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && postsHasMore && !postsIsLoadingMore && !postsLoading) {
+        if (
+          entries[0].isIntersecting &&
+          postsHasMore &&
+          !postsIsLoadingMore &&
+          !postsLoading
+        ) {
           fetchPosts(search.trim(), postsPage + 1);
         }
       },
-      { threshold: 0.1 }
+      { threshold: 0.1 },
     );
     if (target) observer.observe(target);
-    return () => { if (target) observer.unobserve(target); };
-  }, [activeTab, postsPage, postsHasMore, postsIsLoadingMore, postsLoading, search]);
+    return () => {
+      if (target) observer.unobserve(target);
+    };
+  }, [
+    activeTab,
+    postsPage,
+    postsHasMore,
+    postsIsLoadingMore,
+    postsLoading,
+    search,
+  ]);
 
   const handleFollow = async (userId) => {
     if (followingId) return;
@@ -153,13 +176,14 @@ const Explore = () => {
               ? [...u.followers, currentUser._id]
               : u.followers.filter((id) => id !== currentUser._id),
           };
-        })
+        }),
       );
     } catch (e) {
       console.error(e);
       toast.error("Couldn't update follow status. Try again.");
+    } finally {
+      setFollowingId(null);
     }
-    finally { setFollowingId(null); }
   };
 
   return (
@@ -194,7 +218,11 @@ const Explore = () => {
           <FiSearch className="text-ink-muted shrink-0" size={16} />
           <input
             type="text"
-            placeholder={activeTab === "users" ? "Search users..." : "Search posts or #hashtag..."}
+            placeholder={
+              activeTab === "users"
+                ? "Search users..."
+                : "Search posts or #hashtag..."
+            }
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="flex-1 text-sm text-ink placeholder:text-ink-muted outline-none bg-transparent"
@@ -208,7 +236,10 @@ const Explore = () => {
             className="flex items-center gap-2 bg-primary-50 border border-primary-100 rounded-2xl px-4 py-3 text-sm text-primary-700 hover:bg-primary-100 transition"
           >
             <FiHash size={15} />
-            Jump to <span className="font-semibold">#{possibleHashtag}</span> hashtag page
+            Jump to <span className="font-semibold">
+              #{possibleHashtag}
+            </span>{" "}
+            hashtag page
           </Link>
         )}
 
@@ -218,61 +249,92 @@ const Explore = () => {
             {!loading && !search.trim() && users.length > 0 && (
               <p className="text-xs text-ink-muted px-1">Suggested users</p>
             )}
-            {!loading && search.trim().length > 0 && search.trim().length < 2 && (
-              <p className="text-xs text-ink-muted text-center py-6">Type at least 2 characters to search.</p>
-            )}
+            {!loading &&
+              search.trim().length > 0 &&
+              search.trim().length < 2 && (
+                <p className="text-xs text-ink-muted text-center py-6">
+                  Type at least 2 characters to search.
+                </p>
+              )}
             {!loading && search.trim().length >= 2 && users.length === 0 && (
-              <p className="text-sm text-ink-muted text-center py-10">No users found for "{search}"</p>
+              <p className="text-sm text-ink-muted text-center py-10">
+                No users found for "{search}"
+              </p>
             )}
 
             {/* Skeletons */}
-            {loading && <><UserCardSkeleton /><UserCardSkeleton /><UserCardSkeleton /></>}
+            {loading && (
+              <>
+                <UserCardSkeleton />
+                <UserCardSkeleton />
+                <UserCardSkeleton />
+              </>
+            )}
 
             {/* User list */}
-            {!loading && users.map((user) => {
-              const isFollowing = user.followers.includes(currentUser._id);
-              const isOnline = onlineUsers.includes(user._id);
-              return (
-                <div key={user._id} className="bg-white border border-stroke rounded-2xl p-4 flex items-center justify-between gap-4">
-                  <Link to={`/profile/${user._id}`} className="flex items-center gap-3 min-w-0">
-                    <div className="relative shrink-0">
-                      <img
-                        src={user.profilePic || defaultAvatar}
-                        alt={user.name}
-                        className="w-11 h-11 rounded-full object-cover ring-2 ring-primary-100"
-                      />
-                      <span
-                        className={`absolute bottom-0 right-0 block h-2.5 w-2.5 rounded-full border-2 border-white ${isOnline ? "bg-primary-400" : "bg-gray-300"}`}
-                        title={isOnline ? "Online" : "Offline"}
-                      />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-sm font-semibold text-ink truncate">{user.name}</p>
-                      {user.username && (
-                        <p className="text-xs text-primary-600 truncate">@{user.username}</p>
-                      )}
-                      <p className="text-xs text-ink-muted truncate">{user.bio || "No bio"}</p>
-                    </div>
-                  </Link>
-
-                  <button
-                    onClick={() => handleFollow(user._id)}
-                    disabled={followingId === user._id}
-                    className={`shrink-0 px-4 py-1.5 rounded-xl text-xs font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed ${
-                      isFollowing
-                        ? "bg-surface border border-stroke text-ink-sub hover:border-red-300 hover:text-red-500"
-                        : "bg-primary-600 text-white hover:bg-primary-800"
-                    }`}
+            {!loading &&
+              users.map((user) => {
+                const isFollowing = user.followers.includes(currentUser._id);
+                const isOnline = onlineUsers.includes(user._id);
+                return (
+                  <div
+                    key={user._id}
+                    className="bg-white border border-stroke rounded-2xl p-4 flex items-center justify-between gap-4"
                   >
-                    {followingId === user._id ? "..." : isFollowing ? "Following" : "Follow"}
-                  </button>
-                </div>
-              );
-            })}
+                    <Link
+                      to={`/profile/${user._id}`}
+                      className="flex items-center gap-3 min-w-0"
+                    >
+                      <div className="relative shrink-0">
+                        <img
+                          src={user.profilePic || defaultAvatar}
+                          alt={user.name}
+                          className="w-11 h-11 rounded-full object-cover ring-2 ring-primary-100"
+                        />
+                        <span
+                          className={`absolute bottom-0 right-0 block h-2.5 w-2.5 rounded-full border-2 border-white ${isOnline ? "bg-primary-400" : "bg-gray-300"}`}
+                          title={isOnline ? "Online" : "Offline"}
+                        />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-ink truncate">
+                          {user.name}
+                        </p>
+                        {user.username && (
+                          <p className="text-xs text-primary-600 truncate">
+                            @{user.username}
+                          </p>
+                        )}
+                        <p className="text-xs text-ink-muted truncate">
+                          {user.bio || "No bio"}
+                        </p>
+                      </div>
+                    </Link>
+
+                    <button
+                      onClick={() => handleFollow(user._id)}
+                      disabled={followingId === user._id}
+                      className={`shrink-0 px-4 py-1.5 rounded-xl text-xs font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed ${
+                        isFollowing
+                          ? "bg-surface border border-stroke text-ink-sub hover:border-red-300 hover:text-red-500"
+                          : "bg-primary-600 text-white hover:bg-primary-800"
+                      }`}
+                    >
+                      {followingId === user._id
+                        ? "..."
+                        : isFollowing
+                          ? "Following"
+                          : "Follow"}
+                    </button>
+                  </div>
+                );
+              })}
 
             {!loading && hasMore && users.length > 0 && (
               <div ref={observerTarget} className="py-4 text-center">
-                {isLoadingMore && <p className="text-xs text-ink-muted">Loading more...</p>}
+                {isLoadingMore && (
+                  <p className="text-xs text-ink-muted">Loading more...</p>
+                )}
               </div>
             )}
           </>
@@ -280,44 +342,63 @@ const Explore = () => {
 
         {activeTab === "posts" && (
           <>
-            {!postsLoading && search.trim().length > 0 && search.trim().length < 2 && (
-              <p className="text-xs text-ink-muted text-center py-6">Type at least 2 characters to search.</p>
-            )}
-            {!postsLoading && search.trim().length >= 2 && posts.length === 0 && (
-              <p className="text-sm text-ink-muted text-center py-10">No posts found for "{search}"</p>
-            )}
+            {!postsLoading &&
+              search.trim().length > 0 &&
+              search.trim().length < 2 && (
+                <p className="text-xs text-ink-muted text-center py-6">
+                  Type at least 2 characters to search.
+                </p>
+              )}
+            {!postsLoading &&
+              search.trim().length >= 2 &&
+              posts.length === 0 && (
+                <p className="text-sm text-ink-muted text-center py-10">
+                  No posts found for "{search}"
+                </p>
+              )}
             {!postsLoading && search.trim().length === 0 && (
-              <p className="text-sm text-ink-muted text-center py-10">Search for posts by caption or #hashtag.</p>
+              <p className="text-sm text-ink-muted text-center py-10">
+                Search for posts by caption or #hashtag.
+              </p>
             )}
 
-            {postsLoading && <><PostSkeleton /><PostSkeleton /></>}
+            {postsLoading && (
+              <>
+                <PostSkeleton />
+                <PostSkeleton />
+              </>
+            )}
 
-            {!postsLoading && posts.map((post) => (
-              <PostCard
-                key={post._id}
-                postId={post._id}
-                userId={post.user._id}
-                name={post.user.name}
-                username={post.user.username}
-                profilePic={post.user.profilePic}
-                time={new Date(post.createdAt).toLocaleString()}
-                text={post.text}
-                image={post.image}
-                images={post.images}
-                video={post.video}
-                likes={post.likesCount}
-                commentsCount={post.commentsCount}
-                isLiked={post.isLiked}
-                isBookmarked={post.isBookmarked}
-                edited={post.edited}
-                editedAt={post.editedAt}
-                onDelete={(id) => setPosts((prev) => prev.filter((p) => p._id !== id))}
-              />
-            ))}
+            {!postsLoading &&
+              posts.map((post) => (
+                <PostCard
+                  key={post._id}
+                  postId={post._id}
+                  userId={post.user._id}
+                  name={post.user.name}
+                  username={post.user.username}
+                  profilePic={post.user.profilePic}
+                  time={new Date(post.createdAt).toLocaleString()}
+                  text={post.text}
+                  images={post.images}
+                  video={post.video}
+                  likes={post.likesCount}
+                  commentsCount={post.commentsCount}
+                  isLiked={post.isLiked}
+                  isBookmarked={post.isBookmarked}
+                  edited={post.edited}
+                  editedAt={post.editedAt}
+                  onDelete={(id) =>
+                    setPosts((prev) => prev.filter((p) => p._id !== id))
+                  }
+                />
+              ))}
 
             {!postsLoading && postsHasMore && posts.length > 0 && (
               <div ref={postsObserverTarget} className="py-4 text-center">
-                {postsIsLoadingMore && <p className="text-xs text-ink-muted">Loading more...</p>}
+                {postsIsLoadingMore && (
+                  <p className="text-xs text-ink-muted">Loading more...</p>
+                )}
               </div>
             )}
           </>

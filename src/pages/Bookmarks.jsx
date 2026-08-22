@@ -37,7 +37,6 @@ const Bookmarks = () => {
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch-on-mount
     fetchBookmarks(1);
-     
   }, []);
 
   useEffect(() => {
@@ -53,7 +52,6 @@ const Bookmarks = () => {
     return () => {
       if (target) observer.unobserve(target);
     };
-     
   }, [page, hasMore, isLoadingMore, loading]);
 
   // A post can be unbookmarked from within PostCard while viewing this
@@ -95,7 +93,6 @@ const Bookmarks = () => {
               profilePic={post.user.profilePic}
               time={new Date(post.createdAt).toLocaleString()}
               text={post.text}
-              image={post.image}
               images={post.images}
               video={post.video}
               likes={post.likesCount}
@@ -104,7 +101,9 @@ const Bookmarks = () => {
               isBookmarked={post.isBookmarked}
               edited={post.edited}
               editedAt={post.editedAt}
-              onDelete={(id) => setPosts((prev) => prev.filter((p) => p._id !== id))}
+              onDelete={(id) =>
+                setPosts((prev) => prev.filter((p) => p._id !== id))
+              }
               onUnbookmark={() => handleUnbookmarked(post._id)}
             />
           ))}
@@ -112,7 +111,9 @@ const Bookmarks = () => {
         {!loading && posts.length === 0 && (
           <div className="bg-white border border-stroke rounded-2xl p-10 text-center">
             <p className="text-2xl mb-2">🔖</p>
-            <h2 className="text-base font-semibold text-ink">No saved posts yet</h2>
+            <h2 className="text-base font-semibold text-ink">
+              No saved posts yet
+            </h2>
             <p className="text-sm text-ink-muted mt-1">
               Tap the bookmark icon on any post to save it here.
             </p>

@@ -31,8 +31,7 @@ const Home = () => {
       // already has an empty-feed message in the UI, so a toast there
       // would be redundant.
       if (pageNum > 1) toast.error("Couldn't load more posts. Try again.");
-    }
-    finally {
+    } finally {
       if (pageNum === 1) setLoading(false);
       else setIsLoadingMore(false);
     }
@@ -45,10 +44,12 @@ const Home = () => {
         if (entries[0].isIntersecting && hasMore && !isLoadingMore && !loading)
           fetchPosts(page + 1);
       },
-      { threshold: 0.1 }
+      { threshold: 0.1 },
     );
     if (target) observer.observe(target);
-    return () => { if (target) observer.unobserve(target); };
+    return () => {
+      if (target) observer.unobserve(target);
+    };
   }, [page, hasMore, isLoadingMore, loading]);
 
   useEffect(() => {
@@ -59,7 +60,9 @@ const Home = () => {
   useEffect(() => {
     if (!socket) return;
     const handleNewPost = (newPost) => {
-      setPosts((prev) => prev.some((p) => p._id === newPost._id) ? prev : [newPost, ...prev]);
+      setPosts((prev) =>
+        prev.some((p) => p._id === newPost._id) ? prev : [newPost, ...prev],
+      );
     };
     socket.on("newPost", handleNewPost);
     return () => socket.off("newPost", handleNewPost);
@@ -70,41 +73,57 @@ const Home = () => {
       <div className="space-y-4">
         <CreatePost fetchPosts={() => fetchPosts(1)} />
 
-        {loading && <><PostSkeleton /><PostSkeleton /></>}
+        {loading && (
+          <>
+            <PostSkeleton />
+            <PostSkeleton />
+          </>
+        )}
 
-        {!loading && posts.map((post) => (
-          <PostCard
-            key={post._id}
-            postId={post._id}
-            userId={post.user._id}
-            name={post.user.name}
-            username={post.user.username}
-            profilePic={post.user.profilePic}
-            time={new Date(post.createdAt).toLocaleString()}
-            text={post.text}
-            image={post.image}
-            images={post.images}
-            video={post.video}
-            likes={post.likesCount}
-            commentsCount={post.commentsCount}
-            isLiked={post.isLiked}
-            isBookmarked={post.isBookmarked}
-            edited={post.edited}
-            editedAt={post.editedAt}
-            onDelete={(id) => setPosts((prev) => prev.filter((p) => p._id !== id))}
-          />
-        ))}
+        {!loading &&
+          posts.map((post) => (
+            <PostCard
+              key={post._id}
+              postId={post._id}
+              userId={post.user._id}
+              name={post.user.name}
+              username={post.user.username}
+              profilePic={post.user.profilePic}
+              time={new Date(post.createdAt).toLocaleString()}
+              text={post.text}
+              images={post.images}
+              video={post.video}
+              likes={post.likesCount}
+              commentsCount={post.commentsCount}
+              isLiked={post.isLiked}
+              isBookmarked={post.isBookmarked}
+              edited={post.edited}
+              editedAt={post.editedAt}
+              onDelete={(id) =>
+                setPosts((prev) => prev.filter((p) => p._id !== id))
+              }
+            />
+          ))}
 
         {!loading && posts.length === 0 && (
           <div className="bg-white border border-stroke rounded-2xl p-10 text-center">
             <p className="text-2xl mb-2">👋</p>
-            <h2 className="text-base font-semibold text-ink">Your feed is empty</h2>
-            <p className="text-sm text-ink-muted mt-1">Follow users to start seeing posts.</p>
+            <h2 className="text-base font-semibold text-ink">
+              Your feed is empty
+            </h2>
+            <p className="text-sm text-ink-muted mt-1">
+              Follow users to start seeing posts.
+            </p>
           </div>
         )}
 
         <div ref={observerTarget} className="py-4 text-center">
-          {isLoadingMore && <><PostSkeleton /><PostSkeleton /></>}
+          {isLoadingMore && (
+            <>
+              <PostSkeleton />
+              <PostSkeleton />
+            </>
+          )}
           {!hasMore && posts.length > 0 && (
             <p className="text-xs text-ink-muted">You're all caught up</p>
           )}

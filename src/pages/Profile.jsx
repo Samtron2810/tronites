@@ -8,7 +8,16 @@ import api from "../services/api";
 import compressImage from "../utils/compressImage";
 import { useAuth } from "../context/useAuth";
 import { useSocket } from "../context/useSocket";
-import { FiEdit2, FiMessageCircle, FiCamera, FiMoreVertical, FiSlash, FiFlag, FiBellOff, FiBell } from "react-icons/fi";
+import {
+  FiEdit2,
+  FiMessageCircle,
+  FiCamera,
+  FiMoreVertical,
+  FiSlash,
+  FiFlag,
+  FiBellOff,
+  FiBell,
+} from "react-icons/fi";
 import BlockUserModal from "../components/BlockUserModal";
 import defaultAvatar from "../assets/defaultAvatar";
 import ReportModal from "../components/ReportModal";
@@ -178,7 +187,9 @@ const Profile = () => {
       setShowReportModal(false);
     } catch (e) {
       console.error(e);
-      toast.error(e.response?.data?.message || "Couldn't submit report. Try again.");
+      toast.error(
+        e.response?.data?.message || "Couldn't submit report. Try again.",
+      );
     }
   };
 
@@ -336,7 +347,11 @@ const Profile = () => {
                         }}
                         className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-ink-sub hover:bg-surface transition"
                       >
-                        {isMuted ? <FiBell size={14} /> : <FiBellOff size={14} />}
+                        {isMuted ? (
+                          <FiBell size={14} />
+                        ) : (
+                          <FiBellOff size={14} />
+                        )}
                         {isMuted ? "Unmute user" : "Mute user"}
                       </button>
                       <button
@@ -386,7 +401,9 @@ const Profile = () => {
           {/* Name + bio */}
           <h1 className="text-xl font-bold text-ink">{profile.name}</h1>
           {profile.username && (
-            <p className="text-sm text-ink-muted -mt-0.5">@{profile.username}</p>
+            <p className="text-sm text-ink-muted -mt-0.5">
+              @{profile.username}
+            </p>
           )}
 
           {editingBio ? (
@@ -473,7 +490,6 @@ const Profile = () => {
             profilePic={profile.profilePic}
             time={new Date(post.createdAt).toLocaleString()}
             text={post.text}
-            image={post.image}
             images={post.images}
             video={post.video}
             likes={post.likesCount}

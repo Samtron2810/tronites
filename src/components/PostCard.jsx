@@ -30,7 +30,6 @@ const PostCard = ({
   profilePic,
   time,
   text,
-  image,
   images,
   video,
   likes,
@@ -129,8 +128,7 @@ const PostCard = ({
   const [loadingReplies, setLoadingReplies] = useState({}); // { [commentId]: boolean }
   const { socket } = useSocket();
 
-  // New posts use `images` (carousel); old posts fall back to `image`.
-  const media = images?.length ? images : image ? [image] : [];
+  const media = images || [];
 
   const fetchComments = async () => {
     try {

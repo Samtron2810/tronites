@@ -20,7 +20,9 @@ const Hashtag = () => {
     try {
       if (pageNum === 1) setLoading(true);
       else setIsLoadingMore(true);
-      const res = await api.get(`/posts/hashtag/${tag}?page=${pageNum}&limit=10`);
+      const res = await api.get(
+        `/posts/hashtag/${tag}?page=${pageNum}&limit=10`,
+      );
       if (pageNum === 1) setPosts(res.data.posts);
       else setPosts((prev) => [...prev, ...res.data.posts]);
       setHasMore(res.data.hasMore);
@@ -90,7 +92,6 @@ const Hashtag = () => {
               profilePic={post.user.profilePic}
               time={new Date(post.createdAt).toLocaleString()}
               text={post.text}
-              image={post.image}
               images={post.images}
               video={post.video}
               likes={post.likesCount}
@@ -99,7 +100,9 @@ const Hashtag = () => {
               isBookmarked={post.isBookmarked}
               edited={post.edited}
               editedAt={post.editedAt}
-              onDelete={(id) => setPosts((prev) => prev.filter((p) => p._id !== id))}
+              onDelete={(id) =>
+                setPosts((prev) => prev.filter((p) => p._id !== id))
+              }
             />
           ))}
 
