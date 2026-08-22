@@ -38,14 +38,13 @@ npm run preview
 
 ## Environment variables
 
-- `VITE_API_URL` — optional API base URL used by the frontend.
+- `VITE_API_URL` — API base URL used by the frontend.
   - Example: `https://api.example.com/api`
-  - If not set, the frontend will default to `/api`.
+  - **Required in production.** If not set, the frontend falls back to `http://localhost:5000/api` (see `src/services/api.js`), which will not work once deployed.
 
 ## Deployment notes
 
-- For a separate backend deployment, set `VITE_API_URL` to the backend API URL.
-- If the backend is served from the same domain, leave `VITE_API_URL` unset and the frontend will send requests to `/api`.
+- Always set `VITE_API_URL` to the deployed backend's API URL — there is no same-domain `/api` default.
 - If hosted on Vercel, configure `VITE_API_URL` under project environment variables.
 - Ensure the backend `FRONTEND_ORIGINS` or `CORS_ORIGINS` environment variable includes the frontend URL.
 

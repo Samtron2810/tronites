@@ -16,14 +16,15 @@ const Register = () => {
     password: "",
   });
 
-  // Letters only, typed live — strips anything else (numbers, symbols,
-  // spaces) as the user types rather than rejecting on submit.
-  const NAME_PATTERN = /[^A-Za-z]/g;
+  // Strips characters the backend would reject anyway (digits, most
+  // symbols) as the user types. Allows Unicode letters/marks plus
+  // apostrophes, hyphens, and spaces — O'Brien, Mary-Jane, Adéọlá, etc.
+  const NAME_STRIP_PATTERN = /[^\p{L}\p{M}' -]/gu;
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     if (name === "firstName" || name === "lastName") {
-      setFormData({ ...formData, [name]: value.replace(NAME_PATTERN, "") });
+      setFormData({ ...formData, [name]: value.replace(NAME_STRIP_PATTERN, "") });
       return;
     }
     setFormData({ ...formData, [name]: value });
@@ -107,8 +108,8 @@ const Register = () => {
                   required
                   minLength={2}
                   maxLength={30}
-                  pattern="[A-Za-z]+"
-                  title="Letters only"
+                  pattern="[\p{L}\p{M}][\p{L}\p{M}' -]*"
+                  title="Letters, apostrophes, hyphens, and spaces only"
                   className="w-full pl-9 pr-4 py-3 rounded-xl border border-stroke bg-white text-ink text-sm placeholder:text-ink-muted outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100 transition"
                 />
               </div>
@@ -122,8 +123,8 @@ const Register = () => {
                   required
                   minLength={2}
                   maxLength={30}
-                  pattern="[A-Za-z]+"
-                  title="Letters only"
+                  pattern="[\p{L}\p{M}][\p{L}\p{M}' -]*"
+                  title="Letters, apostrophes, hyphens, and spaces only"
                   className="w-full pl-4 pr-4 py-3 rounded-xl border border-stroke bg-white text-ink text-sm placeholder:text-ink-muted outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100 transition"
                 />
               </div>
