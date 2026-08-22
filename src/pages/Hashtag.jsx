@@ -10,35 +10,35 @@ import { FiHash, FiArrowLeft } from "react-icons/fi";
 const Hashtag = () => {
   const { tag } = useParams();
   const [posts, setPosts] = useState([]);
-  const [page, setPage] = useState(1);
+  const [cursor, setCursor] = useState(null);
   const [loading, setLoading] = useState(true);
   const [hasMore, setHasMore] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const observerTarget = useRef(null);
 
-  const fetchPosts = async (pageNum = 1) => {
+  const fetchPosts = async (afterCursor, isFirstPage) => {
     try {
-      if (pageNum === 1) setLoading(true);
+      if (isFirstPage) setLoading(true);
       else setIsLoadingMore(true);
-      const res = await api.get(
-        `/posts/hashtag/${tag}?page=${pageNum}&limit=10`,
-      );
-      if (pageNum === 1) setPosts(res.data.posts);
+      const res = await api.get(`/posts/hashtag/${tag}`, {
+        params: { limit: 10, ...(afterCursor ? { before: afterCursor } : {}) },
+      });
+      if (isFirstPage) setPosts(res.data.posts);
       else setPosts((prev) => [...prev, ...res.data.posts]);
       setHasMore(res.data.hasMore);
-      setPage(pageNum);
+      setCursor(res.data.nextCursor);
     } catch (e) {
       console.error(e);
-      if (pageNum > 1) toast.error("Couldn't load more posts. Try again.");
+      if (!isFirstPage) toast.error("Couldn't load more posts. Try again.");
     } finally {
-      if (pageNum === 1) setLoading(false);
+      if (isFirstPage) setLoading(false);
       else setIsLoadingMore(false);
     }
   };
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch-on-mount/tag-change
-    fetchPosts(1);
+    fetchPosts(null, true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tag]);
 
@@ -47,7 +47,7 @@ const Hashtag = () => {
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting && hasMore && !isLoadingMore && !loading)
-          fetchPosts(page + 1);
+          fetchPosts(cursor, false);
       },
       { threshold: 0.1 },
     );
@@ -56,7 +56,7 @@ const Hashtag = () => {
       if (target) observer.unobserve(target);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, hasMore, isLoadingMore, loading]);
+  }, [cursor, hasMore, isLoadingMore, loading]);
 
   return (
     <MainLayout>

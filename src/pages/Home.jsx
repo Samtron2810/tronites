@@ -9,30 +9,35 @@ import { useSocket } from "../context/useSocket";
 
 const Home = () => {
   const [posts, setPosts] = useState([]);
-  const [page, setPage] = useState(1);
+  const [cursor, setCursor] = useState(null); // last post _id, or null for first page
   const [loading, setLoading] = useState(true);
   const [hasMore, setHasMore] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const observerTarget = useRef(null);
   const { socket } = useSocket();
 
-  const fetchPosts = async (pageNum = 1) => {
+  // isFirstPage distinguishes "reset to the top" (cursor=null on
+  // purpose) from "load more" (cursor=null because there's no cursor
+  // yet) — both look the same via the cursor value alone.
+  const fetchPosts = async (afterCursor, isFirstPage) => {
     try {
-      if (pageNum === 1) setLoading(true);
+      if (isFirstPage) setLoading(true);
       else setIsLoadingMore(true);
-      const res = await api.get(`/posts/feed?page=${pageNum}&limit=10`);
-      if (pageNum === 1) setPosts(res.data.posts);
+      const res = await api.get("/posts/feed", {
+        params: { limit: 10, ...(afterCursor ? { before: afterCursor } : {}) },
+      });
+      if (isFirstPage) setPosts(res.data.posts);
       else setPosts((prev) => [...prev, ...res.data.posts]);
-      setHasMore(pageNum < res.data.totalPages);
-      setPage(pageNum);
+      setHasMore(res.data.hasMore);
+      setCursor(res.data.nextCursor);
     } catch (e) {
       console.error(e);
       // Only surface a toast for "load more" failures — the initial load
       // already has an empty-feed message in the UI, so a toast there
       // would be redundant.
-      if (pageNum > 1) toast.error("Couldn't load more posts. Try again.");
+      if (!isFirstPage) toast.error("Couldn't load more posts. Try again.");
     } finally {
-      if (pageNum === 1) setLoading(false);
+      if (isFirstPage) setLoading(false);
       else setIsLoadingMore(false);
     }
   };
@@ -42,7 +47,7 @@ const Home = () => {
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting && hasMore && !isLoadingMore && !loading)
-          fetchPosts(page + 1);
+          fetchPosts(cursor, false);
       },
       { threshold: 0.1 },
     );
@@ -50,11 +55,11 @@ const Home = () => {
     return () => {
       if (target) observer.unobserve(target);
     };
-  }, [page, hasMore, isLoadingMore, loading]);
+  }, [cursor, hasMore, isLoadingMore, loading]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch-on-mount
-    fetchPosts(1);
+    fetchPosts(null, true);
   }, []);
 
   useEffect(() => {
@@ -71,7 +76,7 @@ const Home = () => {
   return (
     <MainLayout>
       <div className="space-y-4">
-        <CreatePost fetchPosts={() => fetchPosts(1)} />
+        <CreatePost fetchPosts={() => fetchPosts(null, true)} />
 
         {loading && (
           <>

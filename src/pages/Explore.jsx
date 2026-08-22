@@ -29,7 +29,7 @@ const Explore = () => {
   const [posts, setPosts] = useState([]);
   const [postsLoading, setPostsLoading] = useState(false);
   const [postsIsLoadingMore, setPostsIsLoadingMore] = useState(false);
-  const [postsPage, setPostsPage] = useState(1);
+  const [postsCursor, setPostsCursor] = useState(null); // { afterScore, afterId } | null
   const [postsHasMore, setPostsHasMore] = useState(false);
   const postsObserverTarget = useRef(null);
 
@@ -42,25 +42,31 @@ const Explore = () => {
       ? hashtagMatch[1].toLowerCase()
       : null;
 
-  const fetchPosts = async (query, pageNum = 1) => {
+  const fetchPosts = async (query, afterCursor, isFirstPage) => {
     try {
-      if (pageNum === 1) setPostsLoading(true);
+      if (isFirstPage) setPostsLoading(true);
       else setPostsIsLoadingMore(true);
 
       const res = await api.get(`/posts/search`, {
-        params: { q: query, page: pageNum, limit: 10 },
+        params: {
+          q: query,
+          limit: 10,
+          ...(afterCursor
+            ? { afterScore: afterCursor.afterScore, afterId: afterCursor.afterId }
+            : {}),
+        },
       });
 
-      if (pageNum === 1) setPosts(res.data.posts);
+      if (isFirstPage) setPosts(res.data.posts);
       else setPosts((prev) => [...prev, ...res.data.posts]);
 
       setPostsHasMore(res.data.hasMore);
-      setPostsPage(pageNum);
+      setPostsCursor(res.data.nextCursor);
     } catch (e) {
       console.error(e);
-      if (pageNum > 1) toast.error("Couldn't load more posts. Try again.");
+      if (!isFirstPage) toast.error("Couldn't load more posts. Try again.");
     } finally {
-      if (pageNum === 1) setPostsLoading(false);
+      if (isFirstPage) setPostsLoading(false);
       else setPostsIsLoadingMore(false);
     }
   };
@@ -103,7 +109,7 @@ const Explore = () => {
     const delay = trimmed.length === 0 ? 0 : 400;
     const t = window.setTimeout(() => {
       if (activeTab === "users") fetchUsers(trimmed, 1);
-      else fetchPosts(trimmed, 1);
+      else fetchPosts(trimmed, null, true);
     }, delay);
     return () => window.clearTimeout(t);
   }, [search, activeTab]);
@@ -141,7 +147,7 @@ const Explore = () => {
           !postsIsLoadingMore &&
           !postsLoading
         ) {
-          fetchPosts(search.trim(), postsPage + 1);
+          fetchPosts(search.trim(), postsCursor, false);
         }
       },
       { threshold: 0.1 },
@@ -152,7 +158,7 @@ const Explore = () => {
     };
   }, [
     activeTab,
-    postsPage,
+    postsCursor,
     postsHasMore,
     postsIsLoadingMore,
     postsLoading,
