@@ -1,9 +1,12 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import MainLayout from "../layouts/MainLayout";
 import api from "../services/api";
 import { useAuth } from "../context/useAuth";
-import { FiEye, FiEyeOff, FiUsers } from "react-icons/fi";
+import DeleteAccountModal from "../components/DeleteAccountModal";
+import ExportDataModal from "../components/ExportDataModal";
+import { FiEye, FiEyeOff, FiUsers, FiDownload, FiTrash2 } from "react-icons/fi";
 
 const VISIBILITY_OPTIONS = [
   {
@@ -27,7 +30,8 @@ const VISIBILITY_OPTIONS = [
 ];
 
 const Settings = () => {
-  const { user, updateUser } = useAuth();
+  const { user, updateUser, logout } = useAuth();
+  const navigate = useNavigate();
   // Track both the local (possibly optimistic) value and the last server
   // value we synced from, in one state object — avoids a useEffect sync
   // and avoids reading/writing refs during render.
@@ -36,9 +40,18 @@ const Settings = () => {
     syncedFrom: user?.presenceVisibility,
   }));
   const [saving, setSaving] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
-  if (user?.presenceVisibility && user.presenceVisibility !== state.syncedFrom) {
-    setState({ visibility: user.presenceVisibility, syncedFrom: user.presenceVisibility });
+  if (
+    user?.presenceVisibility &&
+    user.presenceVisibility !== state.syncedFrom
+  ) {
+    setState({
+      visibility: user.presenceVisibility,
+      syncedFrom: user.presenceVisibility,
+    });
   }
   const visibility = state.visibility;
   const setVisibility = (value) =>
@@ -64,13 +77,57 @@ const Settings = () => {
     }
   };
 
+  const handleExportData = async () => {
+    if (exporting) return;
+    setExporting(true);
+    try {
+      const res = await api.get("/users/me/export");
+      // Standard blob-download pattern — no server-side file, the JSON
+      // response itself becomes the downloaded file entirely client-side.
+      const blob = new Blob([JSON.stringify(res.data, null, 2)], {
+        type: "application/json",
+      });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `tronites-data-export-${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      setShowExportModal(false);
+      toast.success("Your data export has downloaded.");
+    } catch (e) {
+      console.error(e);
+      toast.error("Couldn't export your data. Try again.");
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const handleDeleteAccount = async (password) => {
+    // Errors intentionally propagate to the modal (it catches them and
+    // shows the message inline) rather than being caught here — the
+    // modal needs to know the attempt failed so it can stay open and
+    // re-enable the form, not just show a toast and silently close.
+    await api.delete("/users/me", { data: { password } });
+    setShowDeleteModal(false);
+    toast.success("Your account has been deleted.");
+    await logout();
+    navigate("/login", { replace: true });
+  };
+
   return (
     <MainLayout>
       <h1 className="text-xl font-bold text-ink mb-1">Settings</h1>
-      <p className="text-sm text-ink-muted mb-6">Manage your privacy and account preferences.</p>
+      <p className="text-sm text-ink-muted mb-6">
+        Manage your privacy and account preferences.
+      </p>
 
       <section className="bg-white border border-stroke rounded-2xl p-5">
-        <h2 className="text-sm font-semibold text-ink mb-1">Who can see you're online</h2>
+        <h2 className="text-sm font-semibold text-ink mb-1">
+          Who can see you're online
+        </h2>
         <p className="text-sm text-ink-muted mb-4">
           Controls the green dot on your profile and in chat.
         </p>
@@ -95,12 +152,18 @@ const Settings = () => {
                   className={`mt-0.5 shrink-0 ${selected ? "text-primary-600" : "text-ink-muted"}`}
                 />
                 <span className="flex-1">
-                  <span className="block text-sm font-medium text-ink">{opt.label}</span>
-                  <span className="block text-xs text-ink-muted mt-0.5">{opt.description}</span>
+                  <span className="block text-sm font-medium text-ink">
+                    {opt.label}
+                  </span>
+                  <span className="block text-xs text-ink-muted mt-0.5">
+                    {opt.description}
+                  </span>
                 </span>
                 <span
                   className={`mt-0.5 w-4 h-4 rounded-full border-2 shrink-0 ${
-                    selected ? "border-primary-500 bg-primary-500" : "border-stroke"
+                    selected
+                      ? "border-primary-500 bg-primary-500"
+                      : "border-stroke"
                   }`}
                 />
               </button>
@@ -108,6 +171,50 @@ const Settings = () => {
           })}
         </div>
       </section>
+
+      <section className="bg-white border border-stroke rounded-2xl p-5 mt-4">
+        <h2 className="text-sm font-semibold text-ink mb-1">Your data</h2>
+        <p className="text-sm text-ink-muted mb-4">
+          Download a copy of everything tied to your account — posts, comments,
+          likes, bookmarks, follows, messages, and more.
+        </p>
+        <button
+          onClick={() => setShowExportModal(true)}
+          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-stroke text-sm font-medium text-ink hover:bg-surface transition"
+        >
+          <FiDownload size={15} />
+          Download my data
+        </button>
+      </section>
+
+      <section className="bg-white border border-stroke rounded-2xl p-5 mt-4">
+        <h2 className="text-sm font-semibold text-ink mb-1">Delete account</h2>
+        <p className="text-sm text-ink-muted mb-4">
+          Permanently deletes your account and everything in it. This can't be
+          undone after the 30-day grace period.
+        </p>
+        <button
+          onClick={() => setShowDeleteModal(true)}
+          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-red-200 text-sm font-medium text-red-600 hover:bg-red-50 transition"
+        >
+          <FiTrash2 size={15} />
+          Delete my account
+        </button>
+      </section>
+
+      {showExportModal && (
+        <ExportDataModal
+          onConfirm={handleExportData}
+          onCancel={() => setShowExportModal(false)}
+        />
+      )}
+
+      {showDeleteModal && (
+        <DeleteAccountModal
+          onConfirm={handleDeleteAccount}
+          onCancel={() => setShowDeleteModal(false)}
+        />
+      )}
     </MainLayout>
   );
 };

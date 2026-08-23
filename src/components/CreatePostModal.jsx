@@ -211,6 +211,12 @@ const CreatePostModal = ({ closeModal, onSubmit, onSubmitVideo }) => {
             </div>
           )}
 
+          {/* an instruction that displays when a video is selected, saying a video of more than 30 seconds will be trimmed to 30 seconds */}
+          {videoFile && (
+            <p className="text-xs text-ink-muted">
+              Note: Videos longer than 30 seconds will be trimmed to 30 seconds.
+            </p>
+          )}
           {/* Video preview — local blob when the browser can decode it;
               falls back to a file chip when it can't (HEVC MOV, exotic
               AVI/MKV codecs, etc). Either way the file still uploads and
