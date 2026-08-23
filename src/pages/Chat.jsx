@@ -40,7 +40,7 @@ const Chat = () => {
   const [loading, setLoading] = useState(false);
   const [threadLoading, setThreadLoading] = useState(false);
   const [isSending, setIsSending] = useState(false);
-  const [imagePreview, setImagePreview] = useState(null);
+  const [imagePreviews, setImagePreviews] = useState([]);
   const [messageDeletingId, setMessageDeletingId] = useState(null);
   const fileInputRef = useRef(null);
   const [searchParams] = useSearchParams();
@@ -271,14 +271,18 @@ const Chat = () => {
   };
 
   const handleSendMessage = async () => {
-    if (isSending || !selectedChat || (!messageText.trim() && !imagePreview))
+    if (
+      isSending ||
+      !selectedChat ||
+      (!messageText.trim() && imagePreviews.length === 0)
+    )
       return;
     setIsSending(true);
     try {
       const formData = new FormData();
       if (messageText.trim()) formData.append("text", messageText.trim());
-      if (imagePreview) {
-        const blob = await (await fetch(imagePreview)).blob();
+      for (const preview of imagePreviews) {
+        const blob = await (await fetch(preview)).blob();
         // Compress before upload — chat images can be full-resolution
         // camera photos (multi-MB) which are expensive to store and slow
         // to send. Wrap in a File so compressImage has a name/size/type
@@ -291,7 +295,7 @@ const Chat = () => {
           quality: 0.7,
           skipBelowBytes: 300 * 1024,
         });
-        formData.append("image", compressed);
+        formData.append("images", compressed);
       }
       const res = await api.post(
         `/messages/${selectedChat.otherUser._id}`,
@@ -302,7 +306,7 @@ const Chat = () => {
       );
       setMessages((prev) => [...prev, res.data]);
       setMessageText("");
-      setImagePreview(null);
+      setImagePreviews([]);
       if (fileInputRef.current) fileInputRef.current.value = "";
       updateConversationPreview(res.data, false);
       // A pending request just got its first (and only) message sent —
@@ -331,11 +335,29 @@ const Chat = () => {
   };
 
   const handleImageSelect = (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onloadend = () => setImagePreview(reader.result);
-    reader.readAsDataURL(file);
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+    // Cap at 4 total images per message.
+    const remaining = 4 - imagePreviews.length;
+    const toAdd = files.slice(0, remaining);
+    if (toAdd.length === 0) return;
+    const readers = toAdd.map(
+      (file) =>
+        new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result);
+          reader.readAsDataURL(file);
+        }),
+    );
+    Promise.all(readers).then((results) => {
+      setImagePreviews((prev) => [...prev, ...results].slice(0, 4));
+    });
+    // Reset input so re-selecting the same file(s) re-triggers onChange.
+    e.target.value = "";
+  };
+
+  const handleRemoveImage = (index) => {
+    setImagePreviews((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleDeleteMessage = async (messageId) => {
@@ -599,10 +621,7 @@ const Chat = () => {
                     <div className="flex items-center gap-3">
                       <div className="relative shrink-0">
                         <img
-                          src={
-                            conv.otherUser.profilePic ||
-                            defaultAvatar
-                          }
+                          src={conv.otherUser.profilePic || defaultAvatar}
                           alt={conv.otherUser.name}
                           className="w-11 h-11 rounded-full object-cover ring-2 ring-primary-100"
                         />
@@ -668,9 +687,7 @@ const Chat = () => {
                 <div key={req.conversationId} className="px-5 py-4">
                   <div className="flex items-center gap-3">
                     <img
-                      src={
-                        req.otherUser.profilePic || defaultAvatar
-                      }
+                      src={req.otherUser.profilePic || defaultAvatar}
                       alt={req.otherUser.name}
                       className="w-11 h-11 rounded-full object-cover ring-2 ring-primary-100 shrink-0"
                     />
@@ -685,7 +702,11 @@ const Chat = () => {
                       </p>
                       <p className="text-xs text-ink-muted truncate">
                         {req.message?.text ||
-                          (req.message?.image ? "Sent a photo" : "")}
+                          (req.message?.images?.length
+                            ? "Sent photos"
+                            : req.message?.image
+                              ? "Sent a photo"
+                              : "")}
                       </p>
                     </div>
                   </div>
@@ -724,12 +745,13 @@ const Chat = () => {
           onlineUsers={onlineUsers}
           handleSendMessage={handleSendMessage}
           handleImageSelect={handleImageSelect}
+          handleRemoveImage={handleRemoveImage}
           handleDeleteMessage={handleDeleteMessage}
           messageDeletingId={messageDeletingId}
           messageText={messageText}
           setMessageText={setMessageText}
-          imagePreview={imagePreview}
-          setImagePreview={setImagePreview}
+          imagePreviews={imagePreviews}
+          setImagePreviews={setImagePreviews}
           isSending={isSending}
           fileInputRef={fileInputRef}
           scrollRef={scrollRef}

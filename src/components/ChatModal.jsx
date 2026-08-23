@@ -12,12 +12,13 @@ const ChatModal = ({
   onlineUsers,
   handleSendMessage,
   handleImageSelect,
+  handleRemoveImage,
   handleDeleteMessage,
   messageDeletingId,
   messageText,
   setMessageText,
-  imagePreview,
-  setImagePreview,
+  imagePreviews,
+  setImagePreviews,
   isSending,
   fileInputRef,
   scrollRef,
@@ -87,11 +88,18 @@ const ChatModal = ({
           className="flex-1 overflow-y-auto overflow-x-hidden min-w-0 px-4 py-4 space-y-3 bg-surface"
         >
           {isLoadingOlderMessages && (
-            <p className="text-center text-[11px] text-ink-muted py-1">Loading older messages...</p>
+            <p className="text-center text-[11px] text-ink-muted py-1">
+              Loading older messages...
+            </p>
           )}
-          {!threadLoading && !isLoadingOlderMessages && !messagesHasMore && messages.length > 0 && (
-            <p className="text-center text-[11px] text-ink-muted py-1">Start of conversation</p>
-          )}
+          {!threadLoading &&
+            !isLoadingOlderMessages &&
+            !messagesHasMore &&
+            messages.length > 0 && (
+              <p className="text-center text-[11px] text-ink-muted py-1">
+                Start of conversation
+              </p>
+            )}
           {threadLoading && (
             <div className="space-y-3 animate-pulse">
               {[1, 2, 3].map((i) => (
@@ -124,13 +132,34 @@ const ChatModal = ({
                 <div
                   className={`flex flex-col max-w-[75%] min-w-0 wrap-break-word gap-1`}
                 >
-                  {message.image && (
-                    <img
-                      src={message.image}
-                      alt="message"
-                      className={`rounded-xl max-w-full h-auto object-cover ${isMine ? "ml-auto" : ""}`}
-                    />
-                  )}
+                  {(() => {
+                    const images = message.images?.length
+                      ? message.images
+                      : message.image
+                        ? [message.image]
+                        : [];
+                    if (images.length === 0) return null;
+                    return (
+                      <div
+                        className={`grid grid-cols-2 gap-1 rounded-xl overflow-hidden ${isMine ? "ml-auto" : ""}`}
+                      >
+                        {images.map((src, idx) => (
+                          <img
+                            key={idx}
+                            src={src}
+                            alt={`message ${idx + 1}`}
+                            className={`w-full h-auto object-cover ${
+                              images.length === 1
+                                ? "col-span-2"
+                                : images.length === 3 && idx === 0
+                                  ? "col-span-2"
+                                  : ""
+                            }`}
+                          />
+                        ))}
+                      </div>
+                    );
+                  })()}
                   {message.text && (
                     <div
                       className={`px-4 py-2.5 rounded-2xl text-sm whitespace-pre-wrap ${
@@ -213,7 +242,8 @@ const ChatModal = ({
             </p>
           )}
 
-          {(requestInfo?.status === "declined" || requestInfo?.status === "blocked") && (
+          {(requestInfo?.status === "declined" ||
+            requestInfo?.status === "blocked") && (
             <p className="text-xs text-ink-muted text-center py-2">
               You can't message this user.
             </p>
@@ -221,19 +251,23 @@ const ChatModal = ({
 
           {(!requestInfo || requestInfo.status === "accepted") && (
             <>
-              {imagePreview && (
-                <div className="mb-3 relative inline-block">
-                  <img
-                    src={imagePreview}
-                    alt="preview"
-                    className="w-20 h-20 object-cover rounded-xl"
-                  />
-                  <button
-                    onClick={() => setImagePreview(null)}
-                    className="absolute -top-1.5 -right-1.5 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs"
-                  >
-                    ✕
-                  </button>
+              {imagePreviews.length > 0 && (
+                <div className="mb-3 flex flex-wrap gap-2">
+                  {imagePreviews.map((preview, idx) => (
+                    <div key={idx} className="relative">
+                      <img
+                        src={preview}
+                        alt={`preview ${idx + 1}`}
+                        className="w-20 h-20 object-cover rounded-xl"
+                      />
+                      <button
+                        onClick={() => handleRemoveImage(idx)}
+                        className="absolute -top-1.5 -right-1.5 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ))}
                 </div>
               )}
               <div className="flex items-center gap-2">
@@ -262,13 +296,17 @@ const ChatModal = ({
                   ref={fileInputRef}
                   type="file"
                   accept="image/*"
+                  multiple
                   onChange={handleImageSelect}
                   className="hidden"
                 />
                 <button
                   type="button"
                   onClick={handleSendMessage}
-                  disabled={(!messageText.trim() && !imagePreview) || isSending}
+                  disabled={
+                    (!messageText.trim() && imagePreviews.length === 0) ||
+                    isSending
+                  }
                   className="px-4 py-2.5 rounded-xl text-sm font-semibold text-white bg-primary-600 hover:bg-primary-800 disabled:opacity-50 disabled:cursor-not-allowed transition"
                 >
                   {isSending ? "..." : "Send"}
