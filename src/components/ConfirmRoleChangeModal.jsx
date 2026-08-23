@@ -23,7 +23,7 @@ const ConfirmRoleChangeModal = ({
 
   return (
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 px-4">
-      <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm">
+      <div className="bg-card rounded-2xl shadow-xl p-6 w-full max-w-sm">
         <div className="flex items-center gap-3 mb-3">
           <div
             className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${

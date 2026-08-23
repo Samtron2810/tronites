@@ -44,7 +44,7 @@ const ChatModal = ({
         onClick={onClose}
       />
 
-      <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[88vh] overflow-hidden overflow-x-hidden flex flex-col border border-stroke">
+      <div className="relative bg-card rounded-2xl shadow-xl w-full max-w-2xl max-h-[88vh] overflow-hidden overflow-x-hidden flex flex-col border border-stroke">
         {/* Header */}
         <div className="flex items-center gap-3 px-4 py-3 border-b border-stroke">
           <button
@@ -165,7 +165,7 @@ const ChatModal = ({
                       className={`px-4 py-2.5 rounded-2xl text-sm whitespace-pre-wrap ${
                         isMine
                           ? "bg-primary-600 text-white self-end rounded-br-sm"
-                          : "bg-white text-ink self-start rounded-bl-sm border border-stroke"
+                          : "bg-card text-ink self-start rounded-bl-sm border border-stroke"
                       }`}
                     >
                       {message.text}
@@ -211,7 +211,7 @@ const ChatModal = ({
         </div>
 
         {/* Input */}
-        <div className="border-t border-stroke px-4 py-3 bg-white">
+        <div className="border-t border-stroke px-4 py-3 bg-card">
           {requestInfo?.status === "pending" && !requestInfo.isInitiator && (
             <div>
               <p className="text-xs text-ink-muted mb-2 text-center">

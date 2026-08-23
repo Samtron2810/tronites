@@ -249,7 +249,7 @@ const Profile = () => {
   return (
     <MainLayout>
       {/* Profile card */}
-      <div className="bg-white border border-stroke rounded-2xl overflow-hidden">
+      <div className="bg-card border border-stroke rounded-2xl overflow-hidden">
         {/* Cover strip */}
         <div className="h-24 bg-linear-to-r from-primary-600 to-primary-400" />
 
@@ -339,7 +339,7 @@ const Profile = () => {
                       className="fixed inset-0 z-10"
                       onClick={() => setShowOptionsMenu(false)}
                     />
-                    <div className="absolute top-full right-0 mt-1 w-44 bg-white border border-stroke rounded-xl shadow-lg z-20 overflow-hidden">
+                    <div className="absolute top-full right-0 mt-1 w-44 bg-card border border-stroke rounded-xl shadow-lg z-20 overflow-hidden">
                       <button
                         onClick={() => {
                           setShowOptionsMenu(false);
@@ -476,7 +476,7 @@ const Profile = () => {
       {/* Posts */}
       <div className="mt-4 space-y-4">
         {posts.length === 0 && (
-          <div className="bg-white border border-stroke rounded-2xl p-10 text-center">
+          <div className="bg-card border border-stroke rounded-2xl p-10 text-center">
             <p className="text-sm text-ink-muted">No posts yet.</p>
           </div>
         )}

@@ -88,7 +88,7 @@ const FollowersList = () => {
 
   return (
     <MainLayout>
-      <div className="bg-white rounded-2xl shadow-md p-2">
+      <div className="bg-card rounded-2xl shadow-md p-2">
         {/* centerized Header */}
         <h4 className="text-xl font-bold text-ink mb-6 text-center">
           {profileName}'s{" "}

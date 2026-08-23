@@ -110,7 +110,7 @@ const Register = () => {
                   maxLength={30}
                   pattern="[\p{L}\p{M}][\p{L}\p{M}' -]*"
                   title="Letters, apostrophes, hyphens, and spaces only"
-                  className="w-full pl-9 pr-4 py-3 rounded-xl border border-stroke bg-white text-ink text-sm placeholder:text-ink-muted outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100 transition"
+                  className="w-full pl-9 pr-4 py-3 rounded-xl border border-stroke bg-card text-ink text-sm placeholder:text-ink-muted outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100 transition"
                 />
               </div>
               <div className="relative flex-1">
@@ -125,7 +125,7 @@ const Register = () => {
                   maxLength={30}
                   pattern="[\p{L}\p{M}][\p{L}\p{M}' -]*"
                   title="Letters, apostrophes, hyphens, and spaces only"
-                  className="w-full pl-4 pr-4 py-3 rounded-xl border border-stroke bg-white text-ink text-sm placeholder:text-ink-muted outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100 transition"
+                  className="w-full pl-4 pr-4 py-3 rounded-xl border border-stroke bg-card text-ink text-sm placeholder:text-ink-muted outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100 transition"
                 />
               </div>
             </div>
@@ -139,7 +139,7 @@ const Register = () => {
                 value={formData.email}
                 onChange={handleChange}
                 required
-                className="w-full pl-9 pr-4 py-3 rounded-xl border border-stroke bg-white text-ink text-sm placeholder:text-ink-muted outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100 transition"
+                className="w-full pl-9 pr-4 py-3 rounded-xl border border-stroke bg-card text-ink text-sm placeholder:text-ink-muted outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100 transition"
               />
             </div>
 
@@ -153,7 +153,7 @@ const Register = () => {
                 onChange={handleChange}
                 required
                 minLength={10}
-                className="w-full pl-9 pr-10 py-3 rounded-xl border border-stroke bg-white text-ink text-sm placeholder:text-ink-muted outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100 transition"
+                className="w-full pl-9 pr-10 py-3 rounded-xl border border-stroke bg-card text-ink text-sm placeholder:text-ink-muted outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100 transition"
               />
               <button
                 type="button"

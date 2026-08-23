@@ -111,7 +111,7 @@ const Home = () => {
           ))}
 
         {!loading && posts.length === 0 && (
-          <div className="bg-white border border-stroke rounded-2xl p-10 text-center">
+          <div className="bg-card border border-stroke rounded-2xl p-10 text-center">
             <p className="text-2xl mb-2">👋</p>
             <h2 className="text-base font-semibold text-ink">
               Your feed is empty

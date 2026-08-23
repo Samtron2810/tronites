@@ -6,7 +6,7 @@ const MentionSuggestions = ({ suggestions, onSelect, loading }) => {
   if (!suggestions.length && !loading) return null;
 
   return (
-    <div className="absolute z-30 left-0 right-0 bottom-full mb-1 bg-white border border-stroke rounded-xl shadow-lg overflow-hidden max-h-48 overflow-y-auto">
+    <div className="absolute z-30 left-0 right-0 bottom-full mb-1 bg-card border border-stroke rounded-xl shadow-lg overflow-hidden max-h-48 overflow-y-auto">
       {suggestions.length === 0 && (
         <p className="px-3 py-2 text-xs text-ink-muted">No matches</p>
       )}

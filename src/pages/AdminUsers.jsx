@@ -31,7 +31,7 @@ const RoleRow = ({ target, currentUserId, onRequestRoleChange }) => {
   };
 
   return (
-    <div className="bg-white border border-stroke rounded-2xl p-4 flex items-center justify-between gap-4">
+    <div className="bg-card border border-stroke rounded-2xl p-4 flex items-center justify-between gap-4">
       <div className="flex items-center gap-3 min-w-0">
         <img
           src={target.profilePic || defaultAvatar}
@@ -58,7 +58,7 @@ const RoleRow = ({ target, currentUserId, onRequestRoleChange }) => {
         <select
           value={target.role}
           onChange={handleChange}
-          className="text-xs border border-stroke rounded-lg px-2 py-1.5 text-ink bg-white outline-none focus:ring-2 focus:ring-primary-200 disabled:opacity-50"
+          className="text-xs border border-stroke rounded-lg px-2 py-1.5 text-ink bg-card outline-none focus:ring-2 focus:ring-primary-200 disabled:opacity-50"
         >
           <option value="user">user</option>
           <option value="moderator">moderator</option>
@@ -197,7 +197,7 @@ const AdminUsers = () => {
         Grant or revoke moderator and admin access.
       </p>
 
-      <div className="bg-white border border-stroke rounded-2xl px-4 py-3 flex items-center gap-3 mb-3">
+      <div className="bg-card border border-stroke rounded-2xl px-4 py-3 flex items-center gap-3 mb-3">
         <FiSearch className="text-ink-muted shrink-0" size={16} />
         <input
           type="text"
@@ -208,7 +208,7 @@ const AdminUsers = () => {
         />
       </div>
 
-      <div className="flex gap-1 mb-5 bg-white border border-stroke rounded-xl p-1 w-fit">
+      <div className="flex gap-1 mb-5 bg-card border border-stroke rounded-xl p-1 w-fit">
         {ROLE_TABS.map((tab) => (
           <button
             key={tab.value}

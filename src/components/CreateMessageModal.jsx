@@ -38,7 +38,7 @@ const ChatModal = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
 
-      <div className="relative bg-white rounded-2xl shadow-lg w-full max-w-3xl max-h-[90vh] overflow-hidden overflow-x-hidden flex flex-col">
+      <div className="relative bg-card rounded-2xl shadow-lg w-full max-w-3xl max-h-[90vh] overflow-hidden overflow-x-hidden flex flex-col">
         <div className="flex items-center gap-3 px-4 py-3 border-b">
           <button
             onClick={onClose}

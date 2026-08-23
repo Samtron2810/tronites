@@ -1,5 +1,9 @@
 @import "tailwindcss";
 
+/* Enables the `dark:` variant in Tailwind v4, driven by the `.dark` class
+   on <html> (toggled by ThemeContext). */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   --color-primary-50: #f5f7f6;
   --color-primary-100: #e1f5ee;
@@ -9,6 +13,7 @@
   --color-primary-800: #085041;
   --color-primary-900: #04342c;
   --color-surface: #dff0eb;
+  --color-card: #ffffff;
   --color-ink: #1e2624;
   --color-ink-sub: #4e5955;
   --color-ink-muted: #7a8580;
@@ -21,6 +26,25 @@
      `font-sans` utility class, which isn't used anywhere in this app.
      Setting it here makes DM Sans the actual base font in every browser. */
   --default-font-family: var(--font-sans);
+}
+
+/* Dark mode palette — overrides the design tokens under the `.dark` class.
+   Because components use the token utilities (bg-surface, text-ink, etc.),
+   flipping these variables re-themes the whole app. */
+.dark {
+  --color-primary-50: #0d2b22;
+  --color-primary-100: #123a2e;
+  --color-primary-200: #1d9e75;
+  --color-primary-400: #2bbd8f;
+  --color-primary-600: #34c99a;
+  --color-primary-800: #5fd8b2;
+  --color-primary-900: #8fe6cb;
+  --color-surface: #0f1412;
+  --color-card: #161d1a;
+  --color-ink: #e6ece9;
+  --color-ink-sub: #aeb8b3;
+  --color-ink-muted: #7a8580;
+  --color-stroke: #2a3330;
 }
 
 @layer base {

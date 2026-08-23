@@ -586,7 +586,7 @@ const PostCard = ({
         />
       )}
 
-      <div className="bg-white border border-stroke rounded-2xl p-5 transition hover:shadow-sm">
+      <div className="bg-card border border-stroke rounded-2xl p-5 transition hover:shadow-sm">
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
@@ -625,7 +625,7 @@ const PostCard = ({
               {menuOpen && (
                 <div
                   ref={menuRef}
-                  className="absolute right-0 mt-2 w-40 bg-white rounded-lg shadow-lg border border-stroke z-40 py-1"
+                  className="absolute right-0 mt-2 w-40 bg-card rounded-lg shadow-lg border border-stroke z-40 py-1"
                 >
                   {!isEditing && (
                     <button
@@ -768,7 +768,7 @@ const PostCard = ({
                       key={i}
                       onClick={() => setActiveSlide(i)}
                       className={`h-1.5 rounded-full transition-all ${
-                        i === activeSlide ? "w-4 bg-white" : "w-1.5 bg-white/50"
+                        i === activeSlide ? "w-4 bg-card" : "w-1.5 bg-white/50"
                       }`}
                       aria-label={`Go to image ${i + 1}`}
                     />
@@ -981,7 +981,7 @@ const PostCard = ({
                         (repliesByComment[c._id] || []).map((r) => (
                           <div
                             key={r._id}
-                            className="bg-white rounded-lg px-3 py-2"
+                            className="bg-card rounded-lg px-3 py-2"
                           >
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-1">

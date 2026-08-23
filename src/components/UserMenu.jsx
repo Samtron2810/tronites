@@ -11,10 +11,14 @@ import {
   FaShieldAlt,
   FaUserShield,
   FaRegBookmark,
+  FaMoon,
+  FaSun,
 } from "react-icons/fa";
 import defaultAvatar from "../assets/defaultAvatar";
+import { useTheme } from "../context/useTheme";
 
 const UserMenu = ({ user, onLogoutClick }) => {
+  const { theme, toggleTheme } = useTheme();
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef(null);
   const triggerRef = useRef(null);
@@ -56,6 +60,16 @@ const UserMenu = ({ user, onLogoutClick }) => {
       disabled: false,
       isLink: true,
       onClick: () => setIsOpen(false),
+    },
+    {
+      icon: theme === "dark" ? FaSun : FaMoon,
+      label: theme === "dark" ? "Light mode" : "Dark mode",
+      disabled: false,
+      isLink: false,
+      onClick: () => {
+        setIsOpen(false);
+        toggleTheme();
+      },
     },
     {
       icon: FaRegBookmark,
@@ -152,7 +166,7 @@ const UserMenu = ({ user, onLogoutClick }) => {
       {isOpen && (
         <div
           ref={menuRef}
-          className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-stroke z-40 py-1"
+          className="absolute right-0 mt-2 w-56 bg-card rounded-lg shadow-lg border border-stroke z-40 py-1"
         >
           {menuItems.map((item, index) => {
             const Icon = item.icon;

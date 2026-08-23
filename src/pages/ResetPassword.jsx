@@ -143,7 +143,7 @@ const ResetPassword = () => {
             </p>
           </div>
 
-          <div className="bg-white border border-stroke rounded-2xl p-6 shadow-sm space-y-4">
+          <div className="bg-card border border-stroke rounded-2xl p-6 shadow-sm space-y-4">
             <input
               type="text"
               placeholder="Enter 6-digit OTP"

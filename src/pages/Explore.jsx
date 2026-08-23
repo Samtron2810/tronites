@@ -196,7 +196,7 @@ const Explore = () => {
     <MainLayout>
       <div className="space-y-4">
         {/* Tab switcher */}
-        <div className="bg-white border border-stroke rounded-2xl p-1 flex gap-1">
+        <div className="bg-card border border-stroke rounded-2xl p-1 flex gap-1">
           <button
             onClick={() => setActiveTab("users")}
             className={`flex-1 text-sm font-semibold py-2 rounded-xl transition ${
@@ -220,7 +220,7 @@ const Explore = () => {
         </div>
 
         {/* Search bar */}
-        <div className="bg-white border border-stroke rounded-2xl px-4 py-3 flex items-center gap-3">
+        <div className="bg-card border border-stroke rounded-2xl px-4 py-3 flex items-center gap-3">
           <FiSearch className="text-ink-muted shrink-0" size={16} />
           <input
             type="text"
@@ -285,7 +285,7 @@ const Explore = () => {
                 return (
                   <div
                     key={user._id}
-                    className="bg-white border border-stroke rounded-2xl p-4 flex items-center justify-between gap-4"
+                    className="bg-card border border-stroke rounded-2xl p-4 flex items-center justify-between gap-4"
                   >
                     <Link
                       to={`/profile/${user._id}`}

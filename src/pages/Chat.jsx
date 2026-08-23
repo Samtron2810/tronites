@@ -553,7 +553,7 @@ const Chat = () => {
 
   return (
     <MainLayout>
-      <div className="bg-white border border-stroke rounded-2xl overflow-hidden">
+      <div className="bg-card border border-stroke rounded-2xl overflow-hidden">
         {/* Header */}
         <div className="px-5 py-4 border-b border-stroke flex items-center justify-between">
           <h2 className="text-base font-semibold text-ink">Messages</h2>

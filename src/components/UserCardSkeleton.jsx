@@ -1,5 +1,5 @@
 const UserCardSkeleton = () => (
-  <div className="bg-white border border-stroke rounded-2xl p-4 flex items-center justify-between animate-pulse">
+  <div className="bg-card border border-stroke rounded-2xl p-4 flex items-center justify-between animate-pulse">
     <div className="flex items-center gap-3">
       <div className="w-11 h-11 rounded-full bg-stroke shrink-0" />
       <div className="space-y-2">

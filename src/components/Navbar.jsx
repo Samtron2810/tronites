@@ -59,7 +59,7 @@ const Navbar = () => {
   if (!user) return null;
 
   return (
-    <nav className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-stroke">
+    <nav className="sticky top-0 z-50 bg-card/90 backdrop-blur-md border-b border-stroke">
       <div className="mx-auto flex max-w-5xl items-center justify-between px-4 sm:px-6 h-14">
         <Link to="/" className="flex items-center gap-2 shrink-0">
           <img

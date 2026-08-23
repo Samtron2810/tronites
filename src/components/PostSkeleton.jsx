@@ -1,5 +1,5 @@
 const PostSkeleton = () => (
-  <div className="bg-white border border-stroke rounded-2xl p-5 animate-pulse">
+  <div className="bg-card border border-stroke rounded-2xl p-5 animate-pulse">
     <div className="flex items-center gap-3 mb-4">
       <div className="w-10 h-10 rounded-full bg-stroke shrink-0" />
       <div className="flex-1 space-y-2">

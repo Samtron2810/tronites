@@ -112,7 +112,7 @@ const CreatePost = ({ fetchPosts }) => {
 
   return (
     <>
-      <div className="bg-white border border-stroke rounded-2xl p-4">
+      <div className="bg-card border border-stroke rounded-2xl p-4">
         <div className="flex items-center gap-3">
           <img
             src={user?.profilePic || defaultAvatar}

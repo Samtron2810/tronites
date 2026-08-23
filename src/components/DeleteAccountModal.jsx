@@ -27,7 +27,7 @@ const DeleteAccountModal = ({ onConfirm, onCancel }) => {
 
   return (
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 px-4">
-      <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm">
+      <div className="bg-card rounded-2xl shadow-xl p-6 w-full max-w-sm">
         <div className="flex items-center gap-3 mb-3">
           <div className="w-9 h-9 rounded-xl bg-red-50 flex items-center justify-center shrink-0">
             <FiAlertTriangle className="text-red-500" size={16} />
@@ -52,7 +52,7 @@ const DeleteAccountModal = ({ onConfirm, onCancel }) => {
             }}
             autoFocus
             disabled={isDeleting}
-            className="w-full px-3.5 py-2.5 rounded-xl border border-stroke bg-white text-ink text-sm outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100 transition disabled:opacity-60"
+            className="w-full px-3.5 py-2.5 rounded-xl border border-stroke bg-card text-ink text-sm outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100 transition disabled:opacity-60"
             placeholder="Password"
           />
         </label>

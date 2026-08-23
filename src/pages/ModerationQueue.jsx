@@ -50,7 +50,7 @@ const ReportCard = ({ report, onResolve }) => {
   };
 
   return (
-    <div className="bg-white border border-stroke rounded-2xl p-4">
+    <div className="bg-card border border-stroke rounded-2xl p-4">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
@@ -224,7 +224,7 @@ const ModerationQueue = () => {
       <h1 className="text-xl font-bold text-ink mb-1">Moderation queue</h1>
       <p className="text-sm text-ink-muted mb-5">Reports from the community, newest last.</p>
 
-      <div className="flex gap-1 mb-5 bg-white border border-stroke rounded-xl p-1 w-fit">
+      <div className="flex gap-1 mb-5 bg-card border border-stroke rounded-xl p-1 w-fit">
         {STATUS_TABS.map((tab) => (
           <button
             key={tab.value}

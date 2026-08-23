@@ -67,7 +67,7 @@ const Notifications = () => {
 
   return (
     <MainLayout>
-      <div className="bg-white border border-stroke rounded-2xl overflow-hidden">
+      <div className="bg-card border border-stroke rounded-2xl overflow-hidden">
         <div className="px-5 py-4 border-b border-stroke">
           <h1 className="text-base font-semibold text-ink">Notifications</h1>
         </div>

@@ -118,7 +118,7 @@ const ChooseUsername = () => {
           </p>
         </div>
 
-        <div className="bg-white border border-stroke rounded-2xl p-6 shadow-sm space-y-4">
+        <div className="bg-card border border-stroke rounded-2xl p-6 shadow-sm space-y-4">
           <div className="relative">
             <span className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-muted text-sm font-medium">
               @

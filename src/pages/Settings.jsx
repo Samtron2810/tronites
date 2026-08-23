@@ -4,9 +4,18 @@ import toast from "react-hot-toast";
 import MainLayout from "../layouts/MainLayout";
 import api from "../services/api";
 import { useAuth } from "../context/useAuth";
+import { useTheme } from "../context/useTheme";
 import DeleteAccountModal from "../components/DeleteAccountModal";
 import ExportDataModal from "../components/ExportDataModal";
-import { FiEye, FiEyeOff, FiUsers, FiDownload, FiTrash2 } from "react-icons/fi";
+import {
+  FiEye,
+  FiEyeOff,
+  FiUsers,
+  FiDownload,
+  FiTrash2,
+  FiMoon,
+  FiSun,
+} from "react-icons/fi";
 
 const VISIBILITY_OPTIONS = [
   {
@@ -31,6 +40,7 @@ const VISIBILITY_OPTIONS = [
 
 const Settings = () => {
   const { user, updateUser, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   // Track both the local (possibly optimistic) value and the last server
   // value we synced from, in one state object — avoids a useEffect sync
@@ -124,7 +134,22 @@ const Settings = () => {
         Manage your privacy and account preferences.
       </p>
 
-      <section className="bg-white border border-stroke rounded-2xl p-5">
+      <section className="bg-card border border-stroke rounded-2xl p-5">
+        <h2 className="text-sm font-semibold text-ink mb-1">Appearance</h2>
+        <p className="text-sm text-ink-muted mb-4">
+          Choose between light and dark mode. Your choice is saved on this
+          device.
+        </p>
+        <button
+          onClick={toggleTheme}
+          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-stroke text-sm font-medium text-ink hover:bg-surface transition"
+        >
+          {theme === "dark" ? <FiSun size={15} /> : <FiMoon size={15} />}
+          {theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+        </button>
+      </section>
+
+      <section className="bg-card border border-stroke rounded-2xl p-5 mt-4">
         <h2 className="text-sm font-semibold text-ink mb-1">
           Who can see you're online
         </h2>
@@ -172,7 +197,7 @@ const Settings = () => {
         </div>
       </section>
 
-      <section className="bg-white border border-stroke rounded-2xl p-5 mt-4">
+      <section className="bg-card border border-stroke rounded-2xl p-5 mt-4">
         <h2 className="text-sm font-semibold text-ink mb-1">Your data</h2>
         <p className="text-sm text-ink-muted mb-4">
           Download a copy of everything tied to your account — posts, comments,
@@ -187,7 +212,7 @@ const Settings = () => {
         </button>
       </section>
 
-      <section className="bg-white border border-stroke rounded-2xl p-5 mt-4">
+      <section className="bg-card border border-stroke rounded-2xl p-5 mt-4">
         <h2 className="text-sm font-semibold text-ink mb-1">Delete account</h2>
         <p className="text-sm text-ink-muted mb-4">
           Permanently deletes your account and everything in it. This can't be
