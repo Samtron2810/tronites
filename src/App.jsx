@@ -30,6 +30,7 @@ const Notifications = lazy(() => import("./pages/Notifications"));
 const Settings = lazy(() => import("./pages/Settings"));
 const ModerationQueue = lazy(() => import("./pages/ModerationQueue"));
 const AdminUsers = lazy(() => import("./pages/AdminUsers"));
+const AdminAuditLog = lazy(() => import("./pages/AdminAuditLog"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -179,6 +180,15 @@ const AppContent = () => {
             element={
               <ProtectedRoute>
                 <AdminUsers />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/admin/audit-log"
+            element={
+              <ProtectedRoute>
+                <AdminAuditLog />
               </ProtectedRoute>
             }
           />

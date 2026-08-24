@@ -13,6 +13,7 @@ import {
   FaRegBookmark,
   FaMoon,
   FaSun,
+  FaClipboardList,
 } from "react-icons/fa";
 import defaultAvatar from "../assets/defaultAvatar";
 import { useTheme } from "../context/useTheme";
@@ -103,6 +104,14 @@ const UserMenu = ({ user, onLogoutClick }) => {
             icon: FaUserShield,
             label: "Manage roles",
             href: "/admin/users",
+            disabled: false,
+            isLink: true,
+            onClick: () => setIsOpen(false),
+          },
+          {
+            icon: FaClipboardList,
+            label: "Audit log",
+            href: "/admin/audit-log",
             disabled: false,
             isLink: true,
             onClick: () => setIsOpen(false),
