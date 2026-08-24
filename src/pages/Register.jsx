@@ -180,6 +180,18 @@ const Register = () => {
               Sign in
             </Link>
           </p>
+
+          <p className="text-center text-ink-muted text-xs mt-8 leading-relaxed">
+            By creating an account, you agree to Tronites'{" "}
+            <Link to="/terms" className="text-primary-600 hover:underline">
+              Terms of Use
+            </Link>{" "}
+            and{" "}
+            <Link to="/privacy" className="text-primary-600 hover:underline">
+              Privacy Policy
+            </Link>
+            .
+          </p>
         </div>
       </div>
     </div>

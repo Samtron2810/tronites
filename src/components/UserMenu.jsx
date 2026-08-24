@@ -3,17 +3,13 @@ import { Link } from "react-router-dom";
 import {
   FaUser,
   FaCog,
-  FaChartBar,
-  FaBullhorn,
-  FaQuestionCircle,
-  FaFileContract,
   FaSignOutAlt,
   FaShieldAlt,
   FaUserShield,
-  FaRegBookmark,
   FaMoon,
   FaSun,
   FaClipboardList,
+  FaEllipsisH,
 } from "react-icons/fa";
 import defaultAvatar from "../assets/defaultAvatar";
 import { useTheme } from "../context/useTheme";
@@ -45,40 +41,27 @@ const UserMenu = ({ user, onLogoutClick }) => {
     }
   }, [isOpen]);
 
+  // Core items every user sees. Anything that used to be a permanently
+  // disabled stub (Dashboard, Ads, Help, Privacy/Terms) now lives on the
+  // /more page instead of padding this dropdown out indefinitely — see
+  // pages/More.jsx. That page is where new lower-frequency features
+  // should be added going forward, not here.
   const menuItems = [
     {
       icon: FaUser,
       label: "Profile",
       href: `/profile/${user._id}`,
-      disabled: false,
-      isLink: true,
-      onClick: () => setIsOpen(false),
-    },
-    {
-      icon: FaCog,
-      label: "Settings",
-      href: "/settings",
-      disabled: false,
       isLink: true,
       onClick: () => setIsOpen(false),
     },
     {
       icon: theme === "dark" ? FaSun : FaMoon,
       label: theme === "dark" ? "Light mode" : "Dark mode",
-      disabled: false,
       isLink: false,
       onClick: () => {
         setIsOpen(false);
         toggleTheme();
       },
-    },
-    {
-      icon: FaRegBookmark,
-      label: "Saved posts",
-      href: "/bookmarks",
-      disabled: false,
-      isLink: true,
-      onClick: () => setIsOpen(false),
     },
     // Only shown to moderators/admins — role isn't in toPublicUserDTO,
     // so this can never appear for a viewer looking at someone else's
@@ -89,7 +72,6 @@ const UserMenu = ({ user, onLogoutClick }) => {
             icon: FaShieldAlt,
             label: "Moderation queue",
             href: "/moderation",
-            disabled: false,
             isLink: true,
             onClick: () => setIsOpen(false),
           },
@@ -104,7 +86,6 @@ const UserMenu = ({ user, onLogoutClick }) => {
             icon: FaUserShield,
             label: "Manage roles",
             href: "/admin/users",
-            disabled: false,
             isLink: true,
             onClick: () => setIsOpen(false),
           },
@@ -118,40 +99,30 @@ const UserMenu = ({ user, onLogoutClick }) => {
             icon: FaClipboardList,
             label: "Audit log",
             href: "/admin/audit-log",
-            disabled: false,
             isLink: true,
             onClick: () => setIsOpen(false),
           },
         ]
       : []),
+    // Settings and More sit at the bottom, right above Logout — the
+    // lowest-frequency top-level actions in the list.
     {
-      icon: FaChartBar,
-      label: "Dashboard",
-      disabled: true,
-      isLink: false,
+      icon: FaCog,
+      label: "Settings",
+      href: "/settings",
+      isLink: true,
+      onClick: () => setIsOpen(false),
     },
     {
-      icon: FaBullhorn,
-      label: "Ads",
-      disabled: true,
-      isLink: false,
-    },
-    {
-      icon: FaQuestionCircle,
-      label: "Help and Support",
-      disabled: true,
-      isLink: false,
-    },
-    {
-      icon: FaFileContract,
-      label: "Privacy & Terms of Use",
-      disabled: true,
-      isLink: false,
+      icon: FaEllipsisH,
+      label: "More",
+      href: "/more",
+      isLink: true,
+      onClick: () => setIsOpen(false),
     },
     {
       icon: FaSignOutAlt,
       label: "Logout",
-      disabled: false,
       isLink: false,
       onClick: () => {
         setIsOpen(false);
@@ -206,22 +177,15 @@ const UserMenu = ({ user, onLogoutClick }) => {
                 ) : (
                   <button
                     onClick={item.onClick}
-                    disabled={item.disabled}
                     className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm transition ${
                       item.isLogout
                         ? "text-red-600 hover:bg-red-50"
-                        : item.disabled
-                          ? "text-ink-muted cursor-not-allowed"
-                          : "hover:bg-primary-50"
+                        : "hover:bg-primary-50"
                     }`}
                   >
                     <Icon
                       className={`text-base ${
-                        item.isLogout
-                          ? "text-red-600"
-                          : item.disabled
-                            ? "text-ink-muted"
-                            : "text-primary-600"
+                        item.isLogout ? "text-red-600" : "text-primary-600"
                       }`}
                     />
                     <span>{item.label}</span>

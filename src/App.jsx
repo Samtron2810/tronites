@@ -31,6 +31,10 @@ const Settings = lazy(() => import("./pages/Settings"));
 const ModerationQueue = lazy(() => import("./pages/ModerationQueue"));
 const AdminUsers = lazy(() => import("./pages/AdminUsers"));
 const AdminAuditLog = lazy(() => import("./pages/AdminAuditLog"));
+const More = lazy(() => import("./pages/More"));
+const HelpSupport = lazy(() => import("./pages/HelpSupport"));
+const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
+const TermsOfUse = lazy(() => import("./pages/TermsOfUse"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -65,6 +69,11 @@ const AppContent = () => {
           <Route path="/verify-otp" element={<VerifyOtp />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
+
+          {/* Legal — public so they're readable pre-login (signup, footer
+              links) as well as from within the app */}
+          <Route path="/privacy" element={<PrivacyPolicy />} />
+          <Route path="/terms" element={<TermsOfUse />} />
 
           {/* Protected */}
           <Route
@@ -189,6 +198,24 @@ const AppContent = () => {
             element={
               <ProtectedRoute>
                 <AdminAuditLog />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/more"
+            element={
+              <ProtectedRoute>
+                <More />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/help"
+            element={
+              <ProtectedRoute>
+                <HelpSupport />
               </ProtectedRoute>
             }
           />

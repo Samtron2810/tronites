@@ -7,6 +7,7 @@ import { useAuth } from "../context/useAuth";
 import { useTheme } from "../context/useTheme";
 import DeleteAccountModal from "../components/DeleteAccountModal";
 import ExportDataModal from "../components/ExportDataModal";
+import { Link } from "react-router-dom";
 import {
   FiEye,
   FiEyeOff,
@@ -15,6 +16,10 @@ import {
   FiTrash2,
   FiMoon,
   FiSun,
+  FiShield,
+  FiFileText,
+  FiHelpCircle,
+  FiChevronRight,
 } from "react-icons/fi";
 
 const VISIBILITY_OPTIONS = [
@@ -210,6 +215,38 @@ const Settings = () => {
           <FiDownload size={15} />
           Download my data
         </button>
+      </section>
+
+      <section className="bg-card border border-stroke rounded-2xl mt-4 overflow-hidden">
+        <h2 className="text-sm font-semibold text-ink px-5 pt-5 pb-1">
+          Legal & support
+        </h2>
+        <div className="divide-y divide-stroke mt-2">
+          <Link
+            to="/help"
+            className="flex items-center gap-3 px-5 py-3.5 text-sm text-ink hover:bg-surface transition"
+          >
+            <FiHelpCircle size={15} className="text-primary-600" />
+            <span className="flex-1">Help & Support</span>
+            <FiChevronRight size={14} className="text-ink-muted" />
+          </Link>
+          <Link
+            to="/privacy"
+            className="flex items-center gap-3 px-5 py-3.5 text-sm text-ink hover:bg-surface transition"
+          >
+            <FiShield size={15} className="text-primary-600" />
+            <span className="flex-1">Privacy Policy</span>
+            <FiChevronRight size={14} className="text-ink-muted" />
+          </Link>
+          <Link
+            to="/terms"
+            className="flex items-center gap-3 px-5 py-3.5 text-sm text-ink hover:bg-surface transition"
+          >
+            <FiFileText size={15} className="text-primary-600" />
+            <span className="flex-1">Terms of Use</span>
+            <FiChevronRight size={14} className="text-ink-muted" />
+          </Link>
+        </div>
       </section>
 
       <section className="bg-card border border-stroke rounded-2xl p-5 mt-4">
