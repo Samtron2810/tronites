@@ -34,8 +34,9 @@ const ChatModal = ({
   videoInputRef,
   videoFile,
   videoPreviewUrl,
-  isUploadingVideo,
-  videoUploadProgress,
+  // In-flight background video sends (one progress bar each). Their
+  // presence does NOT lock the composer — text/image sending continues.
+  videoUploads,
   scrollRef,
   messagesContainerRef,
   onMessagesScroll,
@@ -326,28 +327,33 @@ const ChatModal = ({
 
           {(!requestInfo || requestInfo.status === "accepted") && (
             <>
-              {isUploadingVideo && (
-                <div className="mb-3 rounded-xl border border-stroke bg-surface px-3 py-2">
+              {videoUploads.map((upload) => (
+                <div
+                  key={upload.id}
+                  className="mb-3 rounded-xl border border-stroke bg-surface px-3 py-2"
+                >
                   <div className="flex items-center justify-between text-xs text-ink-muted mb-1">
-                    <span>Uploading video…</span>
-                    <span>{Math.min(videoUploadProgress, 99)}%</span>
+                    <span className="truncate max-w-[70%]">
+                      Uploading {upload.name}…
+                    </span>
+                    <span>{Math.min(upload.progress, 99)}%</span>
                   </div>
                   <div className="h-1.5 rounded-full bg-gray-200 overflow-hidden">
                     <div
                       className="h-full bg-primary-600 transition-all"
                       style={{
-                        width: `${Math.min(videoUploadProgress, 99)}%`,
+                        width: `${Math.min(upload.progress, 99)}%`,
                       }}
                     />
                   </div>
-                  {videoUploadProgress >= 100 && (
+                  {upload.progress >= 100 && (
                     <p className="text-[11px] text-ink-muted mt-1">
                       Processing video…
                     </p>
                   )}
                 </div>
-              )}
-              {videoPreviewUrl && !isUploadingVideo && (
+              ))}
+              {videoPreviewUrl && (
                 <div className="mb-3 relative max-w-55">
                   <video
                     src={videoPreviewUrl}
@@ -406,7 +412,7 @@ const ChatModal = ({
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  disabled={isSending || isUploadingVideo || !!videoFile}
+                  disabled={!!videoFile}
                   className="p-2.5 rounded-xl border border-stroke text-ink-muted hover:text-primary-600 hover:border-primary-400 transition disabled:opacity-40 disabled:cursor-not-allowed"
                   title="Attach image"
                 >
@@ -423,9 +429,7 @@ const ChatModal = ({
                 <button
                   type="button"
                   onClick={() => videoInputRef.current?.click()}
-                  disabled={
-                    isSending || isUploadingVideo || imagePreviews.length > 0
-                  }
+                  disabled={!!videoFile || imagePreviews.length > 0}
                   className="p-2.5 rounded-xl border border-stroke text-ink-muted hover:text-primary-600 hover:border-primary-400 transition disabled:opacity-40 disabled:cursor-not-allowed"
                   title="Attach video"
                 >
@@ -449,11 +453,7 @@ const ChatModal = ({
                   }
                   className="px-4 py-2.5 rounded-xl text-sm font-semibold text-white bg-primary-600 hover:bg-primary-800 disabled:opacity-50 disabled:cursor-not-allowed transition"
                 >
-                  {isSending
-                    ? isUploadingVideo
-                      ? `${Math.min(videoUploadProgress, 99)}%`
-                      : "..."
-                    : "Send"}
+                  {isSending ? "..." : "Send"}
                 </button>
               </div>
             </>

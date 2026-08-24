@@ -19,6 +19,17 @@ import toast from "react-hot-toast";
 const buildConversationId = (a, b) =>
   [a.toString(), b.toString()].sort().join("_");
 
+// Inserts a message into the ascending-createdAt thread at its correct
+// position. Needed because a background video send can complete AFTER
+// later-sent texts/images; appending blindly would render it out of order
+// until the next refetch.
+const insertMessageSorted = (prev, msg) => {
+  const t = msg?.createdAt ? new Date(msg.createdAt).getTime() : Date.now();
+  const idx = prev.findIndex((m) => new Date(m.createdAt).getTime() > t);
+  if (idx === -1) return [...prev, msg];
+  return [...prev.slice(0, idx), msg, ...prev.slice(idx)];
+};
+
 const Chat = () => {
   const { user } = useAuth();
   const { socket, onlineUsers, refreshUnreadCount } = useSocket();
@@ -51,8 +62,11 @@ const Chat = () => {
   // `videoPreviewUrl` is a local object URL for the picker thumbnail.
   const [videoFile, setVideoFile] = useState(null);
   const [videoPreviewUrl, setVideoPreviewUrl] = useState(null);
-  const [isUploadingVideo, setIsUploadingVideo] = useState(false);
-  const [videoUploadProgress, setVideoUploadProgress] = useState(0);
+  // In-flight BACKGROUND video sends. Each entry is a video whose Send the
+  // user already pressed — the composer was freed at that moment, so text/
+  // image sends continue working while these finish. One progress bar is
+  // rendered per entry.
+  const [videoUploads, setVideoUploads] = useState([]);
   const [pendingDeletes, setPendingDeletes] = useState({}); // messageId -> expiresAt (ms)
   const [deletingIds, setDeletingIds] = useState([]); // ids whose API delete is in flight
   const pendingDeletesRef = useRef({});
@@ -64,6 +78,9 @@ const Chat = () => {
   // detect a mid-upload thread switch (the closure's selectedChat is stale
   // by the time the upload resolves).
   const activeChatIdRef = useRef(null);
+  // Monotonic id source for background video-send entries (used as React
+  // keys). A ref, not Date.now(), so no impure call happens in render scope.
+  const videoSendIdRef = useRef(0);
   const [searchParams] = useSearchParams();
   const scrollRef = useRef(null);
   const messagesContainerRef = useRef(null);
@@ -304,54 +321,37 @@ const Chat = () => {
   };
 
   const handleSendMessage = async () => {
-    if (
-      isSending ||
-      isUploadingVideo ||
-      !selectedChat ||
-      (!messageText.trim() &&
-        imagePreviews.length === 0 &&
-        !videoFile)
-    )
+    // `isSending` only covers the fast text/image POST. A video upload in
+    // flight does NOT lock the composer — it runs in the background so
+    // text/images can be sent while it finishes.
+    if (isSending || !selectedChat) return;
+    if (!messageText.trim() && imagePreviews.length === 0 && !videoFile)
       return;
+
+    // Video draft? Snapshot everything needed, free the composer
+    // immediately, then run upload + create-message in the background.
+    if (videoFile) {
+      const item = {
+        id: `vid-${++videoSendIdRef.current}`,
+        file: videoFile,
+        name: videoFile.name,
+        chatId: selectedChat.conversationId,
+        receiverId: selectedChat.otherUser._id,
+        caption: messageText.trim(),
+        progress: 0,
+        // Captured at send time so the background task applies the same
+        // request-gating behavior sendMessage does.
+        markPendingRequest: requestInfo?.status !== "accepted",
+      };
+      clearVideoDraft();
+      setMessageText("");
+      setVideoUploads((prev) => [...prev, item]);
+      void startVideoSend(item);
+      return;
+    }
+
     setIsSending(true);
     try {
-      // Video draft? Upload straight to Cloudinary (signed, with progress),
-      // then create the message referencing the ready asset.
-      if (videoFile) {
-        const chatId = selectedChat.conversationId;
-        setIsUploadingVideo(true);
-        setVideoUploadProgress(0);
-        const video = await uploadVideoMessageToCloudinary({
-          file: videoFile,
-          onProgress: (pct) => setVideoUploadProgress(pct),
-        });
-
-        const res = await api.post(
-          `/messages/${selectedChat.otherUser._id}/video`,
-          { text: messageText.trim() || "", video },
-        );
-
-        // If the user switched threads while the upload was in flight,
-        // don't append this message to a different thread (the socket
-        // event still reaches the recipient either way).
-        if (chatId === activeChatIdRef.current) {
-          setMessages((prev) => [...prev, res.data]);
-        }
-        setMessageText("");
-        clearVideoDraft();
-        updateConversationPreview(res.data, false);
-        // A pending request just got its first (and only) message sent —
-        // reflect that in local gating state without waiting for a refetch.
-        if (requestInfo?.status !== "accepted") {
-          setRequestInfo((prev) =>
-            prev?.status === "pending"
-              ? prev
-              : { status: "pending", isInitiator: true },
-          );
-        }
-        return;
-      }
-
       const formData = new FormData();
       if (messageText.trim()) formData.append("text", messageText.trim());
       for (const preview of imagePreviews) {
@@ -377,7 +377,7 @@ const Chat = () => {
           headers: { "Content-Type": "multipart/form-data" },
         },
       );
-      setMessages((prev) => [...prev, res.data]);
+      setMessages((prev) => insertMessageSorted(prev, res.data));
       setMessageText("");
       setImagePreviews([]);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -404,19 +404,65 @@ const Chat = () => {
       }
     } finally {
       setIsSending(false);
-      setIsUploadingVideo(false);
+    }
+  };
+
+  // Background worker for one queued video send: uploads to Cloudinary
+  // with per-item progress, creates the message, appends locally if the
+  // user is still viewing the same thread, then removes itself from the
+  // pending-uploads list on completion OR failure. Runs independently of
+  // the composer — text/image sends don't wait on it.
+  const startVideoSend = async (item) => {
+    try {
+      const video = await uploadVideoMessageToCloudinary({
+        file: item.file,
+        onProgress: (pct) =>
+          setVideoUploads((prev) =>
+            prev.map((u) => (u.id === item.id ? { ...u, progress: pct } : u)),
+          ),
+      });
+
+      const res = await api.post(`/messages/${item.receiverId}/video`, {
+        text: item.caption,
+        video,
+      });
+
+      // If the user switched threads while the upload was in flight,
+      // don't append this message to a different thread (the socket
+      // event still reaches the recipient either way). Insert sorted by
+      // createdAt so messages sent while this was uploading stay ordered.
+      if (item.chatId === activeChatIdRef.current) {
+        setMessages((prev) => insertMessageSorted(prev, res.data));
+      }
+      updateConversationPreview(res.data, false);
+      if (item.markPendingRequest) {
+        setRequestInfo((prev) =>
+          prev?.status === "pending"
+            ? prev
+            : { status: "pending", isInitiator: true },
+        );
+      }
+    } catch (e) {
+      alert(
+        `Couldn't send your video: ${
+          e?.response?.data?.message || e.message
+        }`,
+      );
+    } finally {
+      setVideoUploads((prev) => prev.filter((u) => u.id !== item.id));
     }
   };
 
   // Clears the video draft and revokes its object URL. Extracted so both
-  // the remove button and post-send cleanup share one implementation.
+  // the remove button, image-select (mutual exclusion), and post-send
+  // cleanup share one implementation. Does NOT touch in-flight background
+  // video sends — those live in `videoUploads`.
   const clearVideoDraft = useCallback(() => {
     setVideoFile(null);
     setVideoPreviewUrl((prev) => {
       if (prev) URL.revokeObjectURL(prev);
       return null;
     });
-    setVideoUploadProgress(0);
     if (videoInputRef.current) videoInputRef.current.value = "";
   }, []);
 
@@ -919,8 +965,7 @@ const Chat = () => {
           videoInputRef={videoInputRef}
           videoFile={videoFile}
           videoPreviewUrl={videoPreviewUrl}
-          isUploadingVideo={isUploadingVideo}
-          videoUploadProgress={videoUploadProgress}
+          videoUploads={videoUploads}
           scrollRef={scrollRef}
           messagesContainerRef={messagesContainerRef}
           onMessagesScroll={handleMessagesScroll}
