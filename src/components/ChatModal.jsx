@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import {
   FiArrowLeft,
   FiTrash2,
@@ -9,6 +9,11 @@ import {
 import ChatVideoMessage from "./ChatVideoMessage";
 import { FaCheckDouble } from "react-icons/fa";
 import defaultAvatar from "../assets/defaultAvatar";
+import {
+  dayKey,
+  formatDayLabel,
+  formatMessageTime,
+} from "../utils/chatDate";
 
 const ChatModal = ({
   isOpen,
@@ -148,8 +153,16 @@ const ChatModal = ({
             </div>
           )}
 
-          {messages.map((message) => {
+          {messages.map((message, idx) => {
             const isMine = message.sender._id === user._id;
+            // Date context: a centered chip above the first message and
+            // again whenever the local calendar day changes between
+            // consecutive messages, so time-only stamps stay unambiguous.
+            const curKey = dayKey(message.createdAt);
+            const prevKey = idx > 0 ? dayKey(messages[idx - 1].createdAt) : "";
+            const showDayDivider =
+              (idx === 0 && curKey !== "") ||
+              (curKey !== "" && prevKey !== "" && curKey !== prevKey);
             const isPendingDelete = !!pendingDeletes[message._id];
             const isDeleting = deletingIds.includes(message._id);
             const showDeletedPlaceholder = isPendingDelete || isDeleting;
@@ -160,8 +173,15 @@ const ChatModal = ({
                 )
               : 0;
             return (
+              <Fragment key={message._id}>
+                {showDayDivider && (
+                  <div className="flex justify-center py-1">
+                    <span className="text-[10px] font-medium text-ink-muted bg-surface border border-stroke rounded-full px-3 py-0.5">
+                      {formatDayLabel(message.createdAt)}
+                    </span>
+                  </div>
+                )}
               <div
-                key={message._id}
                 className={`flex ${isMine ? "justify-end" : "justify-start"}`}
               >
                 <div
@@ -242,11 +262,11 @@ const ChatModal = ({
                       <div
                         className={`flex items-center gap-1.5 ${isMine ? "justify-end" : "justify-start"}`}
                       >
-                        <p className="text-[10px] text-ink-muted">
-                          {new Date(message.createdAt).toLocaleTimeString([], {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
+                        <p
+                          className="text-[10px] text-ink-muted"
+                          title={new Date(message.createdAt).toLocaleString()}
+                        >
+                          {formatMessageTime(message.createdAt)}
                         </p>
                         {isMine && (
                           <>
@@ -277,6 +297,7 @@ const ChatModal = ({
                   )}
                 </div>
               </div>
+              </Fragment>
             );
           })}
           <div ref={scrollRef} />
