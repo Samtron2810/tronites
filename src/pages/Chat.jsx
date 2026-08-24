@@ -3,6 +3,10 @@ import { useSearchParams } from "react-router-dom";
 import MainLayout from "../layouts/MainLayout";
 import api from "../services/api";
 import compressImage from "../utils/compressImage";
+import {
+  uploadVideoMessageToCloudinary,
+  validateVideoFile,
+} from "../services/videoUpload";
 import { useAuth } from "../context/useAuth";
 import { useSocket } from "../context/useSocket";
 import ChatModal from "../components/ChatModal";
@@ -42,17 +46,36 @@ const Chat = () => {
   const [threadLoading, setThreadLoading] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [imagePreviews, setImagePreviews] = useState([]);
+  // Video attachment for the current draft (mutually exclusive with images).
+  // `videoFile` is the raw File (uploaded via uploadVideoMessageToCloudinary),
+  // `videoPreviewUrl` is a local object URL for the picker thumbnail.
+  const [videoFile, setVideoFile] = useState(null);
+  const [videoPreviewUrl, setVideoPreviewUrl] = useState(null);
+  const [isUploadingVideo, setIsUploadingVideo] = useState(false);
+  const [videoUploadProgress, setVideoUploadProgress] = useState(0);
   const [pendingDeletes, setPendingDeletes] = useState({}); // messageId -> expiresAt (ms)
   const [deletingIds, setDeletingIds] = useState([]); // ids whose API delete is in flight
   const pendingDeletesRef = useRef({});
   const deletingIdsRef = useRef(new Set());
   const fileInputRef = useRef(null);
+  const videoInputRef = useRef(null);
+  // Tracks which conversation is currently open, updated on every render
+  // where selectedChat changes. Used by the async video-send path to
+  // detect a mid-upload thread switch (the closure's selectedChat is stale
+  // by the time the upload resolves).
+  const activeChatIdRef = useRef(null);
   const [searchParams] = useSearchParams();
   const scrollRef = useRef(null);
   const messagesContainerRef = useRef(null);
   const conversationsObserverTarget = useRef(null);
   const hasScrolledToBottom = useRef(false);
   const isPrependingOlder = useRef(false);
+
+  // Keep activeChatIdRef in sync with the currently-open thread so the
+  // async video-send path can detect a mid-upload conversation switch.
+  useEffect(() => {
+    activeChatIdRef.current = selectedChat?.conversationId || null;
+  }, [selectedChat]);
 
   const fetchConversations = async () => {
     try {
@@ -261,7 +284,13 @@ const Chat = () => {
       const preview = {
         conversationId,
         otherUser,
-        lastMessage: message.text,
+        lastMessage: message.text
+          ? message.text
+          : message.video?.url
+            ? "🎬 Video"
+            : message.images?.length || message.image
+              ? "📷 Photo(s)"
+              : "",
         lastMessageAt: message.createdAt,
         unreadCount: incrementUnread
           ? (existing?.unreadCount || 0) + 1
@@ -277,12 +306,52 @@ const Chat = () => {
   const handleSendMessage = async () => {
     if (
       isSending ||
+      isUploadingVideo ||
       !selectedChat ||
-      (!messageText.trim() && imagePreviews.length === 0)
+      (!messageText.trim() &&
+        imagePreviews.length === 0 &&
+        !videoFile)
     )
       return;
     setIsSending(true);
     try {
+      // Video draft? Upload straight to Cloudinary (signed, with progress),
+      // then create the message referencing the ready asset.
+      if (videoFile) {
+        const chatId = selectedChat.conversationId;
+        setIsUploadingVideo(true);
+        setVideoUploadProgress(0);
+        const video = await uploadVideoMessageToCloudinary({
+          file: videoFile,
+          onProgress: (pct) => setVideoUploadProgress(pct),
+        });
+
+        const res = await api.post(
+          `/messages/${selectedChat.otherUser._id}/video`,
+          { text: messageText.trim() || "", video },
+        );
+
+        // If the user switched threads while the upload was in flight,
+        // don't append this message to a different thread (the socket
+        // event still reaches the recipient either way).
+        if (chatId === activeChatIdRef.current) {
+          setMessages((prev) => [...prev, res.data]);
+        }
+        setMessageText("");
+        clearVideoDraft();
+        updateConversationPreview(res.data, false);
+        // A pending request just got its first (and only) message sent —
+        // reflect that in local gating state without waiting for a refetch.
+        if (requestInfo?.status !== "accepted") {
+          setRequestInfo((prev) =>
+            prev?.status === "pending"
+              ? prev
+              : { status: "pending", isInitiator: true },
+          );
+        }
+        return;
+      }
+
       const formData = new FormData();
       if (messageText.trim()) formData.append("text", messageText.trim());
       for (const preview of imagePreviews) {
@@ -335,12 +404,51 @@ const Chat = () => {
       }
     } finally {
       setIsSending(false);
+      setIsUploadingVideo(false);
     }
   };
+
+  // Clears the video draft and revokes its object URL. Extracted so both
+  // the remove button and post-send cleanup share one implementation.
+  const clearVideoDraft = useCallback(() => {
+    setVideoFile(null);
+    setVideoPreviewUrl((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return null;
+    });
+    setVideoUploadProgress(0);
+    if (videoInputRef.current) videoInputRef.current.value = "";
+  }, []);
+
+  const handleVideoSelect = (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    const invalid = validateVideoFile(file);
+    if (invalid) {
+      alert(invalid);
+      if (videoInputRef.current) videoInputRef.current.value = "";
+      return;
+    }
+    // Videos and images are mutually exclusive in a message — picking a
+    // video drops any staged images.
+    setImagePreviews([]);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+    setVideoFile(file);
+    setVideoPreviewUrl((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return URL.createObjectURL(file);
+    });
+    // Reset input so re-selecting the same file re-triggers onChange.
+    if (videoInputRef.current) videoInputRef.current.value = "";
+  };
+
+  const handleRemoveVideo = () => clearVideoDraft();
 
   const handleImageSelect = (e) => {
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
+    // Choosing images drops any staged video (mutually exclusive).
+    clearVideoDraft();
     // Cap at 4 total images per message.
     const remaining = 4 - imagePreviews.length;
     const toAdd = files.slice(0, remaining);
@@ -750,11 +858,13 @@ const Chat = () => {
                       </p>
                       <p className="text-xs text-ink-muted truncate">
                         {req.message?.text ||
-                          (req.message?.images?.length
-                            ? "Sent photos"
-                            : req.message?.image
-                              ? "Sent a photo"
-                              : "")}
+                          (req.message?.video?.url
+                            ? "🎬 Sent a video"
+                            : req.message?.images?.length
+                              ? "Sent photos"
+                              : req.message?.image
+                                ? "Sent a photo"
+                                : "")}
                       </p>
                     </div>
                   </div>
@@ -794,6 +904,8 @@ const Chat = () => {
           handleSendMessage={handleSendMessage}
           handleImageSelect={handleImageSelect}
           handleRemoveImage={handleRemoveImage}
+          handleVideoSelect={handleVideoSelect}
+          handleRemoveVideo={handleRemoveVideo}
           handleDeleteMessage={handleDeleteMessage}
           handleUndoDelete={handleUndoDelete}
           pendingDeletes={pendingDeletes}
@@ -804,6 +916,11 @@ const Chat = () => {
           setImagePreviews={setImagePreviews}
           isSending={isSending}
           fileInputRef={fileInputRef}
+          videoInputRef={videoInputRef}
+          videoFile={videoFile}
+          videoPreviewUrl={videoPreviewUrl}
+          isUploadingVideo={isUploadingVideo}
+          videoUploadProgress={videoUploadProgress}
           scrollRef={scrollRef}
           messagesContainerRef={messagesContainerRef}
           onMessagesScroll={handleMessagesScroll}

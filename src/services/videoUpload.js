@@ -121,3 +121,76 @@ export const uploadVideoToCloudinary = async ({ file, onProgress }) => {
     durationSeconds: response.duration ?? null,
   };
 };
+
+// Chat-video variant of the uploader above. Identical flow, but the signed
+// params come from POST /messages/signature/video (which signs a dedicated
+// `tronites_message_videos` folder) and the finished message is created
+// afterwards via POST /messages/:userId/video. The signature/user-ownership
+// far in the upload matches the post flow — everything message-specific
+// lives in the Chat page that calls this.
+export const uploadVideoMessageToCloudinary = async ({ file, onProgress }) => {
+  // 1. Get the signed upload params from our backend (dedicated folder).
+  const { data: config } = await api.post("/messages/signature/video");
+  const { signature, timestamp, apiKey, cloudName, folder, eager } = config;
+
+  // 2. Upload directly to Cloudinary. The FormData keys must exactly
+  // match the signed params (timestamp, folder, eager) — any extra
+  // signed-relevant param would fail Cloudinary's signature check.
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("api_key", apiKey);
+  formData.append("timestamp", timestamp);
+  formData.append("folder", folder);
+  formData.append("eager", eager);
+  formData.append("signature", signature);
+
+  const response = await new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open(
+      "POST",
+      `https://api.cloudinary.com/v1_1/${cloudName}/video/upload`,
+    );
+
+    xhr.upload.onprogress = (event) => {
+      if (event.lengthComputable && onProgress) {
+        onProgress(Math.round((event.loaded / event.total) * 100));
+      }
+    };
+
+    xhr.onload = () => {
+      let body;
+      try {
+        body = JSON.parse(xhr.responseText);
+      } catch {
+        reject(new Error("Unexpected response from Cloudinary"));
+        return;
+      }
+      if (xhr.status >= 200 && xhr.status < 300) {
+        resolve(body);
+      } else {
+        reject(
+          new Error(body?.error?.message || "Video upload failed — try again"),
+        );
+      }
+    };
+    xhr.onerror = () =>
+      reject(new Error("Network error during upload — check your connection"));
+    xhr.onabort = () => reject(new Error("Upload cancelled"));
+
+    xhr.send(formData);
+  });
+
+  // 3. Extract the transformed asset — same eager fallback as posts above.
+  const eagerUrl = response.eager?.[0]?.secure_url;
+  const url = eagerUrl || response.secure_url;
+
+  if (!response.public_id || !url) {
+    throw new Error("Upload succeeded but the response was incomplete");
+  }
+
+  return {
+    publicId: response.public_id,
+    url,
+    durationSeconds: response.duration ?? null,
+  };
+};

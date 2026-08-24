@@ -1,5 +1,11 @@
 import { useEffect, useState } from "react";
-import { FiArrowLeft, FiTrash2, FiImage, FiCheck } from "react-icons/fi";
+import {
+  FiArrowLeft,
+  FiTrash2,
+  FiImage,
+  FiVideo,
+  FiCheck,
+} from "react-icons/fi";
 import { FaCheckDouble } from "react-icons/fa";
 import defaultAvatar from "../assets/defaultAvatar";
 
@@ -14,6 +20,8 @@ const ChatModal = ({
   handleSendMessage,
   handleImageSelect,
   handleRemoveImage,
+  handleVideoSelect,
+  handleRemoveVideo,
   handleDeleteMessage,
   handleUndoDelete,
   pendingDeletes,
@@ -23,6 +31,11 @@ const ChatModal = ({
   imagePreviews,
   isSending,
   fileInputRef,
+  videoInputRef,
+  videoFile,
+  videoPreviewUrl,
+  isUploadingVideo,
+  videoUploadProgress,
   scrollRef,
   messagesContainerRef,
   onMessagesScroll,
@@ -178,6 +191,18 @@ const ChatModal = ({
                     </div>
                   ) : (
                     <>
+                      {message.video?.url && (
+                        <video
+                          src={`${message.video.url}#t=0.1`}
+                          poster={message.video.thumbnailUrl || undefined}
+                          preload="metadata"
+                          controls
+                          playsInline
+                          className={`w-full max-h-64 rounded-xl overflow-hidden bg-black object-contain ${
+                            isMine ? "ml-auto self-end" : "self-start"
+                          }`}
+                        />
+                      )}
                       {(() => {
                         const images = message.images?.length
                           ? message.images
@@ -237,7 +262,9 @@ const ChatModal = ({
                             </button>
                             <span
                               className={
-                                message.read ? "text-primary-400" : "text-ink-muted"
+                                message.read
+                                  ? "text-primary-400"
+                                  : "text-ink-muted"
                               }
                             >
                               {message.read ? (
@@ -299,6 +326,51 @@ const ChatModal = ({
 
           {(!requestInfo || requestInfo.status === "accepted") && (
             <>
+              {isUploadingVideo && (
+                <div className="mb-3 rounded-xl border border-stroke bg-surface px-3 py-2">
+                  <div className="flex items-center justify-between text-xs text-ink-muted mb-1">
+                    <span>Uploading video…</span>
+                    <span>{Math.min(videoUploadProgress, 99)}%</span>
+                  </div>
+                  <div className="h-1.5 rounded-full bg-gray-200 overflow-hidden">
+                    <div
+                      className="h-full bg-primary-600 transition-all"
+                      style={{
+                        width: `${Math.min(videoUploadProgress, 99)}%`,
+                      }}
+                    />
+                  </div>
+                  {videoUploadProgress >= 100 && (
+                    <p className="text-[11px] text-ink-muted mt-1">
+                      Processing video…
+                    </p>
+                  )}
+                </div>
+              )}
+              {videoPreviewUrl && !isUploadingVideo && (
+                <div className="mb-3 relative max-w-55">
+                  <video
+                    src={videoPreviewUrl}
+                    controls={false}
+                    playsInline
+                    muted
+                    preload="metadata"
+                    className="w-full h-28 object-cover rounded-xl bg-black"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleRemoveVideo}
+                    className="absolute -top-1.5 -right-1.5 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs"
+                  >
+                    ✕
+                  </button>
+                  {videoFile && (
+                    <p className="text-[10px] text-ink-muted mt-0.5 truncate">
+                      {videoFile.name}
+                    </p>
+                  )}
+                </div>
+              )}
               {imagePreviews.length > 0 && (
                 <div className="mb-3 flex flex-wrap gap-2">
                   {imagePreviews.map((preview, idx) => (
@@ -334,8 +406,8 @@ const ChatModal = ({
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  disabled={isSending}
-                  className="p-2.5 rounded-xl border border-stroke text-ink-muted hover:text-primary-600 hover:border-primary-400 transition disabled:opacity-40"
+                  disabled={isSending || isUploadingVideo || !!videoFile}
+                  className="p-2.5 rounded-xl border border-stroke text-ink-muted hover:text-primary-600 hover:border-primary-400 transition disabled:opacity-40 disabled:cursor-not-allowed"
                   title="Attach image"
                 >
                   <FiImage size={16} />
@@ -350,14 +422,38 @@ const ChatModal = ({
                 />
                 <button
                   type="button"
+                  onClick={() => videoInputRef.current?.click()}
+                  disabled={
+                    isSending || isUploadingVideo || imagePreviews.length > 0
+                  }
+                  className="p-2.5 rounded-xl border border-stroke text-ink-muted hover:text-primary-600 hover:border-primary-400 transition disabled:opacity-40 disabled:cursor-not-allowed"
+                  title="Attach video"
+                >
+                  <FiVideo size={16} />
+                </button>
+                <input
+                  ref={videoInputRef}
+                  type="file"
+                  accept="video/*"
+                  onChange={handleVideoSelect}
+                  className="hidden"
+                />
+                <button
+                  type="button"
                   onClick={handleSendMessage}
                   disabled={
-                    (!messageText.trim() && imagePreviews.length === 0) ||
+                    (!messageText.trim() &&
+                      imagePreviews.length === 0 &&
+                      !videoFile) ||
                     isSending
                   }
                   className="px-4 py-2.5 rounded-xl text-sm font-semibold text-white bg-primary-600 hover:bg-primary-800 disabled:opacity-50 disabled:cursor-not-allowed transition"
                 >
-                  {isSending ? "..." : "Send"}
+                  {isSending
+                    ? isUploadingVideo
+                      ? `${Math.min(videoUploadProgress, 99)}%`
+                      : "..."
+                    : "Send"}
                 </button>
               </div>
             </>
