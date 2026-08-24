@@ -6,7 +6,7 @@ import api from "../services/api";
 import ConfirmRestrictionModal from "../components/ConfirmRestrictionModal";
 import ReportContextModal from "../components/ReportContextModal";
 import { useAuth } from "../context/useAuth";
-import { FiExternalLink, FiCheck, FiX, FiInbox } from "react-icons/fi";
+import { FiExternalLink, FiCheck, FiX, FiInbox, FiAlertTriangle } from "react-icons/fi";
 
 const REASON_LABELS = {
   spam: "Spam",
@@ -34,10 +34,22 @@ const STATUS_TABS = [
   { value: "all", label: "All" },
 ];
 
-const ReportCard = ({ report, onResolve, viewerRole, onRequestRestriction }) => {
+const ReportCard = ({
+  report,
+  onResolve,
+  viewerRole,
+  onView,
+  onRequestRestriction,
+  onWarn,
+}) => {
   const [resolving, setResolving] = useState(false);
   const [note, setNote] = useState("");
   const [showNoteFor, setShowNoteFor] = useState(null); // "actioned" | "dismissed" | null
+  // Phase 4 warn flow — user reports only; reason goes verbatim to the
+  // warned account's notification.
+  const [showWarnFor, setShowWarnFor] = useState(false);
+  const [warnReason, setWarnReason] = useState("");
+  const [warning, setWarning] = useState(false);
 
   // Phase 2 quick-restriction data (user reports only). targetOwner is
   // populated with banned/suspendedUntil/restrictionReason by listReports.
@@ -56,6 +68,23 @@ const ReportCard = ({ report, onResolve, viewerRole, onRequestRestriction }) => 
       setNote("");
     } finally {
       setResolving(false);
+    }
+  };
+
+  // Phase 4 — hand off to the parent's warn flow (API call, threshold
+  // prompt and list updates live there). The card only resets its warn
+  // UI when the parent reports success.
+  const submitWarn = async () => {
+    if (warning || !warnReason.trim()) return;
+    setWarning(true);
+    try {
+      const result = await onWarn(report, warnReason.trim());
+      if (result?.ok) {
+        setShowWarnFor(false);
+        setWarnReason("");
+      }
+    } finally {
+      setWarning(false);
     }
   };
 
@@ -147,7 +176,47 @@ const ReportCard = ({ report, onResolve, viewerRole, onRequestRestriction }) => 
 
       {report.status === "open" && (
         <div className="mt-3 pt-3 border-t border-stroke">
-          {showNoteFor ? (
+          {showWarnFor ? (
+            // Phase 4 — reason is mandatory and goes verbatim into the
+            // warned user's notification; their identity of the sender is
+            // stripped server-side ("Moderation team").
+            <div className="space-y-2">
+              <p className="text-xs font-medium text-ink-sub">
+                Reason — sent verbatim to{" "}
+                <span className="font-semibold">
+                  {owner?.name || "the user"}
+                </span>{" "}
+                (they won't see who sent it):
+              </p>
+              <textarea
+                value={warnReason}
+                onChange={(e) => setWarnReason(e.target.value.slice(0, 500))}
+                rows={2}
+                autoFocus
+                placeholder="e.g. Repeated harassment — this is a formal warning"
+                className="w-full rounded-xl border border-stroke px-3 py-2 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-amber-300 resize-none"
+              />
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    setShowWarnFor(false);
+                    setWarnReason("");
+                  }}
+                  disabled={warning}
+                  className="px-3 py-1.5 rounded-lg text-xs font-medium text-ink-sub border border-stroke hover:bg-surface transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={submitWarn}
+                  disabled={warning || !warnReason.trim()}
+                  className="px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-amber-500 hover:bg-amber-600 transition disabled:opacity-60"
+                >
+                  {warning ? "..." : "Send warning"}
+                </button>
+              </div>
+            </div>
+          ) : showNoteFor ? (
             <div className="space-y-2">
               <textarea
                 value={note}
@@ -191,6 +260,19 @@ const ReportCard = ({ report, onResolve, viewerRole, onRequestRestriction }) => 
               >
                 <FiX size={13} /> Dismiss
               </button>
+              {report.targetType === "user" && (
+                // Phase 4 — third resolve action: a formal strike. Only
+                // meaningful on user reports (strikes attach to accounts).
+                <button
+                  onClick={() => {
+                    setShowWarnFor(true);
+                    setNote("");
+                  }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-amber-700 border border-amber-300 hover:bg-amber-50 transition"
+                >
+                  <FiAlertTriangle size={13} /> Warn…
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -307,6 +389,38 @@ const ModerationQueue = () => {
   // Phase 2 — suspend/ban/unrestrict straight from a user report card.
   // Updates the card's targetOwner from the server DTO so chips flip
   // without a refetch. Returns success so the modal closes only on win.
+  // Phase 4 — issue a formal warning from the queue: send the strike,
+  // prompt toward suspension when the threshold is crossed (reusing the
+  // Phase 2 restriction modal so the moderator is one "Cancel" away from
+  // doing nothing), then resolve the underlying report as actioned so
+  // the queue stays accurate.
+  const handleWarn = async (report, reason) => {
+    try {
+      const res = await api.post(
+        `/admin/users/${report.targetOwner._id}/warn`,
+        { reason, reportId: report._id },
+      );
+      toast.success(
+        `Warning sent — ${res.data.strikeCount} strike${
+          res.data.strikeCount === 1 ? "" : "s"
+        } on record.`,
+      );
+      if (res.data.strikeThresholdReached) {
+        toast(`${res.data.strikeCount} strikes reached — review a suspension.`, {
+          icon: "⚠️",
+          duration: 6000,
+        });
+        setPendingUserRestriction({ report, mode: "suspend" });
+      }
+      await handleResolve(report._id, "actioned", `Warning issued: ${reason}`);
+      return { ok: true };
+    } catch (e) {
+      console.error(e);
+      toast.error(e.response?.data?.message || "Couldn't send the warning.");
+      return { ok: false };
+    }
+  };
+
   const handleConfirmUserRestriction = async ({ until, reason }) => {
     if (!pendingUserRestriction) return false;
     const { report, mode } = pendingUserRestriction;
@@ -409,6 +523,7 @@ const ModerationQueue = () => {
               onRequestRestriction={(report, mode) =>
                 setPendingUserRestriction({ report, mode })
               }
+              onWarn={handleWarn}
             />
           ))}
         </div>

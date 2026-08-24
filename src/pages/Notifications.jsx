@@ -5,7 +5,7 @@ import MainLayout from "../layouts/MainLayout";
 import NotificationSkeleton from "../components/NotificationSkeleton";
 import api from "../services/api";
 import { useSocket } from "../context/useSocket";
-import { FaHeart, FaRegComment, FaUserPlus, FaAt, FaReply, FaBell } from "react-icons/fa";
+import { FaHeart, FaRegComment, FaUserPlus, FaAt, FaReply, FaBell, FaShieldAlt, FaExclamationTriangle } from "react-icons/fa";
 import defaultAvatar from "../assets/defaultAvatar";
 
 const typeConfig = {
@@ -15,6 +15,10 @@ const typeConfig = {
   mention: { icon: FaAt, color: "text-primary-600", label: "mentioned you" },
   reply:   { icon: FaReply, color: "text-primary-600", label: "replied to your comment" },
   commentLike: { icon: FaHeart, color: "text-red-500", label: "liked your comment" },
+  // Phase 4 — rendered through a dedicated branch below: no sender link,
+  // shield avatar, reason text from n.message. The warned user must not
+  // see WHICH moderator issued the warning.
+  moderator_warning: { icon: FaExclamationTriangle, color: "text-amber-500", label: "" },
 };
 
 const Notifications = () => {
@@ -92,32 +96,66 @@ const Notifications = () => {
             return (
               <div
                 key={n._id}
-                className={`flex items-center gap-3 px-5 py-4 transition ${n.read ? "" : "bg-primary-50"}`}
+                className={`flex items-center gap-3 px-5 py-4 transition ${
+                  n.read
+                    ? ""
+                    : n.type === "moderator_warning"
+                      ? "bg-amber-50"
+                      : "bg-primary-50"
+                }`}
               >
-                <Link to={`/profile/${n.sender?._id}`} className="shrink-0">
-                  <img
-                    src={n.sender?.profilePic || defaultAvatar}
-                    alt={n.sender?.name || "User"}
-                    className="w-10 h-10 rounded-full object-cover ring-2 ring-primary-100"
-                  />
-                </Link>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm text-ink">
-                    <Link
-                      to={`/profile/${n.sender?._id}`}
-                      className="font-semibold hover:text-primary-600 transition"
-                    >
-                      {n.sender?.name || "Someone"}
-                    </Link>
-                    {n.sender?.username && (
-                      <span className="text-ink-muted text-xs"> @{n.sender.username}</span>
-                    )}{" "}
-                    <span className="text-ink-sub">{cfg.label}</span>
-                  </p>
-                  <p className="text-xs text-ink-muted mt-0.5">
-                    {new Date(n.createdAt).toLocaleString()}
-                  </p>
-                </div>
+                {n.type === "moderator_warning" ? (
+                  // Phase 4 — no sender identity: a shield avatar instead
+                  // of the issuing moderator's profile pic/link, so the
+                  // warned user learns the reason but not who sent it.
+                  <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center ring-2 ring-amber-200 shrink-0">
+                    <FaShieldAlt className="text-amber-600" size={16} />
+                  </div>
+                ) : (
+                  <Link to={`/profile/${n.sender?._id}`} className="shrink-0">
+                    <img
+                      src={n.sender?.profilePic || defaultAvatar}
+                      alt={n.sender?.name || "User"}
+                      className="w-10 h-10 rounded-full object-cover ring-2 ring-primary-100"
+                    />
+                  </Link>
+                )}
+                {n.type === "moderator_warning" ? (
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-ink">
+                      <span className="font-semibold">Moderation team</span>{" "}
+                      <span className="text-ink-sub">
+                        sent you a formal warning
+                      </span>
+                    </p>
+                    {n.message && (
+                      <p className="text-sm text-ink-sub mt-1">
+                        "{n.message}"
+                      </p>
+                    )}
+                    <p className="text-xs text-ink-muted mt-0.5">
+                      {new Date(n.createdAt).toLocaleString()}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-ink">
+                      <Link
+                        to={`/profile/${n.sender?._id}`}
+                        className="font-semibold hover:text-primary-600 transition"
+                      >
+                        {n.sender?.name || "Someone"}
+                      </Link>
+                      {n.sender?.username && (
+                        <span className="text-ink-muted text-xs"> @{n.sender.username}</span>
+                      )}{" "}
+                      <span className="text-ink-sub">{cfg.label}</span>
+                    </p>
+                    <p className="text-xs text-ink-muted mt-0.5">
+                      {new Date(n.createdAt).toLocaleString()}
+                    </p>
+                  </div>
+                )}
                 <Icon className={`${cfg.color} shrink-0`} size={16} />
               </div>
             );

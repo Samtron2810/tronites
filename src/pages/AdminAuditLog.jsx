@@ -18,6 +18,7 @@ const ACTION_OPTIONS = [
   { value: "user_banned", label: "Bans" },
   { value: "user_unrestricted", label: "Access restored" },
   { value: "user_role_changed", label: "Role changes" },
+  { value: "user_warned", label: "Warnings" },
   { value: "report_resolved", label: "Reports resolved" },
 ];
 
@@ -39,6 +40,7 @@ const ACTION_STYLES = {
   user_banned: "bg-red-100 text-red-600",
   user_unrestricted: "bg-green-100 text-green-700",
   user_role_changed: "bg-primary-100 text-primary-700",
+  user_warned: "bg-orange-100 text-orange-700",
   report_resolved: "bg-blue-100 text-blue-600",
 };
 
@@ -96,6 +98,15 @@ const DetailCell = ({ log }) => {
       return (
         <span>
           New role: <span className="font-medium">{d.toRole}</span>
+        </span>
+      );
+    case "user_warned":
+      return (
+        <span>
+          {d.reason ? `“${d.reason}”` : "No reason recorded"}
+          {d.strikeCount
+            ? ` — ${d.strikeCount} strike${d.strikeCount === 1 ? "" : "s"} total`
+            : ""}
         </span>
       );
     case "report_resolved":

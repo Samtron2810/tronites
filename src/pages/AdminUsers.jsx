@@ -96,6 +96,16 @@ const RoleRow = ({
             until {new Date(target.suspendedUntil).toLocaleDateString()}
           </span>
         )}
+        {/* Phase 4 — strike count. Count only comes through the admin
+            DTO; individual reasons stay between mods and the audit log. */}
+        {target.strikesCount > 0 && (
+          <span
+            className="text-xs font-semibold px-2 py-0.5 rounded-full bg-orange-50 text-orange-700"
+            title={`${target.strikesCount} formal warning${target.strikesCount === 1 ? "" : "s"} on record`}
+          >
+            {target.strikesCount} strike{target.strikesCount === 1 ? "" : "s"}
+          </span>
+        )}
         <span
           className={`text-xs font-semibold px-2 py-0.5 rounded-full ${ROLE_STYLES[target.role]}`}
         >
