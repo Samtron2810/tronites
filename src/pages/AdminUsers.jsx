@@ -28,6 +28,8 @@ const RoleRow = ({
   target,
   currentUserId,
   viewerIsAdmin,
+  selected,
+  onToggleSelect,
   onRequestRoleChange,
   onRequestRestriction,
   onRequestPermissions,
@@ -63,6 +65,17 @@ const RoleRow = ({
   return (
     <div className="bg-card border border-stroke rounded-2xl p-4 flex items-center justify-between gap-4">
       <div className="flex items-center gap-3 min-w-0">
+        {/* Phase 6 — bulk-selection checkbox. Hidden for self/admin rows
+            since the bulk endpoints can never target those anyway. */}
+        {viewerIsAdmin && !isSelf && target.role !== "admin" && (
+          <input
+            type="checkbox"
+            checked={selected}
+            onChange={onToggleSelect}
+            className="accent-primary-600 shrink-0"
+            aria-label={`Select ${target.name} for bulk action`}
+          />
+        )}
         <img
           src={target.profilePic || defaultAvatar}
           alt={target.name}
@@ -213,17 +226,36 @@ const AdminUsers = () => {
   const [pendingRestriction, setPendingRestriction] = useState(null);
   // Phase 5 — { user } for the permission editor modal.
   const [pendingPermissions, setPendingPermissions] = useState(null);
+  // Phase 6 — bulk selection ("_id" strings), the bulk confirm modal,
+  // and the user-list sort option ("Most reported").
+  const [selectedIds, setSelectedIds] = useState(() => new Set());
+  const [pendingBulk, setPendingBulk] = useState(null); // { mode }
+  const [sortBy, setSortBy] = useState("");
+
+  const toggleSelected = (id) =>
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
   const observerTarget = useRef(null);
 
   const isAdmin = user && user.role === "admin";
 
-  const fetchUsers = useCallback(async (query, role, pageNum = 1) => {
+  const fetchUsers = useCallback(async (query, role, pageNum = 1, sort = "") => {
     try {
       if (pageNum === 1) setLoading(true);
       else setIsLoadingMore(true);
 
       const res = await api.get("/admin/users", {
-        params: { q: query, role: role || undefined, page: pageNum, limit: 20 },
+        params: {
+          q: query,
+          role: role || undefined,
+          page: pageNum,
+          limit: 20,
+          sort: sort || undefined,
+        },
       });
 
       if (pageNum === 1) setUsers(res.data.users);
@@ -243,11 +275,11 @@ const AdminUsers = () => {
   useEffect(() => {
     if (!isAdmin) return;
     const t = window.setTimeout(() => {
-      fetchUsers(search.trim(), roleFilter, 1);
+      fetchUsers(search.trim(), roleFilter, 1, sortBy);
     }, 300);
     return () => window.clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAdmin, search, roleFilter]);
+  }, [isAdmin, search, roleFilter, sortBy]);
 
   useEffect(() => {
     if (!isAdmin) return;
@@ -385,6 +417,42 @@ const AdminUsers = () => {
     if (closed) setPendingRestriction(null);
   };
 
+  // Phase 6 — bulk suspend/ban/unrestrict via /admin/users/bulk. The
+  // modal closes only when the request itself landed; per-user failures
+  // (self/admin targets, already-banned) are summarized in a toast, and
+  // the page refetches so restriction chips reflect reality either way.
+  const handleConfirmBulk = async ({ until, reason }) => {
+    if (!pendingBulk) return false;
+    try {
+      const res = await api.post("/admin/users/bulk", {
+        userIds: [...selectedIds],
+        action: pendingBulk.mode,
+        ...(pendingBulk.mode === "suspend"
+          ? { until: until.toISOString() }
+          : {}),
+        reason,
+      });
+      const { succeeded, failed } = res.data;
+      if (failed > 0) {
+        toast.error(
+          `${succeeded} succeeded, ${failed} couldn't be applied (you and admin accounts are never targetable).`,
+          { duration: 6000 },
+        );
+      } else {
+        toast.success(
+          `${succeeded} account${succeeded === 1 ? "" : "s"} updated.`,
+        );
+      }
+      setSelectedIds(new Set());
+      await fetchUsers(search.trim(), roleFilter, 1, sortBy);
+      return true;
+    } catch (e) {
+      console.error(e);
+      toast.error(e.response?.data?.message || "Couldn't apply bulk action.");
+      return false;
+    }
+  };
+
   return (
     <MainLayout>
       {pendingRoleChange && (
@@ -402,6 +470,19 @@ const AdminUsers = () => {
           initialPermissions={pendingPermissions.user.permissions}
           onConfirm={handleConfirmPermissions}
           onCancel={() => setPendingPermissions(null)}
+        />
+      )}
+
+      {/* Phase 6 — bulk confirm. count>1 flips the shared modal into its
+          pluralized mode; targetUser stays null because the summary line
+          replaces the avatar block. */}
+      {pendingBulk && (
+        <ConfirmRestrictionModal
+          mode={pendingBulk.mode}
+          targetUser={null}
+          count={selectedIds.size}
+          onConfirm={handleConfirmBulk}
+          onCancel={() => setPendingBulk(null)}
         />
       )}
       {pendingRestriction && (
@@ -434,21 +515,62 @@ const AdminUsers = () => {
         />
       </div>
 
-      <div className="flex gap-1 mb-5 bg-card border border-stroke rounded-xl p-1 w-fit">
-        {ROLE_TABS.map((tab) => (
-          <button
-            key={tab.value}
-            onClick={() => setRoleFilter(tab.value)}
-            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${
-              roleFilter === tab.value
-                ? "bg-primary-100 text-primary-700"
-                : "text-ink-muted hover:text-ink"
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
+      <div className="flex items-center justify-between gap-3 mb-5">
+        <div className="flex gap-1 bg-card border border-stroke rounded-xl p-1 w-fit">
+          {ROLE_TABS.map((tab) => (
+            <button
+              key={tab.value}
+              onClick={() => setRoleFilter(tab.value)}
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${
+                roleFilter === tab.value
+                  ? "bg-primary-100 text-primary-700"
+                  : "text-ink-muted hover:text-ink"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Phase 6 — "most reported" surfaces accounts the community
+            flags most, via the report-count aggregation on the backend. */}
+        <select
+          value={sortBy}
+          onChange={(e) => setSortBy(e.target.value)}
+          className="bg-card border border-stroke rounded-xl px-3 py-2 text-sm text-ink outline-none focus:border-primary-500"
+        >
+          <option value="">Newest first</option>
+          <option value="reportCount">Most reported</option>
+        </select>
       </div>
+
+      {/* Phase 6 — bulk selection action bar. Only admins see checkboxes
+          at all, so this only ever appears for them. */}
+      {selectedIds.size > 0 && (
+        <div className="flex flex-wrap items-center gap-2 mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+          <span className="text-sm font-semibold text-ink">
+            {selectedIds.size} selected
+          </span>
+          <button
+            onClick={() => setPendingBulk({ mode: "suspend" })}
+            className="px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-amber-500 hover:bg-amber-600 transition"
+          >
+            Suspend…
+          </button>
+          <button
+            onClick={() => setPendingBulk({ mode: "ban" })}
+            className="px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-red-500 hover:bg-red-600 transition"
+          >
+            Ban…
+          </button>
+          <button
+            onClick={() => setSelectedIds(new Set())}
+            className="ml-auto px-3 py-1.5 rounded-lg text-xs font-medium text-ink-sub border border-stroke hover:bg-surface transition"
+          >
+            Clear
+          </button>
+        </div>
+      )}
 
       {loading ? (
         <p className="text-sm text-ink-muted">Loading...</p>
@@ -473,6 +595,8 @@ const AdminUsers = () => {
               onRequestPermissions={(target) =>
                 setPendingPermissions({ user: target })
               }
+              selected={selectedIds.has(u._id)}
+              onToggleSelect={() => toggleSelected(u._id)}
             />
           ))}
         </div>

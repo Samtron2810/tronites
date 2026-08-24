@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   FiAlertTriangle,
   FiClock,
@@ -22,11 +22,27 @@ const DURATIONS = [
 //   "unrestrict" → plain confirm
 // onConfirm receives ({ until, reason }) — `until` is null except for
 // suspend — and the caller owns the API call.
-const ConfirmRestrictionModal = ({ mode, targetUser, onConfirm, onCancel }) => {
+const ConfirmRestrictionModal = ({
+  mode,
+  targetUser,
+  onConfirm,
+  onCancel,
+  count = 1,
+}) => {
   const [duration, setDuration] = useState("24h");
   const [customUntil, setCustomUntil] = useState("");
   const [reason, setReason] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // datetime-local floor: now + 1 minute. Computed once per mount via
+  // useMemo — the purity rule rightly bans bare Date.now() in render,
+  // and a minute-stale floor is harmless: past picks are rejected on
+  // submit here and re-checked server-side against its own clock.
+  const customMin = useMemo(
+    () =>
+      // eslint-disable-next-line react-hooks/purity -- one-shot picker floor; stale-by-minutes is harmless (past picks rejected on submit + server re-checks)
+      new Date(Date.now() + 60 * 1000).toISOString().slice(0, 16),
+    [],
+  );
 
   if (!mode) return null;
   const isSuspend = mode === "suspend";
@@ -57,11 +73,19 @@ const ConfirmRestrictionModal = ({ mode, targetUser, onConfirm, onCancel }) => {
     }
   };
 
-  const header = isBan
-    ? "Ban account"
-    : isSuspend
-      ? "Suspend account"
-      : "Restore access";
+  // Phase 6 — bulk mode triggers on count > 1 OR whenever the caller has
+  // no single target to show (AdminUsers' selection bar passes
+  // targetUser={null}, which also covers its one-account edge case).
+  const isBulk = count > 1 || !targetUser;
+  const actionWord = isBan ? "Ban" : isSuspend ? "Suspend" : "Restore access";
+  const isPlainRestore = mode === "unrestrict";
+  const header = isBulk
+    ? count === 1
+      ? `${actionWord} the selected account`
+      : `${actionWord} ${count} accounts`
+    : isPlainRestore
+      ? "Restore access"
+      : `${actionWord} account`;
   const canSubmit =
     !isSubmitting && (!isSuspend || duration !== "custom" || !!customUntil);
 
@@ -85,21 +109,32 @@ const ConfirmRestrictionModal = ({ mode, targetUser, onConfirm, onCancel }) => {
           <h2 className="text-base font-semibold text-ink">{header}</h2>
         </div>
 
-        <div className="flex items-center gap-3 mb-3">
-          <img
-            src={targetUser.profilePic || defaultAvatar}
-            alt={targetUser.name}
-            className="w-10 h-10 rounded-full object-cover ring-2 ring-primary-100 shrink-0"
-          />
-          <div className="min-w-0">
-            <p className="text-sm font-semibold text-ink truncate">
-              {targetUser.name}
-            </p>
-            <p className="text-xs text-ink-muted truncate">
-              {targetUser.email}
+        {isBulk ? (
+          // Bulk mode — no single avatar to show; the parent passes only
+          // the count. The amber treatment matches the suspend styling.
+          <div className="flex items-center gap-3 mb-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5">
+            <FiAlertTriangle className="text-amber-500 shrink-0" size={16} />
+            <p className="text-sm font-medium text-ink">
+              {count} accounts selected
             </p>
           </div>
-        </div>
+        ) : (
+          <div className="flex items-center gap-3 mb-3">
+            <img
+              src={targetUser.profilePic || defaultAvatar}
+              alt={targetUser.name}
+              className="w-10 h-10 rounded-full object-cover ring-2 ring-primary-100 shrink-0"
+            />
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-ink truncate">
+                {targetUser.name}
+              </p>
+              <p className="text-xs text-ink-muted truncate">
+                {targetUser.email}
+              </p>
+            </div>
+          </div>
+        )}
 
         {isSuspend && (
           <div className="mb-3">
@@ -137,9 +172,7 @@ const ConfirmRestrictionModal = ({ mode, targetUser, onConfirm, onCancel }) => {
               <input
                 type="datetime-local"
                 value={customUntil}
-                min={new Date(Date.now() + 60 * 1000)
-                  .toISOString()
-                  .slice(0, 16)}
+                min={customMin}
                 onChange={(e) => setCustomUntil(e.target.value)}
                 className="mt-2 w-full rounded-xl border border-stroke px-3 py-2 text-sm text-ink outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-100 transition"
               />
@@ -203,11 +236,13 @@ const ConfirmRestrictionModal = ({ mode, targetUser, onConfirm, onCancel }) => {
           >
             {isSubmitting
               ? "..."
-              : isBan
-                ? "Ban permanently"
-                : isSuspend
-                  ? "Suspend"
-                  : "Restore access"}
+              : isBulk
+                ? count === 1
+                  ? `${actionWord} selected account`
+                  : `${actionWord} ${count} accounts`
+                : isBan
+                  ? "Ban permanently"
+                  : actionWord}
           </button>
         </div>
       </div>

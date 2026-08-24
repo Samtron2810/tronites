@@ -89,10 +89,23 @@ const ReportCard = ({
   };
 
   return (
-    <div className="bg-card border border-stroke rounded-2xl p-4">
+    <div
+      className={`rounded-2xl p-4 border ${
+        report.priority === "high"
+          ? "border-red-300 bg-red-50/40"
+          : "bg-card border-stroke"
+      }`}
+    >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
+            {report.priority === "high" && (
+              // Phase 6 — set by the flagRepeatOffenders job when this
+              // owner crosses the repeat-offender threshold.
+              <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-red-500 text-white">
+                HIGH PRIORITY
+              </span>
+            )}
             <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-primary-50 text-primary-700">
               {TARGET_TYPE_LABELS[report.targetType]}
             </span>
