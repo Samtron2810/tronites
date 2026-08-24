@@ -5,8 +5,10 @@ import {
   FiImage,
   FiVideo,
   FiCheck,
+  FiFlag,
 } from "react-icons/fi";
 import ChatVideoMessage from "./ChatVideoMessage";
+import ReportModal from "./ReportModal";
 import { FaCheckDouble } from "react-icons/fa";
 import defaultAvatar from "../assets/defaultAvatar";
 import {
@@ -52,8 +54,15 @@ const ChatModal = ({
   onAcceptRequest,
   onDeclineRequest,
   requestActionPending,
+  // Submits a message report ({ message, reason, details }) and resolves
+  // to true only when it succeeded — owned by Chat.jsx like every other
+  // mutation; this component just collects the UI input.
+  handleReportMessage,
 }) => {
   const [now, setNow] = useState(() => Date.now());
+  // Message currently being reported via ReportModal (null when closed).
+  // Only other users' bubbles expose the flag trigger.
+  const [reportingMessage, setReportingMessage] = useState(null);
   const hasPendingDeletes = Object.keys(pendingDeletes).length > 0;
 
   useEffect(() => {
@@ -268,6 +277,16 @@ const ChatModal = ({
                         >
                           {formatMessageTime(message.createdAt)}
                         </p>
+                        {!isMine && (
+                          <button
+                            onClick={() => setReportingMessage(message)}
+                            title="Report message"
+                            aria-label="Report message"
+                            className="text-ink-muted hover:text-red-500 transition"
+                          >
+                            <FiFlag size={11} />
+                          </button>
+                        )}
                         {isMine && (
                           <>
                             <button
@@ -476,6 +495,23 @@ const ChatModal = ({
             </>
           )}
         </div>
+
+        {reportingMessage && (
+          <ReportModal
+            targetLabel="this message"
+            onConfirm={async ({ reason, details }) => {
+              const ok = await handleReportMessage({
+                message: reportingMessage,
+                reason,
+                details,
+              });
+              // Close only on success, like Profile.jsx does — a failed
+              // submit keeps the modal open with the chosen reason intact.
+              if (ok) setReportingMessage(null);
+            }}
+            onCancel={() => setReportingMessage(null)}
+          />
+        )}
       </div>
     </div>
   );

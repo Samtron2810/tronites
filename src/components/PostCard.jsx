@@ -14,10 +14,12 @@ import {
   FaVolumeUp,
   FaVolumeMute,
 } from "react-icons/fa";
+import { FiFlag } from "react-icons/fi";
 import toast from "react-hot-toast";
 import api from "../services/api";
 import { useAuth } from "../context/useAuth";
 import DeletePostModal from "./DeletePostModal";
+import ReportModal from "./ReportModal";
 import { useSocket } from "../context/useSocket";
 import TextWithLinks from "./TextWithLinks";
 import useMentionAutocomplete from "../hooks/useMentionAutocomplete";
@@ -87,6 +89,11 @@ const PostCard = ({
     if (showComments) setVisibleCount(1);
   }
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  // What ReportModal is open for — one instance serves all three triggers
+  // (post / comment / reply): null | { type: "post" } |
+  // { type: "comment" | "reply", id }. Own content never exposes a
+  // trigger, and the backend rejects self-reports regardless.
+  const [reportTarget, setReportTarget] = useState(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
   const triggerRef = useRef(null);
@@ -215,6 +222,27 @@ const PostCard = ({
       toast.error("Couldn't delete comment. Try again.");
     } finally {
       setCommentDeletingId(null);
+    }
+  };
+
+  // Mirrors Profile.jsx's user-report submit — same endpoint, same payload
+  // shape ({ targetType, targetId, reason, details }), same toasts, and
+  // closes the modal only on success.
+  const handleReportSubmit = async ({ reason, details }) => {
+    if (!reportTarget) return;
+    const target =
+      reportTarget.type === "post"
+        ? { targetType: "post", targetId: postId }
+        : { targetType: "comment", targetId: reportTarget.id };
+    try {
+      await api.post("/reports", { ...target, reason, details });
+      toast.success("Report submitted. Thanks for the heads up.");
+      setReportTarget(null);
+    } catch (e) {
+      console.error(e);
+      toast.error(
+        e.response?.data?.message || "Couldn't submit report. Try again.",
+      );
     }
   };
 
@@ -600,6 +628,16 @@ const PostCard = ({
         />
       )}
 
+      {reportTarget && (
+        <ReportModal
+          targetLabel={
+            reportTarget.type === "post" ? "this post" : "this comment"
+          }
+          onConfirm={handleReportSubmit}
+          onCancel={() => setReportTarget(null)}
+        />
+      )}
+
       <div className="bg-card border border-stroke rounded-2xl p-5 transition hover:shadow-sm">
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
@@ -624,49 +662,64 @@ const PostCard = ({
               <p className="text-xs text-ink-muted">{time}</p>
             </div>
           </div>
-          {isOwner && (
-            <div className="relative">
-              <button
-                ref={triggerRef}
-                onClick={() => setMenuOpen((o) => !o)}
-                className="text-ink-muted hover:text-ink transition p-1.5 rounded-lg hover:bg-surface"
-                title="Post options"
-                aria-label="Post options"
-              >
-                <FaEllipsisV size={14} />
-              </button>
+          <div className="relative">
+            <button
+              ref={triggerRef}
+              onClick={() => setMenuOpen((o) => !o)}
+              className="text-ink-muted hover:text-ink transition p-1.5 rounded-lg hover:bg-surface"
+              title="Post options"
+              aria-label="Post options"
+            >
+              <FaEllipsisV size={14} />
+            </button>
 
-              {menuOpen && (
-                <div
-                  ref={menuRef}
-                  className="absolute right-0 mt-2 w-40 bg-card rounded-lg shadow-lg border border-stroke z-40 py-1"
-                >
-                  {!isEditing && (
+            {menuOpen && (
+              <div
+                ref={menuRef}
+                className="absolute right-0 mt-2 w-40 bg-card rounded-lg shadow-lg border border-stroke z-40 py-1"
+              >
+                {/* Owner menu: edit/delete. Non-owner menu: report only —
+                    mirrors Profile.jsx's report entry (icon + styling). */}
+                {isOwner ? (
+                  <>
+                    {!isEditing && (
+                      <button
+                        onClick={() => {
+                          setIsEditing(true);
+                          setMenuOpen(false);
+                        }}
+                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-ink hover:bg-primary-50 transition"
+                      >
+                        <FaPen className="text-primary-600" size={13} />
+                        <span className="font-medium">Edit post</span>
+                      </button>
+                    )}
                     <button
                       onClick={() => {
-                        setIsEditing(true);
+                        setShowDeleteModal(true);
                         setMenuOpen(false);
                       }}
-                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-ink hover:bg-primary-50 transition"
+                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition"
                     >
-                      <FaPen className="text-primary-600" size={13} />
-                      <span className="font-medium">Edit post</span>
+                      <FaTrash size={13} />
+                      <span className="font-medium">Delete post</span>
                     </button>
-                  )}
+                  </>
+                ) : (
                   <button
                     onClick={() => {
-                      setShowDeleteModal(true);
+                      setReportTarget({ type: "post" });
                       setMenuOpen(false);
                     }}
-                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition"
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-ink-sub hover:bg-surface transition"
                   >
-                    <FaTrash size={13} />
-                    <span className="font-medium">Delete post</span>
+                    <FiFlag className="text-amber-500" size={13} />
+                    <span className="font-medium">Report post</span>
                   </button>
-                </div>
-              )}
-            </div>
-          )}
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Text */}
@@ -920,6 +973,16 @@ const PostCard = ({
                         {commentDeletingId === c._id ? "..." : "Delete"}
                       </button>
                     )}
+                    {c.user._id !== currentUser?._id && (
+                      <button
+                        onClick={() =>
+                          setReportTarget({ type: "comment", id: c._id })
+                        }
+                        className="text-xs text-ink-muted hover:text-amber-500 transition"
+                      >
+                        Report
+                      </button>
+                    )}
                   </div>
                   <p className="text-xs text-ink-sub mt-0.5">
                     <TextWithLinks text={c.text} />
@@ -1037,6 +1100,16 @@ const PostCard = ({
                                   {commentDeletingId === r._id
                                     ? "..."
                                     : "Delete"}
+                                </button>
+                              )}
+                              {r.user._id !== currentUser?._id && (
+                                <button
+                                  onClick={() =>
+                                    setReportTarget({ type: "reply", id: r._id })
+                                  }
+                                  className="text-xs text-ink-muted hover:text-amber-500 transition"
+                                >
+                                  Report
                                 </button>
                               )}
                             </div>

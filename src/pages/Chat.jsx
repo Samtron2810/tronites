@@ -539,6 +539,30 @@ const Chat = () => {
     setPendingDeletes(next);
   };
 
+  // Reports another user's message. Lives here (not in ChatModal) so every
+  // mutation stays owned by this page, matching handleSendMessage /
+  // performDelete. Resolves to true only on success so ChatModal knows to
+  // close its ReportModal. The backend rejects reporting your own message,
+  // and ChatModal only shows the flag trigger on received messages anyway.
+  const handleReportMessage = async ({ message, reason, details }) => {
+    try {
+      await api.post("/reports", {
+        targetType: "message",
+        targetId: message._id,
+        reason,
+        details,
+      });
+      toast.success("Report submitted. Thanks for the heads up.");
+      return true;
+    } catch (e) {
+      console.error(e);
+      toast.error(
+        e.response?.data?.message || "Couldn't submit report. Try again.",
+      );
+      return false;
+    }
+  };
+
   const performDelete = useCallback(async (messageId) => {
     if (deletingIdsRef.current.has(messageId)) return;
     deletingIdsRef.current.add(messageId);
@@ -985,6 +1009,7 @@ const Chat = () => {
             })
           }
           requestActionPending={requestActionId === selectedChat.conversationId}
+          handleReportMessage={handleReportMessage}
         />
       )}
     </MainLayout>
