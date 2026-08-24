@@ -11,6 +11,8 @@ import {
   FaChevronLeft,
   FaChevronRight,
   FaEllipsisV,
+  FaVolumeUp,
+  FaVolumeMute,
 } from "react-icons/fa";
 import toast from "react-hot-toast";
 import api from "../services/api";
@@ -112,6 +114,9 @@ const PostCard = ({
   const [postVideo, setPostVideo] = useState(video);
   const videoRef = useRef(null);
   const [syncedVideoStatus, setSyncedVideoStatus] = useState(video?.status);
+  // Mute state for the post video's overlay button — mirrors the element's
+  // muted property so the icon stays in sync.
+  const [isVideoMuted, setIsVideoMuted] = useState(false);
   if (video?.status !== syncedVideoStatus) {
     setSyncedVideoStatus(video?.status);
     setPostVideo(video);
@@ -574,6 +579,15 @@ const PostCard = ({
     return () => observer.disconnect();
   }, [postVideo?.url]);
 
+  // Mute/unmute toggle for the post video overlay. Drives the element's
+  // muted property imperatively and mirrors it into state for the icon.
+  const handleToggleVideoMute = () => {
+    const videoEl = videoRef.current;
+    if (!videoEl) return;
+    videoEl.muted = !videoEl.muted;
+    setIsVideoMuted(videoEl.muted);
+  };
+
   const visibleComments = comments.slice(0, visibleCount);
   const hasMore = visibleCount < comments.length;
 
@@ -719,7 +733,7 @@ const PostCard = ({
           </div>
         )}
         {postVideo?.status === "ready" && postVideo.url && (
-          <div className="mt-4 rounded-xl overflow-hidden bg-black">
+          <div className="mt-4 relative rounded-xl overflow-hidden bg-black">
             <video
               ref={videoRef}
               src={`${postVideo.url}#t=0.1`}
@@ -732,6 +746,21 @@ const PostCard = ({
               onContextMenu={(e) => e.preventDefault()}
               className="w-full max-h-96 object-contain"
             />
+            {/* Mute/unmute overlay — sits top-right, clear of the bottom
+                native-controls bar. */}
+            <button
+              type="button"
+              onClick={handleToggleVideoMute}
+              aria-label={isVideoMuted ? "Unmute video" : "Mute video"}
+              title={isVideoMuted ? "Unmute" : "Mute"}
+              className="absolute top-2 right-2 w-8 h-8 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/70 transition"
+            >
+              {isVideoMuted ? (
+                <FaVolumeMute size={16} />
+              ) : (
+                <FaVolumeUp size={16} />
+              )}
+            </button>
           </div>
         )}
 

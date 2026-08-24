@@ -6,6 +6,7 @@ import {
   FiVideo,
   FiCheck,
 } from "react-icons/fi";
+import ChatVideoMessage from "./ChatVideoMessage";
 import { FaCheckDouble } from "react-icons/fa";
 import defaultAvatar from "../assets/defaultAvatar";
 
@@ -193,15 +194,10 @@ const ChatModal = ({
                   ) : (
                     <>
                       {message.video?.url && (
-                        <video
-                          src={`${message.video.url}#t=0.1`}
-                          poster={message.video.thumbnailUrl || undefined}
-                          preload="metadata"
-                          controls
-                          playsInline
-                          className={`w-full max-h-64 rounded-xl overflow-hidden bg-black object-contain ${
-                            isMine ? "ml-auto self-end" : "self-start"
-                          }`}
+                        <ChatVideoMessage
+                          url={message.video.url}
+                          poster={message.video.thumbnailUrl}
+                          alignmentClass={isMine ? "ml-auto self-end" : "self-start"}
                         />
                       )}
                       {(() => {
