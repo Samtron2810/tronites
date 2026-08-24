@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import MainLayout from "../layouts/MainLayout";
 import api from "../services/api";
@@ -10,6 +10,7 @@ import ChatSkeleton from "../components/ChatSkeleton";
 import { FaComment } from "react-icons/fa";
 import sfx from "../assets/sfx.mp3";
 import defaultAvatar from "../assets/defaultAvatar";
+import toast from "react-hot-toast";
 
 const buildConversationId = (a, b) =>
   [a.toString(), b.toString()].sort().join("_");
@@ -41,7 +42,10 @@ const Chat = () => {
   const [threadLoading, setThreadLoading] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [imagePreviews, setImagePreviews] = useState([]);
-  const [messageDeletingId, setMessageDeletingId] = useState(null);
+  const [pendingDeletes, setPendingDeletes] = useState({}); // messageId -> expiresAt (ms)
+  const [deletingIds, setDeletingIds] = useState([]); // ids whose API delete is in flight
+  const pendingDeletesRef = useRef({});
+  const deletingIdsRef = useRef(new Set());
   const fileInputRef = useRef(null);
   const [searchParams] = useSearchParams();
   const scrollRef = useRef(null);
@@ -360,18 +364,62 @@ const Chat = () => {
     setImagePreviews((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const handleDeleteMessage = async (messageId) => {
-    if (messageDeletingId) return;
-    setMessageDeletingId(messageId);
+  const handleDeleteMessage = (messageId) => {
+    if (
+      pendingDeletesRef.current[messageId] ||
+      deletingIdsRef.current.has(messageId)
+    )
+      return;
+    pendingDeletesRef.current = {
+      ...pendingDeletesRef.current,
+      [messageId]: Date.now() + 5000,
+    };
+    setPendingDeletes(pendingDeletesRef.current);
+  };
+
+  const handleUndoDelete = (messageId) => {
+    if (!pendingDeletesRef.current[messageId]) return;
+    const next = { ...pendingDeletesRef.current };
+    delete next[messageId];
+    pendingDeletesRef.current = next;
+    setPendingDeletes(next);
+  };
+
+  const performDelete = useCallback(async (messageId) => {
+    if (deletingIdsRef.current.has(messageId)) return;
+    deletingIdsRef.current.add(messageId);
+    setDeletingIds((prev) => [...prev, messageId]);
     try {
       await api.delete(`/messages/${messageId}`);
       setMessages((prev) => prev.filter((m) => m._id !== messageId));
     } catch (e) {
       console.error(e);
+      toast.error("Couldn't delete the message — it's been restored.");
     } finally {
-      setMessageDeletingId(null);
+      deletingIdsRef.current.delete(messageId);
+      setDeletingIds((prev) => prev.filter((id) => id !== messageId));
     }
-  };
+  }, []);
+
+  // 5-second grace period: every 250ms, commit the real API delete for
+  // any pending message whose countdown has fully elapsed. Undo (before
+  // expiry) simply removes the entry from pendingDeletesRef, so the
+  // message never left state and instantly reappears.
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const now = Date.now();
+      const expired = Object.entries(pendingDeletesRef.current)
+        .filter(([, expiresAt]) => expiresAt <= now)
+        .map(([id]) => id);
+      if (expired.length === 0) return;
+      const next = { ...pendingDeletesRef.current };
+      expired.forEach((id) => delete next[id]);
+      pendingDeletesRef.current = next;
+      setPendingDeletes(next);
+      expired.forEach((id) => performDelete(id));
+    }, 250);
+    return () => clearInterval(interval);
+  }, [performDelete]);
 
   // --- Notification sound setup ---
   // Chrome (and Firefox/Safari to varying degrees) block audio.play()
@@ -747,7 +795,9 @@ const Chat = () => {
           handleImageSelect={handleImageSelect}
           handleRemoveImage={handleRemoveImage}
           handleDeleteMessage={handleDeleteMessage}
-          messageDeletingId={messageDeletingId}
+          handleUndoDelete={handleUndoDelete}
+          pendingDeletes={pendingDeletes}
+          deletingIds={deletingIds}
           messageText={messageText}
           setMessageText={setMessageText}
           imagePreviews={imagePreviews}

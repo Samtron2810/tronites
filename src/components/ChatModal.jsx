@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { FiArrowLeft, FiTrash2, FiImage, FiCheck } from "react-icons/fi";
 import { FaCheckDouble } from "react-icons/fa";
 import defaultAvatar from "../assets/defaultAvatar";
@@ -14,11 +15,12 @@ const ChatModal = ({
   handleImageSelect,
   handleRemoveImage,
   handleDeleteMessage,
-  messageDeletingId,
+  handleUndoDelete,
+  pendingDeletes,
+  deletingIds,
   messageText,
   setMessageText,
   imagePreviews,
-  setImagePreviews,
   isSending,
   fileInputRef,
   scrollRef,
@@ -31,6 +33,15 @@ const ChatModal = ({
   onDeclineRequest,
   requestActionPending,
 }) => {
+  const [now, setNow] = useState(() => Date.now());
+  const hasPendingDeletes = Object.keys(pendingDeletes).length > 0;
+
+  useEffect(() => {
+    if (!hasPendingDeletes) return;
+    const interval = setInterval(() => setNow(Date.now()), 250);
+    return () => clearInterval(interval);
+  }, [hasPendingDeletes]);
+
   if (!isOpen || !selectedChat) return null;
   const activeUser = selectedChat.otherUser;
   const activeIsOnline = activeUser
@@ -124,6 +135,15 @@ const ChatModal = ({
 
           {messages.map((message) => {
             const isMine = message.sender._id === user._id;
+            const isPendingDelete = !!pendingDeletes[message._id];
+            const isDeleting = deletingIds.includes(message._id);
+            const showDeletedPlaceholder = isPendingDelete || isDeleting;
+            const remainingSecs = isPendingDelete
+              ? Math.max(
+                  0,
+                  Math.ceil((pendingDeletes[message._id] - now) / 1000),
+                )
+              : 0;
             return (
               <div
                 key={message._id}
@@ -132,77 +152,105 @@ const ChatModal = ({
                 <div
                   className={`flex flex-col max-w-[75%] min-w-0 wrap-break-word gap-1`}
                 >
-                  {(() => {
-                    const images = message.images?.length
-                      ? message.images
-                      : message.image
-                        ? [message.image]
-                        : [];
-                    if (images.length === 0) return null;
-                    return (
-                      <div
-                        className={`grid grid-cols-2 gap-1 rounded-xl overflow-hidden ${isMine ? "ml-auto" : ""}`}
-                      >
-                        {images.map((src, idx) => (
-                          <img
-                            key={idx}
-                            src={src}
-                            alt={`message ${idx + 1}`}
-                            className={`w-full h-auto object-cover ${
-                              images.length === 1
-                                ? "col-span-2"
-                                : images.length === 3 && idx === 0
-                                  ? "col-span-2"
-                                  : ""
-                            }`}
-                          />
-                        ))}
-                      </div>
-                    );
-                  })()}
-                  {message.text && (
+                  {showDeletedPlaceholder ? (
                     <div
-                      className={`px-4 py-2.5 rounded-2xl text-sm whitespace-pre-wrap ${
+                      className={`px-4 py-2.5 rounded-2xl text-sm border ${
                         isMine
-                          ? "bg-primary-600 text-white self-end rounded-br-sm"
-                          : "bg-card text-ink self-start rounded-bl-sm border border-stroke"
+                          ? "bg-surface text-ink-sub self-end rounded-br-sm border-stroke"
+                          : "bg-card text-ink-muted self-start rounded-bl-sm border-stroke"
                       }`}
                     >
-                      {message.text}
-                    </div>
-                  )}
-                  <div
-                    className={`flex items-center gap-1.5 ${isMine ? "justify-end" : "justify-start"}`}
-                  >
-                    <p className="text-[10px] text-ink-muted">
-                      {new Date(message.createdAt).toLocaleTimeString([], {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </p>
-                    {isMine && (
-                      <>
-                        <button
-                          onClick={() => handleDeleteMessage(message._id)}
-                          disabled={messageDeletingId === message._id}
-                          className="text-ink-muted hover:text-red-500 transition disabled:opacity-40"
-                        >
-                          <FiTrash2 size={11} />
-                        </button>
-                        <span
-                          className={
-                            message.read ? "text-primary-400" : "text-ink-muted"
-                          }
-                        >
-                          {message.read ? (
-                            <FaCheckDouble size={11} />
-                          ) : (
-                            <FiCheck size={11} />
-                          )}
+                      {isDeleting ? (
+                        <span className="flex items-center gap-2">
+                          Deleting…
                         </span>
-                      </>
-                    )}
-                  </div>
+                      ) : (
+                        <span className="flex items-center gap-2">
+                          Message deleted ({remainingSecs}s)
+                          <button
+                            onClick={() => handleUndoDelete(message._id)}
+                            className="text-primary-600 hover:text-primary-800 font-semibold transition"
+                          >
+                            Undo
+                          </button>
+                        </span>
+                      )}
+                    </div>
+                  ) : (
+                    <>
+                      {(() => {
+                        const images = message.images?.length
+                          ? message.images
+                          : message.image
+                            ? [message.image]
+                            : [];
+                        if (images.length === 0) return null;
+                        return (
+                          <div
+                            className={`grid grid-cols-2 gap-1 rounded-xl overflow-hidden ${isMine ? "ml-auto" : ""}`}
+                          >
+                            {images.map((src, idx) => (
+                              <img
+                                key={idx}
+                                src={src}
+                                alt={`message ${idx + 1}`}
+                                className={`w-full h-auto object-cover ${
+                                  images.length === 1
+                                    ? "col-span-2"
+                                    : images.length === 3 && idx === 0
+                                      ? "col-span-2"
+                                      : ""
+                                }`}
+                              />
+                            ))}
+                          </div>
+                        );
+                      })()}
+                      {message.text && (
+                        <div
+                          className={`px-4 py-2.5 rounded-2xl text-sm whitespace-pre-wrap ${
+                            isMine
+                              ? "bg-primary-600 text-white self-end rounded-br-sm"
+                              : "bg-card text-ink self-start rounded-bl-sm border border-stroke"
+                          }`}
+                        >
+                          {message.text}
+                        </div>
+                      )}
+                      <div
+                        className={`flex items-center gap-1.5 ${isMine ? "justify-end" : "justify-start"}`}
+                      >
+                        <p className="text-[10px] text-ink-muted">
+                          {new Date(message.createdAt).toLocaleTimeString([], {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </p>
+                        {isMine && (
+                          <>
+                            <button
+                              onClick={() => handleDeleteMessage(message._id)}
+                              disabled={isDeleting}
+                              className="text-ink-muted hover:text-red-500 transition disabled:opacity-40"
+                            >
+                              <FiTrash2 size={11} />
+                            </button>
+                            <span
+                              className={
+                                message.read ? "text-primary-400" : "text-ink-muted"
+                              }
+                            >
+                              {message.read ? (
+                                <FaCheckDouble size={11} />
+                              ) : (
+                                <FiCheck size={11} />
+                              )}
+                            </span>
+                          </>
+                        )}
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             );
