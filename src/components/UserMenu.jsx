@@ -108,6 +108,12 @@ const UserMenu = ({ user, onLogoutClick }) => {
             isLink: true,
             onClick: () => setIsOpen(false),
           },
+        ]
+      : []),
+    // Audit log (Phase 3/5): admins always; moderators only when granted
+    // view_audit_log via the permission editor.
+    ...(user.role === "admin" || user.permissions?.includes("view_audit_log")
+      ? [
           {
             icon: FaClipboardList,
             label: "Audit log",

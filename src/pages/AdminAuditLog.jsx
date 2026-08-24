@@ -19,6 +19,7 @@ const ACTION_OPTIONS = [
   { value: "user_unrestricted", label: "Access restored" },
   { value: "user_role_changed", label: "Role changes" },
   { value: "user_warned", label: "Warnings" },
+  { value: "user_permissions_changed", label: "Permission changes" },
   { value: "report_resolved", label: "Reports resolved" },
 ];
 
@@ -109,6 +110,19 @@ const DetailCell = ({ log }) => {
             : ""}
         </span>
       );
+    case "user_permissions_changed":
+      return (
+        <span>
+          Now:{" "}
+          <span className="font-medium">
+            {d.permissions?.length ? d.permissions.join(", ") : "(default set)"}
+          </span>
+          {" · was: "}
+          {d.previousPermissions?.length
+            ? d.previousPermissions.join(", ")
+            : "(default set)"}
+        </span>
+      );
     case "report_resolved":
       return (
         <span>
@@ -148,6 +162,10 @@ const TargetCell = ({ log }) => {
 const AdminAuditLog = () => {
   const { user } = useAuth();
   const isAdmin = user?.role === "admin";
+  // Phase 5 — moderators granted view_audit_log see this page too;
+  // everyone else gets the notice below (server enforces the same rule).
+  const canView =
+    isAdmin || !!user?.permissions?.includes("view_audit_log");
 
   const [logs, setLogs] = useState([]);
   const [total, setTotal] = useState(0);
@@ -190,18 +208,19 @@ const AdminAuditLog = () => {
   // Filter changes restart from the top; first mount loads page 1.
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch-on-mount/filter-change
-    if (isAdmin) fetchPage(0, false);
-  }, [isAdmin, fetchPage]);
+    if (canView) fetchPage(0, false);
+  }, [canView, fetchPage]);
 
-  if (!isAdmin) {
+  if (!canView) {
     return (
       <MainLayout>
         <div className="max-w-3xl mx-auto px-4 py-16 text-center">
           <h1 className="text-xl font-bold text-ink mb-2">
-            Admin access required
+            No audit access
           </h1>
           <p className="text-ink-sub text-sm">
-            The moderation audit log is restricted to admin accounts.
+            The moderation audit log is restricted to admin accounts and
+            moderators granted the view-audit-log permission.
           </p>
         </div>
       </MainLayout>

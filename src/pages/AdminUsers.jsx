@@ -4,9 +4,11 @@ import toast from "react-hot-toast";
 import MainLayout from "../layouts/MainLayout";
 import api from "../services/api";
 import ConfirmRoleChangeModal from "../components/ConfirmRoleChangeModal";
+import ConfirmPermissionChangeModal from "../components/ConfirmPermissionChangeModal";
 import ConfirmRestrictionModal from "../components/ConfirmRestrictionModal";
 import { useAuth } from "../context/useAuth";
 import defaultAvatar from "../assets/defaultAvatar";
+import { PERMISSION_OPTIONS } from "../constants/permissions";
 import { FiSearch, FiShield, FiMoreVertical } from "react-icons/fi";
 
 const ROLE_TABS = [
@@ -28,6 +30,7 @@ const RoleRow = ({
   viewerIsAdmin,
   onRequestRoleChange,
   onRequestRestriction,
+  onRequestPermissions,
 }) => {
   const isSelf = target._id === currentUserId;
   const isSuspended =
@@ -121,6 +124,22 @@ const RoleRow = ({
           <option value="admin">admin</option>
         </select>
 
+        {/* Phase 5 — per-moderator capability editor (admin only). */}
+        {viewerIsAdmin && target.role === "moderator" && (
+          <button
+            onClick={() => onRequestPermissions(target)}
+            className="p-1.5 rounded-lg text-ink-muted hover:text-primary-600 hover:bg-primary-50 transition"
+            title={`Permissions: ${
+              target.permissions?.length
+                ? target.permissions.join(", ")
+                : "default set"
+            }`}
+            aria-label="Edit permissions"
+          >
+            <FiShield size={15} />
+          </button>
+        )}
+
         {canRestrict && (
           <div className="relative" ref={menuRef}>
             <button
@@ -192,6 +211,8 @@ const AdminUsers = () => {
   // { user, mode: "suspend" | "ban" | "unrestrict" } for the restriction
   // confirm modal.
   const [pendingRestriction, setPendingRestriction] = useState(null);
+  // Phase 5 — { user } for the permission editor modal.
+  const [pendingPermissions, setPendingPermissions] = useState(null);
   const observerTarget = useRef(null);
 
   const isAdmin = user && user.role === "admin";
@@ -273,13 +294,45 @@ const AdminUsers = () => {
       });
       setUsers((prev) =>
         prev.map((u) =>
-          u._id === targetId ? { ...u, role: res.data.user.role } : u,
+          u._id === targetId
+            ? {
+                ...u,
+                role: res.data.user.role,
+                // Promotion seeds defaults / demotion clears them --
+                // keep the row's permission set in sync either way.
+                permissions: res.data.user.permissions,
+              }
+            : u,
         ),
       );
       toast.success(`Role updated to ${res.data.user.role}.`);
     } catch (e) {
       console.error(e);
       toast.error(e.response?.data?.message || "Couldn't update role.");
+    }
+  };
+
+  // Phase 5 -- save a moderator's explicit permission set. The modal
+  // owns the draft; this just ships it and folds the server DTO back
+  // into the row so badges/checkboxes stay truthful.
+  const handleConfirmPermissions = async (permissions) => {
+    if (!pendingPermissions) return;
+    try {
+      const res = await api.put(
+        `/admin/users/${pendingPermissions.user._id}/permissions`,
+        { permissions },
+      );
+      setUsers((prev) =>
+        prev.map((u) =>
+          u._id === pendingPermissions.user._id
+            ? { ...u, permissions: res.data.user.permissions }
+            : u,
+        ),
+      );
+      toast.success("Permissions updated.");
+    } catch (e) {
+      console.error(e);
+      toast.error(e.response?.data?.message || "Couldn't update permissions.");
     }
   };
 
@@ -340,6 +393,15 @@ const AdminUsers = () => {
           newRole={pendingRoleChange.newRole}
           onConfirm={handleConfirmRoleChange}
           onCancel={() => setPendingRoleChange(null)}
+        />
+      )}
+
+      {pendingPermissions && (
+        <ConfirmPermissionChangeModal
+          targetUser={pendingPermissions.user}
+          initialPermissions={pendingPermissions.user.permissions}
+          onConfirm={handleConfirmPermissions}
+          onCancel={() => setPendingPermissions(null)}
         />
       )}
       {pendingRestriction && (
@@ -407,6 +469,9 @@ const AdminUsers = () => {
               }
               onRequestRestriction={(target, mode) =>
                 setPendingRestriction({ user: target, mode })
+              }
+              onRequestPermissions={(target) =>
+                setPendingPermissions({ user: target })
               }
             />
           ))}
