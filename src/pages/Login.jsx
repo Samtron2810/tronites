@@ -9,6 +9,10 @@ const Login = () => {
   const { login, user, loading } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  // Server's rejection code ("ACCOUNT_BANNED"/"ACCOUNT_SUSPENDED") — when
+  // present we swap the generic failure toast for a dedicated inline
+  // panel so restricted users get a specific screen, not a vague error.
+  const [errorCode, setErrorCode] = useState(null);
   const [formData, setFormData] = useState({ identifier: "", password: "" });
 
   const handleChange = (e) =>
@@ -22,11 +26,13 @@ const Login = () => {
     e.preventDefault();
     if (isLoading) return;
     setIsLoading(true);
+    setErrorCode(null);
     try {
       await login(formData);
       toast.success("Welcome back!");
       setTimeout(() => navigate("/"), 800);
     } catch (error) {
+      setErrorCode(error.response?.data?.code || null);
       toast.error(error.response?.data?.message || "Login failed");
     } finally {
       setIsLoading(false);
@@ -66,9 +72,23 @@ const Login = () => {
           </div>
 
           <h2 className="text-2xl font-bold text-ink mb-1">Sign in</h2>
-          <p className="text-ink-muted text-sm mb-8">
-            Welcome back. Good to see you.
-          </p>
+          <p className="text-ink-muted text-sm mb-6">Welcome back. Good to see you.</p>
+
+          {(errorCode === "ACCOUNT_BANNED" ||
+            errorCode === "ACCOUNT_SUSPENDED") && (
+            <div className="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3">
+              <p className="text-sm font-semibold text-red-600 mb-0.5">
+                {errorCode === "ACCOUNT_BANNED"
+                  ? "Account banned"
+                  : "Account suspended"}
+              </p>
+              <p className="text-xs text-red-500 leading-relaxed">
+                {errorCode === "ACCOUNT_BANNED"
+                  ? "This account has been permanently banned and can no longer sign in."
+                  : "This account is temporarily suspended. You can sign in again once the suspension ends."}
+              </p>
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="relative">

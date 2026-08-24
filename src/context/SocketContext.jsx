@@ -4,6 +4,7 @@ import {
   useCallback,
 } from "react";
 import { io } from "socket.io-client";
+import toast from "react-hot-toast";
 import { useAuth } from "./useAuth";
 import api from "../services/api";
 import { SocketContext } from "./socketContextObject";
@@ -12,7 +13,7 @@ export const SocketProvider = ({ children }) => {
   const [socket, setSocket] = useState(null);
   const [onlineUsers, setOnlineUsers] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
 
   // Single source of truth for the navbar badge. Both the Navbar (on
   // mount / on socket events) and the Chat page (right after it marks
@@ -113,6 +114,20 @@ export const SocketProvider = ({ children }) => {
       newSocket.on("messageDeleted", onUnreadRefreshNeeded);
       newSocket.on("messagesRead", onUnreadRefreshNeeded);
 
+      // Phase 2: a moderator suspended/banned this account mid-session.
+      // The server has already revoked our refresh token(s) and drops this
+      // socket moments after emitting — surface WHY, then log out locally
+      // so the UI lands on the login screen instead of limping along on
+      // APIs that now 403 every call.
+      const onAccountRestricted = (payload = {}) => {
+        toast.error(
+          payload.message || "Your account has been restricted.",
+          { duration: 6000 },
+        );
+        logout();
+      };
+      newSocket.on("accountRestricted", onAccountRestricted);
+
       // Prime the badge on connect/login.
       // eslint-disable-next-line react-hooks/set-state-in-effect -- setState happens inside the async fn, not synchronously here
       refreshUnreadCount();
@@ -138,6 +153,7 @@ export const SocketProvider = ({ children }) => {
         newSocket.off("receiveMessage", onReceiveMessage);
         newSocket.off("messageDeleted", onUnreadRefreshNeeded);
         newSocket.off("messagesRead", onUnreadRefreshNeeded);
+        newSocket.off("accountRestricted", onAccountRestricted);
         safeDisconnect();
         setSocket(null);
         setOnlineUsers([]);

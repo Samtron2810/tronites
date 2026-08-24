@@ -3,6 +3,7 @@ import { Link, Navigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import MainLayout from "../layouts/MainLayout";
 import api from "../services/api";
+import ConfirmRestrictionModal from "../components/ConfirmRestrictionModal";
 import ReportContextModal from "../components/ReportContextModal";
 import { useAuth } from "../context/useAuth";
 import { FiExternalLink, FiCheck, FiX, FiInbox } from "react-icons/fi";
@@ -33,10 +34,18 @@ const STATUS_TABS = [
   { value: "all", label: "All" },
 ];
 
-const ReportCard = ({ report, onResolve }) => {
+const ReportCard = ({ report, onResolve, viewerRole, onRequestRestriction }) => {
   const [resolving, setResolving] = useState(false);
   const [note, setNote] = useState("");
   const [showNoteFor, setShowNoteFor] = useState(null); // "actioned" | "dismissed" | null
+
+  // Phase 2 quick-restriction data (user reports only). targetOwner is
+  // populated with banned/suspendedUntil/restrictionReason by listReports.
+  const owner = report.targetOwner;
+  const ownerSuspended =
+    !!owner?.suspendedUntil && new Date(owner.suspendedUntil) > new Date();
+  // Ban is admin-only server-side; hide the shortcut for moderators.
+  const canBanHere = viewerRole === "admin";
 
   const submitResolve = async (status) => {
     if (resolving) return;
@@ -186,6 +195,61 @@ const ReportCard = ({ report, onResolve }) => {
           )}
         </div>
       )}
+
+      {/* Phase 2 — user reports get one-tap restrict/restore shortcuts in
+          addition to Action/Dismiss. Ban only surfaces for admins (the
+          endpoint is requireAdmin regardless). */}
+      {report.status === "open" && report.targetType === "user" && (
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          {owner?.banned ? (
+            <>
+              <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-red-50 text-red-600">
+                banned
+              </span>
+              <button
+                onClick={() => onRequestRestriction(report, "unrestrict")}
+                className="text-xs font-semibold text-primary-700 border border-stroke hover:bg-primary-50 px-2.5 py-1 rounded-lg transition"
+              >
+                Restore access
+              </button>
+            </>
+          ) : (
+            <>
+              {ownerSuspended && (
+                <span
+                  className="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700"
+                  title={owner.restrictionReason || undefined}
+                >
+                  suspended until{" "}
+                  {new Date(owner.suspendedUntil).toLocaleDateString()}
+                </span>
+              )}
+              <button
+                onClick={() => onRequestRestriction(report, "suspend")}
+                className="text-xs font-medium text-amber-700 border border-amber-300 hover:bg-amber-50 px-2.5 py-1 rounded-lg transition"
+              >
+                {ownerSuspended ? "Adjust suspension…" : "Suspend…"}
+              </button>
+              {canBanHere && (
+                <button
+                  onClick={() => onRequestRestriction(report, "ban")}
+                  className="text-xs font-medium text-red-600 border border-red-300 hover:bg-red-50 px-2.5 py-1 rounded-lg transition"
+                >
+                  Ban…
+                </button>
+              )}
+            </>
+          )}
+          {!owner?.banned && !ownerSuspended && owner?.restrictionReason && (
+            <span
+              className="text-xs text-ink-muted italic truncate max-w-[16rem]"
+              title={owner.restrictionReason}
+            >
+              "{owner.restrictionReason}"
+            </span>
+          )}
+        </div>
+      )}
     </div>
   );
 };
@@ -199,6 +263,8 @@ const ModerationQueue = () => {
   const [totalPages, setTotalPages] = useState(1);
   // Report currently open in the in-queue context/preview modal.
   const [contextReport, setContextReport] = useState(null);
+  // { report, mode } — user-report restriction shortcut modal (Phase 2).
+  const [pendingUserRestriction, setPendingUserRestriction] = useState(null);
 
   const isModerator = user && ["moderator", "admin"].includes(user.role);
 
@@ -238,6 +304,45 @@ const ModerationQueue = () => {
     }
   };
 
+  // Phase 2 — suspend/ban/unrestrict straight from a user report card.
+  // Updates the card's targetOwner from the server DTO so chips flip
+  // without a refetch. Returns success so the modal closes only on win.
+  const handleConfirmUserRestriction = async ({ until, reason }) => {
+    if (!pendingUserRestriction) return false;
+    const { report, mode } = pendingUserRestriction;
+    const endpoint =
+      mode === "suspend" ? "suspend" : mode === "ban" ? "ban" : "unrestrict";
+    try {
+      const res = await api.put(
+        `/admin/users/${report.targetOwner._id}/${endpoint}`,
+        mode === "suspend"
+          ? { until: until.toISOString(), reason }
+          : mode === "ban"
+            ? { reason }
+            : {},
+      );
+      setReports((prev) =>
+        prev.map((r) =>
+          r._id === report._id ? { ...r, targetOwner: res.data.user } : r,
+        ),
+      );
+      toast.success(
+        mode === "suspend"
+          ? `Suspended until ${new Date(until).toLocaleString()}.`
+          : mode === "ban"
+            ? "Account banned."
+            : "Access restored.",
+      );
+      return true;
+    } catch (e) {
+      console.error(e);
+      toast.error(
+        e.response?.data?.message || "Couldn't update the restriction.",
+      );
+      return false;
+    }
+  };
+
   return (
     <MainLayout>
       {contextReport && (
@@ -250,6 +355,17 @@ const ModerationQueue = () => {
             // the resolved report from whatever tab is currently shown.
             setReports((prev) => prev.filter((r) => r._id !== resolvedId));
           }}
+        />
+      )}
+      {pendingUserRestriction && (
+        <ConfirmRestrictionModal
+          mode={pendingUserRestriction.mode}
+          targetUser={pendingUserRestriction.report.targetOwner}
+          onConfirm={async (payload) => {
+            const ok = await handleConfirmUserRestriction(payload);
+            if (ok) setPendingUserRestriction(null);
+          }}
+          onCancel={() => setPendingUserRestriction(null)}
         />
       )}
       <h1 className="text-xl font-bold text-ink mb-1">Moderation queue</h1>
@@ -288,7 +404,11 @@ const ModerationQueue = () => {
               key={r._id}
               report={r}
               onResolve={handleResolve}
+              viewerRole={user?.role}
               onView={(report) => setContextReport(report)}
+              onRequestRestriction={(report, mode) =>
+                setPendingUserRestriction({ report, mode })
+              }
             />
           ))}
         </div>

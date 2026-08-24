@@ -4,9 +4,10 @@ import toast from "react-hot-toast";
 import MainLayout from "../layouts/MainLayout";
 import api from "../services/api";
 import ConfirmRoleChangeModal from "../components/ConfirmRoleChangeModal";
+import ConfirmRestrictionModal from "../components/ConfirmRestrictionModal";
 import { useAuth } from "../context/useAuth";
 import defaultAvatar from "../assets/defaultAvatar";
-import { FiSearch, FiShield } from "react-icons/fi";
+import { FiSearch, FiShield, FiMoreVertical } from "react-icons/fi";
 
 const ROLE_TABS = [
   { value: "", label: "All" },
@@ -21,8 +22,34 @@ const ROLE_STYLES = {
   admin: "bg-red-50 text-red-600",
 };
 
-const RoleRow = ({ target, currentUserId, onRequestRoleChange }) => {
+const RoleRow = ({
+  target,
+  currentUserId,
+  viewerIsAdmin,
+  onRequestRoleChange,
+  onRequestRestriction,
+}) => {
   const isSelf = target._id === currentUserId;
+  const isSuspended =
+    !!target.suspendedUntil && new Date(target.suspendedUntil) > new Date();
+  const menuRef = useRef(null);
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  // Close the actions menu on outside click (PostCard's pattern).
+  useEffect(() => {
+    if (!menuOpen) return;
+    const handleClickOutside = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [menuOpen]);
+
+  // Restriction targets: never yourself, never admins — mirrors the
+  // backend guards so the menu simply doesn't offer impossible actions.
+  const canRestrict = !isSelf && target.role !== "admin";
 
   const handleChange = (e) => {
     const newRole = e.target.value;
@@ -50,6 +77,25 @@ const RoleRow = ({ target, currentUserId, onRequestRoleChange }) => {
       </div>
 
       <div className="flex items-center gap-2 shrink-0">
+        {target.banned && (
+          <span
+            className="text-xs font-semibold px-2 py-0.5 rounded-full bg-red-50 text-red-600"
+            title={target.restrictionReason || undefined}
+          >
+            banned
+          </span>
+        )}
+        {!target.banned && isSuspended && (
+          <span
+            className="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700"
+            title={
+              `${target.restrictionReason || "No reason recorded"} — ends ` +
+              new Date(target.suspendedUntil).toLocaleString()
+            }
+          >
+            until {new Date(target.suspendedUntil).toLocaleDateString()}
+          </span>
+        )}
         <span
           className={`text-xs font-semibold px-2 py-0.5 rounded-full ${ROLE_STYLES[target.role]}`}
         >
@@ -64,6 +110,60 @@ const RoleRow = ({ target, currentUserId, onRequestRoleChange }) => {
           <option value="moderator">moderator</option>
           <option value="admin">admin</option>
         </select>
+
+        {canRestrict && (
+          <div className="relative" ref={menuRef}>
+            <button
+              onClick={() => setMenuOpen((o) => !o)}
+              className="p-1.5 rounded-lg text-ink-muted hover:text-ink hover:bg-surface transition"
+              title="Account actions"
+              aria-label="Account actions"
+            >
+              <FiMoreVertical size={15} />
+            </button>
+
+            {menuOpen && (
+              <div className="absolute right-0 mt-2 w-40 bg-card rounded-lg shadow-lg border border-stroke z-40 py-1">
+                {target.banned ? (
+                  <button
+                    onClick={() => {
+                      setMenuOpen(false);
+                      onRequestRestriction(target, "unrestrict");
+                    }}
+                    className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-primary-700 hover:bg-surface transition"
+                  >
+                        <span className="font-medium">Restore access</span>
+                  </button>
+                ) : (
+                  <>
+                    <button
+                      onClick={() => {
+                        setMenuOpen(false);
+                        onRequestRestriction(target, "suspend");
+                      }}
+                      className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-ink-sub hover:bg-surface transition"
+                    >
+                      <span className="font-medium">
+                        {isSuspended ? "Adjust suspension…" : "Suspend…"}
+                      </span>
+                    </button>
+                    {viewerIsAdmin && (
+                      <button
+                        onClick={() => {
+                          setMenuOpen(false);
+                          onRequestRestriction(target, "ban");
+                        }}
+                        className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition"
+                      >
+                        <span className="font-medium">Ban permanently…</span>
+                      </button>
+                    )}
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -79,6 +179,9 @@ const AdminUsers = () => {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
   const [pendingRoleChange, setPendingRoleChange] = useState(null);
+  // { user, mode: "suspend" | "ban" | "unrestrict" } for the restriction
+  // confirm modal.
+  const [pendingRestriction, setPendingRestriction] = useState(null);
   const observerTarget = useRef(null);
 
   const isAdmin = user && user.role === "admin";
@@ -179,6 +282,46 @@ const AdminUsers = () => {
     setPendingRoleChange(null);
   };
 
+  // Suspend / ban / unrestrict — endpoint picked by mode. Returns true on
+  // success so the modal only closes when the action actually landed;
+  // row state updates from the server's DTO (single source of truth).
+  const handleConfirmRestriction = async ({ until, reason }) => {
+    if (!pendingRestriction) return false;
+    const { user: target, mode } = pendingRestriction;
+    const endpoint =
+      mode === "suspend" ? "suspend" : mode === "ban" ? "ban" : "unrestrict";
+    try {
+      const res = await api.put(`/admin/users/${target._id}/${endpoint}`,
+        mode === "suspend"
+          ? { until: until.toISOString(), reason }
+          : mode === "ban"
+            ? { reason }
+            : {},
+      );
+      setUsers((prev) =>
+        prev.map((u) => (u._id === target._id ? res.data.user : u)),
+      );
+      toast.success(
+        mode === "suspend"
+          ? `Suspended until ${new Date(until).toLocaleString()}.`
+          : mode === "ban"
+            ? "Account banned."
+            : "Access restored.",
+      );
+      return true;
+    } catch (e) {
+      console.error(e);
+      toast.error(
+        e.response?.data?.message || "Couldn't update the restriction.",
+      );
+      return false;
+    }
+  };
+
+  const handleRestrictionSettled = (closed) => {
+    if (closed) setPendingRestriction(null);
+  };
+
   return (
     <MainLayout>
       {pendingRoleChange && (
@@ -187,6 +330,17 @@ const AdminUsers = () => {
           newRole={pendingRoleChange.newRole}
           onConfirm={handleConfirmRoleChange}
           onCancel={() => setPendingRoleChange(null)}
+        />
+      )}
+      {pendingRestriction && (
+        <ConfirmRestrictionModal
+          mode={pendingRestriction.mode}
+          targetUser={pendingRestriction.user}
+          onConfirm={async (payload) => {
+            const ok = await handleConfirmRestriction(payload);
+            handleRestrictionSettled(ok);
+          }}
+          onCancel={() => setPendingRestriction(null)}
         />
       )}
       <div className="flex items-center gap-2 mb-1">
@@ -237,8 +391,12 @@ const AdminUsers = () => {
               key={u._id}
               target={u}
               currentUserId={user._id}
+              viewerIsAdmin={isAdmin}
               onRequestRoleChange={(target, newRole) =>
                 setPendingRoleChange({ user: target, newRole })
+              }
+              onRequestRestriction={(target, mode) =>
+                setPendingRestriction({ user: target, mode })
               }
             />
           ))}
