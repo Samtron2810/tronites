@@ -3,6 +3,7 @@ import { Link, Navigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import MainLayout from "../layouts/MainLayout";
 import api from "../services/api";
+import ReportContextModal from "../components/ReportContextModal";
 import { useAuth } from "../context/useAuth";
 import { FiExternalLink, FiCheck, FiX, FiInbox } from "react-icons/fi";
 
@@ -71,6 +72,11 @@ const ReportCard = ({ report, onResolve }) => {
                 {report.status}
               </span>
             )}
+            {report.contentRemoved && (
+              <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-red-50 text-red-600">
+                content removed
+              </span>
+            )}
           </div>
 
           <p className="text-sm text-ink mt-2">
@@ -107,15 +113,26 @@ const ReportCard = ({ report, onResolve }) => {
           </p>
         </div>
 
-        {report.linkable && report.linkTo && (
+        {/* User reports deep-link straight to the profile (a profile is
+            its own context — nothing to preview). Every other target type
+            opens the in-queue content modal, since there are no permalink
+            pages to link out to. */}
+        {report.targetType === "user" ? (
           <Link
-            to={report.linkTo}
+            to={`/profile/${report.targetOwner?._id || report.targetOwner}`}
             target="_blank"
             rel="noopener noreferrer"
             className="shrink-0 flex items-center gap-1 text-xs font-medium text-primary-600 hover:text-primary-800 px-2.5 py-1.5 rounded-lg border border-stroke hover:bg-primary-50 transition"
           >
             View <FiExternalLink size={12} />
           </Link>
+        ) : (
+          <button
+            onClick={() => onView(report)}
+            className="shrink-0 flex items-center gap-1 text-xs font-medium text-primary-600 hover:text-primary-800 px-2.5 py-1.5 rounded-lg border border-stroke hover:bg-primary-50 transition"
+          >
+            View <FiExternalLink size={12} />
+          </button>
         )}
       </div>
 
@@ -180,6 +197,8 @@ const ModerationQueue = () => {
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  // Report currently open in the in-queue context/preview modal.
+  const [contextReport, setContextReport] = useState(null);
 
   const isModerator = user && ["moderator", "admin"].includes(user.role);
 
@@ -221,6 +240,18 @@ const ModerationQueue = () => {
 
   return (
     <MainLayout>
+      {contextReport && (
+        <ReportContextModal
+          report={contextReport}
+          onClose={() => setContextReport(null)}
+          onResolved={(resolvedId) => {
+            setContextReport(null);
+            // Same list behavior as the inline quick-resolve path: drop
+            // the resolved report from whatever tab is currently shown.
+            setReports((prev) => prev.filter((r) => r._id !== resolvedId));
+          }}
+        />
+      )}
       <h1 className="text-xl font-bold text-ink mb-1">Moderation queue</h1>
       <p className="text-sm text-ink-muted mb-5">Reports from the community, newest last.</p>
 
@@ -253,7 +284,12 @@ const ModerationQueue = () => {
       ) : (
         <div className="space-y-3">
           {reports.map((r) => (
-            <ReportCard key={r._id} report={r} onResolve={handleResolve} />
+            <ReportCard
+              key={r._id}
+              report={r}
+              onResolve={handleResolve}
+              onView={(report) => setContextReport(report)}
+            />
           ))}
         </div>
       )}
