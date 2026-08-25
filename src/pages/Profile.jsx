@@ -17,6 +17,7 @@ import {
   FiFlag,
   FiBellOff,
   FiBell,
+  FiSettings,
 } from "react-icons/fi";
 import BlockUserModal from "../components/BlockUserModal";
 import defaultAvatar from "../assets/defaultAvatar";
@@ -289,6 +290,16 @@ const Profile = () => {
             </div>
 
             {/* Action buttons */}
+            {isOwnProfile && (
+              <Link
+                to="/settings"
+                className="mt-10 p-2 rounded-xl border border-stroke text-ink-muted hover:text-ink hover:bg-surface transition"
+                aria-label="Settings"
+                title="Settings"
+              >
+                <FiSettings size={18} />
+              </Link>
+            )}
 
             {!isOwnProfile && (
               <div className="flex gap-2 mt-10 relative">

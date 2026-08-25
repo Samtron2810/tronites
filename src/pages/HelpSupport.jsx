@@ -17,7 +17,11 @@ const FAQ_SECTIONS = [
     items: [
       {
         q: "How do I change my username?",
-        a: "Go to your profile, tap Edit profile, and update your username there. Usernames must be unique — if the one you want is taken, you'll be asked to pick another.",
+        a: "Your username is edited in Settings → Account. It's how people find you via mentions, search, and your profile link. It must be 3–20 characters using lowercase letters, numbers, and underscores, and it has to be unique — if the one you want is taken, you'll be asked to pick another. After changing it, you can only change it again once every 30 days.",
+      },
+      {
+        q: "How do I change my name?",
+        a: "Your display name is edited in Settings → Account. Both a first and last name are required, and this is the name shown on your profile and posts. After changing it, you can only change it again once every 3 days.",
       },
       {
         q: "How do I reset my password?",
