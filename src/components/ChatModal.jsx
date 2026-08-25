@@ -1,14 +1,13 @@
 import { Fragment, useEffect, useState } from "react";
 import {
   FiArrowLeft,
-  FiTrash2,
   FiImage,
   FiVideo,
   FiCheck,
-  FiFlag,
 } from "react-icons/fi";
 import ChatVideoMessage from "./ChatVideoMessage";
 import ReportModal from "./ReportModal";
+import MessageOptionsMenu from "./MessageOptionsMenu";
 import { FaCheckDouble } from "react-icons/fa";
 import defaultAvatar from "../assets/defaultAvatar";
 import {
@@ -278,24 +277,19 @@ const ChatModal = ({
                           {formatMessageTime(message.createdAt)}
                         </p>
                         {!isMine && (
-                          <button
-                            onClick={() => setReportingMessage(message)}
-                            title="Report message"
-                            aria-label="Report message"
-                            className="text-ink-muted hover:text-red-500 transition"
-                          >
-                            <FiFlag size={11} />
-                          </button>
+                          <MessageOptionsMenu
+                            isMine={false}
+                            anchor="left"
+                            onReport={() => setReportingMessage(message)}
+                          />
                         )}
                         {isMine && (
                           <>
-                            <button
-                              onClick={() => handleDeleteMessage(message._id)}
-                              disabled={isDeleting}
-                              className="text-ink-muted hover:text-red-500 transition disabled:opacity-40"
-                            >
-                              <FiTrash2 size={11} />
-                            </button>
+                            <MessageOptionsMenu
+                              isMine
+                              anchor="right"
+                              onDelete={() => handleDeleteMessage(message._id)}
+                            />
                             <span
                               className={
                                 message.read
