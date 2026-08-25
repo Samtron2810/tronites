@@ -124,7 +124,7 @@ const ChatModal = ({
         <div
           ref={messagesContainerRef}
           onScroll={onMessagesScroll}
-          className="flex-1 overflow-y-auto overflow-x-hidden min-w-0 px-4 py-4 space-y-3 bg-surface"
+          className="flex-1 overflow-y-auto overflow-x-hidden min-w-0 px-4 py-4 space-y-3 app-bg"
         >
           {isLoadingOlderMessages && (
             <p className="text-center text-[11px] text-ink-muted py-1">

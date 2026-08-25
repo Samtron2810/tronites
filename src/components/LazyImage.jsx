@@ -1,11 +1,6 @@
 import { useState, useEffect } from "react";
 import { FiImage } from "react-icons/fi";
 
-const toBlurPlaceholder = (url) => {
-  if (typeof url !== "string" || !url.includes("/upload/")) return null;
-  return url.replace("/upload/", "/upload/e_blur:1000,q_1,w_36/");
-};
-
 const LazyImage = ({
   src,
   alt,
@@ -15,12 +10,11 @@ const LazyImage = ({
 }) => {
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState(false);
-  const placeholder = toBlurPlaceholder(src);
 
   // When the same component is reused with a new src (e.g. the PostCard
   // carousel slides between images), reset so each image gets its own
-  // blur-up fade and a fresh loaded/error state instead of carrying over
-  // the previous slide's.
+  // fade-in and a fresh loaded/error state instead of carrying over the
+  // previous slide's.
   useEffect(() => {
     setLoaded(false);
     setError(false);
@@ -32,24 +26,25 @@ const LazyImage = ({
       style={aspectRatio ? { aspectRatio } : undefined}
     >
       {error ? (
-        // Failed to load — show a visible broken-image indicator instead
-        // of a permanently invisible <img> (which would otherwise never
-        // fire onLoad and stay opacity-0 forever).
+        // Failed to load — show a visible broken-image indicator. The real
+        // <img> below is always painted (never opacity-0), so a hard 404/
+        // quota failure reliably surfaces here rather than as a blank box.
         <div className="absolute inset-0 flex items-center justify-center text-ink-muted">
           <FiImage size={28} aria-hidden="true" />
           <span className="sr-only">Image failed to load</span>
         </div>
       ) : (
         <>
-          {placeholder && !loaded && (
-            <img
-              src={placeholder}
-              alt=""
+          {/* Loading state — a neutral loader behind the image until the
+              real pixels paint, so a still-loading image reads as
+              "loading" rather than a stuck blur or a flat gray slab. */}
+          {!loaded && (
+            <div
+              className="absolute inset-0 flex items-center justify-center"
               aria-hidden="true"
-              className={`absolute inset-0 w-full h-full ${className}`}
-              // Placeholder is decorative/interim only — never itself lazy,
-              // it needs to appear the instant the container mounts.
-            />
+            >
+              <div className="h-7 w-7 border-2 border-ink-muted border-t-transparent rounded-full animate-spin" />
+            </div>
           )}
           <img
             src={src}

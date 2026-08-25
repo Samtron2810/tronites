@@ -1,5 +1,5 @@
 const ProfileSkeleton = () => (
-  <div className="min-h-screen bg-surface">
+  <div className="min-h-screen app-bg">
     <div className="max-w-2xl mx-auto px-4 py-6 space-y-4">
       <div className="bg-card border border-stroke rounded-2xl overflow-hidden animate-pulse">
         <div className="h-24 bg-stroke" />

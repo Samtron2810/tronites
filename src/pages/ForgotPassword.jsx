@@ -48,7 +48,7 @@ const ForgotPassword = () => {
   };
 
   return (
-    <div className="min-h-screen bg-surface flex">
+    <div className="min-h-screen app-bg flex">
       {/* Left panel */}
       <div className="hidden lg:flex w-1/2 bg-primary-600 flex-col justify-between p-12">
         <span className="text-white font-bold text-2xl tracking-tight">
