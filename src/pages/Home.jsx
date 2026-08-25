@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import toast from "react-hot-toast";
 import MainLayout from "../layouts/MainLayout";
 import CreatePost from "../components/CreatePost";
@@ -6,48 +6,99 @@ import PostCard from "../components/PostCard";
 import PostSkeleton from "../components/PostSkeleton";
 import api from "../services/api";
 import { useSocket } from "../context/useSocket";
+import { HiOutlineSparkles } from "react-icons/hi2";
+import { FiClock } from "react-icons/fi";
+
+const TABS = [
+  { key: "following", label: "Following", icon: FiClock },
+  { key: "trending", label: "Trending", icon: HiOutlineSparkles },
+];
 
 const Home = () => {
-  const [posts, setPosts] = useState([]);
-  const [cursor, setCursor] = useState(null); // last post _id, or null for first page
+  const [tab, setTab] = useState("following"); // "following" | "trending"
+
+  // Each tab keeps fully independent feed/pagination state so switching
+  // back and forth never re-fetches or loses scroll-position-relevant
+  // data for the tab you're leaving.
+  const [feeds, setFeeds] = useState({
+    following: { posts: [], cursor: null, hasMore: true, loaded: false },
+    trending: { posts: [], cursor: null, hasMore: true, loaded: false },
+  });
   const [loading, setLoading] = useState(true);
-  const [hasMore, setHasMore] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const observerTarget = useRef(null);
   const { socket } = useSocket();
 
-  // isFirstPage distinguishes "reset to the top" (cursor=null on
-  // purpose) from "load more" (cursor=null because there's no cursor
-  // yet) — both look the same via the cursor value alone.
-  const fetchPosts = async (afterCursor, isFirstPage) => {
-    try {
-      if (isFirstPage) setLoading(true);
-      else setIsLoadingMore(true);
-      const res = await api.get("/posts/feed", {
-        params: { limit: 10, ...(afterCursor ? { before: afterCursor } : {}) },
-      });
-      if (isFirstPage) setPosts(res.data.posts);
-      else setPosts((prev) => [...prev, ...res.data.posts]);
-      setHasMore(res.data.hasMore);
-      setCursor(res.data.nextCursor);
-    } catch (e) {
-      console.error(e);
-      // Only surface a toast for "load more" failures — the initial load
-      // already has an empty-feed message in the UI, so a toast there
-      // would be redundant.
-      if (!isFirstPage) toast.error("Couldn't load more posts. Try again.");
-    } finally {
-      if (isFirstPage) setLoading(false);
-      else setIsLoadingMore(false);
-    }
-  };
+  const current = feeds[tab];
+
+  const fetchPosts = useCallback(
+    async (targetTab, afterCursor, isFirstPage) => {
+      try {
+        if (isFirstPage) setLoading(true);
+        else setIsLoadingMore(true);
+
+        const params =
+          targetTab === "trending"
+            ? {
+                limit: 10,
+                ...(afterCursor
+                  ? {
+                      afterScore: afterCursor.afterScore,
+                      afterId: afterCursor.afterId,
+                    }
+                  : {}),
+              }
+            : {
+                limit: 10,
+                ...(afterCursor ? { before: afterCursor } : {}),
+              };
+
+        const endpoint =
+          targetTab === "trending" ? "/posts/trending" : "/posts/feed";
+
+        const res = await api.get(endpoint, { params });
+
+        setFeeds((prev) => ({
+          ...prev,
+          [targetTab]: {
+            posts: isFirstPage
+              ? res.data.posts
+              : [...prev[targetTab].posts, ...res.data.posts],
+            cursor: res.data.nextCursor,
+            hasMore: res.data.hasMore,
+            loaded: true,
+          },
+        }));
+      } catch (e) {
+        console.error(e);
+        if (!isFirstPage) toast.error("Couldn't load more posts. Try again.");
+      } finally {
+        if (isFirstPage) setLoading(false);
+        else setIsLoadingMore(false);
+      }
+    },
+    [],
+  );
+
+  // Load a tab the first time it's opened; switching back later reuses
+  // what's already in state instead of re-fetching from scratch.
+  useEffect(() => {
+    if (!feeds[tab].loaded) fetchPosts(tab, null, true);
+    else setLoading(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab]);
 
   useEffect(() => {
     const target = observerTarget.current;
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && hasMore && !isLoadingMore && !loading)
-          fetchPosts(cursor, false);
+        if (
+          entries[0].isIntersecting &&
+          current.hasMore &&
+          !isLoadingMore &&
+          !loading
+        )
+          fetchPosts(tab, current.cursor, false);
       },
       { threshold: 0.1 },
     );
@@ -55,28 +106,69 @@ const Home = () => {
     return () => {
       if (target) observer.unobserve(target);
     };
-  }, [cursor, hasMore, isLoadingMore, loading]);
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch-on-mount
-    fetchPosts(null, true);
-  }, []);
+  }, [tab, current.cursor, current.hasMore, isLoadingMore, loading, fetchPosts]);
 
   useEffect(() => {
     if (!socket) return;
     const handleNewPost = (newPost) => {
-      setPosts((prev) =>
-        prev.some((p) => p._id === newPost._id) ? prev : [newPost, ...prev],
+      // New posts only prepend into the reverse-chronological Following
+      // feed — Trending is ranked by engagement/decay, so a brand new
+      // post belongs wherever its score lands, not at the top.
+      setFeeds((prev) =>
+        prev.following.posts.some((p) => p._id === newPost._id)
+          ? prev
+          : {
+              ...prev,
+              following: {
+                ...prev.following,
+                posts: [newPost, ...prev.following.posts],
+              },
+            },
       );
     };
     socket.on("newPost", handleNewPost);
     return () => socket.off("newPost", handleNewPost);
   }, [socket]);
 
+  const removePost = (id) => {
+    setFeeds((prev) => ({
+      following: {
+        ...prev.following,
+        posts: prev.following.posts.filter((p) => p._id !== id),
+      },
+      trending: {
+        ...prev.trending,
+        posts: prev.trending.posts.filter((p) => p._id !== id),
+      },
+    }));
+  };
+
   return (
     <MainLayout>
       <div className="space-y-4">
-        <CreatePost fetchPosts={() => fetchPosts(null, true)} />
+        <CreatePost fetchPosts={() => fetchPosts("following", null, true)} />
+
+        {/* Underline tab switcher — deliberately not the filled-pill
+            style Explore uses, so Home reads as its own surface. */}
+        <div className="flex border-b border-stroke">
+          {TABS.map(({ key, label, icon: Icon }) => (
+            <button
+              key={key}
+              onClick={() => setTab(key)}
+              className={`relative flex items-center gap-1.5 px-4 py-3 text-sm font-semibold transition ${
+                tab === key
+                  ? "text-primary-600"
+                  : "text-ink-muted hover:text-ink"
+              }`}
+            >
+              <Icon size={16} />
+              {label}
+              {tab === key && (
+                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary-600 rounded-full" />
+              )}
+            </button>
+          ))}
+        </div>
 
         {loading && (
           <>
@@ -86,7 +178,7 @@ const Home = () => {
         )}
 
         {!loading &&
-          posts.map((post) => (
+          current.posts.map((post) => (
             <PostCard
               key={post._id}
               postId={post._id}
@@ -104,20 +196,22 @@ const Home = () => {
               isBookmarked={post.isBookmarked}
               edited={post.edited}
               editedAt={post.editedAt}
-              onDelete={(id) =>
-                setPosts((prev) => prev.filter((p) => p._id !== id))
-              }
+              onDelete={removePost}
             />
           ))}
 
-        {!loading && posts.length === 0 && (
+        {!loading && current.posts.length === 0 && (
           <div className="bg-card border border-stroke rounded-2xl p-10 text-center">
-            <p className="text-2xl mb-2">👋</p>
+            <p className="text-2xl mb-2">{tab === "trending" ? "✨" : "👋"}</p>
             <h2 className="text-base font-semibold text-ink">
-              Your feed is empty
+              {tab === "trending"
+                ? "Nothing trending yet"
+                : "Your feed is empty"}
             </h2>
             <p className="text-sm text-ink-muted mt-1">
-              Follow users to start seeing posts.
+              {tab === "trending"
+                ? "Check back once posts start getting engagement."
+                : "Follow users to start seeing posts."}
             </p>
           </div>
         )}
@@ -129,7 +223,7 @@ const Home = () => {
               <PostSkeleton />
             </>
           )}
-          {!hasMore && posts.length > 0 && (
+          {!current.hasMore && current.posts.length > 0 && (
             <p className="text-xs text-ink-muted">You're all caught up</p>
           )}
         </div>

@@ -8,6 +8,7 @@ import {
 import ChatVideoMessage from "./ChatVideoMessage";
 import ReportModal from "./ReportModal";
 import MessageOptionsMenu from "./MessageOptionsMenu";
+import TextWithLinks from "./TextWithLinks";
 import { FaCheckDouble } from "react-icons/fa";
 import defaultAvatar from "../assets/defaultAvatar";
 import {
@@ -264,7 +265,14 @@ const ChatModal = ({
                               : "bg-card text-ink self-start rounded-bl-sm border border-stroke"
                           }`}
                         >
-                          {message.text}
+                          <TextWithLinks
+                            text={message.text}
+                            linkClassName={
+                              isMine
+                                ? "underline text-white/90 hover:text-white font-medium"
+                                : "text-primary-600 font-medium hover:underline"
+                            }
+                          />
                         </div>
                       )}
                       <div
