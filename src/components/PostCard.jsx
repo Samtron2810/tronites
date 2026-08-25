@@ -864,11 +864,6 @@ const PostCard = ({
               src={media[activeSlide]}
               alt={`post-${activeSlide + 1}`}
               className="max-h-96 object-contain"
-              // First slide of the first visible image in a post is
-              // typically already in/near the viewport when the feed
-              // renders it — no point deferring that one. Every slide
-              // reached by swiping afterward still lazy-loads normally.
-              eager={activeSlide === 0}
             />
 
             {media.length > 1 && (

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { FiImage } from "react-icons/fi";
 
 const LazyImage = ({
@@ -6,19 +6,20 @@ const LazyImage = ({
   alt,
   className = "",
   aspectRatio,
-  eager = false,
 }) => {
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState(false);
-
-  // When the same component is reused with a new src (e.g. the PostCard
-  // carousel slides between images), reset so each image gets its own
-  // fade-in and a fresh loaded/error state instead of carrying over the
-  // previous slide's.
-  useEffect(() => {
+  // Remembers the last src this instance rendered, so that when the same
+  // component is reused with a new src (e.g. the PostCard carousel slides
+  // between images) we reset loading/error during render — the React-blessed
+  // "adjust state when props change" pattern instead of a setState-in-effect
+  // cascade.
+  const [lastSrc, setLastSrc] = useState(src);
+  if (lastSrc !== src) {
+    setLastSrc(src);
     setLoaded(false);
     setError(false);
-  }, [src]);
+  }
 
   return (
     <div
@@ -49,13 +50,16 @@ const LazyImage = ({
           <img
             src={src}
             alt={alt}
-            loading={eager ? "eager" : "lazy"}
+            // Always loaded eagerly. The videos in this app stream the same
+            // way and load reliably; native `loading="lazy"` proved flaky here
+            // (browser deferred the fetch for images it deemed not-yet-in
+            // viewport, so onLoad never fired and posts stuck on the loader),
+            // even though the URLs themselves verify fine in a new tab.
+            loading="eager"
             decoding="async"
             onLoad={() => setLoaded(true)}
             onError={() => setError(true)}
-            className={`relative w-full transition-opacity duration-300 ${
-              loaded ? "opacity-100" : "opacity-0"
-            } ${className}`}
+            className={`relative w-full ${className}`}
           />
         </>
       )}
