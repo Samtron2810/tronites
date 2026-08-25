@@ -7,6 +7,7 @@ import { useAuth } from "../context/useAuth";
 import { useTheme } from "../context/useTheme";
 import DeleteAccountModal from "../components/DeleteAccountModal";
 import ExportDataModal from "../components/ExportDataModal";
+import AccountIdentitySection from "../components/AccountIdentitySection";
 import { Link } from "react-router-dom";
 import {
   FiEye,
@@ -139,7 +140,9 @@ const Settings = () => {
         Manage your privacy and account preferences.
       </p>
 
-      <section className="bg-card border border-stroke rounded-2xl p-5">
+      <AccountIdentitySection />
+
+      <section className="bg-card border border-stroke rounded-2xl p-5 mt-4">
         <h2 className="text-sm font-semibold text-ink mb-1">Appearance</h2>
         <p className="text-sm text-ink-muted mb-4">
           Choose between light and dark mode. Your choice is saved on this

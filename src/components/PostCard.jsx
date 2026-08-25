@@ -20,6 +20,8 @@ import api from "../services/api";
 import { useAuth } from "../context/useAuth";
 import DeletePostModal from "./DeletePostModal";
 import ReportModal from "./ReportModal";
+import CommentOptionsMenu from "./CommentOptionsMenu";
+import ConfirmDeleteModal from "./ConfirmDeleteModal";
 import { useSocket } from "../context/useSocket";
 import TextWithLinks from "./TextWithLinks";
 import useMentionAutocomplete from "../hooks/useMentionAutocomplete";
@@ -94,6 +96,13 @@ const PostCard = ({
   // { type: "comment" | "reply", id }. Own content never exposes a
   // trigger, and the backend rejects self-reports regardless.
   const [reportTarget, setReportTarget] = useState(null);
+  // Comment/reply delete now goes through a confirmation modal instead
+  // of firing immediately on click (post delete already worked this
+  // way via showDeleteModal — this brings comments in line). Shape
+  // mirrors reportTarget: null | { type: "comment" | "reply", id,
+  // parentCommentId? } — parentCommentId only present for replies, so
+  // handleConfirmDelete knows which delete handler to call.
+  const [deleteCommentTarget, setDeleteCommentTarget] = useState(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
   const triggerRef = useRef(null);
@@ -351,6 +360,23 @@ const PostCard = ({
     } finally {
       setCommentDeletingId(null);
     }
+  };
+
+  // Single confirm handler for the ConfirmDeleteModal — routes to the
+  // existing comment or reply delete logic above based on which target
+  // was set when the menu's Delete item was clicked. Modal itself has no
+  // idea whether it's deleting a comment or reply.
+  const handleConfirmDeleteComment = async () => {
+    if (!deleteCommentTarget) return;
+    if (deleteCommentTarget.type === "reply") {
+      await handleDeleteReply(
+        deleteCommentTarget.id,
+        deleteCommentTarget.parentCommentId,
+      );
+    } else {
+      await handleDeleteComment(deleteCommentTarget.id);
+    }
+    setDeleteCommentTarget(null);
   };
 
   const handleLike = async () => {
@@ -635,6 +661,15 @@ const PostCard = ({
           }
           onConfirm={handleReportSubmit}
           onCancel={() => setReportTarget(null)}
+        />
+      )}
+
+      {deleteCommentTarget && (
+        <ConfirmDeleteModal
+          title={deleteCommentTarget.type === "reply" ? "Delete Reply" : "Delete Comment"}
+          message={`Are you sure you want to delete this ${deleteCommentTarget.type === "reply" ? "reply" : "comment"}? This action cannot be undone.`}
+          onConfirm={handleConfirmDeleteComment}
+          onCancel={() => setDeleteCommentTarget(null)}
         />
       )}
 
@@ -964,25 +999,15 @@ const PostCard = ({
                         </span>
                       )}
                     </div>
-                    {c.user._id === currentUser?._id && (
-                      <button
-                        onClick={() => handleDeleteComment(c._id)}
-                        disabled={commentDeletingId === c._id}
-                        className="text-xs text-ink-muted hover:text-red-500 transition disabled:opacity-50"
-                      >
-                        {commentDeletingId === c._id ? "..." : "Delete"}
-                      </button>
-                    )}
-                    {c.user._id !== currentUser?._id && (
-                      <button
-                        onClick={() =>
-                          setReportTarget({ type: "comment", id: c._id })
-                        }
-                        className="text-xs text-ink-muted hover:text-amber-500 transition"
-                      >
-                        Report
-                      </button>
-                    )}
+                    <CommentOptionsMenu
+                      isOwner={c.user._id === currentUser?._id}
+                      onDelete={() =>
+                        setDeleteCommentTarget({ type: "comment", id: c._id })
+                      }
+                      onReport={() =>
+                        setReportTarget({ type: "comment", id: c._id })
+                      }
+                    />
                   </div>
                   <p className="text-xs text-ink-sub mt-0.5">
                     <TextWithLinks text={c.text} />
@@ -1089,29 +1114,19 @@ const PostCard = ({
                                   </span>
                                 )}
                               </div>
-                              {r.user._id === currentUser?._id && (
-                                <button
-                                  onClick={() =>
-                                    handleDeleteReply(r._id, c._id)
-                                  }
-                                  disabled={commentDeletingId === r._id}
-                                  className="text-xs text-ink-muted hover:text-red-500 transition disabled:opacity-50"
-                                >
-                                  {commentDeletingId === r._id
-                                    ? "..."
-                                    : "Delete"}
-                                </button>
-                              )}
-                              {r.user._id !== currentUser?._id && (
-                                <button
-                                  onClick={() =>
-                                    setReportTarget({ type: "reply", id: r._id })
-                                  }
-                                  className="text-xs text-ink-muted hover:text-amber-500 transition"
-                                >
-                                  Report
-                                </button>
-                              )}
+                              <CommentOptionsMenu
+                                isOwner={r.user._id === currentUser?._id}
+                                onDelete={() =>
+                                  setDeleteCommentTarget({
+                                    type: "reply",
+                                    id: r._id,
+                                    parentCommentId: c._id,
+                                  })
+                                }
+                                onReport={() =>
+                                  setReportTarget({ type: "reply", id: r._id })
+                                }
+                              />
                             </div>
                             <p className="text-xs text-ink-sub mt-0.5">
                               <TextWithLinks text={r.text} />
