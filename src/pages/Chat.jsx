@@ -308,6 +308,7 @@ const Chat = () => {
             : message.images?.length || message.image
               ? "📷 Photo(s)"
               : "",
+        lastMessageFromMe: message.sender._id === user._id,
         lastMessageAt: message.createdAt,
         unreadCount: incrementUnread
           ? (existing?.unreadCount || 0) + 1
@@ -874,7 +875,9 @@ const Chat = () => {
                         <p className="text-xs text-ink-muted truncate">
                           {isPendingSent
                             ? "Message request sent"
-                            : conv.lastMessage}
+                            : conv.lastMessageFromMe
+                              ? `You: ${conv.lastMessage}`
+                              : conv.lastMessage}
                         </p>
                       </div>
                     </div>
