@@ -27,6 +27,7 @@ import TextWithLinks from "./TextWithLinks";
 import useMentionAutocomplete from "../hooks/useMentionAutocomplete";
 import MentionSuggestions from "./MentionSuggestions";
 import defaultAvatar from "../assets/defaultAvatar";
+import LazyImage from "./LazyImage";
 
 const PostCard = ({
   postId,
@@ -666,7 +667,11 @@ const PostCard = ({
 
       {deleteCommentTarget && (
         <ConfirmDeleteModal
-          title={deleteCommentTarget.type === "reply" ? "Delete Reply" : "Delete Comment"}
+          title={
+            deleteCommentTarget.type === "reply"
+              ? "Delete Reply"
+              : "Delete Comment"
+          }
           message={`Are you sure you want to delete this ${deleteCommentTarget.type === "reply" ? "reply" : "comment"}? This action cannot be undone.`}
           onConfirm={handleConfirmDeleteComment}
           onCancel={() => setDeleteCommentTarget(null)}
@@ -855,10 +860,15 @@ const PostCard = ({
         {/* Media carousel */}
         {media.length > 0 && (
           <div className="mt-4 relative rounded-xl overflow-hidden bg-surface">
-            <img
+            <LazyImage
               src={media[activeSlide]}
               alt={`post-${activeSlide + 1}`}
-              className="w-full max-h-96 object-contain bg-surface"
+              className="max-h-96 object-contain"
+              // First slide of the first visible image in a post is
+              // typically already in/near the viewport when the feed
+              // renders it — no point deferring that one. Every slide
+              // reached by swiping afterward still lazy-loads normally.
+              eager={activeSlide === 0}
             />
 
             {media.length > 1 && (
