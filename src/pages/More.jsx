@@ -69,14 +69,14 @@ const More = () => {
     <MainLayout>
       <button
         onClick={handleBack}
-        className="inline-flex items-center gap-1.5 text-sm font-medium text-ink-muted hover:text-ink mb-4 transition"
+        className="inline-flex items-center gap-1.5 text-base font-medium text-ink-muted hover:text-ink mb-4 transition"
       >
         <FaArrowLeft size={13} />
         Back
       </button>
 
-      <h1 className="text-xl font-bold text-ink mb-1">More</h1>
-      <p className="text-sm text-ink-muted mb-6">
+      <h1 className="text-2xl font-bold text-ink mb-1">More</h1>
+      <p className="text-base text-ink-muted mb-6">
         Support, legal info, and other tools.
       </p>
 
@@ -96,7 +96,7 @@ const More = () => {
               </div>
               <div className="flex-1 min-w-0">
                 <p
-                  className={`text-sm font-semibold ${
+                  className={`text-base font-semibold ${
                     tile.disabled ? "text-ink-muted" : "text-ink"
                   }`}
                 >
@@ -107,7 +107,7 @@ const More = () => {
                     </span>
                   )}
                 </p>
-                <p className="text-xs text-ink-muted mt-0.5 truncate">
+                <p className="text-sm text-ink-muted mt-0.5 truncate">
                   {tile.description}
                 </p>
               </div>

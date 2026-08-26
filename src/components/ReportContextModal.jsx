@@ -49,7 +49,7 @@ const toPostCardProps = (post) => ({
   privacy: post.privacy,
 });
 
-// Compact READ-ONLY thread window around a flagged message — mirrors
+// Compact READ-ONLY thread window around a flagged message â€” mirrors
 // ChatModal's visual language minus all composer/interactivity (this is
 // evidence viewing, not conversation). The flagged author's bubbles sit
 // on the right so the moderator reads from the reported person's side;
@@ -135,7 +135,7 @@ const MessageThreadView = ({ messages, flaggedId }) => {
                 })()}
                 {message.text && (
                   <div
-                    className={`px-3.5 py-2 rounded-2xl text-sm whitespace-pre-wrap ${
+                    className={`px-3.5 py-2 rounded-2xl text-base whitespace-pre-wrap ${
                       onRight
                         ? "bg-primary-600 text-white self-end rounded-br-sm"
                         : "bg-card text-ink self-start rounded-bl-sm border border-stroke"
@@ -233,17 +233,17 @@ const ReportContextModal = ({ report, onClose, onResolved }) => {
         {/* Header */}
         <div className="flex items-start justify-between gap-3 px-5 py-4 border-b border-stroke shrink-0">
           <div className="min-w-0">
-            <h2 className="text-base font-semibold text-ink">Review report</h2>
+            <h2 className="text-lg font-semibold text-ink">Review report</h2>
             <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-              <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-primary-50 text-primary-700">
+              <span className="text-sm font-semibold px-2 py-0.5 rounded-full bg-primary-50 text-primary-700">
                 {TARGET_TYPE_LABELS[report.targetType]}
               </span>
-              <span className="text-xs text-ink-muted">
+              <span className="text-sm text-ink-muted">
                 {REASON_LABELS[report.reason] || report.reason}
               </span>
               {report.status !== "open" && (
                 <span
-                  className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+                  className={`text-sm font-semibold px-2 py-0.5 rounded-full ${
                     report.status === "actioned"
                       ? "bg-red-50 text-red-600"
                       : "bg-gray-100 text-gray-500"
@@ -265,7 +265,7 @@ const ReportContextModal = ({ report, onClose, onResolved }) => {
 
         {/* Body */}
         <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4 min-h-0">
-          <div className="text-sm text-ink-sub space-y-1">
+          <div className="text-base text-ink-sub space-y-1">
             <p>
               Reported by{" "}
               <span className="font-medium text-ink">
@@ -278,18 +278,18 @@ const ReportContextModal = ({ report, onClose, onResolved }) => {
             </p>
             {report.details && <p className="italic">"{report.details}"</p>}
             {report.resolutionNote && (
-              <p className="text-xs text-ink-muted">
+              <p className="text-sm text-ink-muted">
                 Resolution note: {report.resolutionNote}
               </p>
             )}
           </div>
 
           {loading && (
-            <p className="text-sm text-ink-muted py-6 text-center">Loading…</p>
+            <p className="text-base text-ink-muted py-6 text-center">Loadingâ€¦</p>
           )}
 
           {!loading && loadError && (
-            <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+            <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-base text-red-600">
               {loadError}
             </div>
           )}
@@ -310,10 +310,10 @@ const ReportContextModal = ({ report, onClose, onResolved }) => {
                     {new Date(ctx.comment.createdAt).toLocaleString()}
                   </span>
                 </div>
-                <p className="text-xs font-semibold text-ink mt-1.5">
+                <p className="text-sm font-semibold text-ink mt-1.5">
                   {ctx.comment.user?.name}
                 </p>
-                <p className="text-sm text-ink-sub mt-0.5">
+                <p className="text-base text-ink-sub mt-0.5">
                   <TextWithLinks text={ctx.comment.text} />
                 </p>
               </div>
@@ -333,14 +333,14 @@ const ReportContextModal = ({ report, onClose, onResolved }) => {
             !ctx.post &&
             !ctx.comment &&
             !ctx.messages && (
-              <p className="text-sm text-ink-muted py-4 text-center">
-                User reports are reviewed on the profile page — no extra
+              <p className="text-base text-ink-muted py-4 text-center">
+                User reports are reviewed on the profile page â€” no extra
                 content to preview here.
               </p>
             )}
         </div>
 
-        {/* Footer actions — open reports only; resolved ones are view-only */}
+        {/* Footer actions â€” open reports only; resolved ones are view-only */}
         {isOpenReport && (
           <div className="border-t border-stroke px-5 py-4 space-y-3 shrink-0">
             <textarea
@@ -348,7 +348,7 @@ const ReportContextModal = ({ report, onClose, onResolved }) => {
               onChange={(e) => setNote(e.target.value.slice(0, 500))}
               placeholder="Optional note (visible only to moderators)"
               rows={2}
-              className="w-full rounded-xl border border-stroke px-3 py-2 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-primary-300 resize-none"
+              className="w-full rounded-xl border border-stroke px-3 py-2 text-base text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-primary-300 resize-none"
             />
             {confirmingRemove ? (
               <div className="space-y-2.5">
@@ -357,9 +357,9 @@ const ReportContextModal = ({ report, onClose, onResolved }) => {
                     className="text-red-500 shrink-0 mt-0.5"
                     size={15}
                   />
-                  <p className="text-xs text-red-600 leading-relaxed">
+                  <p className="text-sm text-red-600 leading-relaxed">
                     This will hide the {targetLabel} from everyone on
-                    Tronites. The author keeps their account — only this{" "}
+                    Tronites. The author keeps their account â€” only this{" "}
                     {targetLabel} is removed.
                   </p>
                 </div>
@@ -367,7 +367,7 @@ const ReportContextModal = ({ report, onClose, onResolved }) => {
                   <button
                     onClick={() => setConfirmingRemove(false)}
                     disabled={submitting}
-                    className="px-3.5 py-2 rounded-lg text-xs font-medium text-ink-sub border border-stroke hover:bg-surface transition disabled:opacity-50"
+                    className="px-3.5 py-2 rounded-lg text-sm font-medium text-ink-sub border border-stroke hover:bg-surface transition disabled:opacity-50"
                   >
                     Back
                   </button>
@@ -376,7 +376,7 @@ const ReportContextModal = ({ report, onClose, onResolved }) => {
                       submitResolve({ status: "actioned", removeContent: true })
                     }
                     disabled={submitting}
-                    className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold text-white bg-red-500 hover:bg-red-600 transition disabled:opacity-60"
+                    className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-semibold text-white bg-red-500 hover:bg-red-600 transition disabled:opacity-60"
                   >
                     <FiTrash2 size={13} />
                     {submitting ? "..." : "Confirm & remove"}
@@ -388,16 +388,16 @@ const ReportContextModal = ({ report, onClose, onResolved }) => {
                 <button
                   onClick={() => submitResolve({ status: "dismissed" })}
                   disabled={submitting}
-                  className="px-3.5 py-2 rounded-lg text-xs font-semibold text-ink-sub border border-stroke hover:bg-surface transition disabled:opacity-50"
+                  className="px-3.5 py-2 rounded-lg text-sm font-semibold text-ink-sub border border-stroke hover:bg-surface transition disabled:opacity-50"
                 >
                   Dismiss
                 </button>
                 <button
                   onClick={() => setConfirmingRemove(true)}
                   disabled={submitting}
-                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold text-white bg-red-500 hover:bg-red-600 transition disabled:opacity-50"
+                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-semibold text-white bg-red-500 hover:bg-red-600 transition disabled:opacity-50"
                 >
-                  <FiTrash2 size={13} /> Remove content…
+                  <FiTrash2 size={13} /> Remove contentâ€¦
                 </button>
               </div>
             )}

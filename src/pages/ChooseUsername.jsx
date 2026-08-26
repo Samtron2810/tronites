@@ -110,17 +110,17 @@ const ChooseUsername = () => {
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-primary-100 mb-4">
-            <FiHash className="text-primary-600 text-2xl" />
+            <FiHash className="text-primary-600 text-3xl" />
           </div>
-          <h2 className="text-2xl font-bold text-ink">Choose your username</h2>
-          <p className="text-ink-muted text-sm mt-1">
+          <h2 className="text-3xl font-bold text-ink">Choose your username</h2>
+          <p className="text-ink-muted text-base mt-1">
             This is how people will find and mention you
           </p>
         </div>
 
         <div className="bg-card border border-stroke rounded-2xl p-6 shadow-sm space-y-4">
           <div className="relative">
-            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-muted text-sm font-medium">
+            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-muted text-base font-medium">
               @
             </span>
             <input
@@ -133,19 +133,19 @@ const ChooseUsername = () => {
               maxLength={20}
               autoFocus
               onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
-              className="w-full pl-8 pr-10 py-3 rounded-xl border border-stroke bg-surface text-ink text-sm outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100 transition"
+              className="w-full pl-8 pr-10 py-3 rounded-xl border border-stroke bg-surface text-ink text-base outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100 transition"
             />
             <span className="absolute right-3 top-1/2 -translate-y-1/2">
               {statusIcon}
             </span>
           </div>
 
-          <p className={`text-xs ${statusColor}`}>{statusMessage}</p>
+          <p className={`text-sm ${statusColor}`}>{statusMessage}</p>
 
           <button
             onClick={handleSubmit}
             disabled={status !== "available" || submitting}
-            className="w-full bg-primary-600 hover:bg-primary-800 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-xl text-sm transition-all duration-200 shadow-sm"
+            className="w-full bg-primary-600 hover:bg-primary-800 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-xl text-base transition-all duration-200 shadow-sm"
           >
             {submitting ? "Saving..." : "Continue"}
           </button>
@@ -153,7 +153,7 @@ const ChooseUsername = () => {
           <button
             onClick={handleCancel}
             disabled={cancelling || submitting}
-            className="w-full flex items-center justify-center gap-2 text-ink-muted hover:text-red-500 text-xs font-medium py-2 transition disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full flex items-center justify-center gap-2 text-ink-muted hover:text-red-500 text-sm font-medium py-2 transition disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <FiLogOut size={13} />
             {cancelling ? "Signing out..." : "Cancel and sign out"}

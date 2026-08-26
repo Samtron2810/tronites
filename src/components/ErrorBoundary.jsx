@@ -19,14 +19,14 @@ class ErrorBoundary extends React.Component {
       return (
         <div className="min-h-screen app-bg flex items-center justify-center px-6">
           <div className="bg-card rounded-2xl shadow-lg p-8 max-w-lg text-center">
-            <h1 className="text-2xl font-bold text-red-600 mb-3">
+            <h1 className="text-3xl font-bold text-red-600 mb-3">
               Something went wrong
             </h1>
             <p className="text-gray-600 mb-2">
               Tronites encountered an unexpected error.
             </p>
             {import.meta.env.DEV && this.state.error && (
-              <pre className="text-left text-xs bg-gray-100 p-3 rounded overflow-auto mt-3">
+              <pre className="text-left text-sm bg-gray-100 p-3 rounded overflow-auto mt-3">
                 {this.state.error.toString()}
               </pre>
             )}

@@ -19,7 +19,7 @@ const ResetPassword = () => {
 
   // Same pattern as VerifyOtp: router state is the primary source;
   // sessionStorage is only a fallback so a page refresh doesn't strand
-  // someone mid-flow. Neither is a security control — the server
+  // someone mid-flow. Neither is a security control â€” the server
   // enforces everything via the challengeId.
   const [challengeId] = useState(
     () =>
@@ -38,7 +38,7 @@ const ResetPassword = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isResending, setIsResending] = useState(false);
 
-  // No challenge in progress — send them back to start a real flow.
+  // No challenge in progress â€” send them back to start a real flow.
   useEffect(() => {
     if (!challengeId) {
       toast.error("Please start by requesting a password reset.");
@@ -47,7 +47,7 @@ const ResetPassword = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Already signed in — nothing to recover.
+  // Already signed in â€” nothing to recover.
   useEffect(() => {
     if (!loading && user) navigate("/");
   }, [loading, user, navigate]);
@@ -103,14 +103,14 @@ const ResetPassword = () => {
     <div className="min-h-screen app-bg flex">
       {/* Left panel */}
       <div className="hidden lg:flex w-1/2 bg-primary-600 flex-col justify-between p-12">
-        <span className="text-white font-bold text-2xl tracking-tight">
+        <span className="text-white font-bold text-3xl tracking-tight">
           Tron<span className="text-primary-200">ites</span>
         </span>
         <div>
-          <p className="text-primary-100 text-4xl font-bold leading-tight max-w-xs">
+          <p className="text-primary-100 text-5xl font-bold leading-tight max-w-xs">
             Almost there.
           </p>
-          <p className="text-primary-200 mt-4 text-base leading-relaxed max-w-sm">
+          <p className="text-primary-200 mt-4 text-lg leading-relaxed max-w-sm">
             Enter the code we sent you, then choose a new password.
           </p>
         </div>
@@ -125,20 +125,20 @@ const ResetPassword = () => {
       <div className="flex-1 flex items-center justify-center px-6 py-12">
         <div className="w-full max-w-sm">
           <div className="lg:hidden mb-8 text-center">
-            <span className="text-ink font-bold text-3xl">
+            <span className="text-ink font-bold text-4xl">
               Tron<span className="text-primary-600">ites</span>
             </span>
           </div>
 
           <div className="text-center mb-6">
             <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-primary-100 mb-4">
-              <FiMail className="text-primary-600 text-2xl" />
+              <FiMail className="text-primary-600 text-3xl" />
             </div>
-            <h2 className="text-2xl font-bold text-ink">Check your email</h2>
-            <p className="text-ink-muted text-sm mt-1">
+            <h2 className="text-3xl font-bold text-ink">Check your email</h2>
+            <p className="text-ink-muted text-base mt-1">
               We sent a 6-digit code to
             </p>
-            <p className="text-ink font-semibold text-sm mt-0.5 break-all">
+            <p className="text-ink font-semibold text-base mt-0.5 break-all">
               {email}
             </p>
           </div>
@@ -150,11 +150,11 @@ const ResetPassword = () => {
               value={otp}
               onChange={(e) => setOtp(e.target.value)}
               maxLength={6}
-              className="w-full px-4 py-3 rounded-xl border border-stroke bg-surface text-ink text-sm tracking-widest text-center placeholder:tracking-normal placeholder:text-ink-muted outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100 transition"
+              className="w-full px-4 py-3 rounded-xl border border-stroke bg-surface text-ink text-base tracking-widest text-center placeholder:tracking-normal placeholder:text-ink-muted outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100 transition"
             />
 
             <div className="relative">
-              <FiLock className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted text-sm" />
+              <FiLock className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted text-base" />
               <input
                 type={showPassword ? "text" : "password"}
                 placeholder="New password"
@@ -162,7 +162,7 @@ const ResetPassword = () => {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 minLength={10}
-                className="w-full pl-9 pr-10 py-3 rounded-xl border border-stroke bg-surface text-ink text-sm placeholder:text-ink-muted outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100 transition"
+                className="w-full pl-9 pr-10 py-3 rounded-xl border border-stroke bg-surface text-ink text-base placeholder:text-ink-muted outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100 transition"
               />
               <button
                 type="button"
@@ -172,12 +172,12 @@ const ResetPassword = () => {
                 {showPassword ? <FiEyeOff size={15} /> : <FiEye size={15} />}
               </button>
             </div>
-            <p className="text-xs text-ink-muted -mt-3 pl-1">
+            <p className="text-sm text-ink-muted -mt-3 pl-1">
               At least 10 characters.
             </p>
 
             <div className="relative">
-              <FiLock className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted text-sm" />
+              <FiLock className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted text-base" />
               <input
                 type={showConfirm ? "text" : "password"}
                 placeholder="Confirm new password"
@@ -185,7 +185,7 @@ const ResetPassword = () => {
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
                 minLength={10}
-                className="w-full pl-9 pr-10 py-3 rounded-xl border border-stroke bg-surface text-ink text-sm placeholder:text-ink-muted outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100 transition"
+                className="w-full pl-9 pr-10 py-3 rounded-xl border border-stroke bg-surface text-ink text-base placeholder:text-ink-muted outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100 transition"
               />
               <button
                 type="button"
@@ -196,7 +196,7 @@ const ResetPassword = () => {
               </button>
             </div>
             {confirmPassword.length > 0 && !passwordsMatch && (
-              <p className="text-xs text-red-500 -mt-3 pl-1">
+              <p className="text-sm text-red-500 -mt-3 pl-1">
                 Passwords do not match.
               </p>
             )}
@@ -204,7 +204,7 @@ const ResetPassword = () => {
             <button
               onClick={handleSubmit}
               disabled={!canSubmit || isSubmitting}
-              className="w-full bg-primary-600 hover:bg-primary-800 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-xl text-sm transition-all duration-200 shadow-sm"
+              className="w-full bg-primary-600 hover:bg-primary-800 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-xl text-base transition-all duration-200 shadow-sm"
             >
               {isSubmitting ? "Resetting..." : "Reset password"}
             </button>
@@ -212,7 +212,7 @@ const ResetPassword = () => {
             <button
               onClick={handleResend}
               disabled={isResending}
-              className="w-full flex items-center justify-center gap-2 text-ink-sub border border-stroke rounded-xl py-2.5 text-sm font-medium hover:bg-surface transition disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full flex items-center justify-center gap-2 text-ink-sub border border-stroke rounded-xl py-2.5 text-base font-medium hover:bg-surface transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <FiRefreshCw
                 className={isResending ? "animate-spin" : ""}
@@ -222,7 +222,7 @@ const ResetPassword = () => {
             </button>
           </div>
 
-          <p className="text-center text-ink-muted text-sm mt-6">
+          <p className="text-center text-ink-muted text-base mt-6">
             <Link
               to="/login"
               className="inline-flex items-center gap-1.5 text-primary-600 font-semibold hover:underline"

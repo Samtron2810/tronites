@@ -55,7 +55,7 @@ const Bookmarks = () => {
   }, [page, hasMore, isLoadingMore, loading]);
 
   // A post can be unbookmarked from within PostCard while viewing this
-  // list — remove it locally instead of waiting for a refetch.
+  // list â€” remove it locally instead of waiting for a refetch.
   const handleUnbookmarked = (postId) =>
     setPosts((prev) => prev.filter((p) => p._id !== postId));
 
@@ -71,7 +71,7 @@ const Bookmarks = () => {
           </Link>
           <div className="flex items-center gap-2">
             <FaRegBookmark className="text-primary-600" size={16} />
-            <h1 className="text-lg font-bold text-ink">Saved posts</h1>
+            <h1 className="text-xl font-bold text-ink">Saved posts</h1>
           </div>
         </div>
 
@@ -111,11 +111,11 @@ const Bookmarks = () => {
 
         {!loading && posts.length === 0 && (
           <div className="bg-card border border-stroke rounded-2xl p-10 text-center">
-            <p className="text-2xl mb-2">🔖</p>
-            <h2 className="text-base font-semibold text-ink">
+            <p className="text-3xl mb-2">ðŸ”–</p>
+            <h2 className="text-lg font-semibold text-ink">
               No saved posts yet
             </h2>
-            <p className="text-sm text-ink-muted mt-1">
+            <p className="text-base text-ink-muted mt-1">
               Tap the bookmark icon on any post to save it here.
             </p>
           </div>
@@ -129,7 +129,7 @@ const Bookmarks = () => {
             </>
           )}
           {!hasMore && posts.length > 0 && (
-            <p className="text-xs text-ink-muted">You're all caught up</p>
+            <p className="text-sm text-ink-muted">You're all caught up</p>
           )}
         </div>
       </div>

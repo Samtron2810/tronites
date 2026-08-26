@@ -6,7 +6,7 @@ import toast from "react-hot-toast";
 import { FaArrowLeft, FaSyncAlt } from "react-icons/fa";
 import { useAuth } from "../context/useAuth";
 
-// PHASE 3 — admin-only view over the append-only moderation audit log
+// PHASE 3 â€” admin-only view over the append-only moderation audit log
 // (GET /admin/audit is requireAdmin server-side; the guard below mirrors
 // that so non-admins get a clear screen instead of a 403 toast).
 
@@ -49,7 +49,7 @@ const shortId = (id) => String(id || "").slice(-6);
 
 const formatWhen = (iso) => {
   const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "—";
+  if (Number.isNaN(d.getTime())) return "â€”";
   const diffMs = Date.now() - d.getTime();
   const mins = Math.floor(diffMs / 60000);
   if (mins < 1) return "just now";
@@ -75,17 +75,17 @@ const DetailCell = ({ log }) => {
     case "user_suspended":
       return (
         <span>
-          {d.reason ? `“${d.reason}”` : "No reason recorded"}
+          {d.reason ? `â€œ${d.reason}â€` : "No reason recorded"}
           {formatUntil(d.suspendedUntil) && (
             <>
-              {" — until "}
+              {" â€” until "}
               <span className="font-medium">{formatUntil(d.suspendedUntil)}</span>
             </>
           )}
         </span>
       );
     case "user_banned":
-      return <span>{d.reason ? `“${d.reason}”` : "No reason recorded"}</span>;
+      return <span>{d.reason ? `â€œ${d.reason}â€` : "No reason recorded"}</span>;
     case "user_unrestricted":
       return (
         <span>
@@ -104,9 +104,9 @@ const DetailCell = ({ log }) => {
     case "user_warned":
       return (
         <span>
-          {d.reason ? `“${d.reason}”` : "No reason recorded"}
+          {d.reason ? `â€œ${d.reason}â€` : "No reason recorded"}
           {d.strikeCount
-            ? ` — ${d.strikeCount} strike${d.strikeCount === 1 ? "" : "s"} total`
+            ? ` â€” ${d.strikeCount} strike${d.strikeCount === 1 ? "" : "s"} total`
             : ""}
         </span>
       );
@@ -117,7 +117,7 @@ const DetailCell = ({ log }) => {
           <span className="font-medium">
             {d.permissions?.length ? d.permissions.join(", ") : "(default set)"}
           </span>
-          {" · was: "}
+          {" Â· was: "}
           {d.previousPermissions?.length
             ? d.previousPermissions.join(", ")
             : "(default set)"}
@@ -127,17 +127,17 @@ const DetailCell = ({ log }) => {
       return (
         <span>
           <span className="font-medium">{d.status}</span>
-          {" · "}
-          {d.note ? `“${d.note}”` : "no note"}
-          {log.target?.snapshot?.removeContent && " · content removed"}
+          {" Â· "}
+          {d.note ? `â€œ${d.note}â€` : "no note"}
+          {log.target?.snapshot?.removeContent && " Â· content removed"}
         </span>
       );
     default:
-      return <code className="text-xs">{JSON.stringify(d)}</code>;
+      return <code className="text-sm">{JSON.stringify(d)}</code>;
   }
 };
 
-// "@username" for user actions, otherwise "<type> …<short-id>".
+// "@username" for user actions, otherwise "<type> â€¦<short-id>".
 const TargetCell = ({ log }) => {
   const t = log.target || {};
   const s = t.snapshot || {};
@@ -145,7 +145,7 @@ const TargetCell = ({ log }) => {
     return (
       <span>
         {s.targetType || "item"}{" "}
-        <span className="text-ink-muted">…{shortId(s.targetId)}</span>
+        <span className="text-ink-muted">â€¦{shortId(s.targetId)}</span>
       </span>
     );
   }
@@ -153,7 +153,7 @@ const TargetCell = ({ log }) => {
     <span>
       {t.type === "user" && s.username ? `@${s.username}` : `${t.type}`}
       {t.type !== "user" && (
-        <span className="text-ink-muted"> …{shortId(t.ref)}</span>
+        <span className="text-ink-muted"> â€¦{shortId(t.ref)}</span>
       )}
     </span>
   );
@@ -162,7 +162,7 @@ const TargetCell = ({ log }) => {
 const AdminAuditLog = () => {
   const { user } = useAuth();
   const isAdmin = user?.role === "admin";
-  // Phase 5 — moderators granted view_audit_log see this page too;
+  // Phase 5 â€” moderators granted view_audit_log see this page too;
   // everyone else gets the notice below (server enforces the same rule).
   const canView =
     isAdmin || !!user?.permissions?.includes("view_audit_log");
@@ -215,10 +215,10 @@ const AdminAuditLog = () => {
     return (
       <MainLayout>
         <div className="max-w-3xl mx-auto px-4 py-16 text-center">
-          <h1 className="text-xl font-bold text-ink mb-2">
+          <h1 className="text-2xl font-bold text-ink mb-2">
             No audit access
           </h1>
-          <p className="text-ink-sub text-sm">
+          <p className="text-ink-sub text-base">
             The moderation audit log is restricted to admin accounts and
             moderators granted the view-audit-log permission.
           </p>
@@ -235,14 +235,14 @@ const AdminAuditLog = () => {
           <div>
             <Link
               to="/admin/users"
-              className="inline-flex items-center gap-1.5 text-xs font-medium text-ink-sub hover:text-ink transition"
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-ink-sub hover:text-ink transition"
             >
               <FaArrowLeft className="text-[10px]" /> Back to role management
             </Link>
-            <h1 className="text-2xl font-bold text-ink mt-2">
+            <h1 className="text-3xl font-bold text-ink mt-2">
               Moderation audit log
             </h1>
-            <p className="text-ink-sub text-sm mt-1">
+            <p className="text-ink-sub text-base mt-1">
               Append-only record of restrictions, reversals, role changes and
               report resolutions. {total} entr{total === 1 ? "y" : "ies"}.
             </p>
@@ -250,10 +250,10 @@ const AdminAuditLog = () => {
           <button
             onClick={() => fetchPage(0, false)}
             disabled={isLoading}
-            className="flex items-center gap-2 px-3 py-2 rounded-lg border border-stroke text-sm font-medium text-ink-sub hover:text-ink hover:bg-surface transition disabled:opacity-50"
+            className="flex items-center gap-2 px-3 py-2 rounded-lg border border-stroke text-base font-medium text-ink-sub hover:text-ink hover:bg-surface transition disabled:opacity-50"
           >
             <FaSyncAlt
-              className={isLoading ? "animate-spin text-xs" : "text-xs"}
+              className={isLoading ? "animate-spin text-sm" : "text-sm"}
             />
             Refresh
           </button>
@@ -264,7 +264,7 @@ const AdminAuditLog = () => {
           <select
             value={actionFilter}
             onChange={(e) => setActionFilter(e.target.value)}
-            className="rounded-lg border border-stroke bg-card px-3 py-2 text-sm text-ink focus:outline-none focus:border-primary-500"
+            className="rounded-lg border border-stroke bg-card px-3 py-2 text-base text-ink focus:outline-none focus:border-primary-500"
           >
             {ACTION_OPTIONS.map((o) => (
               <option key={o.value} value={o.value}>
@@ -275,7 +275,7 @@ const AdminAuditLog = () => {
           <select
             value={targetFilter}
             onChange={(e) => setTargetFilter(e.target.value)}
-            className="rounded-lg border border-stroke bg-card px-3 py-2 text-sm text-ink focus:outline-none focus:border-primary-500"
+            className="rounded-lg border border-stroke bg-card px-3 py-2 text-base text-ink focus:outline-none focus:border-primary-500"
           >
             {TARGET_OPTIONS.map((o) => (
               <option key={o.value} value={o.value}>
@@ -288,9 +288,9 @@ const AdminAuditLog = () => {
         {/* Table */}
         <div className="bg-card rounded-xl border border-stroke overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full text-base">
               <thead>
-                <tr className="text-left text-xs uppercase tracking-wide text-ink-muted border-b border-stroke">
+                <tr className="text-left text-sm uppercase tracking-wide text-ink-muted border-b border-stroke">
                   <th className="px-4 py-3 font-semibold">When</th>
                   <th className="px-4 py-3 font-semibold">Actor</th>
                   <th className="px-4 py-3 font-semibold">Action</th>
@@ -313,17 +313,17 @@ const AdminAuditLog = () => {
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap">
                       <div className="font-medium text-ink">
-                        {log.actor?.name || "—"}
+                        {log.actor?.name || "â€”"}
                       </div>
                       {log.actor?.username && (
-                        <div className="text-xs text-ink-muted">
+                        <div className="text-sm text-ink-muted">
                           @{log.actor.username}
                         </div>
                       )}
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap">
                       <span
-                        className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                        className={`inline-block rounded-full px-2.5 py-0.5 text-sm font-semibold ${
                           ACTION_STYLES[log.action] || "bg-surface text-ink-sub"
                         }`}
                       >
@@ -336,8 +336,8 @@ const AdminAuditLog = () => {
                     <td className="px-4 py-3 text-ink-sub max-w-xs">
                       <DetailCell log={log} />
                     </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-xs text-ink-muted font-mono">
-                      {log.ip || "—"}
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-ink-muted font-mono">
+                      {log.ip || "â€”"}
                     </td>
                   </tr>
                 ))}
@@ -358,9 +358,9 @@ const AdminAuditLog = () => {
               <button
                 onClick={() => fetchPage(offset, true)}
                 disabled={isLoading}
-                className="px-4 py-2 rounded-lg text-sm font-medium text-primary-600 hover:bg-primary-50 transition disabled:opacity-50"
+                className="px-4 py-2 rounded-lg text-base font-medium text-primary-600 hover:bg-primary-50 transition disabled:opacity-50"
               >
-                {isLoading ? "Loading…" : "Load more"}
+                {isLoading ? "Loadingâ€¦" : "Load more"}
               </button>
             </div>
           )}

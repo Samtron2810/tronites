@@ -43,7 +43,7 @@ const ChatModal = ({
   videoFile,
   videoPreviewUrl,
   // In-flight background video sends (one progress bar each). Their
-  // presence does NOT lock the composer — text/image sending continues.
+  // presence does NOT lock the composer â€” text/image sending continues.
   videoUploads,
   scrollRef,
   messagesContainerRef,
@@ -55,7 +55,7 @@ const ChatModal = ({
   onDeclineRequest,
   requestActionPending,
   // Submits a message report ({ message, reason, details }) and resolves
-  // to true only when it succeeded — owned by Chat.jsx like every other
+  // to true only when it succeeded â€” owned by Chat.jsx like every other
   // mutation; this component just collects the UI input.
   handleReportMessage,
 }) => {
@@ -105,16 +105,16 @@ const ChatModal = ({
             />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-ink truncate">
+            <p className="text-base font-semibold text-ink truncate">
               {activeUser?.name}
               {activeUser?.username && (
-                <span className="ml-1 font-normal text-xs text-ink-muted">
+                <span className="ml-1 font-normal text-sm text-ink-muted">
                   @{activeUser.username}
                 </span>
               )}
             </p>
             <p
-              className={`text-xs ${activeIsOnline ? "text-primary-600" : "text-ink-muted"}`}
+              className={`text-sm ${activeIsOnline ? "text-primary-600" : "text-ink-muted"}`}
             >
               {activeIsOnline ? "Online" : "Offline"}
             </p>
@@ -157,8 +157,8 @@ const ChatModal = ({
 
           {!threadLoading && messages.length === 0 && (
             <div className="flex flex-col items-center justify-center h-full py-10 text-center">
-              <p className="text-2xl mb-2">👋</p>
-              <p className="text-sm text-ink-muted">No messages yet. Say hi!</p>
+              <p className="text-3xl mb-2">ðŸ‘‹</p>
+              <p className="text-base text-ink-muted">No messages yet. Say hi!</p>
             </div>
           )}
 
@@ -198,7 +198,7 @@ const ChatModal = ({
                 >
                   {showDeletedPlaceholder ? (
                     <div
-                      className={`px-4 py-2.5 rounded-2xl text-sm border ${
+                      className={`px-4 py-2.5 rounded-2xl text-base border ${
                         isMine
                           ? "bg-surface text-ink-sub self-end rounded-br-sm border-stroke"
                           : "bg-card text-ink-muted self-start rounded-bl-sm border-stroke"
@@ -206,7 +206,7 @@ const ChatModal = ({
                     >
                       {isDeleting ? (
                         <span className="flex items-center gap-2">
-                          Deleting…
+                          Deletingâ€¦
                         </span>
                       ) : (
                         <span className="flex items-center gap-2">
@@ -259,7 +259,7 @@ const ChatModal = ({
                       })()}
                       {message.text && (
                         <div
-                          className={`px-4 py-2.5 rounded-2xl text-sm whitespace-pre-wrap ${
+                          className={`px-4 py-2.5 rounded-2xl text-base whitespace-pre-wrap ${
                             isMine
                               ? "bg-primary-600 text-white self-end rounded-br-sm"
                               : "bg-card text-ink self-start rounded-bl-sm border border-stroke"
@@ -328,21 +328,21 @@ const ChatModal = ({
         <div className="border-t border-stroke px-4 py-3 bg-card">
           {requestInfo?.status === "pending" && !requestInfo.isInitiator && (
             <div>
-              <p className="text-xs text-ink-muted mb-2 text-center">
+              <p className="text-sm text-ink-muted mb-2 text-center">
                 {activeUser?.name} sent you a message request
               </p>
               <div className="flex gap-2">
                 <button
                   onClick={onAcceptRequest}
                   disabled={requestActionPending}
-                  className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white bg-primary-600 hover:bg-primary-800 disabled:opacity-50 transition"
+                  className="flex-1 py-2.5 rounded-xl text-base font-semibold text-white bg-primary-600 hover:bg-primary-800 disabled:opacity-50 transition"
                 >
                   {requestActionPending ? "..." : "Accept"}
                 </button>
                 <button
                   onClick={onDeclineRequest}
                   disabled={requestActionPending}
-                  className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-ink-sub border border-stroke hover:bg-surface disabled:opacity-50 transition"
+                  className="flex-1 py-2.5 rounded-xl text-base font-semibold text-ink-sub border border-stroke hover:bg-surface disabled:opacity-50 transition"
                 >
                   Decline
                 </button>
@@ -351,14 +351,14 @@ const ChatModal = ({
           )}
 
           {requestInfo?.status === "pending" && requestInfo.isInitiator && (
-            <p className="text-xs text-ink-muted text-center py-2">
-              Message request sent — waiting for {activeUser?.name} to accept.
+            <p className="text-sm text-ink-muted text-center py-2">
+              Message request sent â€” waiting for {activeUser?.name} to accept.
             </p>
           )}
 
           {(requestInfo?.status === "declined" ||
             requestInfo?.status === "blocked") && (
-            <p className="text-xs text-ink-muted text-center py-2">
+            <p className="text-sm text-ink-muted text-center py-2">
               You can't message this user.
             </p>
           )}
@@ -370,9 +370,9 @@ const ChatModal = ({
                   key={upload.id}
                   className="mb-3 rounded-xl border border-stroke bg-surface px-3 py-2"
                 >
-                  <div className="flex items-center justify-between text-xs text-ink-muted mb-1">
+                  <div className="flex items-center justify-between text-sm text-ink-muted mb-1">
                     <span className="truncate max-w-[70%]">
-                      Uploading {upload.name}…
+                      Uploading {upload.name}â€¦
                     </span>
                     <span>{Math.min(upload.progress, 99)}%</span>
                   </div>
@@ -386,7 +386,7 @@ const ChatModal = ({
                   </div>
                   {upload.progress >= 100 && (
                     <p className="text-[11px] text-ink-muted mt-1">
-                      Processing video…
+                      Processing videoâ€¦
                     </p>
                   )}
                 </div>
@@ -404,9 +404,9 @@ const ChatModal = ({
                   <button
                     type="button"
                     onClick={handleRemoveVideo}
-                    className="absolute -top-1.5 -right-1.5 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs"
+                    className="absolute -top-1.5 -right-1.5 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-sm"
                   >
-                    ✕
+                    âœ•
                   </button>
                   {videoFile && (
                     <p className="text-[10px] text-ink-muted mt-0.5 truncate">
@@ -426,9 +426,9 @@ const ChatModal = ({
                       />
                       <button
                         onClick={() => handleRemoveImage(idx)}
-                        className="absolute -top-1.5 -right-1.5 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs"
+                        className="absolute -top-1.5 -right-1.5 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-sm"
                       >
-                        ✕
+                        âœ•
                       </button>
                     </div>
                   ))}
@@ -445,7 +445,7 @@ const ChatModal = ({
                     }
                   }}
                   placeholder="Write a message..."
-                  className="flex-1 border border-stroke rounded-xl px-4 py-2.5 text-sm text-ink placeholder:text-ink-muted outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100 transition"
+                  className="flex-1 border border-stroke rounded-xl px-4 py-2.5 text-base text-ink placeholder:text-ink-muted outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100 transition"
                 />
                 <button
                   type="button"
@@ -489,7 +489,7 @@ const ChatModal = ({
                       !videoFile) ||
                     isSending
                   }
-                  className="px-4 py-2.5 rounded-xl text-sm font-semibold text-white bg-primary-600 hover:bg-primary-800 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                  className="px-4 py-2.5 rounded-xl text-base font-semibold text-white bg-primary-600 hover:bg-primary-800 disabled:opacity-50 disabled:cursor-not-allowed transition"
                 >
                   {isSending ? "..." : "Send"}
                 </button>
@@ -507,7 +507,7 @@ const ChatModal = ({
                 reason,
                 details,
               });
-              // Close only on success, like Profile.jsx does — a failed
+              // Close only on success, like Profile.jsx does â€” a failed
               // submit keeps the modal open with the chosen reason intact.
               if (ok) setReportingMessage(null);
             }}

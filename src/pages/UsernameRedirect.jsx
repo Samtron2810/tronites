@@ -28,14 +28,14 @@ const UsernameRedirect = () => {
     toast.error(`@${username} not found`);
     return (
       <div className="min-h-screen app-bg flex items-center justify-center px-6">
-        <p className="text-ink-muted text-sm">User @{username} not found.</p>
+        <p className="text-ink-muted text-base">User @{username} not found.</p>
       </div>
     );
   }
 
   return (
     <div className="min-h-screen app-bg flex items-center justify-center px-6">
-      <p className="text-ink-muted text-sm">Loading profile...</p>
+      <p className="text-ink-muted text-base">Loading profile...</p>
     </div>
   );
 };

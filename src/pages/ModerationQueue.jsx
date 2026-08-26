@@ -45,7 +45,7 @@ const ReportCard = ({
   const [resolving, setResolving] = useState(false);
   const [note, setNote] = useState("");
   const [showNoteFor, setShowNoteFor] = useState(null); // "actioned" | "dismissed" | null
-  // Phase 4 warn flow — user reports only; reason goes verbatim to the
+  // Phase 4 warn flow â€” user reports only; reason goes verbatim to the
   // warned account's notification.
   const [showWarnFor, setShowWarnFor] = useState(false);
   const [warnReason, setWarnReason] = useState("");
@@ -71,7 +71,7 @@ const ReportCard = ({
     }
   };
 
-  // Phase 4 — hand off to the parent's warn flow (API call, threshold
+  // Phase 4 â€” hand off to the parent's warn flow (API call, threshold
   // prompt and list updates live there). The card only resets its warn
   // UI when the parent reports success.
   const submitWarn = async () => {
@@ -100,21 +100,21 @@ const ReportCard = ({
         <div className="min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             {report.priority === "high" && (
-              // Phase 6 — set by the flagRepeatOffenders job when this
+              // Phase 6 â€” set by the flagRepeatOffenders job when this
               // owner crosses the repeat-offender threshold.
-              <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-red-500 text-white">
+              <span className="text-sm font-semibold px-2 py-0.5 rounded-full bg-red-500 text-white">
                 HIGH PRIORITY
               </span>
             )}
-            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-primary-50 text-primary-700">
+            <span className="text-sm font-semibold px-2 py-0.5 rounded-full bg-primary-50 text-primary-700">
               {TARGET_TYPE_LABELS[report.targetType]}
             </span>
-            <span className="text-xs text-ink-muted">
+            <span className="text-sm text-ink-muted">
               {REASON_LABELS[report.reason] || report.reason}
             </span>
             {report.status !== "open" && (
               <span
-                className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+                className={`text-sm font-semibold px-2 py-0.5 rounded-full ${
                   report.status === "actioned"
                     ? "bg-red-50 text-red-600"
                     : "bg-gray-100 text-gray-500"
@@ -124,13 +124,13 @@ const ReportCard = ({
               </span>
             )}
             {report.contentRemoved && (
-              <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-red-50 text-red-600">
+              <span className="text-sm font-semibold px-2 py-0.5 rounded-full bg-red-50 text-red-600">
                 content removed
               </span>
             )}
           </div>
 
-          <p className="text-sm text-ink mt-2">
+          <p className="text-base text-ink mt-2">
             Reported by{" "}
             <span className="font-medium">
               {report.reporter?.name || "Unknown"}
@@ -144,28 +144,28 @@ const ReportCard = ({
           </p>
 
           {report.contentPreview && (
-            <p className="text-sm text-ink-muted mt-1.5 bg-surface rounded-lg px-3 py-2 line-clamp-3">
+            <p className="text-base text-ink-muted mt-1.5 bg-surface rounded-lg px-3 py-2 line-clamp-3">
               {report.contentPreview}
             </p>
           )}
 
           {report.details && (
-            <p className="text-sm text-ink-sub mt-1.5 italic">"{report.details}"</p>
+            <p className="text-base text-ink-sub mt-1.5 italic">"{report.details}"</p>
           )}
 
           {report.resolutionNote && (
-            <p className="text-xs text-ink-muted mt-1.5">
+            <p className="text-sm text-ink-muted mt-1.5">
               Resolution note: {report.resolutionNote}
             </p>
           )}
 
-          <p className="text-xs text-ink-muted mt-2">
+          <p className="text-sm text-ink-muted mt-2">
             {new Date(report.createdAt).toLocaleString()}
           </p>
         </div>
 
         {/* User reports deep-link straight to the profile (a profile is
-            its own context — nothing to preview). Every other target type
+            its own context â€” nothing to preview). Every other target type
             opens the in-queue content modal, since there are no permalink
             pages to link out to. */}
         {report.targetType === "user" ? (
@@ -173,14 +173,14 @@ const ReportCard = ({
             to={`/profile/${report.targetOwner?._id || report.targetOwner}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="shrink-0 flex items-center gap-1 text-xs font-medium text-primary-600 hover:text-primary-800 px-2.5 py-1.5 rounded-lg border border-stroke hover:bg-primary-50 transition"
+            className="shrink-0 flex items-center gap-1 text-sm font-medium text-primary-600 hover:text-primary-800 px-2.5 py-1.5 rounded-lg border border-stroke hover:bg-primary-50 transition"
           >
             View <FiExternalLink size={12} />
           </Link>
         ) : (
           <button
             onClick={() => onView(report)}
-            className="shrink-0 flex items-center gap-1 text-xs font-medium text-primary-600 hover:text-primary-800 px-2.5 py-1.5 rounded-lg border border-stroke hover:bg-primary-50 transition"
+            className="shrink-0 flex items-center gap-1 text-sm font-medium text-primary-600 hover:text-primary-800 px-2.5 py-1.5 rounded-lg border border-stroke hover:bg-primary-50 transition"
           >
             View <FiExternalLink size={12} />
           </button>
@@ -190,12 +190,12 @@ const ReportCard = ({
       {report.status === "open" && (
         <div className="mt-3 pt-3 border-t border-stroke">
           {showWarnFor ? (
-            // Phase 4 — reason is mandatory and goes verbatim into the
+            // Phase 4 â€” reason is mandatory and goes verbatim into the
             // warned user's notification; their identity of the sender is
             // stripped server-side ("Moderation team").
             <div className="space-y-2">
-              <p className="text-xs font-medium text-ink-sub">
-                Reason — sent verbatim to{" "}
+              <p className="text-sm font-medium text-ink-sub">
+                Reason â€” sent verbatim to{" "}
                 <span className="font-semibold">
                   {owner?.name || "the user"}
                 </span>{" "}
@@ -206,8 +206,8 @@ const ReportCard = ({
                 onChange={(e) => setWarnReason(e.target.value.slice(0, 500))}
                 rows={2}
                 autoFocus
-                placeholder="e.g. Repeated harassment — this is a formal warning"
-                className="w-full rounded-xl border border-stroke px-3 py-2 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-amber-300 resize-none"
+                placeholder="e.g. Repeated harassment â€” this is a formal warning"
+                className="w-full rounded-xl border border-stroke px-3 py-2 text-base text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-amber-300 resize-none"
               />
               <div className="flex gap-2">
                 <button
@@ -216,14 +216,14 @@ const ReportCard = ({
                     setWarnReason("");
                   }}
                   disabled={warning}
-                  className="px-3 py-1.5 rounded-lg text-xs font-medium text-ink-sub border border-stroke hover:bg-surface transition"
+                  className="px-3 py-1.5 rounded-lg text-sm font-medium text-ink-sub border border-stroke hover:bg-surface transition"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={submitWarn}
                   disabled={warning || !warnReason.trim()}
-                  className="px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-amber-500 hover:bg-amber-600 transition disabled:opacity-60"
+                  className="px-3 py-1.5 rounded-lg text-sm font-semibold text-white bg-amber-500 hover:bg-amber-600 transition disabled:opacity-60"
                 >
                   {warning ? "..." : "Send warning"}
                 </button>
@@ -236,20 +236,20 @@ const ReportCard = ({
                 onChange={(e) => setNote(e.target.value.slice(0, 500))}
                 placeholder="Optional note (visible only to moderators)"
                 rows={2}
-                className="w-full rounded-xl border border-stroke px-3 py-2 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-primary-300 resize-none"
+                className="w-full rounded-xl border border-stroke px-3 py-2 text-base text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-primary-300 resize-none"
               />
               <div className="flex gap-2">
                 <button
                   onClick={() => setShowNoteFor(null)}
                   disabled={resolving}
-                  className="px-3 py-1.5 rounded-lg text-xs font-medium text-ink-sub border border-stroke hover:bg-surface transition"
+                  className="px-3 py-1.5 rounded-lg text-sm font-medium text-ink-sub border border-stroke hover:bg-surface transition"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={() => submitResolve(showNoteFor)}
                   disabled={resolving}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold text-white transition disabled:opacity-60 ${
+                  className={`px-3 py-1.5 rounded-lg text-sm font-semibold text-white transition disabled:opacity-60 ${
                     showNoteFor === "actioned"
                       ? "bg-red-500 hover:bg-red-600"
                       : "bg-gray-400 hover:bg-gray-500"
@@ -263,27 +263,27 @@ const ReportCard = ({
             <div className="flex gap-2">
               <button
                 onClick={() => setShowNoteFor("actioned")}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-red-500 hover:bg-red-600 transition"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold text-white bg-red-500 hover:bg-red-600 transition"
               >
                 <FiCheck size={13} /> Action
               </button>
               <button
                 onClick={() => setShowNoteFor("dismissed")}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-ink-sub border border-stroke hover:bg-surface transition"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold text-ink-sub border border-stroke hover:bg-surface transition"
               >
                 <FiX size={13} /> Dismiss
               </button>
               {report.targetType === "user" && (
-                // Phase 4 — third resolve action: a formal strike. Only
+                // Phase 4 â€” third resolve action: a formal strike. Only
                 // meaningful on user reports (strikes attach to accounts).
                 <button
                   onClick={() => {
                     setShowWarnFor(true);
                     setNote("");
                   }}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-amber-700 border border-amber-300 hover:bg-amber-50 transition"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold text-amber-700 border border-amber-300 hover:bg-amber-50 transition"
                 >
-                  <FiAlertTriangle size={13} /> Warn…
+                  <FiAlertTriangle size={13} /> Warnâ€¦
                 </button>
               )}
             </div>
@@ -291,19 +291,19 @@ const ReportCard = ({
         </div>
       )}
 
-      {/* Phase 2 — user reports get one-tap restrict/restore shortcuts in
+      {/* Phase 2 â€” user reports get one-tap restrict/restore shortcuts in
           addition to Action/Dismiss. Ban only surfaces for admins (the
           endpoint is requireAdmin regardless). */}
       {report.status === "open" && report.targetType === "user" && (
         <div className="mt-2 flex flex-wrap items-center gap-2">
           {owner?.banned ? (
             <>
-              <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-red-50 text-red-600">
+              <span className="text-sm font-semibold px-2 py-0.5 rounded-full bg-red-50 text-red-600">
                 banned
               </span>
               <button
                 onClick={() => onRequestRestriction(report, "unrestrict")}
-                className="text-xs font-semibold text-primary-700 border border-stroke hover:bg-primary-50 px-2.5 py-1 rounded-lg transition"
+                className="text-sm font-semibold text-primary-700 border border-stroke hover:bg-primary-50 px-2.5 py-1 rounded-lg transition"
               >
                 Restore access
               </button>
@@ -312,7 +312,7 @@ const ReportCard = ({
             <>
               {ownerSuspended && (
                 <span
-                  className="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700"
+                  className="text-sm font-semibold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700"
                   title={owner.restrictionReason || undefined}
                 >
                   suspended until{" "}
@@ -321,23 +321,23 @@ const ReportCard = ({
               )}
               <button
                 onClick={() => onRequestRestriction(report, "suspend")}
-                className="text-xs font-medium text-amber-700 border border-amber-300 hover:bg-amber-50 px-2.5 py-1 rounded-lg transition"
+                className="text-sm font-medium text-amber-700 border border-amber-300 hover:bg-amber-50 px-2.5 py-1 rounded-lg transition"
               >
-                {ownerSuspended ? "Adjust suspension…" : "Suspend…"}
+                {ownerSuspended ? "Adjust suspensionâ€¦" : "Suspendâ€¦"}
               </button>
               {canBanHere && (
                 <button
                   onClick={() => onRequestRestriction(report, "ban")}
-                  className="text-xs font-medium text-red-600 border border-red-300 hover:bg-red-50 px-2.5 py-1 rounded-lg transition"
+                  className="text-sm font-medium text-red-600 border border-red-300 hover:bg-red-50 px-2.5 py-1 rounded-lg transition"
                 >
-                  Ban…
+                  Banâ€¦
                 </button>
               )}
             </>
           )}
           {!owner?.banned && !ownerSuspended && owner?.restrictionReason && (
             <span
-              className="text-xs text-ink-muted italic truncate max-w-[16rem]"
+              className="text-sm text-ink-muted italic truncate max-w-[16rem]"
               title={owner.restrictionReason}
             >
               "{owner.restrictionReason}"
@@ -358,7 +358,7 @@ const ModerationQueue = () => {
   const [totalPages, setTotalPages] = useState(1);
   // Report currently open in the in-queue context/preview modal.
   const [contextReport, setContextReport] = useState(null);
-  // { report, mode } — user-report restriction shortcut modal (Phase 2).
+  // { report, mode } â€” user-report restriction shortcut modal (Phase 2).
   const [pendingUserRestriction, setPendingUserRestriction] = useState(null);
 
   const isModerator = user && ["moderator", "admin"].includes(user.role);
@@ -382,7 +382,7 @@ const ModerationQueue = () => {
     if (isModerator) fetchReports();
   }, [isModerator, fetchReports]);
 
-  // Guard client-side too — the endpoints already 403 non-moderators,
+  // Guard client-side too â€” the endpoints already 403 non-moderators,
   // this just avoids rendering a queue UI that would only ever error.
   if (user && !isModerator) {
     return <Navigate to="/" replace />;
@@ -399,10 +399,10 @@ const ModerationQueue = () => {
     }
   };
 
-  // Phase 2 — suspend/ban/unrestrict straight from a user report card.
+  // Phase 2 â€” suspend/ban/unrestrict straight from a user report card.
   // Updates the card's targetOwner from the server DTO so chips flip
   // without a refetch. Returns success so the modal closes only on win.
-  // Phase 4 — issue a formal warning from the queue: send the strike,
+  // Phase 4 â€” issue a formal warning from the queue: send the strike,
   // prompt toward suspension when the threshold is crossed (reusing the
   // Phase 2 restriction modal so the moderator is one "Cancel" away from
   // doing nothing), then resolve the underlying report as actioned so
@@ -414,13 +414,13 @@ const ModerationQueue = () => {
         { reason, reportId: report._id },
       );
       toast.success(
-        `Warning sent — ${res.data.strikeCount} strike${
+        `Warning sent â€” ${res.data.strikeCount} strike${
           res.data.strikeCount === 1 ? "" : "s"
         } on record.`,
       );
       if (res.data.strikeThresholdReached) {
-        toast(`${res.data.strikeCount} strikes reached — review a suspension.`, {
-          icon: "⚠️",
+        toast(`${res.data.strikeCount} strikes reached â€” review a suspension.`, {
+          icon: "âš ï¸",
           duration: 6000,
         });
         setPendingUserRestriction({ report, mode: "suspend" });
@@ -495,8 +495,8 @@ const ModerationQueue = () => {
           onCancel={() => setPendingUserRestriction(null)}
         />
       )}
-      <h1 className="text-xl font-bold text-ink mb-1">Moderation queue</h1>
-      <p className="text-sm text-ink-muted mb-5">Reports from the community, newest last.</p>
+      <h1 className="text-2xl font-bold text-ink mb-1">Moderation queue</h1>
+      <p className="text-base text-ink-muted mb-5">Reports from the community, newest last.</p>
 
       <div className="flex gap-1 mb-5 bg-card border border-stroke rounded-xl p-1 w-fit">
         {STATUS_TABS.map((tab) => (
@@ -506,7 +506,7 @@ const ModerationQueue = () => {
               setStatus(tab.value);
               setPage(1);
             }}
-            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${
+            className={`px-3 py-1.5 rounded-lg text-base font-medium transition ${
               status === tab.value
                 ? "bg-primary-100 text-primary-700"
                 : "text-ink-muted hover:text-ink"
@@ -518,11 +518,11 @@ const ModerationQueue = () => {
       </div>
 
       {loading ? (
-        <p className="text-sm text-ink-muted">Loading...</p>
+        <p className="text-base text-ink-muted">Loading...</p>
       ) : reports.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 text-center">
           <FiInbox className="text-ink-muted mb-2" size={28} />
-          <p className="text-sm text-ink-muted">No {status !== "all" ? status : ""} reports.</p>
+          <p className="text-base text-ink-muted">No {status !== "all" ? status : ""} reports.</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -547,17 +547,17 @@ const ModerationQueue = () => {
           <button
             onClick={() => setPage((p) => Math.max(1, p - 1))}
             disabled={page <= 1}
-            className="px-3 py-1.5 rounded-lg text-sm border border-stroke disabled:opacity-40 hover:bg-surface transition"
+            className="px-3 py-1.5 rounded-lg text-base border border-stroke disabled:opacity-40 hover:bg-surface transition"
           >
             Previous
           </button>
-          <span className="text-sm text-ink-muted">
+          <span className="text-base text-ink-muted">
             Page {page} of {totalPages}
           </span>
           <button
             onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
             disabled={page >= totalPages}
-            className="px-3 py-1.5 rounded-lg text-sm border border-stroke disabled:opacity-40 hover:bg-surface transition"
+            className="px-3 py-1.5 rounded-lg text-base border border-stroke disabled:opacity-40 hover:bg-surface transition"
           >
             Next
           </button>

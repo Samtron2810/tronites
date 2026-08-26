@@ -8,21 +8,21 @@ const ConfirmDiscardModal = ({ onConfirm, onCancel }) => {
           <div className="w-9 h-9 rounded-xl bg-red-50 flex items-center justify-center shrink-0">
             <FiAlertTriangle className="text-red-500" size={16} />
           </div>
-          <h2 className="text-base font-semibold text-ink">Discard post?</h2>
+          <h2 className="text-lg font-semibold text-ink">Discard post?</h2>
         </div>
-        <p className="text-sm text-ink-muted leading-relaxed">
+        <p className="text-base text-ink-muted leading-relaxed">
           Your post won't be saved. Are you sure you want to discard it?
         </p>
         <div className="flex gap-3 mt-6">
           <button
             onClick={onCancel}
-            className="flex-1 px-4 py-2.5 rounded-xl border border-stroke text-sm font-medium text-ink-sub hover:bg-surface transition"
+            className="flex-1 px-4 py-2.5 rounded-xl border border-stroke text-base font-medium text-ink-sub hover:bg-surface transition"
           >
             Keep editing
           </button>
           <button
             onClick={onConfirm}
-            className="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold text-white bg-red-500 hover:bg-red-600 transition"
+            className="flex-1 px-4 py-2.5 rounded-xl text-base font-semibold text-white bg-red-500 hover:bg-red-600 transition"
           >
             Discard
           </button>

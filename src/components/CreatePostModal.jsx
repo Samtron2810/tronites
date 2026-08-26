@@ -16,7 +16,7 @@ import { validateVideoFile } from "../services/videoUpload";
 
 const MAX_IMAGES = 4;
 
-// Post audience options — mirrors the backend's Post.privacy enum
+// Post audience options â€” mirrors the backend's Post.privacy enum
 // (backend/models/Post.js) and the values validated in
 // backend/utils/validators.js.
 const PRIVACY_OPTIONS = [
@@ -30,7 +30,7 @@ const CreatePostModal = ({ closeModal, onSubmit, onSubmitVideo }) => {
   const [privacy, setPrivacy] = useState("public");
   const [images, setImages] = useState([]); // File[]
   const [previews, setPreviews] = useState([]); // objectURL[]
-  // Video is only validated (format/size) + previewed locally here — no
+  // Video is only validated (format/size) + previewed locally here â€” no
   // local decode/duration probe. The browser's <video> support doesn't
   // match what Cloudinary can actually accept (HEVC MOV, AVI/MKV with
   // exotic codecs all upload and transcode fine server-side even when
@@ -99,7 +99,7 @@ const CreatePostModal = ({ closeModal, onSubmit, onSubmitVideo }) => {
   };
 
   // Video selection: format/size validation only, no decode probe. Any
-  // file that passes gets uploaded — Cloudinary transcodes/trims
+  // file that passes gets uploaded â€” Cloudinary transcodes/trims
   // whatever codec is inside regardless of what the browser can preview.
   const handleSelectVideo = (e) => {
     if (images.length > 0) {
@@ -152,7 +152,7 @@ const CreatePostModal = ({ closeModal, onSubmit, onSubmitVideo }) => {
 
     // Both paths now close the modal immediately and hand off to the
     // parent, which runs the upload in the background and reports
-    // progress/result via toast — matches the image post UX.
+    // progress/result via toast â€” matches the image post UX.
     if (videoFile) {
       onSubmitVideo({ text, videoFile, privacy });
     } else {
@@ -168,7 +168,7 @@ const CreatePostModal = ({ closeModal, onSubmit, onSubmitVideo }) => {
       <div className="bg-card w-full max-w-lg rounded-2xl shadow-xl overflow-hidden max-h-[90vh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-stroke">
-          <h2 className="text-base font-semibold text-ink">Create Post</h2>
+          <h2 className="text-lg font-semibold text-ink">Create Post</h2>
           <button
             onClick={handleClose}
             className="text-ink-muted hover:text-ink transition p-1 rounded-lg hover:bg-surface"
@@ -188,7 +188,7 @@ const CreatePostModal = ({ closeModal, onSubmit, onSubmitVideo }) => {
               maxLength={280}
               rows={4}
               placeholder="What's happening?"
-              className="w-full border border-stroke rounded-xl p-4 text-sm text-ink placeholder:text-ink-muted outline-none resize-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100 transition"
+              className="w-full border border-stroke rounded-xl p-4 text-base text-ink placeholder:text-ink-muted outline-none resize-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100 transition"
             />
             {mention.showSuggestions && (
               <MentionSuggestions
@@ -208,7 +208,7 @@ const CreatePostModal = ({ closeModal, onSubmit, onSubmitVideo }) => {
           </div>
           <div className="flex justify-end">
             <span
-              className={`text-xs ${text.length >= 260 ? "text-red-400" : "text-ink-muted"}`}
+              className={`text-sm ${text.length >= 260 ? "text-red-400" : "text-ink-muted"}`}
             >
               {text.length}/280
             </span>
@@ -216,7 +216,7 @@ const CreatePostModal = ({ closeModal, onSubmit, onSubmitVideo }) => {
 
           {/* Post audience selector */}
           <div className="flex items-center gap-2">
-            <label className="flex items-center gap-2 text-sm text-ink-sub cursor-pointer">
+            <label className="flex items-center gap-2 text-base text-ink-sub cursor-pointer">
               {(() => {
                 const current = PRIVACY_OPTIONS.find(
                   (o) => o.value === privacy,
@@ -233,7 +233,7 @@ const CreatePostModal = ({ closeModal, onSubmit, onSubmitVideo }) => {
                 value={privacy}
                 onChange={(e) => setPrivacy(e.target.value)}
                 aria-label="Who can see this post"
-                className="bg-surface border border-stroke rounded-lg px-2.5 py-1.5 text-sm text-ink outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100 transition cursor-pointer"
+                className="bg-surface border border-stroke rounded-lg px-2.5 py-1.5 text-base text-ink outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100 transition cursor-pointer"
               >
                 {PRIVACY_OPTIONS.map(({ value, label }) => (
                   <option key={value} value={value}>
@@ -244,7 +244,7 @@ const CreatePostModal = ({ closeModal, onSubmit, onSubmitVideo }) => {
             </label>
           </div>
 
-          {/* Image previews — carousel grid */}
+          {/* Image previews â€” carousel grid */}
           {previews.length > 0 && (
             <div className={`grid ${gridClass} gap-2`}>
               {previews.map((src, i) => (
@@ -270,11 +270,11 @@ const CreatePostModal = ({ closeModal, onSubmit, onSubmitVideo }) => {
 
           {/* an instruction that displays when a video is selected, saying a video of more than 30 seconds will be trimmed to 30 seconds */}
           {videoFile && (
-            <p className="text-xs text-ink-muted">
+            <p className="text-sm text-ink-muted">
               Note: Videos longer than 30 seconds will be trimmed to 30 seconds.
             </p>
           )}
-          {/* Video preview — local blob when the browser can decode it;
+          {/* Video preview â€” local blob when the browser can decode it;
               falls back to a file chip when it can't (HEVC MOV, exotic
               AVI/MKV codecs, etc). Either way the file still uploads and
               Cloudinary transcodes it server-side. */}
@@ -284,11 +284,11 @@ const CreatePostModal = ({ closeModal, onSubmit, onSubmitVideo }) => {
                 <div className="flex items-center gap-3 px-4 py-6 bg-surface">
                   <FiFilm size={28} className="text-primary-600 shrink-0" />
                   <div className="min-w-0">
-                    <p className="text-sm font-medium text-ink truncate">
+                    <p className="text-base font-medium text-ink truncate">
                       {videoFile?.name}
                     </p>
-                    <p className="text-xs text-ink-muted">
-                      Preview isn't available in this browser — it'll still
+                    <p className="text-sm text-ink-muted">
+                      Preview isn't available in this browser â€” it'll still
                       upload and post normally.
                     </p>
                   </div>
@@ -316,7 +316,7 @@ const CreatePostModal = ({ closeModal, onSubmit, onSubmitVideo }) => {
         <div className="flex items-center justify-between px-5 py-4 border-t border-stroke">
           <div className="flex items-center gap-4">
             <label
-              className={`flex items-center gap-2 text-sm font-medium transition ${
+              className={`flex items-center gap-2 text-base font-medium transition ${
                 images.length >= MAX_IMAGES || Boolean(videoFile)
                   ? "text-ink-muted cursor-not-allowed opacity-50"
                   : "text-primary-600 cursor-pointer hover:text-primary-800"
@@ -340,7 +340,7 @@ const CreatePostModal = ({ closeModal, onSubmit, onSubmitVideo }) => {
               type="button"
               onClick={() => videoInputRef.current?.click()}
               disabled={Boolean(videoFile) || images.length > 0}
-              className={`flex items-center gap-2 text-sm font-medium transition ${
+              className={`flex items-center gap-2 text-base font-medium transition ${
                 Boolean(videoFile) || images.length > 0
                   ? "text-ink-muted cursor-not-allowed opacity-50"
                   : "text-primary-600 hover:text-primary-800"
@@ -362,7 +362,7 @@ const CreatePostModal = ({ closeModal, onSubmit, onSubmitVideo }) => {
           <button
             onClick={handleSubmit}
             disabled={!text.trim() && images.length === 0 && !videoFile}
-            className="px-5 py-2 rounded-xl text-sm font-semibold text-white bg-primary-600 hover:bg-primary-800 disabled:opacity-50 disabled:cursor-not-allowed transition shadow-sm"
+            className="px-5 py-2 rounded-xl text-base font-semibold text-white bg-primary-600 hover:bg-primary-800 disabled:opacity-50 disabled:cursor-not-allowed transition shadow-sm"
           >
             {videoFile ? "Post video" : "Post"}
           </button>

@@ -49,7 +49,7 @@ const Settings = () => {
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   // Track both the local (possibly optimistic) value and the last server
-  // value we synced from, in one state object — avoids a useEffect sync
+  // value we synced from, in one state object â€” avoids a useEffect sync
   // and avoids reading/writing refs during render.
   const [state, setState] = useState(() => ({
     visibility: user?.presenceVisibility || "everyone",
@@ -98,7 +98,7 @@ const Settings = () => {
     setExporting(true);
     try {
       const res = await api.get("/users/me/export");
-      // Standard blob-download pattern — no server-side file, the JSON
+      // Standard blob-download pattern â€” no server-side file, the JSON
       // response itself becomes the downloaded file entirely client-side.
       const blob = new Blob([JSON.stringify(res.data, null, 2)], {
         type: "application/json",
@@ -123,7 +123,7 @@ const Settings = () => {
 
   const handleDeleteAccount = async (password) => {
     // Errors intentionally propagate to the modal (it catches them and
-    // shows the message inline) rather than being caught here — the
+    // shows the message inline) rather than being caught here â€” the
     // modal needs to know the attempt failed so it can stay open and
     // re-enable the form, not just show a toast and silently close.
     await api.delete("/users/me", { data: { password } });
@@ -135,22 +135,22 @@ const Settings = () => {
 
   return (
     <MainLayout>
-      <h1 className="text-xl font-bold text-ink mb-1">Settings</h1>
-      <p className="text-sm text-ink-muted mb-6">
+      <h1 className="text-2xl font-bold text-ink mb-1">Settings</h1>
+      <p className="text-base text-ink-muted mb-6">
         Manage your privacy and account preferences.
       </p>
 
       <AccountIdentitySection />
 
       <section className="bg-card border border-stroke rounded-2xl p-5 mt-4">
-        <h2 className="text-sm font-semibold text-ink mb-1">Appearance</h2>
-        <p className="text-sm text-ink-muted mb-4">
+        <h2 className="text-base font-semibold text-ink mb-1">Appearance</h2>
+        <p className="text-base text-ink-muted mb-4">
           Choose between light and dark mode. Your choice is saved on this
           device.
         </p>
         <button
           onClick={toggleTheme}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-stroke text-sm font-medium text-ink hover:bg-surface transition"
+          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-stroke text-base font-medium text-ink hover:bg-surface transition"
         >
           {theme === "dark" ? <FiSun size={15} /> : <FiMoon size={15} />}
           {theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
@@ -158,10 +158,10 @@ const Settings = () => {
       </section>
 
       <section className="bg-card border border-stroke rounded-2xl p-5 mt-4">
-        <h2 className="text-sm font-semibold text-ink mb-1">
+        <h2 className="text-base font-semibold text-ink mb-1">
           Who can see you're online
         </h2>
-        <p className="text-sm text-ink-muted mb-4">
+        <p className="text-base text-ink-muted mb-4">
           Controls the green dot on your profile and in chat.
         </p>
 
@@ -185,10 +185,10 @@ const Settings = () => {
                   className={`mt-0.5 shrink-0 ${selected ? "text-primary-600" : "text-ink-muted"}`}
                 />
                 <span className="flex-1">
-                  <span className="block text-sm font-medium text-ink">
+                  <span className="block text-base font-medium text-ink">
                     {opt.label}
                   </span>
-                  <span className="block text-xs text-ink-muted mt-0.5">
+                  <span className="block text-sm text-ink-muted mt-0.5">
                     {opt.description}
                   </span>
                 </span>
@@ -206,14 +206,14 @@ const Settings = () => {
       </section>
 
       <section className="bg-card border border-stroke rounded-2xl p-5 mt-4">
-        <h2 className="text-sm font-semibold text-ink mb-1">Your data</h2>
-        <p className="text-sm text-ink-muted mb-4">
-          Download a copy of everything tied to your account — posts, comments,
+        <h2 className="text-base font-semibold text-ink mb-1">Your data</h2>
+        <p className="text-base text-ink-muted mb-4">
+          Download a copy of everything tied to your account â€” posts, comments,
           likes, bookmarks, follows, messages, and more.
         </p>
         <button
           onClick={() => setShowExportModal(true)}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-stroke text-sm font-medium text-ink hover:bg-surface transition"
+          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-stroke text-base font-medium text-ink hover:bg-surface transition"
         >
           <FiDownload size={15} />
           Download my data
@@ -221,13 +221,13 @@ const Settings = () => {
       </section>
 
       <section className="bg-card border border-stroke rounded-2xl mt-4 overflow-hidden">
-        <h2 className="text-sm font-semibold text-ink px-5 pt-5 pb-1">
+        <h2 className="text-base font-semibold text-ink px-5 pt-5 pb-1">
           Legal & support
         </h2>
         <div className="divide-y divide-stroke mt-2">
           <Link
             to="/help"
-            className="flex items-center gap-3 px-5 py-3.5 text-sm text-ink hover:bg-surface transition"
+            className="flex items-center gap-3 px-5 py-3.5 text-base text-ink hover:bg-surface transition"
           >
             <FiHelpCircle size={15} className="text-primary-600" />
             <span className="flex-1">Help & Support</span>
@@ -235,7 +235,7 @@ const Settings = () => {
           </Link>
           <Link
             to="/privacy"
-            className="flex items-center gap-3 px-5 py-3.5 text-sm text-ink hover:bg-surface transition"
+            className="flex items-center gap-3 px-5 py-3.5 text-base text-ink hover:bg-surface transition"
           >
             <FiShield size={15} className="text-primary-600" />
             <span className="flex-1">Privacy Policy</span>
@@ -243,7 +243,7 @@ const Settings = () => {
           </Link>
           <Link
             to="/terms"
-            className="flex items-center gap-3 px-5 py-3.5 text-sm text-ink hover:bg-surface transition"
+            className="flex items-center gap-3 px-5 py-3.5 text-base text-ink hover:bg-surface transition"
           >
             <FiFileText size={15} className="text-primary-600" />
             <span className="flex-1">Terms of Use</span>
@@ -253,14 +253,14 @@ const Settings = () => {
       </section>
 
       <section className="bg-card border border-stroke rounded-2xl p-5 mt-4">
-        <h2 className="text-sm font-semibold text-ink mb-1">Delete account</h2>
-        <p className="text-sm text-ink-muted mb-4">
+        <h2 className="text-base font-semibold text-ink mb-1">Delete account</h2>
+        <p className="text-base text-ink-muted mb-4">
           Permanently deletes your account and everything in it. This can't be
           undone after the 30-day grace period.
         </p>
         <button
           onClick={() => setShowDeleteModal(true)}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-red-200 text-sm font-medium text-red-600 hover:bg-red-50 transition"
+          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-red-200 text-base font-medium text-red-600 hover:bg-red-50 transition"
         >
           <FiTrash2 size={15} />
           Delete my account

@@ -48,7 +48,7 @@ const ChatModal = ({
           </button>
           <div className="flex-1">
             <div className="font-semibold">{activeUser?.name}</div>
-            <div className="text-xs text-gray-500">
+            <div className="text-sm text-gray-500">
               {activeIsOnline ? "Online" : "Offline"}
             </div>
           </div>
@@ -125,7 +125,7 @@ const ChatModal = ({
                     )}
                     {isMine && (
                       <span
-                        className={`text-xs ${message.read ? "text-primary-400" : "text-gray-400"}`}
+                        className={`text-sm ${message.read ? "text-primary-400" : "text-gray-400"}`}
                         title={message.read ? "Read" : "Sent"}
                       >
                         {message.read ? (
@@ -155,7 +155,7 @@ const ChatModal = ({
                 onClick={() => setImagePreview(null)}
                 className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center"
               >
-                ✕
+                âœ•
               </button>
             </div>
           )}
@@ -177,7 +177,7 @@ const ChatModal = ({
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="text-primary-600 border-3 border-primary-600 hover:bg-primary-100 rounded-full p-3 text-xl transition"
+              className="text-primary-600 border-3 border-primary-600 hover:bg-primary-100 rounded-full p-3 text-2xl transition"
               title="Attach image"
             >
               <FaImage />

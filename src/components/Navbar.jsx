@@ -15,16 +15,16 @@ const NavLink = ({ to, icon: Icon, label, badge }) => {
   return (
     <Link
       to={to}
-      className={`relative flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+      className={`relative flex items-center gap-2 px-3 py-2 rounded-lg text-base font-medium transition-all duration-200 ${
         active
           ? "bg-primary-100 text-primary-600"
           : "text-ink-sub hover:text-ink hover:bg-primary-50"
       }`}
     >
-      <Icon className="text-base" />
+      <Icon className="text-lg" />
       <span className="hidden lg:inline">{label}</span>
       {badge > 0 && (
-        <span className="absolute -top-1 -right-1 flex items-center justify-center min-w-4 h-4 rounded-full bg-primary-600 text-white text-xs font-bold px-1">
+        <span className="absolute -top-1 -right-1 flex items-center justify-center min-w-4 h-4 rounded-full bg-primary-600 text-white text-sm font-bold px-1">
           {badge}
         </span>
       )}
@@ -37,7 +37,7 @@ const Navbar = () => {
   // unreadCount now lives in SocketContext, shared with the Chat page.
   // Chat calls refreshUnreadCount() itself right after marking a thread
   // read, so the badge no longer depends on a "messagesRead" socket
-  // event round-tripping back before it updates — that round trip was
+  // event round-tripping back before it updates â€” that round trip was
   // the source of the stale-badge-until-refresh bug, since Chat's own
   // socket didn't join the conversation room until after the read
   // request (and its resulting event) had already gone out.
@@ -67,7 +67,7 @@ const Navbar = () => {
             alt="Tronites"
             className="h-8 w-auto object-contain"
           />
-          <span className="font-bold text-ink text-lg hidden sm:inline">
+          <span className="font-bold text-ink text-xl hidden sm:inline">
             Tron<span className="text-primary-600">ites</span>
           </span>
         </Link>

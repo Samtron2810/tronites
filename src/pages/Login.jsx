@@ -9,7 +9,7 @@ const Login = () => {
   const { login, user, loading } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  // Server's rejection code ("ACCOUNT_BANNED"/"ACCOUNT_SUSPENDED") — when
+  // Server's rejection code ("ACCOUNT_BANNED"/"ACCOUNT_SUSPENDED") â€” when
   // present we swap the generic failure toast for a dedicated inline
   // panel so restricted users get a specific screen, not a vague error.
   const [errorCode, setErrorCode] = useState(null);
@@ -43,14 +43,14 @@ const Login = () => {
     <div className="min-h-screen app-bg flex">
       {/* Left panel */}
       <div className="hidden lg:flex w-1/2 bg-primary-600 flex-col justify-between p-12">
-        <span className="text-white font-bold text-2xl tracking-tight">
+        <span className="text-white font-bold text-3xl tracking-tight">
           Tron<span className="text-primary-200">ites</span>
         </span>
         <div>
-          <p className="text-primary-100 text-4xl font-bold leading-tight max-w-xs">
+          <p className="text-primary-100 text-5xl font-bold leading-tight max-w-xs">
             Connect with your community.
           </p>
-          <p className="text-primary-200 mt-4 text-base leading-relaxed max-w-sm">
+          <p className="text-primary-200 mt-4 text-lg leading-relaxed max-w-sm">
             Share posts, follow people, and stay in the loop with what matters
             to you.
           </p>
@@ -66,23 +66,23 @@ const Login = () => {
       <div className="flex-1 flex items-center justify-center px-6 py-12">
         <div className="w-full max-w-sm">
           <div className="lg:hidden mb-8 text-center">
-            <span className="text-ink font-bold text-3xl">
+            <span className="text-ink font-bold text-4xl">
               Tron<span className="text-primary-600">ites</span>
             </span>
           </div>
 
-          <h2 className="text-2xl font-bold text-ink mb-1">Sign in</h2>
-          <p className="text-ink-muted text-sm mb-6">Welcome back. Good to see you.</p>
+          <h2 className="text-3xl font-bold text-ink mb-1">Sign in</h2>
+          <p className="text-ink-muted text-base mb-6">Welcome back. Good to see you.</p>
 
           {(errorCode === "ACCOUNT_BANNED" ||
             errorCode === "ACCOUNT_SUSPENDED") && (
             <div className="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3">
-              <p className="text-sm font-semibold text-red-600 mb-0.5">
+              <p className="text-base font-semibold text-red-600 mb-0.5">
                 {errorCode === "ACCOUNT_BANNED"
                   ? "Account banned"
                   : "Account suspended"}
               </p>
-              <p className="text-xs text-red-500 leading-relaxed">
+              <p className="text-sm text-red-500 leading-relaxed">
                 {errorCode === "ACCOUNT_BANNED"
                   ? "This account has been permanently banned and can no longer sign in."
                   : "This account is temporarily suspended. You can sign in again once the suspension ends."}
@@ -92,7 +92,7 @@ const Login = () => {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="relative">
-              <FiUser className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted text-sm" />
+              <FiUser className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted text-base" />
               <input
                 type="text"
                 name="identifier"
@@ -101,12 +101,12 @@ const Login = () => {
                 onChange={handleChange}
                 required
                 autoCapitalize="none"
-                className="w-full pl-9 pr-4 py-3 rounded-xl border border-stroke bg-card text-ink text-sm placeholder:text-ink-muted outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100 transition"
+                className="w-full pl-9 pr-4 py-3 rounded-xl border border-stroke bg-card text-ink text-base placeholder:text-ink-muted outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100 transition"
               />
             </div>
 
             <div className="relative">
-              <FiLock className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted text-sm" />
+              <FiLock className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted text-base" />
               <input
                 type={showPassword ? "text" : "password"}
                 name="password"
@@ -114,7 +114,7 @@ const Login = () => {
                 value={formData.password}
                 onChange={handleChange}
                 required
-                className="w-full pl-9 pr-10 py-3 rounded-xl border border-stroke bg-card text-ink text-sm placeholder:text-ink-muted outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100 transition"
+                className="w-full pl-9 pr-10 py-3 rounded-xl border border-stroke bg-card text-ink text-base placeholder:text-ink-muted outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100 transition"
               />
               <button
                 type="button"
@@ -128,7 +128,7 @@ const Login = () => {
             <div className="flex justify-end -mt-1">
               <Link
                 to="/forgot-password"
-                className="text-sm font-medium text-primary-600 hover:text-primary-800 hover:underline transition"
+                className="text-base font-medium text-primary-600 hover:text-primary-800 hover:underline transition"
               >
                 Forgot password?
               </Link>
@@ -137,13 +137,13 @@ const Login = () => {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-primary-600 hover:bg-primary-800 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-xl text-sm transition-all duration-200 shadow-sm hover:shadow-md"
+              className="w-full bg-primary-600 hover:bg-primary-800 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-xl text-base transition-all duration-200 shadow-sm hover:shadow-md"
             >
               {isLoading ? "Signing in..." : "Sign in"}
             </button>
           </form>
 
-          <p className="text-center text-ink-muted text-sm mt-6">
+          <p className="text-center text-ink-muted text-base mt-6">
             No account?{" "}
             <Link
               to="/signup"
@@ -153,7 +153,7 @@ const Login = () => {
             </Link>
           </p>
 
-          <p className="text-center text-ink-muted text-xs mt-8 leading-relaxed">
+          <p className="text-center text-ink-muted text-sm mt-8 leading-relaxed">
             By continuing, you agree to Tronites'{" "}
             <Link to="/terms" className="text-primary-600 hover:underline">
               Terms of Use

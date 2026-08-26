@@ -17,11 +17,11 @@ const DURATIONS = [
 
 // Confirm modal for the three account-restriction actions (Phase 2),
 // modeled on ConfirmRoleChangeModal. mode:
-//   "suspend"    → duration picker + reason
-//   "ban"        → reason only, permanent-action copy
-//   "unrestrict" → plain confirm
-// onConfirm receives ({ until, reason }) — `until` is null except for
-// suspend — and the caller owns the API call.
+//   "suspend"    â†’ duration picker + reason
+//   "ban"        â†’ reason only, permanent-action copy
+//   "unrestrict" â†’ plain confirm
+// onConfirm receives ({ until, reason }) â€” `until` is null except for
+// suspend â€” and the caller owns the API call.
 const ConfirmRestrictionModal = ({
   mode,
   targetUser,
@@ -34,7 +34,7 @@ const ConfirmRestrictionModal = ({
   const [reason, setReason] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   // datetime-local floor: now + 1 minute. Computed once per mount via
-  // useMemo — the purity rule rightly bans bare Date.now() in render,
+  // useMemo â€” the purity rule rightly bans bare Date.now() in render,
   // and a minute-stale floor is harmless: past picks are rejected on
   // submit here and re-checked server-side against its own clock.
   const customMin = useMemo(
@@ -73,7 +73,7 @@ const ConfirmRestrictionModal = ({
     }
   };
 
-  // Phase 6 — bulk mode triggers on count > 1 OR whenever the caller has
+  // Phase 6 â€” bulk mode triggers on count > 1 OR whenever the caller has
   // no single target to show (AdminUsers' selection bar passes
   // targetUser={null}, which also covers its one-account edge case).
   const isBulk = count > 1 || !targetUser;
@@ -106,15 +106,15 @@ const ConfirmRestrictionModal = ({
               <FiCheckCircle className="text-primary-600" size={16} />
             )}
           </div>
-          <h2 className="text-base font-semibold text-ink">{header}</h2>
+          <h2 className="text-lg font-semibold text-ink">{header}</h2>
         </div>
 
         {isBulk ? (
-          // Bulk mode — no single avatar to show; the parent passes only
+          // Bulk mode â€” no single avatar to show; the parent passes only
           // the count. The amber treatment matches the suspend styling.
           <div className="flex items-center gap-3 mb-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5">
             <FiAlertTriangle className="text-amber-500 shrink-0" size={16} />
-            <p className="text-sm font-medium text-ink">
+            <p className="text-base font-medium text-ink">
               {count} accounts selected
             </p>
           </div>
@@ -126,10 +126,10 @@ const ConfirmRestrictionModal = ({
               className="w-10 h-10 rounded-full object-cover ring-2 ring-primary-100 shrink-0"
             />
             <div className="min-w-0">
-              <p className="text-sm font-semibold text-ink truncate">
+              <p className="text-base font-semibold text-ink truncate">
                 {targetUser.name}
               </p>
-              <p className="text-xs text-ink-muted truncate">
+              <p className="text-sm text-ink-muted truncate">
                 {targetUser.email}
               </p>
             </div>
@@ -138,7 +138,7 @@ const ConfirmRestrictionModal = ({
 
         {isSuspend && (
           <div className="mb-3">
-            <p className="text-xs font-medium text-ink-sub mb-1.5">
+            <p className="text-sm font-medium text-ink-sub mb-1.5">
               Suspension length
             </p>
             <div className="grid grid-cols-4 gap-1.5">
@@ -147,7 +147,7 @@ const ConfirmRestrictionModal = ({
                   key={d.value}
                   type="button"
                   onClick={() => setDuration(d.value)}
-                  className={`px-2 py-1.5 rounded-lg text-xs font-medium border transition ${
+                  className={`px-2 py-1.5 rounded-lg text-sm font-medium border transition ${
                     duration === d.value
                       ? "border-amber-400 bg-amber-50 text-amber-700"
                       : "border-stroke text-ink-sub hover:bg-surface"
@@ -159,7 +159,7 @@ const ConfirmRestrictionModal = ({
               <button
                 type="button"
                 onClick={() => setDuration("custom")}
-                className={`px-2 py-1.5 rounded-lg text-xs font-medium border transition ${
+                className={`px-2 py-1.5 rounded-lg text-sm font-medium border transition ${
                   duration === "custom"
                     ? "border-amber-400 bg-amber-50 text-amber-700"
                     : "border-stroke text-ink-sub hover:bg-surface"
@@ -174,7 +174,7 @@ const ConfirmRestrictionModal = ({
                 value={customUntil}
                 min={customMin}
                 onChange={(e) => setCustomUntil(e.target.value)}
-                className="mt-2 w-full rounded-xl border border-stroke px-3 py-2 text-sm text-ink outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-100 transition"
+                className="mt-2 w-full rounded-xl border border-stroke px-3 py-2 text-base text-ink outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-100 transition"
               />
             )}
           </div>
@@ -190,7 +190,7 @@ const ConfirmRestrictionModal = ({
                 : "Optional note for the moderation record"
             }
             rows={2}
-            className="w-full rounded-xl border border-stroke px-3 py-2 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-primary-300 resize-none mb-3"
+            className="w-full rounded-xl border border-stroke px-3 py-2 text-base text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-primary-300 resize-none mb-3"
           />
         )}
         {isBan && (
@@ -200,14 +200,14 @@ const ConfirmRestrictionModal = ({
               onChange={(e) => setReason(e.target.value.slice(0, 500))}
               placeholder="Reason for the ban"
               rows={2}
-              className="w-full rounded-xl border border-stroke px-3 py-2 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-red-200 resize-none mb-3"
+              className="w-full rounded-xl border border-stroke px-3 py-2 text-base text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-red-200 resize-none mb-3"
             />
             <div className="flex items-start gap-2.5 rounded-xl border border-red-200 bg-red-50 px-3 py-2.5 mb-3">
               <FiAlertTriangle
                 className="text-red-500 shrink-0 mt-0.5"
                 size={15}
               />
-              <p className="text-xs text-red-600 leading-relaxed">
+              <p className="text-sm text-red-600 leading-relaxed">
                 This is permanent. The account loses access immediately and can
                 only be restored by an admin via "Restore access".
               </p>
@@ -219,14 +219,14 @@ const ConfirmRestrictionModal = ({
           <button
             onClick={onCancel}
             disabled={isSubmitting}
-            className="flex-1 px-4 py-2.5 rounded-xl border border-stroke text-sm font-medium text-ink-sub hover:bg-surface disabled:opacity-50 disabled:cursor-not-allowed transition"
+            className="flex-1 px-4 py-2.5 rounded-xl border border-stroke text-base font-medium text-ink-sub hover:bg-surface disabled:opacity-50 disabled:cursor-not-allowed transition"
           >
             Cancel
           </button>
           <button
             onClick={handleConfirm}
             disabled={!canSubmit}
-            className={`flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-60 disabled:cursor-not-allowed transition ${
+            className={`flex-1 px-4 py-2.5 rounded-xl text-base font-semibold text-white disabled:opacity-60 disabled:cursor-not-allowed transition ${
               isBan
                 ? "bg-red-500 hover:bg-red-600"
                 : isSuspend

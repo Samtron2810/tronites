@@ -15,7 +15,7 @@ const typeConfig = {
   mention: { icon: FaAt, color: "text-primary-600", label: "mentioned you" },
   reply:   { icon: FaReply, color: "text-primary-600", label: "replied to your comment" },
   commentLike: { icon: FaHeart, color: "text-red-500", label: "liked your comment" },
-  // Phase 4 — rendered through a dedicated branch below: no sender link,
+  // Phase 4 â€” rendered through a dedicated branch below: no sender link,
   // shield avatar, reason text from n.message. The warned user must not
   // see WHICH moderator issued the warning.
   moderator_warning: { icon: FaExclamationTriangle, color: "text-amber-500", label: "" },
@@ -73,7 +73,7 @@ const Notifications = () => {
     <MainLayout>
       <div className="bg-card border border-stroke rounded-2xl overflow-hidden">
         <div className="px-5 py-4 border-b border-stroke">
-          <h1 className="text-base font-semibold text-ink">Notifications</h1>
+          <h1 className="text-lg font-semibold text-ink">Notifications</h1>
         </div>
 
         {loading && (
@@ -84,8 +84,8 @@ const Notifications = () => {
 
         {!loading && notifications.length === 0 && (
           <div className="py-16 text-center">
-            <FaBell className="text-2xl mb-2 mx-auto text-ink-muted" />
-            <p className="text-sm text-ink-muted">No notifications yet.</p>
+            <FaBell className="text-3xl mb-2 mx-auto text-ink-muted" />
+            <p className="text-base text-ink-muted">No notifications yet.</p>
           </div>
         )}
 
@@ -105,7 +105,7 @@ const Notifications = () => {
                 }`}
               >
                 {n.type === "moderator_warning" ? (
-                  // Phase 4 — no sender identity: a shield avatar instead
+                  // Phase 4 â€” no sender identity: a shield avatar instead
                   // of the issuing moderator's profile pic/link, so the
                   // warned user learns the reason but not who sent it.
                   <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center ring-2 ring-amber-200 shrink-0">
@@ -122,24 +122,24 @@ const Notifications = () => {
                 )}
                 {n.type === "moderator_warning" ? (
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm text-ink">
+                    <p className="text-base text-ink">
                       <span className="font-semibold">Moderation team</span>{" "}
                       <span className="text-ink-sub">
                         sent you a formal warning
                       </span>
                     </p>
                     {n.message && (
-                      <p className="text-sm text-ink-sub mt-1">
+                      <p className="text-base text-ink-sub mt-1">
                         "{n.message}"
                       </p>
                     )}
-                    <p className="text-xs text-ink-muted mt-0.5">
+                    <p className="text-sm text-ink-muted mt-0.5">
                       {new Date(n.createdAt).toLocaleString()}
                     </p>
                   </div>
                 ) : (
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm text-ink">
+                    <p className="text-base text-ink">
                       <Link
                         to={`/profile/${n.sender?._id}`}
                         className="font-semibold hover:text-primary-600 transition"
@@ -147,11 +147,11 @@ const Notifications = () => {
                         {n.sender?.name || "Someone"}
                       </Link>
                       {n.sender?.username && (
-                        <span className="text-ink-muted text-xs"> @{n.sender.username}</span>
+                        <span className="text-ink-muted text-sm"> @{n.sender.username}</span>
                       )}{" "}
                       <span className="text-ink-sub">{cfg.label}</span>
                     </p>
-                    <p className="text-xs text-ink-muted mt-0.5">
+                    <p className="text-sm text-ink-muted mt-0.5">
                       {new Date(n.createdAt).toLocaleString()}
                     </p>
                   </div>
@@ -167,7 +167,7 @@ const Notifications = () => {
             <button
               onClick={loadMore}
               disabled={loadingMore}
-              className="text-sm font-semibold text-primary-600 hover:text-primary-800 disabled:opacity-50 disabled:cursor-not-allowed transition"
+              className="text-base font-semibold text-primary-600 hover:text-primary-800 disabled:opacity-50 disabled:cursor-not-allowed transition"
             >
               {loadingMore ? "Loading..." : "Load more"}
             </button>

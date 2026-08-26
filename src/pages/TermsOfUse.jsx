@@ -7,8 +7,8 @@ const LAST_UPDATED = "August 24, 2026";
 
 const Section = ({ title, children }) => (
   <section className="bg-card border border-stroke rounded-2xl p-5 mb-4">
-    <h2 className="text-sm font-semibold text-ink mb-2">{title}</h2>
-    <div className="text-sm text-ink-muted leading-relaxed space-y-3">
+    <h2 className="text-base font-semibold text-ink mb-2">{title}</h2>
+    <div className="text-base text-ink-muted leading-relaxed space-y-3">
       {children}
     </div>
   </section>
@@ -30,14 +30,14 @@ const TermsOfUse = () => {
     <MainLayout>
       <button
         onClick={handleBack}
-        className="inline-flex items-center gap-1.5 text-sm font-medium text-ink-muted hover:text-ink mb-4 transition"
+        className="inline-flex items-center gap-1.5 text-base font-medium text-ink-muted hover:text-ink mb-4 transition"
       >
         <FiArrowLeft size={15} />
         Back
       </button>
 
-      <h1 className="text-xl font-bold text-ink mb-1">Terms of Use</h1>
-      <p className="text-sm text-ink-muted mb-6">
+      <h1 className="text-2xl font-bold text-ink mb-1">Terms of Use</h1>
+      <p className="text-base text-ink-muted mb-6">
         Last updated: {LAST_UPDATED}
       </p>
 
@@ -112,7 +112,7 @@ const TermsOfUse = () => {
           share on Tronites ("User Content"). By posting, you grant Tronites a
           non-exclusive, worldwide, royalty-free license to host, store,
           reproduce, and display that content solely for the purpose of
-          operating and improving the platform — for example, showing your posts
+          operating and improving the platform â€” for example, showing your posts
           in feeds, search, and to the users you share them with.
         </p>
         <p>
@@ -194,7 +194,7 @@ const TermsOfUse = () => {
           where local law requires otherwise.
         </p>
         <p>
-          Before starting a dispute resolution proceeding, please contact us —
+          Before starting a dispute resolution proceeding, please contact us â€”
           most issues can be resolved directly.
         </p>
       </Section>
@@ -222,7 +222,7 @@ const TermsOfUse = () => {
       </Section>
 
       {!user && (
-        <p className="text-center text-sm text-ink-muted mt-6">
+        <p className="text-center text-base text-ink-muted mt-6">
           <Link
             to="/login"
             className="text-primary-600 font-semibold hover:underline"

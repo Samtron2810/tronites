@@ -63,7 +63,7 @@ const Chat = () => {
   const [videoFile, setVideoFile] = useState(null);
   const [videoPreviewUrl, setVideoPreviewUrl] = useState(null);
   // In-flight BACKGROUND video sends. Each entry is a video whose Send the
-  // user already pressed — the composer was freed at that moment, so text/
+  // user already pressed â€” the composer was freed at that moment, so text/
   // image sends continue working while these finish. One progress bar is
   // rendered per entry.
   const [videoUploads, setVideoUploads] = useState([]);
@@ -237,7 +237,7 @@ const Chat = () => {
       // -trip back. That event is emitted by the server as a side
       // effect of the GET above, but this client doesn't join the
       // conversation's socket room until the *next* effect run (after
-      // selectedChat updates) — so it reliably missed its own read
+      // selectedChat updates) â€” so it reliably missed its own read
       // event and the badge only ever caught up on a full page reload.
       refreshUnreadCount();
     } catch (e) {
@@ -262,7 +262,7 @@ const Chat = () => {
       setMessagesPage(nextPage);
       setMessagesHasMore(res.data.hasMore);
       // Restore scroll position so prepending older messages doesn't
-      // jump the view — wait a tick for the DOM to grow first.
+      // jump the view â€” wait a tick for the DOM to grow first.
       requestAnimationFrame(() => {
         if (container) {
           const newScrollHeight = container.scrollHeight;
@@ -304,9 +304,9 @@ const Chat = () => {
         lastMessage: message.text
           ? message.text
           : message.video?.url
-            ? "🎬 Video"
+            ? "ðŸŽ¬ Video"
             : message.images?.length || message.image
-              ? "📷 Photo(s)"
+              ? "ðŸ“· Photo(s)"
               : "",
         lastMessageFromMe: message.sender._id === user._id,
         lastMessageAt: message.createdAt,
@@ -323,7 +323,7 @@ const Chat = () => {
 
   const handleSendMessage = async () => {
     // `isSending` only covers the fast text/image POST. A video upload in
-    // flight does NOT lock the composer — it runs in the background so
+    // flight does NOT lock the composer â€” it runs in the background so
     // text/images can be sent while it finishes.
     if (isSending || !selectedChat) return;
     if (!messageText.trim() && imagePreviews.length === 0 && !videoFile)
@@ -357,7 +357,7 @@ const Chat = () => {
       if (messageText.trim()) formData.append("text", messageText.trim());
       for (const preview of imagePreviews) {
         const blob = await (await fetch(preview)).blob();
-        // Compress before upload — chat images can be full-resolution
+        // Compress before upload â€” chat images can be full-resolution
         // camera photos (multi-MB) which are expensive to store and slow
         // to send. Wrap in a File so compressImage has a name/size/type
         // to work with.
@@ -383,7 +383,7 @@ const Chat = () => {
       setImagePreviews([]);
       if (fileInputRef.current) fileInputRef.current.value = "";
       updateConversationPreview(res.data, false);
-      // A pending request just got its first (and only) message sent —
+      // A pending request just got its first (and only) message sent â€”
       // reflect that in local gating state without waiting for a refetch.
       if (requestInfo?.status !== "accepted") {
         setRequestInfo((prev) =>
@@ -412,7 +412,7 @@ const Chat = () => {
   // with per-item progress, creates the message, appends locally if the
   // user is still viewing the same thread, then removes itself from the
   // pending-uploads list on completion OR failure. Runs independently of
-  // the composer — text/image sends don't wait on it.
+  // the composer â€” text/image sends don't wait on it.
   const startVideoSend = async (item) => {
     try {
       const video = await uploadVideoMessageToCloudinary({
@@ -457,7 +457,7 @@ const Chat = () => {
   // Clears the video draft and revokes its object URL. Extracted so both
   // the remove button, image-select (mutual exclusion), and post-send
   // cleanup share one implementation. Does NOT touch in-flight background
-  // video sends — those live in `videoUploads`.
+  // video sends â€” those live in `videoUploads`.
   const clearVideoDraft = useCallback(() => {
     setVideoFile(null);
     setVideoPreviewUrl((prev) => {
@@ -476,7 +476,7 @@ const Chat = () => {
       if (videoInputRef.current) videoInputRef.current.value = "";
       return;
     }
-    // Videos and images are mutually exclusive in a message — picking a
+    // Videos and images are mutually exclusive in a message â€” picking a
     // video drops any staged images.
     setImagePreviews([]);
     if (fileInputRef.current) fileInputRef.current.value = "";
@@ -573,7 +573,7 @@ const Chat = () => {
       setMessages((prev) => prev.filter((m) => m._id !== messageId));
     } catch (e) {
       console.error(e);
-      toast.error("Couldn't delete the message — it's been restored.");
+      toast.error("Couldn't delete the message â€” it's been restored.");
     } finally {
       deletingIdsRef.current.delete(messageId);
       setDeletingIds((prev) => prev.filter((id) => id !== messageId));
@@ -609,7 +609,7 @@ const Chat = () => {
   //
   // Fix: play a muted, volume-0 primer on the first user gesture. This
   // satisfies the browser's gesture requirement and marks the element as
-  // allowed to autoplay for the rest of the session — no Web Audio API
+  // allowed to autoplay for the rest of the session â€” no Web Audio API
   // or AudioContext needed for a simple one-shot ping.
   useEffect(() => {
     audioRef.current = new Audio(sfx);
@@ -629,7 +629,7 @@ const Chat = () => {
           audioUnlockedRef.current = true;
         })
         .catch(() => {
-          // Still blocked (e.g. no gesture registered yet) — restore
+          // Still blocked (e.g. no gesture registered yet) â€” restore
           // volume and try again on the next gesture.
           el.volume = originalVolume;
         });
@@ -650,13 +650,13 @@ const Chat = () => {
     if (!audioRef.current) return;
     // Guard against the same sound firing twice within a short window
     // (e.g. StrictMode's dev-only double-effect mount, or a stray
-    // duplicate socket event) — only allow one play per ~400ms.
+    // duplicate socket event) â€” only allow one play per ~400ms.
     const now = Date.now();
     if (now - lastSoundPlayedAtRef.current < 400) return;
     lastSoundPlayedAtRef.current = now;
 
     audioRef.current.currentTime = 0;
-    // play() returns a Promise that rejects if the browser blocks it —
+    // play() returns a Promise that rejects if the browser blocks it â€”
     // must be handled or Chrome logs an "unhandled promise rejection"
     // and the old `void` didn't actually catch anything.
     audioRef.current.play().catch((err) => {
@@ -755,7 +755,7 @@ const Chat = () => {
     };
     // selectedChat/updateConversationPreview intentionally omitted: this
     // effect manages the socket subscription lifecycle (join/leave room),
-    // which should only re-run on socket/user identity change — not on
+    // which should only re-run on socket/user identity change â€” not on
     // every selectedChat update, which the handlers already read fresh
     // via closure re-creation each render anyway.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -764,7 +764,7 @@ const Chat = () => {
   useEffect(() => {
     if (!scrollRef.current) return;
     // Don't auto-scroll to bottom when older messages were just prepended
-    // via loadOlderMessages — that has its own scroll-position restore.
+    // via loadOlderMessages â€” that has its own scroll-position restore.
     if (isPrependingOlder.current) return;
     scrollRef.current.scrollIntoView({
       behavior: hasScrolledToBottom.current ? "smooth" : "auto",
@@ -783,8 +783,8 @@ const Chat = () => {
       <div className="bg-card border border-stroke rounded-2xl overflow-hidden">
         {/* Header */}
         <div className="px-5 py-4 border-b border-stroke flex items-center justify-between">
-          <h2 className="text-base font-semibold text-ink">Messages</h2>
-          <span className="text-xs text-ink-muted">
+          <h2 className="text-lg font-semibold text-ink">Messages</h2>
+          <span className="text-sm text-ink-muted">
             {totalConversationsCount} chats
           </span>
         </div>
@@ -793,7 +793,7 @@ const Chat = () => {
         <div className="flex border-b border-stroke">
           <button
             onClick={() => setActiveTab("messages")}
-            className={`flex-1 py-3 text-sm font-medium transition ${
+            className={`flex-1 py-3 text-base font-medium transition ${
               activeTab === "messages"
                 ? "text-primary-600 border-b-2 border-primary-600"
                 : "text-ink-muted hover:text-ink"
@@ -803,7 +803,7 @@ const Chat = () => {
           </button>
           <button
             onClick={() => setActiveTab("requests")}
-            className={`flex-1 py-3 text-sm font-medium transition relative ${
+            className={`flex-1 py-3 text-base font-medium transition relative ${
               activeTab === "requests"
                 ? "text-primary-600 border-b-2 border-primary-600"
                 : "text-ink-muted hover:text-ink"
@@ -825,8 +825,8 @@ const Chat = () => {
 
             {!loading && conversations.length === 0 && (
               <div className="py-16 text-center">
-                <FaComment className="text-2xl mb-2 mx-auto" />
-                <p className="text-sm text-ink-muted">
+                <FaComment className="text-3xl mb-2 mx-auto" />
+                <p className="text-base text-ink-muted">
                   No conversations yet. Open a profile to start messaging.
                 </p>
               </div>
@@ -858,21 +858,21 @@ const Chat = () => {
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between gap-2">
-                          <p className="text-sm font-semibold text-ink truncate">
+                          <p className="text-base font-semibold text-ink truncate">
                             {conv.otherUser.name}
                             {conv.otherUser.username && (
-                              <span className="ml-1 font-normal text-xs text-ink-muted">
+                              <span className="ml-1 font-normal text-sm text-ink-muted">
                                 @{conv.otherUser.username}
                               </span>
                             )}
                           </p>
                           {conv.unreadCount > 0 && (
-                            <span className="shrink-0 min-w-5 h-5 rounded-full bg-primary-600 text-white text-xs font-bold flex items-center justify-center px-1">
+                            <span className="shrink-0 min-w-5 h-5 rounded-full bg-primary-600 text-white text-sm font-bold flex items-center justify-center px-1">
                               {conv.unreadCount}
                             </span>
                           )}
                         </div>
-                        <p className="text-xs text-ink-muted truncate">
+                        <p className="text-sm text-ink-muted truncate">
                           {isPendingSent
                             ? "Message request sent"
                             : conv.lastMessageFromMe
@@ -890,7 +890,7 @@ const Chat = () => {
                 className="py-4 text-center"
               >
                 {isLoadingMoreConversations && (
-                  <p className="text-xs text-ink-muted">
+                  <p className="text-sm text-ink-muted">
                     Loading more chats...
                   </p>
                 )}
@@ -906,8 +906,8 @@ const Chat = () => {
 
             {!requestsLoading && requests.length === 0 && (
               <div className="py-16 text-center">
-                <FaComment className="text-2xl mb-2 mx-auto" />
-                <p className="text-sm text-ink-muted">No message requests.</p>
+                <FaComment className="text-3xl mb-2 mx-auto" />
+                <p className="text-base text-ink-muted">No message requests.</p>
               </div>
             )}
 
@@ -921,18 +921,18 @@ const Chat = () => {
                       className="w-11 h-11 rounded-full object-cover ring-2 ring-primary-100 shrink-0"
                     />
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-ink truncate">
+                      <p className="text-base font-semibold text-ink truncate">
                         {req.otherUser.name}
                         {req.otherUser.username && (
-                          <span className="ml-1 font-normal text-xs text-ink-muted">
+                          <span className="ml-1 font-normal text-sm text-ink-muted">
                             @{req.otherUser.username}
                           </span>
                         )}
                       </p>
-                      <p className="text-xs text-ink-muted truncate">
+                      <p className="text-sm text-ink-muted truncate">
                         {req.message?.text ||
                           (req.message?.video?.url
-                            ? "🎬 Sent a video"
+                            ? "ðŸŽ¬ Sent a video"
                             : req.message?.images?.length
                               ? "Sent photos"
                               : req.message?.image
@@ -945,7 +945,7 @@ const Chat = () => {
                     <button
                       onClick={() => handleAcceptRequest(req)}
                       disabled={requestActionId === req.conversationId}
-                      className="flex-1 py-2 rounded-lg text-xs font-semibold text-white bg-primary-600 hover:bg-primary-800 disabled:opacity-50 transition"
+                      className="flex-1 py-2 rounded-lg text-sm font-semibold text-white bg-primary-600 hover:bg-primary-800 disabled:opacity-50 transition"
                     >
                       {requestActionId === req.conversationId
                         ? "..."
@@ -954,7 +954,7 @@ const Chat = () => {
                     <button
                       onClick={() => handleDeclineRequest(req)}
                       disabled={requestActionId === req.conversationId}
-                      className="flex-1 py-2 rounded-lg text-xs font-semibold text-ink-sub border border-stroke hover:bg-surface disabled:opacity-50 transition"
+                      className="flex-1 py-2 rounded-lg text-sm font-semibold text-ink-sub border border-stroke hover:bg-surface disabled:opacity-50 transition"
                     >
                       Decline
                     </button>

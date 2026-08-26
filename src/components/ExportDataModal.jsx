@@ -3,7 +3,7 @@ import { FiDownload } from "react-icons/fi";
 
 // Mirrors DeleteAccountModal's visual pattern (same overlay + centered
 // card + icon header) but uses neutral/primary styling since exporting
-// data is non-destructive — a stray click shouldn't trigger a download,
+// data is non-destructive â€” a stray click shouldn't trigger a download,
 // but it's not a red-warning action either.
 const ExportDataModal = ({ onConfirm, onCancel }) => {
   const [isExporting, setIsExporting] = useState(false);
@@ -28,13 +28,13 @@ const ExportDataModal = ({ onConfirm, onCancel }) => {
           <div className="w-9 h-9 rounded-xl bg-primary-50 flex items-center justify-center shrink-0">
             <FiDownload className="text-primary-600" size={16} />
           </div>
-          <h2 className="text-base font-semibold text-ink">
+          <h2 className="text-lg font-semibold text-ink">
             Download your data
           </h2>
         </div>
-        <p className="text-sm text-ink-muted leading-relaxed">
-          This will download a copy of everything tied to your account — posts,
-          comments, likes, bookmarks, follows, messages, and more — as a JSON
+        <p className="text-base text-ink-muted leading-relaxed">
+          This will download a copy of everything tied to your account â€” posts,
+          comments, likes, bookmarks, follows, messages, and more â€” as a JSON
           file.
         </p>
 
@@ -42,14 +42,14 @@ const ExportDataModal = ({ onConfirm, onCancel }) => {
           <button
             onClick={onCancel}
             disabled={isExporting}
-            className="flex-1 px-4 py-2.5 rounded-xl border border-stroke text-sm font-medium text-ink-sub hover:bg-surface disabled:opacity-50 disabled:cursor-not-allowed transition"
+            className="flex-1 px-4 py-2.5 rounded-xl border border-stroke text-base font-medium text-ink-sub hover:bg-surface disabled:opacity-50 disabled:cursor-not-allowed transition"
           >
             Cancel
           </button>
           <button
             onClick={handleExport}
             disabled={isExporting}
-            className="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold text-white bg-primary-600 hover:bg-primary-700 disabled:opacity-60 disabled:cursor-not-allowed transition"
+            className="flex-1 px-4 py-2.5 rounded-xl text-base font-semibold text-white bg-primary-600 hover:bg-primary-700 disabled:opacity-60 disabled:cursor-not-allowed transition"
           >
             {isExporting ? "Preparing export..." : "Download my data"}
           </button>

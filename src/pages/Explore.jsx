@@ -24,7 +24,7 @@ const Explore = () => {
   const [followingId, setFollowingId] = useState(null);
   const observerTarget = useRef(null);
 
-  // Separate state for post-content search — keeps the two tabs from
+  // Separate state for post-content search â€” keeps the two tabs from
   // stepping on each other's pagination/loading state when switching.
   const [posts, setPosts] = useState([]);
   const [postsLoading, setPostsLoading] = useState(false);
@@ -33,7 +33,7 @@ const Explore = () => {
   const [postsHasMore, setPostsHasMore] = useState(false);
   const postsObserverTarget = useRef(null);
 
-  // A query starting with # is unambiguously a hashtag lookup — offer a
+  // A query starting with # is unambiguously a hashtag lookup â€” offer a
   // direct jump to that hashtag's dedicated page instead of (or in
   // addition to) a content-search match.
   const hashtagMatch = search.trim().match(/^#?([a-z0-9_]{2,})$/i);
@@ -199,7 +199,7 @@ const Explore = () => {
         <div className="bg-card border border-stroke rounded-2xl p-1 flex gap-1">
           <button
             onClick={() => setActiveTab("users")}
-            className={`flex-1 text-sm font-semibold py-2 rounded-xl transition ${
+            className={`flex-1 text-base font-semibold py-2 rounded-xl transition ${
               activeTab === "users"
                 ? "bg-primary-600 text-white"
                 : "text-ink-muted hover:text-ink"
@@ -209,7 +209,7 @@ const Explore = () => {
           </button>
           <button
             onClick={() => setActiveTab("posts")}
-            className={`flex-1 text-sm font-semibold py-2 rounded-xl transition ${
+            className={`flex-1 text-base font-semibold py-2 rounded-xl transition ${
               activeTab === "posts"
                 ? "bg-primary-600 text-white"
                 : "text-ink-muted hover:text-ink"
@@ -231,7 +231,7 @@ const Explore = () => {
             }
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="flex-1 text-sm text-ink placeholder:text-ink-muted outline-none bg-transparent"
+            className="flex-1 text-base text-ink placeholder:text-ink-muted outline-none bg-transparent"
           />
         </div>
 
@@ -239,7 +239,7 @@ const Explore = () => {
         {possibleHashtag && (
           <Link
             to={`/hashtag/${possibleHashtag}`}
-            className="flex items-center gap-2 bg-primary-50 border border-primary-100 rounded-2xl px-4 py-3 text-sm text-primary-700 hover:bg-primary-100 transition"
+            className="flex items-center gap-2 bg-primary-50 border border-primary-100 rounded-2xl px-4 py-3 text-base text-primary-700 hover:bg-primary-100 transition"
           >
             <FiHash size={15} />
             Jump to <span className="font-semibold">
@@ -253,17 +253,17 @@ const Explore = () => {
           <>
             {/* Hint */}
             {!loading && !search.trim() && users.length > 0 && (
-              <p className="text-xs text-ink-muted px-1">Suggested users</p>
+              <p className="text-sm text-ink-muted px-1">Suggested users</p>
             )}
             {!loading &&
               search.trim().length > 0 &&
               search.trim().length < 2 && (
-                <p className="text-xs text-ink-muted text-center py-6">
+                <p className="text-sm text-ink-muted text-center py-6">
                   Type at least 2 characters to search.
                 </p>
               )}
             {!loading && search.trim().length >= 2 && users.length === 0 && (
-              <p className="text-sm text-ink-muted text-center py-10">
+              <p className="text-base text-ink-muted text-center py-10">
                 No users found for "{search}"
               </p>
             )}
@@ -303,15 +303,15 @@ const Explore = () => {
                         />
                       </div>
                       <div className="min-w-0">
-                        <p className="text-sm font-semibold text-ink truncate">
+                        <p className="text-base font-semibold text-ink truncate">
                           {user.name}
                         </p>
                         {user.username && (
-                          <p className="text-xs text-primary-600 truncate">
+                          <p className="text-sm text-primary-600 truncate">
                             @{user.username}
                           </p>
                         )}
-                        <p className="text-xs text-ink-muted truncate">
+                        <p className="text-sm text-ink-muted truncate">
                           {user.bio || "No bio"}
                         </p>
                       </div>
@@ -320,7 +320,7 @@ const Explore = () => {
                     <button
                       onClick={() => handleFollow(user._id)}
                       disabled={followingId === user._id}
-                      className={`shrink-0 px-4 py-1.5 rounded-xl text-xs font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed ${
+                      className={`shrink-0 px-4 py-1.5 rounded-xl text-sm font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed ${
                         isFollowing
                           ? "bg-surface border border-stroke text-ink-sub hover:border-red-300 hover:text-red-500"
                           : "bg-primary-600 text-white hover:bg-primary-800"
@@ -339,7 +339,7 @@ const Explore = () => {
             {!loading && hasMore && users.length > 0 && (
               <div ref={observerTarget} className="py-4 text-center">
                 {isLoadingMore && (
-                  <p className="text-xs text-ink-muted">Loading more...</p>
+                  <p className="text-sm text-ink-muted">Loading more...</p>
                 )}
               </div>
             )}
@@ -351,19 +351,19 @@ const Explore = () => {
             {!postsLoading &&
               search.trim().length > 0 &&
               search.trim().length < 2 && (
-                <p className="text-xs text-ink-muted text-center py-6">
+                <p className="text-sm text-ink-muted text-center py-6">
                   Type at least 2 characters to search.
                 </p>
               )}
             {!postsLoading &&
               search.trim().length >= 2 &&
               posts.length === 0 && (
-                <p className="text-sm text-ink-muted text-center py-10">
+                <p className="text-base text-ink-muted text-center py-10">
                   No posts found for "{search}"
                 </p>
               )}
             {!postsLoading && search.trim().length === 0 && (
-              <p className="text-sm text-ink-muted text-center py-10">
+              <p className="text-base text-ink-muted text-center py-10">
                 Search for posts by caption or #hashtag.
               </p>
             )}
@@ -404,7 +404,7 @@ const Explore = () => {
             {!postsLoading && postsHasMore && posts.length > 0 && (
               <div ref={postsObserverTarget} className="py-4 text-center">
                 {postsIsLoadingMore && (
-                  <p className="text-xs text-ink-muted">Loading more...</p>
+                  <p className="text-sm text-ink-muted">Loading more...</p>
                 )}
               </div>
             )}

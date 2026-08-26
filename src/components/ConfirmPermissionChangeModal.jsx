@@ -46,11 +46,11 @@ const ConfirmPermissionChangeModal = ({
             <FiShield className="text-primary-600" size={16} />
           </div>
           <div>
-            <h2 className="text-base font-semibold text-ink">
+            <h2 className="text-lg font-semibold text-ink">
               Moderator permissions
             </h2>
-            <p className="text-xs text-ink-muted">
-              Saved as an explicit set — it overrides the defaults entirely.
+            <p className="text-sm text-ink-muted">
+              Saved as an explicit set â€” it overrides the defaults entirely.
             </p>
           </div>
         </div>
@@ -62,10 +62,10 @@ const ConfirmPermissionChangeModal = ({
             className="w-10 h-10 rounded-full object-cover ring-2 ring-primary-100 shrink-0"
           />
           <div className="min-w-0">
-            <p className="text-sm font-semibold text-ink truncate">
+            <p className="text-base font-semibold text-ink truncate">
               {targetUser.name}
             </p>
-            <p className="text-xs text-ink-muted truncate">
+            <p className="text-sm text-ink-muted truncate">
               {targetUser.email}
             </p>
           </div>
@@ -89,19 +89,19 @@ const ConfirmPermissionChangeModal = ({
                 className="mt-0.5 accent-primary-600"
               />
               <span className="min-w-0">
-                <span className="block text-sm font-medium text-ink">
+                <span className="block text-base font-medium text-ink">
                   {opt.label}
                 </span>
-                <span className="block text-xs text-ink-muted">{opt.hint}</span>
+                <span className="block text-sm text-ink-muted">{opt.hint}</span>
               </span>
             </label>
           ))}
         </div>
 
-        <p className="text-xs text-ink-muted leading-relaxed flex items-start gap-1.5">
+        <p className="text-sm text-ink-muted leading-relaxed flex items-start gap-1.5">
           <FiAlertTriangle className="text-amber-500 mt-0.5 shrink-0" size={12} />
           Saving replaces the whole set. An empty selection means this
-          moderator keeps working under the default set — tick nothing you
+          moderator keeps working under the default set â€” tick nothing you
           don't mean to grant.
         </p>
 
@@ -109,14 +109,14 @@ const ConfirmPermissionChangeModal = ({
           <button
             onClick={onCancel}
             disabled={isUpdating}
-            className="flex-1 px-4 py-2.5 rounded-xl border border-stroke text-sm font-medium text-ink-sub hover:bg-surface disabled:opacity-50 disabled:cursor-not-allowed transition"
+            className="flex-1 px-4 py-2.5 rounded-xl border border-stroke text-base font-medium text-ink-sub hover:bg-surface disabled:opacity-50 disabled:cursor-not-allowed transition"
           >
             Cancel
           </button>
           <button
             onClick={handleConfirm}
             disabled={isUpdating}
-            className="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold text-white bg-primary-600 hover:bg-primary-700 disabled:opacity-60 disabled:cursor-not-allowed transition"
+            className="flex-1 px-4 py-2.5 rounded-xl text-base font-semibold text-white bg-primary-600 hover:bg-primary-700 disabled:opacity-60 disabled:cursor-not-allowed transition"
           >
             {isUpdating ? "Saving..." : "Save permissions"}
           </button>

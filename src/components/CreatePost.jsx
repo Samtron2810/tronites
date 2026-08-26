@@ -12,12 +12,12 @@ const CreatePost = ({ fetchPosts }) => {
   const [openModal, setOpenModal] = useState(false);
   const { user } = useAuth();
 
-  // Background post submission for text/image posts — the modal closes
+  // Background post submission for text/image posts â€” the modal closes
   // immediately and this runs the actual upload in the background so the
   // user isn't left staring at a loading spinner. Toasts surface
   // progress/completion.
   const handleSubmit = async ({ text, images, privacy }) => {
-    const toastId = toast.loading("Posting…");
+    const toastId = toast.loading("Postingâ€¦");
     try {
       if (images.length) {
         // Images: get a signed upload request, upload each image directly
@@ -43,17 +43,17 @@ const CreatePost = ({ fetchPosts }) => {
     } catch (error) {
       if (error.code === "ECONNABORTED") {
         toast.error(
-          "Upload is taking longer than expected — check your feed in a moment.",
+          "Upload is taking longer than expected â€” check your feed in a moment.",
           { id: toastId },
         );
       } else if (error?.response?.data?.code === "UPLOAD_LOST") {
-        toast.error("Image upload failed — please try again.", {
+        toast.error("Image upload failed â€” please try again.", {
           id: toastId,
         });
       } else if (error?.response?.data?.code === "UPLOAD_FAILED") {
         toast.error(
           error.response.data.message ||
-            "Image upload failed — please try again.",
+            "Image upload failed â€” please try again.",
           { id: toastId },
         );
       } else {
@@ -67,18 +67,18 @@ const CreatePost = ({ fetchPosts }) => {
     }
   };
 
-  // Background video post submission — mirrors handleSubmit above. The
+  // Background video post submission â€” mirrors handleSubmit above. The
   // modal has already closed by the time this runs; upload + eager
   // transform (server-side trim to 30s) happen here with toast progress,
   // so the user is free to browse/post again while it finishes.
   const handleSubmitVideo = async ({ text, videoFile, privacy }) => {
-    const toastId = toast.loading("Uploading video… 0%");
+    const toastId = toast.loading("Uploading videoâ€¦ 0%");
     try {
       const video = await uploadVideoToCloudinary({
         file: videoFile,
         onProgress: (pct) => {
           toast.loading(
-            pct >= 100 ? "Processing video…" : `Uploading video… ${pct}%`,
+            pct >= 100 ? "Processing videoâ€¦" : `Uploading videoâ€¦ ${pct}%`,
             { id: toastId },
           );
         },
@@ -88,13 +88,13 @@ const CreatePost = ({ fetchPosts }) => {
 
       // durationSeconds is the SOURCE video's duration (Cloudinary's
       // top-level `duration` field, read before the eager transform)
-      // — not the trimmed clip's. Comparing it against the cap is how
+      // â€” not the trimmed clip's. Comparing it against the cap is how
       // we know, after the fact, whether the eager transform actually
       // cut anything.
       if (video.durationSeconds > MAX_VIDEO_DURATION_SECONDS) {
         toast.success(
-          `Video posted — trimmed to the first ${MAX_VIDEO_DURATION_SECONDS}s`,
-          { id: toastId, icon: "✂️", duration: 4000 },
+          `Video posted â€” trimmed to the first ${MAX_VIDEO_DURATION_SECONDS}s`,
+          { id: toastId, icon: "âœ‚ï¸", duration: 4000 },
         );
       } else {
         toast.success("Video posted!", { id: toastId });
@@ -121,7 +121,7 @@ const CreatePost = ({ fetchPosts }) => {
           />
           <button
             onClick={() => setOpenModal(true)}
-            className="flex-1 text-left px-4 py-2.5 rounded-xl border border-stroke text-ink-muted text-sm bg-surface hover:border-primary-400 hover:bg-primary-50 transition cursor-text"
+            className="flex-1 text-left px-4 py-2.5 rounded-xl border border-stroke text-ink-muted text-base bg-surface hover:border-primary-400 hover:bg-primary-50 transition cursor-text"
           >
             What's on your mind?
           </button>

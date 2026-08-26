@@ -37,7 +37,7 @@ const ConfirmRoleChangeModal = ({
               size={16}
             />
           </div>
-          <h2 className="text-base font-semibold text-ink">Change Role</h2>
+          <h2 className="text-lg font-semibold text-ink">Change Role</h2>
         </div>
 
         <div className="flex items-center gap-3 mb-3">
@@ -47,16 +47,16 @@ const ConfirmRoleChangeModal = ({
             className="w-10 h-10 rounded-full object-cover ring-2 ring-primary-100 shrink-0"
           />
           <div className="min-w-0">
-            <p className="text-sm font-semibold text-ink truncate">
+            <p className="text-base font-semibold text-ink truncate">
               {targetUser.name}
             </p>
-            <p className="text-xs text-ink-muted truncate">
+            <p className="text-sm text-ink-muted truncate">
               {targetUser.email}
             </p>
           </div>
         </div>
 
-        <p className="text-sm text-ink-muted leading-relaxed">
+        <p className="text-base text-ink-muted leading-relaxed">
           Are you sure you want to change this user's role from{" "}
           <span className="font-semibold text-ink">{targetUser.role}</span> to{" "}
           <span
@@ -73,14 +73,14 @@ const ConfirmRoleChangeModal = ({
           <button
             onClick={onCancel}
             disabled={isUpdating}
-            className="flex-1 px-4 py-2.5 rounded-xl border border-stroke text-sm font-medium text-ink-sub hover:bg-surface disabled:opacity-50 disabled:cursor-not-allowed transition"
+            className="flex-1 px-4 py-2.5 rounded-xl border border-stroke text-base font-medium text-ink-sub hover:bg-surface disabled:opacity-50 disabled:cursor-not-allowed transition"
           >
             Cancel
           </button>
           <button
             onClick={handleConfirm}
             disabled={isUpdating}
-            className={`flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-60 disabled:cursor-not-allowed transition ${
+            className={`flex-1 px-4 py-2.5 rounded-xl text-base font-semibold text-white disabled:opacity-60 disabled:cursor-not-allowed transition ${
               isPromotionToAdmin
                 ? "bg-red-500 hover:bg-red-600"
                 : "bg-primary-600 hover:bg-primary-700"

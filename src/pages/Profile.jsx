@@ -123,7 +123,7 @@ const Profile = () => {
       setIsFollowing(res.data.following);
       // `profile.followers` is an array of populated { _id } objects (see
       // getUserProfile), so keep the shape consistent instead of pushing
-      // a raw id string — mixed shapes would break anything downstream
+      // a raw id string â€” mixed shapes would break anything downstream
       // that expects follower._id to exist.
       setProfile((prev) => ({
         ...prev,
@@ -199,7 +199,7 @@ const Profile = () => {
     if (!file) return;
     try {
       setUploading(true);
-      // Avatars only ever render small — compress client-side so we don't
+      // Avatars only ever render small â€” compress client-side so we don't
       // ship full-resolution camera photos (up to 10MB) over the wire.
       const compressed = await compressImage(file, {
         maxWidth: 512,
@@ -306,7 +306,7 @@ const Profile = () => {
                 <button
                   onClick={handleFollow}
                   disabled={isFollowingLoading}
-                  className={`px-4 py-2 rounded-xl text-sm font-semibold transition disabled:opacity-50 ${
+                  className={`px-4 py-2 rounded-xl text-base font-semibold transition disabled:opacity-50 ${
                     isFollowing
                       ? "bg-surface border border-stroke text-ink-sub hover:border-red-300 hover:text-red-500"
                       : "bg-primary-600 text-white hover:bg-primary-800"
@@ -328,13 +328,13 @@ const Profile = () => {
                         ? "You can't message this user"
                         : undefined
                   }
-                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold border border-stroke text-ink-sub hover:border-primary-400 hover:text-primary-600 transition disabled:opacity-40 disabled:hover:border-stroke disabled:hover:text-ink-sub disabled:cursor-not-allowed"
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-base font-semibold border border-stroke text-ink-sub hover:border-primary-400 hover:text-primary-600 transition disabled:opacity-40 disabled:hover:border-stroke disabled:hover:text-ink-sub disabled:cursor-not-allowed"
                 >
                   <FiMessageCircle size={14} />
                   Message
                 </button>
 
-                {/* More options — kept behind a dropdown so block/unblock
+                {/* More options â€” kept behind a dropdown so block/unblock
                     isn't a bare tappable button next to Follow/Message. */}
                 <button
                   onClick={() => setShowOptionsMenu((v) => !v)}
@@ -356,7 +356,7 @@ const Profile = () => {
                           setShowOptionsMenu(false);
                           handleMuteToggle();
                         }}
-                        className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-ink-sub hover:bg-surface transition"
+                        className="w-full flex items-center gap-2 px-4 py-2.5 text-base text-ink-sub hover:bg-surface transition"
                       >
                         {isMuted ? (
                           <FiBell size={14} />
@@ -370,7 +370,7 @@ const Profile = () => {
                           setShowOptionsMenu(false);
                           setShowReportModal(true);
                         }}
-                        className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-ink-sub hover:bg-surface transition"
+                        className="w-full flex items-center gap-2 px-4 py-2.5 text-base text-ink-sub hover:bg-surface transition"
                       >
                         <FiFlag size={14} />
                         Report user
@@ -380,7 +380,7 @@ const Profile = () => {
                           setShowOptionsMenu(false);
                           setShowBlockModal(true);
                         }}
-                        className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 transition"
+                        className="w-full flex items-center gap-2 px-4 py-2.5 text-base text-red-500 hover:bg-red-50 transition"
                       >
                         <FiSlash size={14} />
                         {iBlockedThem ? "Unblock user" : "Block user"}
@@ -410,9 +410,9 @@ const Profile = () => {
           </div>
 
           {/* Name + bio */}
-          <h1 className="text-xl font-bold text-ink">{profile.name}</h1>
+          <h1 className="text-2xl font-bold text-ink">{profile.name}</h1>
           {profile.username && (
-            <p className="text-sm text-ink-muted -mt-0.5">
+            <p className="text-base text-ink-muted -mt-0.5">
               @{profile.username}
             </p>
           )}
@@ -424,25 +424,25 @@ const Profile = () => {
                 onChange={(e) => setBioText(e.target.value)}
                 maxLength={150}
                 placeholder="Write your bio..."
-                className="flex-1 border border-stroke rounded-xl px-3 py-2 text-sm text-ink outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100 transition"
+                className="flex-1 border border-stroke rounded-xl px-3 py-2 text-base text-ink outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100 transition"
               />
               <button
                 onClick={handleBioSave}
                 disabled={isSavingBio}
-                className="px-3 py-2 rounded-xl text-sm font-semibold text-white bg-primary-600 hover:bg-primary-800 disabled:opacity-50 transition"
+                className="px-3 py-2 rounded-xl text-base font-semibold text-white bg-primary-600 hover:bg-primary-800 disabled:opacity-50 transition"
               >
                 {isSavingBio ? "..." : "Save"}
               </button>
               <button
                 onClick={() => setEditingBio(false)}
-                className="text-sm text-ink-muted hover:text-ink transition"
+                className="text-base text-ink-muted hover:text-ink transition"
               >
                 Cancel
               </button>
             </div>
           ) : (
             <div className="flex items-center gap-2 mt-1">
-              <p className="text-sm text-ink-sub">
+              <p className="text-base text-ink-sub">
                 {profile.bio || "No bio yet."}
               </p>
               {isOwnProfile && (
@@ -461,7 +461,7 @@ const Profile = () => {
           )}
 
           {/* Stats */}
-          <div className="flex gap-5 mt-4 text-sm">
+          <div className="flex gap-5 mt-4 text-base">
             <span className="text-ink font-semibold">
               {totalPosts}{" "}
               <span className="text-ink-muted font-normal">Posts</span>
@@ -488,7 +488,7 @@ const Profile = () => {
       <div className="mt-4 space-y-4">
         {posts.length === 0 && (
           <div className="bg-card border border-stroke rounded-2xl p-10 text-center">
-            <p className="text-sm text-ink-muted">No posts yet.</p>
+            <p className="text-base text-ink-muted">No posts yet.</p>
           </div>
         )}
         {posts.map((post) => (
@@ -519,7 +519,7 @@ const Profile = () => {
         {postsHasMore && posts.length > 0 && (
           <div ref={postsObserverTarget} className="py-4 text-center">
             {isLoadingMorePosts && (
-              <p className="text-xs text-ink-muted">Loading more posts...</p>
+              <p className="text-sm text-ink-muted">Loading more posts...</p>
             )}
           </div>
         )}

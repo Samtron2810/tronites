@@ -14,7 +14,7 @@ const REASONS = [
 ];
 
 // targetLabel is shown in the header, e.g. "this user", "this post",
-// "this comment" — kept generic since the same modal is reused for
+// "this comment" â€” kept generic since the same modal is reused for
 // user/post/comment/message reports (see targetType).
 const ReportModal = ({ targetLabel, onConfirm, onCancel }) => {
   const [reason, setReason] = useState("");
@@ -38,10 +38,10 @@ const ReportModal = ({ targetLabel, onConfirm, onCancel }) => {
           <div className="w-9 h-9 rounded-xl bg-amber-50 flex items-center justify-center shrink-0">
             <FiFlag className="text-amber-500" size={16} />
           </div>
-          <h2 className="text-base font-semibold text-ink">Report {targetLabel}</h2>
+          <h2 className="text-lg font-semibold text-ink">Report {targetLabel}</h2>
         </div>
 
-        <p className="text-sm text-ink-muted mb-3">
+        <p className="text-base text-ink-muted mb-3">
           What's the issue? This is sent to our moderation team, not to{" "}
           {targetLabel}.
         </p>
@@ -50,7 +50,7 @@ const ReportModal = ({ targetLabel, onConfirm, onCancel }) => {
           {REASONS.map((r) => (
             <label
               key={r.value}
-              className={`flex items-center gap-2.5 px-3 py-2 rounded-xl border text-sm cursor-pointer transition ${
+              className={`flex items-center gap-2.5 px-3 py-2 rounded-xl border text-base cursor-pointer transition ${
                 reason === r.value
                   ? "border-primary-400 bg-primary-50 text-ink"
                   : "border-stroke text-ink-sub hover:bg-surface"
@@ -74,22 +74,22 @@ const ReportModal = ({ targetLabel, onConfirm, onCancel }) => {
           onChange={(e) => setDetails(e.target.value.slice(0, 500))}
           placeholder="Add details (optional)"
           rows={3}
-          className="w-full rounded-xl border border-stroke px-3 py-2 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-primary-300 resize-none"
+          className="w-full rounded-xl border border-stroke px-3 py-2 text-base text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-primary-300 resize-none"
         />
-        <p className="text-right text-xs text-ink-muted mt-1">{details.length}/500</p>
+        <p className="text-right text-sm text-ink-muted mt-1">{details.length}/500</p>
 
         <div className="flex gap-3 mt-4">
           <button
             onClick={onCancel}
             disabled={submitting}
-            className="flex-1 px-4 py-2.5 rounded-xl border border-stroke text-sm font-medium text-ink-sub hover:bg-surface disabled:opacity-50 disabled:cursor-not-allowed transition"
+            className="flex-1 px-4 py-2.5 rounded-xl border border-stroke text-base font-medium text-ink-sub hover:bg-surface disabled:opacity-50 disabled:cursor-not-allowed transition"
           >
             Cancel
           </button>
           <button
             onClick={handleConfirm}
             disabled={submitting || !reason}
-            className="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold text-white bg-amber-500 hover:bg-amber-600 disabled:opacity-60 disabled:cursor-not-allowed transition"
+            className="flex-1 px-4 py-2.5 rounded-xl text-base font-semibold text-white bg-amber-500 hover:bg-amber-600 disabled:opacity-60 disabled:cursor-not-allowed transition"
           >
             {submitting ? "..." : "Submit report"}
           </button>

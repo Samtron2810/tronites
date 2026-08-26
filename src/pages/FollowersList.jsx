@@ -90,7 +90,7 @@ const FollowersList = () => {
     <MainLayout>
       <div className="bg-card rounded-2xl shadow-md p-2">
         {/* centerized Header */}
-        <h4 className="text-xl font-bold text-ink mb-6 text-center">
+        <h4 className="text-2xl font-bold text-ink mb-6 text-center">
           {profileName}'s{" "}
           {activeTab === "followers" ? "Followers" : "Following"}
         </h4>
@@ -142,10 +142,10 @@ const FollowersList = () => {
                       className="w-11 h-11 rounded-full object-cover ring-2 ring-primary-100"
                     />
                     <div className="min-w-0">
-                      <h3 className="text-sm font-semibold text-ink truncate">
+                      <h3 className="text-base font-semibold text-ink truncate">
                         {user.name}
                       </h3>
-                      <p className="text-xs text-ink-muted truncate">
+                      <p className="text-sm text-ink-muted truncate">
                         {user.bio || "No bio yet."}
                       </p>
                     </div>
@@ -154,7 +154,7 @@ const FollowersList = () => {
               ))}
               {hasMore && (
                 <div ref={observerTarget} className="py-4 text-center">
-                  {isLoadingMore && <p className="text-xs text-ink-muted">Loading more...</p>}
+                  {isLoadingMore && <p className="text-sm text-ink-muted">Loading more...</p>}
                 </div>
               )}
             </>

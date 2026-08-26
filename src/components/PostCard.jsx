@@ -30,7 +30,7 @@ import CommentsPanel from "./CommentBox";
 import { formatRemainingShort, cooldownRemainingMs } from "../utils/cooldown";
 
 // Same window as the backend's POST_EDIT_COOLDOWN_MS in postController.js
-// — kept in sync manually since there's no shared config between the two
+// â€” kept in sync manually since there's no shared config between the two
 // codebases. Used only to decide whether to show "Edit post" in the menu;
 // the backend is still the source of truth and the real enforcement.
 const POST_EDIT_COOLDOWN_MS = 60 * 60 * 1000;
@@ -89,7 +89,7 @@ const PostCard = ({
   }
   const [showComments, setShowComments] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  // Post-level report only now — comment/reply reporting lives inside
+  // Post-level report only now â€” comment/reply reporting lives inside
   // CommentsPanel, which has its own ReportModal instance.
   const [reportTarget, setReportTarget] = useState(null); // null | { type: "post" }
   const [menuOpen, setMenuOpen] = useState(false);
@@ -101,7 +101,7 @@ const PostCard = ({
   const [postText, setPostText] = useState(text);
   const [postHasBeenEdited, setPostHasBeenEdited] = useState(edited);
   const [postEditedAt, setPostEditedAt] = useState(editedAt);
-  // Same derive-during-render sync pattern as liked/likeCount above — a
+  // Same derive-during-render sync pattern as liked/likeCount above â€” a
   // real prop change (parent refetch) should update the displayed text;
   // an in-flight local edit shouldn't be clobbered by it either, since
   // isEditing gates the textarea vs. the rendered text separately.
@@ -118,7 +118,7 @@ const PostCard = ({
   const [postVideo, setPostVideo] = useState(video);
   const videoRef = useRef(null);
   const [syncedVideoStatus, setSyncedVideoStatus] = useState(video?.status);
-  // Mute state for the post video's overlay button — mirrors the element's
+  // Mute state for the post video's overlay button â€” mirrors the element's
   // muted property so the icon stays in sync.
   const [isVideoMuted, setIsVideoMuted] = useState(false);
   if (video?.status !== syncedVideoStatus) {
@@ -130,7 +130,7 @@ const PostCard = ({
 
   const media = images || [];
 
-  // Mirrors Profile.jsx's user-report submit — same endpoint, same payload
+  // Mirrors Profile.jsx's user-report submit â€” same endpoint, same payload
   // shape, same toasts, closes the modal only on success. Post-only now;
   // comment/reply reports are handled inside CommentsPanel.
   const handleReportSubmit = async ({ reason, details }) => {
@@ -229,7 +229,7 @@ const PostCard = ({
       setIsEditing(false);
     } catch (e) {
       console.error(e);
-      // Safety net for a stale client (e.g. two tabs open) — the menu
+      // Safety net for a stale client (e.g. two tabs open) â€” the menu
       // already hides "Edit post" during cooldown (see editCooldownActive
       // below), so this path shouldn't normally be reachable.
       if (e.response?.status === 429) {
@@ -271,10 +271,10 @@ const PostCard = ({
     }
   }, [menuOpen]);
 
-  // Post-level socket events only — comment-scoped events (newComment,
+  // Post-level socket events only â€” comment-scoped events (newComment,
   // commentDeleted, commentLikeUpdate) are subscribed inside
   // CommentsPanel, which owns that state now. newComment/commentDeleted
-  // are still listened to here too, but only for the running count —
+  // are still listened to here too, but only for the running count â€”
   // it needs to render in the action bar even when comments aren't
   // expanded / the panel hasn't mounted yet.
   useEffect(() => {
@@ -294,7 +294,7 @@ const PostCard = ({
     const handlePostUpdated = (data) => {
       if (data.postId !== postId) return;
       // Don't clobber this viewer's own in-progress edit with the
-      // server echo of the save that's already in flight — handleEditSave
+      // server echo of the save that's already in flight â€” handleEditSave
       // applies its own response directly.
       if (isEditing) return;
       setPostText(data.text);
@@ -315,7 +315,7 @@ const PostCard = ({
     };
   }, [socket, postId, currentUser?._id, isEditing]);
 
-  // Auto-pause the video when it's scrolled out of view — an off-screen
+  // Auto-pause the video when it's scrolled out of view â€” an off-screen
   // playing video would otherwise keep blaring audio indefinitely. Only
   // pauses; never auto-plays (playback still requires an explicit user
   // action while the post is on screen).
@@ -347,7 +347,7 @@ const PostCard = ({
     setIsVideoMuted(videoEl.muted);
   };
 
-  // Client-side mirror of the backend's 1-hour edit cooldown — used only
+  // Client-side mirror of the backend's 1-hour edit cooldown â€” used only
   // to decide whether "Edit post" appears in the menu at all, so the
   // menu never offers an action guaranteed to 429. Recomputed on every
   // render (cheap, no need for its own effect/interval).
@@ -406,7 +406,7 @@ const PostCard = ({
         onBookmark={handleBookmark}
         onCopy={handleCopyPost}
         onEdit={() => {
-          // No modal-native edit UI — close the modal and drop into the
+          // No modal-native edit UI â€” close the modal and drop into the
           // same inline textarea PostCard already has, rather than
           // building a second edit form.
           setIsDetailOpen(false);
@@ -436,16 +436,16 @@ const PostCard = ({
               <div className="flex items-center gap-1.5">
                 <Link
                   to={`/profile/${userId}`}
-                  className="text-sm font-semibold text-ink hover:text-primary-600 transition"
+                  className="text-base font-semibold text-ink hover:text-primary-600 transition"
                   onClick={(e) => e.stopPropagation()}
                 >
                   {name}
                 </Link>
                 {username && (
-                  <span className="text-xs text-ink-muted">@{username}</span>
+                  <span className="text-sm text-ink-muted">@{username}</span>
                 )}
               </div>
-              <p className="flex items-center gap-1 text-xs text-ink-muted">
+              <p className="flex items-center gap-1 text-sm text-ink-muted">
                 {time}
                 {privacy === "followers" && (
                   <FiUsers
@@ -488,7 +488,7 @@ const PostCard = ({
               >
                 <button
                   onClick={handleCopyPost}
-                  className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-ink-sub hover:bg-surface transition"
+                  className="w-full flex items-center gap-3 px-4 py-2.5 text-base text-ink-sub hover:bg-surface transition"
                 >
                   <FaRegCopy size={13} />
                   <span className="font-medium">Copy text</span>
@@ -505,7 +505,7 @@ const PostCard = ({
                           setIsEditing(true);
                           setMenuOpen(false);
                         }}
-                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-ink hover:bg-primary-50 transition"
+                        className="w-full flex items-center gap-3 px-4 py-2.5 text-base text-ink hover:bg-primary-50 transition"
                       >
                         <FaPen className="text-primary-600" size={13} />
                         <span className="font-medium">Edit post</span>
@@ -516,7 +516,7 @@ const PostCard = ({
                         setShowDeleteModal(true);
                         setMenuOpen(false);
                       }}
-                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition"
+                      className="w-full flex items-center gap-3 px-4 py-2.5 text-base text-red-600 hover:bg-red-50 transition"
                     >
                       <FaTrash size={13} />
                       <span className="font-medium">Delete post</span>
@@ -528,7 +528,7 @@ const PostCard = ({
                       setReportTarget({ type: "post" });
                       setMenuOpen(false);
                     }}
-                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-ink-sub hover:bg-surface transition"
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-base text-ink-sub hover:bg-surface transition"
                   >
                     <FiFlag className="text-amber-500" size={13} />
                     <span className="font-medium">Report post</span>
@@ -549,7 +549,7 @@ const PostCard = ({
               maxLength={280}
               rows={3}
               autoFocus
-              className="w-full text-sm text-ink-sub leading-relaxed border border-primary-200 rounded-xl p-3 outline-none focus:ring-2 focus:ring-primary-200 resize-none"
+              className="w-full text-base text-ink-sub leading-relaxed border border-primary-200 rounded-xl p-3 outline-none focus:ring-2 focus:ring-primary-200 resize-none"
             />
             <div className="flex items-center justify-between mt-2">
               <span className="text-[11px] text-ink-muted">
@@ -562,7 +562,7 @@ const PostCard = ({
                     handleEditCancel();
                   }}
                   disabled={isSavingEdit}
-                  className="text-xs font-medium text-ink-muted hover:text-ink px-3 py-1.5 rounded-lg transition disabled:opacity-50"
+                  className="text-sm font-medium text-ink-muted hover:text-ink px-3 py-1.5 rounded-lg transition disabled:opacity-50"
                 >
                   Cancel
                 </button>
@@ -572,7 +572,7 @@ const PostCard = ({
                     handleEditSave();
                   }}
                   disabled={isSavingEdit}
-                  className="text-xs font-semibold text-white bg-primary-600 hover:bg-primary-700 px-3 py-1.5 rounded-lg transition disabled:opacity-50"
+                  className="text-sm font-semibold text-white bg-primary-600 hover:bg-primary-700 px-3 py-1.5 rounded-lg transition disabled:opacity-50"
                 >
                   {isSavingEdit ? "Saving..." : "Save"}
                 </button>
@@ -582,7 +582,7 @@ const PostCard = ({
         ) : (
           <p
             onClick={openDetail}
-            className="text-ink-sub text-sm leading-relaxed cursor-pointer whitespace-pre-line"
+            className="text-ink-sub text-base leading-relaxed cursor-pointer whitespace-pre-line"
           >
             <TextWithLinks text={postText} />
             {postHasBeenEdited && (
@@ -604,12 +604,12 @@ const PostCard = ({
         {postVideo?.status === "processing" && (
           <div className="mt-4 rounded-xl overflow-hidden bg-surface aspect-video flex flex-col items-center justify-center gap-2 text-ink-muted">
             <div className="h-6 w-6 border-2 border-primary-600 border-t-transparent rounded-full animate-spin" />
-            <span className="text-xs">Processing video...</span>
+            <span className="text-sm">Processing video...</span>
           </div>
         )}
         {postVideo?.status === "failed" && (
           <div className="mt-4 rounded-xl overflow-hidden bg-surface aspect-video flex flex-col items-center justify-center gap-1 text-ink-muted">
-            <span className="text-xs">Video processing failed.</span>
+            <span className="text-sm">Video processing failed.</span>
           </div>
         )}
         {postVideo?.status === "ready" && postVideo.url && (
@@ -627,7 +627,7 @@ const PostCard = ({
               onClick={(e) => e.stopPropagation()}
               className="w-full max-h-96 object-contain"
             />
-            {/* Mute/unmute overlay — sits top-right, clear of the bottom
+            {/* Mute/unmute overlay â€” sits top-right, clear of the bottom
                 native-controls bar. */}
             <button
               type="button"
@@ -648,7 +648,7 @@ const PostCard = ({
           </div>
         )}
 
-        {/* Media carousel — click opens the detail modal (with zoom),
+        {/* Media carousel â€” click opens the detail modal (with zoom),
             arrows/dots still work inline without opening it. */}
         {media.length > 0 && (
           <div
@@ -700,7 +700,7 @@ const PostCard = ({
                     />
                   ))}
                 </div>
-                <span className="absolute top-2 right-2 bg-black/50 text-white text-xs px-2 py-0.5 rounded-full">
+                <span className="absolute top-2 right-2 bg-black/50 text-white text-sm px-2 py-0.5 rounded-full">
                   {activeSlide + 1}/{media.length}
                 </span>
               </>
@@ -713,7 +713,7 @@ const PostCard = ({
           <button
             onClick={handleLike}
             disabled={isLiking}
-            className={`flex items-center gap-1.5 text-sm transition ${
+            className={`flex items-center gap-1.5 text-base transition ${
               isLiking
                 ? "opacity-50 cursor-not-allowed"
                 : liked
@@ -727,7 +727,7 @@ const PostCard = ({
 
           <button
             onClick={() => setShowComments(!showComments)}
-            className="flex items-center gap-1.5 text-sm text-ink-muted hover:text-primary-600 transition"
+            className="flex items-center gap-1.5 text-base text-ink-muted hover:text-primary-600 transition"
           >
             <FaRegComment size={15} />
             <span>{commentCount}</span>
@@ -737,7 +737,7 @@ const PostCard = ({
             onClick={handleBookmark}
             disabled={isBookmarking}
             title={bookmarked ? "Remove from saved" : "Save post"}
-            className={`ml-auto flex items-center text-sm transition ${
+            className={`ml-auto flex items-center text-base transition ${
               isBookmarking
                 ? "opacity-50 cursor-not-allowed"
                 : bookmarked
@@ -753,7 +753,7 @@ const PostCard = ({
           </button>
         </div>
 
-        {/* Inline comments — same CommentsPanel that also renders inside
+        {/* Inline comments â€” same CommentsPanel that also renders inside
             PostDetailModal. Only mounted (and only fetches) once
             expanded here. */}
         {showComments && (

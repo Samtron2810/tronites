@@ -43,7 +43,7 @@ const UserMenu = ({ user, onLogoutClick }) => {
 
   // Core items every user sees. Anything that used to be a permanently
   // disabled stub (Dashboard, Ads, Help, Privacy/Terms) now lives on the
-  // /more page instead of padding this dropdown out indefinitely — see
+  // /more page instead of padding this dropdown out indefinitely â€” see
   // pages/More.jsx. That page is where new lower-frequency features
   // should be added going forward, not here.
   const menuItems = [
@@ -63,7 +63,7 @@ const UserMenu = ({ user, onLogoutClick }) => {
         toggleTheme();
       },
     },
-    // Only shown to moderators/admins — role isn't in toPublicUserDTO,
+    // Only shown to moderators/admins â€” role isn't in toPublicUserDTO,
     // so this can never appear for a viewer looking at someone else's
     // menu; `user` here is always the logged-in account's own data.
     ...(["moderator", "admin"].includes(user.role)
@@ -78,7 +78,7 @@ const UserMenu = ({ user, onLogoutClick }) => {
         ]
       : []),
     // Role management is admin-only (stricter than the moderator gate
-    // above) — a moderator promoting peers to admin would be a
+    // above) â€” a moderator promoting peers to admin would be a
     // privilege-escalation path.
     ...(user.role === "admin"
       ? [
@@ -104,7 +104,7 @@ const UserMenu = ({ user, onLogoutClick }) => {
           },
         ]
       : []),
-    // Settings and More sit at the bottom, right above Logout — the
+    // Settings and More sit at the bottom, right above Logout â€” the
     // lowest-frequency top-level actions in the list.
     {
       icon: FaCog,
@@ -169,22 +169,22 @@ const UserMenu = ({ user, onLogoutClick }) => {
                   <Link
                     to={item.href}
                     onClick={item.onClick}
-                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-primary-50 transition"
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-base hover:bg-primary-50 transition"
                   >
-                    <Icon className="text-base text-primary-600" />
+                    <Icon className="text-lg text-primary-600" />
                     <span className="text-ink font-medium">{item.label}</span>
                   </Link>
                 ) : (
                   <button
                     onClick={item.onClick}
-                    className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm transition ${
+                    className={`w-full flex items-center gap-3 px-4 py-2.5 text-base transition ${
                       item.isLogout
                         ? "text-red-600 hover:bg-red-50"
                         : "hover:bg-primary-50"
                     }`}
                   >
                     <Icon
-                      className={`text-base ${
+                      className={`text-lg ${
                         item.isLogout ? "text-red-600" : "text-primary-600"
                       }`}
                     />

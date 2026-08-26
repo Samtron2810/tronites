@@ -22,7 +22,7 @@ const MentionSuggestions = ({
       } bg-card border border-stroke rounded-xl shadow-lg overflow-hidden ${maxHeightClass} overflow-y-auto`}
     >
       {suggestions.length === 0 && (
-        <p className="px-3 py-2 text-xs text-ink-muted">No matches</p>
+        <p className="px-3 py-2 text-sm text-ink-muted">No matches</p>
       )}
       {suggestions.map((u) => (
         <button
@@ -41,8 +41,8 @@ const MentionSuggestions = ({
             className="w-6 h-6 rounded-full object-cover shrink-0"
           />
           <div className="min-w-0">
-            <p className="text-xs font-semibold text-ink truncate">{u.name}</p>
-            <p className="text-xs text-ink-muted truncate">@{u.username}</p>
+            <p className="text-sm font-semibold text-ink truncate">{u.name}</p>
+            <p className="text-sm text-ink-muted truncate">@{u.username}</p>
           </div>
         </button>
       ))}

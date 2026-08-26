@@ -58,7 +58,7 @@ const MessageOptionsMenu = ({
                 setOpen(false);
                 onDelete();
               }}
-              className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs text-red-600 hover:bg-red-50 transition"
+              className="w-full flex items-center gap-2.5 px-3.5 py-2 text-sm text-red-600 hover:bg-red-50 transition"
             >
               <FaTrash size={11} />
               <span className="font-medium">Delete</span>
@@ -69,7 +69,7 @@ const MessageOptionsMenu = ({
                 setOpen(false);
                 onReport();
               }}
-              className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs text-ink-sub hover:bg-surface transition"
+              className="w-full flex items-center gap-2.5 px-3.5 py-2 text-sm text-ink-sub hover:bg-surface transition"
             >
               <FiFlag className="text-amber-500" size={11} />
               <span className="font-medium">Report</span>

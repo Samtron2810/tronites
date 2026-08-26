@@ -30,7 +30,7 @@ const NotificationBell = () => {
     >
       <FiBell size={17} />
       {count > 0 && (
-        <span className="absolute -top-1 -right-1 min-w-4 h-4 rounded-full bg-primary-600 text-white text-xs font-bold flex items-center justify-center px-1">
+        <span className="absolute -top-1 -right-1 min-w-4 h-4 rounded-full bg-primary-600 text-white text-sm font-bold flex items-center justify-center px-1">
           {count > 9 ? "9+" : count}
         </span>
       )}

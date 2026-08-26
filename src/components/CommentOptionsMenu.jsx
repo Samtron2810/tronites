@@ -6,7 +6,7 @@ import toast from "react-hot-toast";
 // Same open/outside-click/dropdown-style pattern as PostCard's own post
 // options menu (FaEllipsisV trigger, absolute-positioned card).
 //
-// Owner sees Copy + Delete. Non-owner sees Copy + Report. No Edit —
+// Owner sees Copy + Delete. Non-owner sees Copy + Report. No Edit â€”
 // comment editing is out of scope (explicitly removed from the build
 // plan); comments/replies are delete-and-repost only.
 const CommentOptionsMenu = ({ isOwner, text, onReport, onDelete }) => {
@@ -61,7 +61,7 @@ const CommentOptionsMenu = ({ isOwner, text, onReport, onDelete }) => {
         >
           <button
             onClick={handleCopy}
-            className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs text-ink-sub hover:bg-surface transition"
+            className="w-full flex items-center gap-2.5 px-3.5 py-2 text-sm text-ink-sub hover:bg-surface transition"
           >
             <FaRegCopy size={11} />
             <span className="font-medium">Copy</span>
@@ -73,7 +73,7 @@ const CommentOptionsMenu = ({ isOwner, text, onReport, onDelete }) => {
                 setOpen(false);
                 onDelete();
               }}
-              className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs text-red-600 hover:bg-red-50 transition"
+              className="w-full flex items-center gap-2.5 px-3.5 py-2 text-sm text-red-600 hover:bg-red-50 transition"
             >
               <FaTrash size={11} />
               <span className="font-medium">Delete</span>
@@ -84,7 +84,7 @@ const CommentOptionsMenu = ({ isOwner, text, onReport, onDelete }) => {
                 setOpen(false);
                 onReport();
               }}
-              className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs text-ink-sub hover:bg-surface transition"
+              className="w-full flex items-center gap-2.5 px-3.5 py-2 text-sm text-ink-sub hover:bg-surface transition"
             >
               <FiFlag className="text-amber-500" size={11} />
               <span className="font-medium">Report</span>

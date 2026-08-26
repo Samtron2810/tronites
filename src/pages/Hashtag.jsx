@@ -70,7 +70,7 @@ const Hashtag = () => {
           </Link>
           <div className="flex items-center gap-2">
             <FiHash className="text-primary-600" size={18} />
-            <h1 className="text-lg font-bold text-ink">{tag}</h1>
+            <h1 className="text-xl font-bold text-ink">{tag}</h1>
           </div>
         </div>
 
@@ -109,9 +109,9 @@ const Hashtag = () => {
 
         {!loading && posts.length === 0 && (
           <div className="bg-card border border-stroke rounded-2xl p-10 text-center">
-            <p className="text-2xl mb-2">#️⃣</p>
-            <h2 className="text-base font-semibold text-ink">No posts yet</h2>
-            <p className="text-sm text-ink-muted mt-1">
+            <p className="text-3xl mb-2">#ï¸âƒ£</p>
+            <h2 className="text-lg font-semibold text-ink">No posts yet</h2>
+            <p className="text-base text-ink-muted mt-1">
               Nobody's posted with #{tag} yet.
             </p>
           </div>
@@ -125,7 +125,7 @@ const Hashtag = () => {
             </>
           )}
           {!hasMore && posts.length > 0 && (
-            <p className="text-xs text-ink-muted">You're all caught up</p>
+            <p className="text-sm text-ink-muted">You're all caught up</p>
           )}
         </div>
       </div>

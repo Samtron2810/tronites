@@ -15,7 +15,7 @@ import MentionSuggestions from "./MentionSuggestions";
 // Extracted from PostCard.jsx (was previously inline there) so the same
 // comment list/composer/reply implementation can mount in two places:
 // the feed card's inline expand-to-comment area, and PostDetailModal's
-// lower section. One implementation, two mount points — not a fork.
+// lower section. One implementation, two mount points â€” not a fork.
 //
 // This was formerly CommentBox.jsx, a 0-byte dead file left over from
 // an earlier pass; repurposed here rather than adding yet another file.
@@ -38,7 +38,7 @@ const CommentsPanel = ({ postId, initialCommentCount, onCommentCountChange }) =>
   const [commentDeletingId, setCommentDeletingId] = useState(null);
 
   const [reportTarget, setReportTarget] = useState(null);
-  // null | { type: "comment" | "reply", id, parentCommentId? } —
+  // null | { type: "comment" | "reply", id, parentCommentId? } â€”
   // parentCommentId only present for replies, so the confirm handler
   // knows which delete path to take.
   const [deleteCommentTarget, setDeleteCommentTarget] = useState(null);
@@ -137,7 +137,7 @@ const CommentsPanel = ({ postId, initialCommentCount, onCommentCountChange }) =>
   // "Reply" button (no prefill) and by a reply row's "Reply" button
   // (prefilled with the replied-to user's @username). Either way the
   // resulting reply is posted with parentCommentId = the top-level
-  // comment's id, never a reply's id — replies stay flat, one level
+  // comment's id, never a reply's id â€” replies stay flat, one level
   // deep, aligned in the same list. The backend also enforces this
   // (rejects a parentCommentId that itself has a parentComment set), so
   // this is belt-and-braces, not the only thing preventing nesting.
@@ -292,7 +292,7 @@ const CommentsPanel = ({ postId, initialCommentCount, onCommentCountChange }) =>
     setDeleteCommentTarget(null);
   };
 
-  // Mirrors PostCard's post-report submit — same endpoint/payload shape,
+  // Mirrors PostCard's post-report submit â€” same endpoint/payload shape,
   // scoped here to comment/reply targets only (post-level reporting
   // stays in PostCard since this component has no notion of the post
   // itself, only its comments).
@@ -315,7 +315,7 @@ const CommentsPanel = ({ postId, initialCommentCount, onCommentCountChange }) =>
     }
   };
 
-  // Comment-scoped socket events only — post-level events (likeUpdate,
+  // Comment-scoped socket events only â€” post-level events (likeUpdate,
   // postUpdated) stay subscribed in PostCard, which owns that state.
   useEffect(() => {
     if (!socket || !postId) return;
@@ -455,7 +455,7 @@ const CommentsPanel = ({ postId, initialCommentCount, onCommentCountChange }) =>
               !commentMention.showSuggestions &&
               handleAddComment()
             }
-            className="w-full border border-stroke rounded-xl px-3 py-2 text-sm text-ink placeholder:text-ink-muted outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100 transition"
+            className="w-full border border-stroke rounded-xl px-3 py-2 text-base text-ink placeholder:text-ink-muted outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100 transition"
           />
           {commentMention.showSuggestions && (
             <MentionSuggestions
@@ -467,7 +467,7 @@ const CommentsPanel = ({ postId, initialCommentCount, onCommentCountChange }) =>
         <button
           onClick={handleAddComment}
           disabled={!commentText.trim() || isCommentSending}
-          className="px-4 py-2 rounded-xl text-sm font-medium text-white bg-primary-600 hover:bg-primary-800 disabled:opacity-50 disabled:cursor-not-allowed transition"
+          className="px-4 py-2 rounded-xl text-base font-medium text-white bg-primary-600 hover:bg-primary-800 disabled:opacity-50 disabled:cursor-not-allowed transition"
         >
           {isCommentSending ? "..." : "Post"}
         </button>
@@ -475,11 +475,11 @@ const CommentsPanel = ({ postId, initialCommentCount, onCommentCountChange }) =>
 
       {/* List */}
       {loadingComments && (
-        <p className="text-xs text-ink-muted">Loading comments...</p>
+        <p className="text-sm text-ink-muted">Loading comments...</p>
       )}
 
       {!loadingComments && comments.length === 0 && (
-        <p className="text-xs text-ink-muted">
+        <p className="text-sm text-ink-muted">
           No comments yet. Be the first to comment.
         </p>
       )}
@@ -491,7 +491,7 @@ const CommentsPanel = ({ postId, initialCommentCount, onCommentCountChange }) =>
               <div className="flex items-center gap-1">
                 <Link
                   to={`/profile/${c.user._id}`}
-                  className="text-xs font-semibold text-ink hover:text-primary-600 transition"
+                  className="text-sm font-semibold text-ink hover:text-primary-600 transition"
                 >
                   {c.user.name}
                 </Link>
@@ -512,7 +512,7 @@ const CommentsPanel = ({ postId, initialCommentCount, onCommentCountChange }) =>
                 }
               />
             </div>
-            <p className="text-xs text-ink-sub mt-0.5">
+            <p className="text-sm text-ink-sub mt-0.5">
               <TextWithLinks text={c.text} />
             </p>
 
@@ -520,7 +520,7 @@ const CommentsPanel = ({ postId, initialCommentCount, onCommentCountChange }) =>
               <button
                 onClick={() => handleCommentLike(c._id, null)}
                 disabled={commentLikingId === c._id}
-                className={`flex items-center gap-1 text-xs transition disabled:opacity-50 ${
+                className={`flex items-center gap-1 text-sm transition disabled:opacity-50 ${
                   c.isLiked
                     ? "text-red-500"
                     : "text-ink-muted hover:text-red-500"
@@ -535,14 +535,14 @@ const CommentsPanel = ({ postId, initialCommentCount, onCommentCountChange }) =>
               </button>
               <button
                 onClick={() => openReplyComposer(c._id)}
-                className="text-xs text-ink-muted hover:text-primary-600 transition font-medium"
+                className="text-sm text-ink-muted hover:text-primary-600 transition font-medium"
               >
                 Reply
               </button>
               {c.repliesCount > 0 && (
                 <button
                   onClick={() => toggleReplies(c._id)}
-                  className="text-xs text-primary-600 font-medium hover:underline"
+                  className="text-sm text-primary-600 font-medium hover:underline"
                 >
                   {openReplies[c._id]
                     ? "Hide replies"
@@ -551,8 +551,8 @@ const CommentsPanel = ({ postId, initialCommentCount, onCommentCountChange }) =>
               )}
             </div>
 
-            {/* Reply input — shared by both "Reply" on the comment
-                itself and "Reply" on any of its replies (§3.5). Either
+            {/* Reply input â€” shared by both "Reply" on the comment
+                itself and "Reply" on any of its replies (Â§3.5). Either
                 path sets replyingTo to this comment's id, so the new
                 reply always lands here, flat, never nested. */}
             {replyingTo === c._id && (
@@ -570,7 +570,7 @@ const CommentsPanel = ({ postId, initialCommentCount, onCommentCountChange }) =>
                       !replyMention.showSuggestions &&
                       handleAddReply(c._id)
                     }
-                    className="w-full border border-stroke rounded-lg px-3 py-1.5 text-xs text-ink placeholder:text-ink-muted outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100 transition"
+                    className="w-full border border-stroke rounded-lg px-3 py-1.5 text-sm text-ink placeholder:text-ink-muted outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100 transition"
                   />
                   {replyMention.showSuggestions && (
                     <MentionSuggestions
@@ -582,20 +582,20 @@ const CommentsPanel = ({ postId, initialCommentCount, onCommentCountChange }) =>
                 <button
                   onClick={() => handleAddReply(c._id)}
                   disabled={!replyText.trim() || isReplySending}
-                  className="px-3 py-1.5 rounded-lg text-xs font-medium text-white bg-primary-600 hover:bg-primary-800 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                  className="px-3 py-1.5 rounded-lg text-sm font-medium text-white bg-primary-600 hover:bg-primary-800 disabled:opacity-50 disabled:cursor-not-allowed transition"
                 >
                   {isReplySending ? "..." : "Reply"}
                 </button>
               </div>
             )}
 
-            {/* Reply thread — flat, one level, all replies under this
+            {/* Reply thread â€” flat, one level, all replies under this
                 comment sit in the same list at the same indent
                 regardless of which reply prompted them. */}
             {openReplies[c._id] && (
               <div className="mt-2 pl-3 border-l-2 border-stroke space-y-2">
                 {loadingReplies[c._id] && (
-                  <p className="text-xs text-ink-muted">
+                  <p className="text-sm text-ink-muted">
                     Loading replies...
                   </p>
                 )}
@@ -606,7 +606,7 @@ const CommentsPanel = ({ postId, initialCommentCount, onCommentCountChange }) =>
                         <div className="flex items-center gap-1">
                           <Link
                             to={`/profile/${r.user._id}`}
-                            className="text-xs font-semibold text-ink hover:text-primary-600 transition"
+                            className="text-sm font-semibold text-ink hover:text-primary-600 transition"
                           >
                             {r.user.name}
                           </Link>
@@ -631,14 +631,14 @@ const CommentsPanel = ({ postId, initialCommentCount, onCommentCountChange }) =>
                           }
                         />
                       </div>
-                      <p className="text-xs text-ink-sub mt-0.5">
+                      <p className="text-sm text-ink-sub mt-0.5">
                         <TextWithLinks text={r.text} />
                       </p>
                       <div className="flex items-center gap-3 mt-1.5">
                         <button
                           onClick={() => handleCommentLike(r._id, c._id)}
                           disabled={commentLikingId === r._id}
-                          className={`flex items-center gap-1 text-xs transition disabled:opacity-50 ${
+                          className={`flex items-center gap-1 text-sm transition disabled:opacity-50 ${
                             r.isLiked
                               ? "text-red-500"
                               : "text-ink-muted hover:text-red-500"
@@ -651,15 +651,15 @@ const CommentsPanel = ({ postId, initialCommentCount, onCommentCountChange }) =>
                           )}
                           {r.likesCount > 0 && <span>{r.likesCount}</span>}
                         </button>
-                        {/* Reply-to-a-reply — still targets the parent
+                        {/* Reply-to-a-reply â€” still targets the parent
                             comment's id (c._id), prefilled with
                             @username, so it posts flat rather than
-                            nested (§3.5/§6). */}
+                            nested (Â§3.5/Â§6). */}
                         <button
                           onClick={() =>
                             openReplyComposer(c._id, r.user.username)
                           }
-                          className="text-xs text-ink-muted hover:text-primary-600 transition font-medium"
+                          className="text-sm text-ink-muted hover:text-primary-600 transition font-medium"
                         >
                           Reply
                         </button>
@@ -675,7 +675,7 @@ const CommentsPanel = ({ postId, initialCommentCount, onCommentCountChange }) =>
       {hasMore && (
         <button
           onClick={() => setVisibleCount((p) => p + 9)}
-          className="text-xs text-primary-600 font-semibold hover:underline"
+          className="text-sm text-primary-600 font-semibold hover:underline"
         >
           Show more comments
         </button>

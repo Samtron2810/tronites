@@ -27,7 +27,7 @@ const Home = () => {
   const [loading, setLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const observerTarget = useRef(null);
-  // Synchronous in-flight guard — the observer's `!isLoadingMore` check
+  // Synchronous in-flight guard â€” the observer's `!isLoadingMore` check
   // reads React state, which commits asynchronously, so two intersection
   // callbacks in the same tick can both pass it and double-fetch a page.
   // A ref flips synchronously, so the second call is dropped before it
@@ -35,7 +35,7 @@ const Home = () => {
   const fetchInFlightRef = useRef(false);
   // Latest posts per tab, kept in a ref so the stable fetchPosts callback
   // (empty deps) can read the current list for the trending excludeIds
-  // param without closing over a stale `feeds`. Synced via an effect —
+  // param without closing over a stale `feeds`. Synced via an effect â€”
   // the react-hooks/refs rule forbids touching refs during render.
   const feedsRef = useRef(feeds);
   useEffect(() => {
@@ -64,7 +64,7 @@ const Home = () => {
                       afterScore: afterCursor.afterScore,
                       afterId: afterCursor.afterId,
                       // Hard-exclude posts already delivered on earlier
-                      // trending pages — a post's score decays with age
+                      // trending pages â€” a post's score decays with age
                       // between requests, so without this guard it can
                       // drop below the page-1 cursor and be re-served on
                       // page 2. The backend validates + caps this list.
@@ -87,14 +87,14 @@ const Home = () => {
         setFeeds((prev) => {
           let nextPosts;
           if (isFirstPage) {
-            // Full refresh (e.g. after creating a post) — replace
+            // Full refresh (e.g. after creating a post) â€” replace
             // wholesale. Never filter against the old list here: that
             // would strip every already-displayed post and leave only
             // the brand-new one(s).
             nextPosts = res.data.posts;
           } else {
             // Append (load more): never re-add a post that's already in
-            // the list — this is the guard that keeps ordering drift /
+            // the list â€” this is the guard that keeps ordering drift /
             // score decay in trending from duplicating posts.
             const existingIds = new Set(
               prev[targetTab].posts.map((p) => p._id),
@@ -158,7 +158,7 @@ const Home = () => {
     if (!socket) return;
     const handleNewPost = (newPost) => {
       // New posts only prepend into the reverse-chronological Following
-      // feed — Trending is ranked by engagement/decay, so a brand new
+      // feed â€” Trending is ranked by engagement/decay, so a brand new
       // post belongs wherever its score lands, not at the top.
       setFeeds((prev) =>
         prev.following.posts.some((p) => p._id === newPost._id)
@@ -194,14 +194,14 @@ const Home = () => {
       <div className="space-y-4">
         <CreatePost fetchPosts={() => fetchPosts("following", null, true)} />
 
-        {/* Underline tab switcher — deliberately not the filled-pill
+        {/* Underline tab switcher â€” deliberately not the filled-pill
             style Explore uses, so Home reads as its own surface. */}
         <div className="flex border-b border-stroke">
           {TABS.map(({ key, label, icon: Icon }) => (
             <button
               key={key}
               onClick={() => setTab(key)}
-              className={`relative flex items-center gap-1.5 px-4 py-3 text-sm font-semibold transition ${
+              className={`relative flex items-center gap-1.5 px-4 py-3 text-base font-semibold transition ${
                 tab === key
                   ? "text-primary-600"
                   : "text-ink-muted hover:text-ink"
@@ -249,13 +249,13 @@ const Home = () => {
 
         {!loading && current.posts.length === 0 && (
           <div className="bg-card border border-stroke rounded-2xl p-10 text-center">
-            <p className="text-2xl mb-2">{tab === "trending" ? "✨" : "👋"}</p>
-            <h2 className="text-base font-semibold text-ink">
+            <p className="text-3xl mb-2">{tab === "trending" ? "âœ¨" : "ðŸ‘‹"}</p>
+            <h2 className="text-lg font-semibold text-ink">
               {tab === "trending"
                 ? "Nothing trending yet"
                 : "Your feed is empty"}
             </h2>
-            <p className="text-sm text-ink-muted mt-1">
+            <p className="text-base text-ink-muted mt-1">
               {tab === "trending"
                 ? "Check back once posts start getting engagement."
                 : "Follow users to start seeing posts."}
@@ -271,7 +271,7 @@ const Home = () => {
             </>
           )}
           {!current.hasMore && current.posts.length > 0 && (
-            <p className="text-xs text-ink-muted">You're all caught up</p>
+            <p className="text-sm text-ink-muted">You're all caught up</p>
           )}
         </div>
       </div>

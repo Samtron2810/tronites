@@ -8,7 +8,7 @@ const SplashScreen = () => {
         alt="Tronites"
         className="splash-logo h-16 w-auto object-contain"
       />
-      <span className="splash-text mt-4 text-white font-bold text-2xl tracking-tight">
+      <span className="splash-text mt-4 text-white font-bold text-3xl tracking-tight">
         Tron<span className="text-primary-200">ites</span>
       </span>
     </div>

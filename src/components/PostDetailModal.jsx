@@ -22,7 +22,7 @@ import LazyImage from "./LazyImage";
 import TextWithLinks from "./TextWithLinks";
 import CommentsPanel from "./CommentBox";
 
-// Stacked-only layout at every breakpoint (confirmed — no desktop
+// Stacked-only layout at every breakpoint (confirmed â€” no desktop
 // side-by-side variant). Media on top, post text below it, action bar
 // (like/comment count/save), then the comments panel, all in one
 // scrollable column inside the modal.
@@ -38,11 +38,11 @@ import CommentsPanel from "./CommentBox";
 //
 // Promotes the carousel interaction that already lived inline in
 // PostCard (arrows/dots/badge) into this dedicated view, and adds
-// click-to-toggle-2x zoom + keyboard/swipe nav on top of it — the
+// click-to-toggle-2x zoom + keyboard/swipe nav on top of it â€” the
 // carousel JSX itself is carried over as-is, not reinvented.
 //
 // Like/bookmark/edit/delete/report state and handlers are NOT
-// duplicated here — PostCard remains the single source of truth for
+// duplicated here â€” PostCard remains the single source of truth for
 // all of it and passes both the current values and the handlers down
 // as props, so liking from the modal and liking from the card update
 // the exact same state (no second API call, no drift between the two
@@ -121,7 +121,7 @@ const PostDetailModal = ({
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [isOpen, media.length, onClose]);
 
-  // Close the options menu on outside click — same pattern PostCard and
+  // Close the options menu on outside click â€” same pattern PostCard and
   // CommentOptionsMenu already use.
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -201,15 +201,15 @@ const PostDetailModal = ({
               <div className="flex items-center gap-1.5">
                 <Link
                   to={`/profile/${userId}`}
-                  className="text-sm font-semibold text-ink hover:text-primary-600 transition"
+                  className="text-base font-semibold text-ink hover:text-primary-600 transition"
                 >
                   {name}
                 </Link>
                 {username && (
-                  <span className="text-xs text-ink-muted">@{username}</span>
+                  <span className="text-sm text-ink-muted">@{username}</span>
                 )}
               </div>
-              <p className="flex items-center gap-1 text-xs text-ink-muted">
+              <p className="flex items-center gap-1 text-sm text-ink-muted">
                 {time}
                 {privacy === "followers" && (
                   <FiUsers
@@ -252,7 +252,7 @@ const PostDetailModal = ({
                       setMenuOpen(false);
                       onCopy();
                     }}
-                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-ink-sub hover:bg-surface transition"
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-base text-ink-sub hover:bg-surface transition"
                   >
                     <FaRegCopy size={13} />
                     <span className="font-medium">Copy text</span>
@@ -266,7 +266,7 @@ const PostDetailModal = ({
                             setMenuOpen(false);
                             onEdit();
                           }}
-                          className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-ink hover:bg-primary-50 transition"
+                          className="w-full flex items-center gap-3 px-4 py-2.5 text-base text-ink hover:bg-primary-50 transition"
                         >
                           <FaPen className="text-primary-600" size={13} />
                           <span className="font-medium">Edit post</span>
@@ -277,7 +277,7 @@ const PostDetailModal = ({
                           setMenuOpen(false);
                           onDelete();
                         }}
-                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition"
+                        className="w-full flex items-center gap-3 px-4 py-2.5 text-base text-red-600 hover:bg-red-50 transition"
                       >
                         <FaTrash size={13} />
                         <span className="font-medium">Delete post</span>
@@ -289,7 +289,7 @@ const PostDetailModal = ({
                         setMenuOpen(false);
                         onReport();
                       }}
-                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-ink-sub hover:bg-surface transition"
+                      className="w-full flex items-center gap-3 px-4 py-2.5 text-base text-ink-sub hover:bg-surface transition"
                     >
                       <FiFlag className="text-amber-500" size={13} />
                       <span className="font-medium">Report post</span>
@@ -339,7 +339,7 @@ const PostDetailModal = ({
           </div>
         )}
 
-        {/* Image carousel — same interaction promoted from PostCard,
+        {/* Image carousel â€” same interaction promoted from PostCard,
             plus click-to-toggle-2x zoom and keyboard/swipe nav. */}
         {media.length > 0 && (
           <div
@@ -404,7 +404,7 @@ const PostDetailModal = ({
                     />
                   ))}
                 </div>
-                <span className="absolute top-2 right-2 bg-black/50 text-white text-xs px-2 py-0.5 rounded-full">
+                <span className="absolute top-2 right-2 bg-black/50 text-white text-sm px-2 py-0.5 rounded-full">
                   {activeSlide + 1}/{media.length}
                 </span>
               </>
@@ -414,7 +414,7 @@ const PostDetailModal = ({
 
         {/* Text */}
         {postText && (
-          <p className="text-ink-sub text-sm leading-relaxed px-5 py-4 whitespace-pre-line">
+          <p className="text-ink-sub text-base leading-relaxed px-5 py-4 whitespace-pre-line">
             <TextWithLinks text={postText} />
             {postHasBeenEdited && (
               <span
@@ -431,7 +431,7 @@ const PostDetailModal = ({
           </p>
         )}
 
-        {/* Actions — same like/comment-count/save bar as PostCard,
+        {/* Actions â€” same like/comment-count/save bar as PostCard,
             driven by the same state via props so liking here and
             liking on the card stay in sync (no second like/bookmark
             state or API call duplicated in this component). */}
@@ -439,7 +439,7 @@ const PostDetailModal = ({
           <button
             onClick={onLike}
             disabled={isLiking}
-            className={`flex items-center gap-1.5 text-sm transition ${
+            className={`flex items-center gap-1.5 text-base transition ${
               isLiking
                 ? "opacity-50 cursor-not-allowed"
                 : liked
@@ -451,7 +451,7 @@ const PostDetailModal = ({
             <span>{likeCount}</span>
           </button>
 
-          <div className="flex items-center gap-1.5 text-sm text-ink-muted">
+          <div className="flex items-center gap-1.5 text-base text-ink-muted">
             <FaRegComment size={15} />
             <span>{commentCount}</span>
           </div>
@@ -460,7 +460,7 @@ const PostDetailModal = ({
             onClick={onBookmark}
             disabled={isBookmarking}
             title={bookmarked ? "Remove from saved" : "Save post"}
-            className={`ml-auto flex items-center text-sm transition ${
+            className={`ml-auto flex items-center text-base transition ${
               isBookmarking
                 ? "opacity-50 cursor-not-allowed"
                 : bookmarked
