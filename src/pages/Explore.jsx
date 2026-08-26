@@ -393,6 +393,7 @@ const Explore = () => {
                   isLiked={post.isLiked}
                   isBookmarked={post.isBookmarked}
                   edited={post.edited}
+                  privacy={post.privacy}
                   editedAt={post.editedAt}
                   onDelete={(id) =>
                     setPosts((prev) => prev.filter((p) => p._id !== id))

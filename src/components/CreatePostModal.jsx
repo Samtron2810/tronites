@@ -1,6 +1,14 @@
 import { useState, useRef } from "react";
 import toast from "react-hot-toast";
-import { FiX, FiImage, FiVideo, FiFilm } from "react-icons/fi";
+import {
+  FiX,
+  FiImage,
+  FiVideo,
+  FiFilm,
+  FiGlobe,
+  FiUsers,
+  FiLock,
+} from "react-icons/fi";
 import useMentionAutocomplete from "../hooks/useMentionAutocomplete";
 import MentionSuggestions from "./MentionSuggestions";
 import ConfirmDiscardModal from "./ConfirmDiscardModal";
@@ -8,8 +16,18 @@ import { validateVideoFile } from "../services/videoUpload";
 
 const MAX_IMAGES = 4;
 
+// Post audience options — mirrors the backend's Post.privacy enum
+// (backend/models/Post.js) and the values validated in
+// backend/utils/validators.js.
+const PRIVACY_OPTIONS = [
+  { value: "public", label: "Public", icon: FiGlobe },
+  { value: "followers", label: "Followers", icon: FiUsers },
+  { value: "only-me", label: "Only me", icon: FiLock },
+];
+
 const CreatePostModal = ({ closeModal, onSubmit, onSubmitVideo }) => {
   const [text, setText] = useState("");
+  const [privacy, setPrivacy] = useState("public");
   const [images, setImages] = useState([]); // File[]
   const [previews, setPreviews] = useState([]); // objectURL[]
   // Video is only validated (format/size) + previewed locally here — no
@@ -136,9 +154,9 @@ const CreatePostModal = ({ closeModal, onSubmit, onSubmitVideo }) => {
     // parent, which runs the upload in the background and reports
     // progress/result via toast — matches the image post UX.
     if (videoFile) {
-      onSubmitVideo({ text, videoFile });
+      onSubmitVideo({ text, videoFile, privacy });
     } else {
-      onSubmit({ text, images });
+      onSubmit({ text, images, privacy });
     }
     closeModal();
   };
@@ -185,6 +203,36 @@ const CreatePostModal = ({ closeModal, onSubmit, onSubmitVideo }) => {
             >
               {text.length}/280
             </span>
+          </div>
+
+          {/* Post audience selector */}
+          <div className="flex items-center gap-2">
+            <label className="flex items-center gap-2 text-sm text-ink-sub cursor-pointer">
+              {(() => {
+                const current = PRIVACY_OPTIONS.find(
+                  (o) => o.value === privacy,
+                );
+                const CurrentIcon = current?.icon || FiGlobe;
+                return (
+                  <CurrentIcon
+                    size={15}
+                    className="text-primary-600 shrink-0"
+                  />
+                );
+              })()}
+              <select
+                value={privacy}
+                onChange={(e) => setPrivacy(e.target.value)}
+                aria-label="Who can see this post"
+                className="bg-surface border border-stroke rounded-lg px-2.5 py-1.5 text-sm text-ink outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100 transition cursor-pointer"
+              >
+                {PRIVACY_OPTIONS.map(({ value, label }) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </label>
           </div>
 
           {/* Image previews — carousel grid */}

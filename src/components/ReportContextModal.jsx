@@ -46,6 +46,7 @@ const toPostCardProps = (post) => ({
   isBookmarked: false,
   edited: post.edited,
   editedAt: post.editedAt,
+  privacy: post.privacy,
 });
 
 // Compact READ-ONLY thread window around a flagged message — mirrors

@@ -16,7 +16,7 @@ const CreatePost = ({ fetchPosts }) => {
   // immediately and this runs the actual upload in the background so the
   // user isn't left staring at a loading spinner. Toasts surface
   // progress/completion.
-  const handleSubmit = async ({ text, images }) => {
+  const handleSubmit = async ({ text, images, privacy }) => {
     const toastId = toast.loading("Posting…");
     try {
       if (images.length) {
@@ -31,11 +31,11 @@ const CreatePost = ({ fetchPosts }) => {
           compressed.map((file) => uploadToCloudinary({ file, signatureData })),
         );
         const urls = uploaded.map((r) => r.secure_url);
-        await api.post("/posts", { text, images: urls });
+        await api.post("/posts", { text, images: urls, privacy });
         toast.success("Post created!", { id: toastId });
       } else {
         // Text-only post.
-        await api.post("/posts", { text });
+        await api.post("/posts", { text, privacy });
         toast.success("Post created!", { id: toastId });
       }
 
@@ -71,7 +71,7 @@ const CreatePost = ({ fetchPosts }) => {
   // modal has already closed by the time this runs; upload + eager
   // transform (server-side trim to 30s) happen here with toast progress,
   // so the user is free to browse/post again while it finishes.
-  const handleSubmitVideo = async ({ text, videoFile }) => {
+  const handleSubmitVideo = async ({ text, videoFile, privacy }) => {
     const toastId = toast.loading("Uploading video… 0%");
     try {
       const video = await uploadVideoToCloudinary({
@@ -84,7 +84,7 @@ const CreatePost = ({ fetchPosts }) => {
         },
       });
 
-      await api.post("/posts/video", { text, video });
+      await api.post("/posts/video", { text, video, privacy });
 
       // durationSeconds is the SOURCE video's duration (Cloudinary's
       // top-level `duration` field, read before the eager transform)

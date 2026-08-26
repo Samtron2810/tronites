@@ -16,7 +16,7 @@ import {
   FaPen,
   FaRegCopy,
 } from "react-icons/fa";
-import { FiFlag } from "react-icons/fi";
+import { FiFlag, FiUsers, FiLock } from "react-icons/fi";
 import defaultAvatar from "../assets/defaultAvatar";
 import LazyImage from "./LazyImage";
 import TextWithLinks from "./TextWithLinks";
@@ -48,6 +48,7 @@ const PostDetailModal = ({
   profilePic,
   time,
   postText,
+  privacy,
   postHasBeenEdited,
   postEditedAt,
   media,
@@ -198,7 +199,25 @@ const PostDetailModal = ({
                   <span className="text-xs text-ink-muted">@{username}</span>
                 )}
               </div>
-              <p className="text-xs text-ink-muted">{time}</p>
+              <p className="flex items-center gap-1 text-xs text-ink-muted">
+                {time}
+                {privacy === "followers" && (
+                  <FiUsers
+                    size={11}
+                    className="shrink-0"
+                    title="Visible to your followers"
+                    aria-label="Visible to your followers"
+                  />
+                )}
+                {privacy === "only-me" && (
+                  <FiLock
+                    size={11}
+                    className="shrink-0"
+                    title="Only visible to you"
+                    aria-label="Only visible to you"
+                  />
+                )}
+              </p>
             </div>
           </div>
           <div className="flex items-center gap-1">
