@@ -194,6 +194,15 @@ const CreatePostModal = ({ closeModal, onSubmit, onSubmitVideo }) => {
               <MentionSuggestions
                 suggestions={mention.suggestions}
                 onSelect={handleSelectMention}
+                // The textarea is the first element of the body, directly
+                // under the header. Its wrapper is clipped by both the
+                // body's overflow-y-auto and the card's overflow-hidden,
+                // so a list opening upward ("up" default) gets sliced to a
+                // sliver under the header. Open downward instead; trimmed
+                // max-height keeps it inside the ~102px guaranteed clear
+                // below the textarea even in an empty modal.
+                direction="down"
+                maxHeightClass="max-h-24"
               />
             )}
           </div>

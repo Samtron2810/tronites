@@ -390,7 +390,6 @@ const PostCard = ({
         profilePic={profilePic}
         time={time}
         postText={postText}
-        privacy={privacy}
         postHasBeenEdited={postHasBeenEdited}
         postEditedAt={postEditedAt}
         media={media}
