@@ -1,12 +1,15 @@
 import { useState, useRef, useEffect } from "react";
-import { FaEllipsisV, FaTrash } from "react-icons/fa";
+import { FaEllipsisV, FaTrash, FaRegCopy } from "react-icons/fa";
 import { FiFlag } from "react-icons/fi";
+import toast from "react-hot-toast";
 
 // Same open/outside-click/dropdown-style pattern as PostCard's own post
-// options menu (FaEllipsisV trigger, absolute-positioned card), scaled
-// down for a comment/reply row. Report and Delete were previously two
-// bare buttons sitting in the row — both now live behind this menu.
-const CommentOptionsMenu = ({ isOwner, onReport, onDelete }) => {
+// options menu (FaEllipsisV trigger, absolute-positioned card).
+//
+// Owner sees Copy + Delete. Non-owner sees Copy + Report. No Edit —
+// comment editing is out of scope (explicitly removed from the build
+// plan); comments/replies are delete-and-repost only.
+const CommentOptionsMenu = ({ isOwner, text, onReport, onDelete }) => {
   const [open, setOpen] = useState(false);
   const menuRef = useRef(null);
   const triggerRef = useRef(null);
@@ -28,6 +31,17 @@ const CommentOptionsMenu = ({ isOwner, onReport, onDelete }) => {
     }
   }, [open]);
 
+  const handleCopy = async () => {
+    setOpen(false);
+    try {
+      await navigator.clipboard.writeText(text || "");
+      toast.success("Comment copied");
+    } catch (e) {
+      console.error(e);
+      toast.error("Couldn't copy comment");
+    }
+  };
+
   return (
     <div className="relative shrink-0">
       <button
@@ -45,6 +59,14 @@ const CommentOptionsMenu = ({ isOwner, onReport, onDelete }) => {
           ref={menuRef}
           className="absolute right-0 mt-1 w-36 bg-card rounded-lg shadow-lg border border-stroke z-40 py-1"
         >
+          <button
+            onClick={handleCopy}
+            className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs text-ink-sub hover:bg-surface transition"
+          >
+            <FaRegCopy size={11} />
+            <span className="font-medium">Copy</span>
+          </button>
+
           {isOwner ? (
             <button
               onClick={() => {

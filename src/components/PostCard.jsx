@@ -13,6 +13,7 @@ import {
   FaEllipsisV,
   FaVolumeUp,
   FaVolumeMute,
+  FaRegCopy,
 } from "react-icons/fa";
 import { FiFlag } from "react-icons/fi";
 import toast from "react-hot-toast";
@@ -20,14 +21,19 @@ import api from "../services/api";
 import { useAuth } from "../context/useAuth";
 import DeletePostModal from "./DeletePostModal";
 import ReportModal from "./ReportModal";
-import CommentOptionsMenu from "./CommentOptionsMenu";
-import ConfirmDeleteModal from "./ConfirmDeleteModal";
 import { useSocket } from "../context/useSocket";
 import TextWithLinks from "./TextWithLinks";
-import useMentionAutocomplete from "../hooks/useMentionAutocomplete";
-import MentionSuggestions from "./MentionSuggestions";
 import defaultAvatar from "../assets/defaultAvatar";
 import LazyImage from "./LazyImage";
+import PostDetailModal from "./PostDetailModal";
+import CommentsPanel from "./CommentBox";
+import { formatRemainingShort, cooldownRemainingMs } from "../utils/cooldown";
+
+// Same window as the backend's POST_EDIT_COOLDOWN_MS in postController.js
+// — kept in sync manually since there's no shared config between the two
+// codebases. Used only to decide whether to show "Edit post" in the menu;
+// the backend is still the source of truth and the real enforcement.
+const POST_EDIT_COOLDOWN_MS = 60 * 60 * 1000;
 
 const PostCard = ({
   postId,
@@ -55,7 +61,6 @@ const PostCard = ({
   const [likeCount, setLikeCount] = useState(likes);
   const [bookmarked, setBookmarked] = useState(isBookmarked);
   const [isBookmarking, setIsBookmarking] = useState(false);
-  const [comments, setComments] = useState([]);
   const [commentCount, setCommentCount] = useState(commentsCount);
   // Track the prop values last synced into state, so a real prop change
   // (parent refetch/pagination) resets local state without a useEffect.
@@ -82,28 +87,10 @@ const PostCard = ({
     setBookmarked(isBookmarked);
   }
   const [showComments, setShowComments] = useState(false);
-  const [commentText, setCommentText] = useState("");
-  const [isCommentSending, setIsCommentSending] = useState(false);
-  const [commentDeletingId, setCommentDeletingId] = useState(null);
-  const [visibleCount, setVisibleCount] = useState(1);
-  const [syncedShowComments, setSyncedShowComments] = useState(showComments);
-  if (showComments !== syncedShowComments) {
-    setSyncedShowComments(showComments);
-    if (showComments) setVisibleCount(1);
-  }
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  // What ReportModal is open for — one instance serves all three triggers
-  // (post / comment / reply): null | { type: "post" } |
-  // { type: "comment" | "reply", id }. Own content never exposes a
-  // trigger, and the backend rejects self-reports regardless.
-  const [reportTarget, setReportTarget] = useState(null);
-  // Comment/reply delete now goes through a confirmation modal instead
-  // of firing immediately on click (post delete already worked this
-  // way via showDeleteModal — this brings comments in line). Shape
-  // mirrors reportTarget: null | { type: "comment" | "reply", id,
-  // parentCommentId? } — parentCommentId only present for replies, so
-  // handleConfirmDelete knows which delete handler to call.
-  const [deleteCommentTarget, setDeleteCommentTarget] = useState(null);
+  // Post-level report only now — comment/reply reporting lives inside
+  // CommentsPanel, which has its own ReportModal instance.
+  const [reportTarget, setReportTarget] = useState(null); // null | { type: "post" }
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
   const triggerRef = useRef(null);
@@ -125,7 +112,6 @@ const PostCard = ({
     setPostHasBeenEdited(edited);
     setPostEditedAt(editedAt);
   }
-  const [loadingComments, setLoadingComments] = useState(false);
   const [isLiking, setIsLiking] = useState(false);
   const [activeSlide, setActiveSlide] = useState(0);
   const [postVideo, setPostVideo] = useState(video);
@@ -138,114 +124,23 @@ const PostCard = ({
     setSyncedVideoStatus(video?.status);
     setPostVideo(video);
   }
-  const [replyingTo, setReplyingTo] = useState(null); // commentId or null
-  const [replyText, setReplyText] = useState("");
-  const commentInputRef = useRef(null);
-  const replyInputRef = useRef(null);
-  const commentMention = useMentionAutocomplete();
-  const replyMention = useMentionAutocomplete();
-  const [isReplySending, setIsReplySending] = useState(false);
-  const [openReplies, setOpenReplies] = useState({}); // { [commentId]: boolean }
-  const [repliesByComment, setRepliesByComment] = useState({}); // { [commentId]: replies[] }
-  const [loadingReplies, setLoadingReplies] = useState({}); // { [commentId]: boolean }
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
   const { socket } = useSocket();
 
   const media = images || [];
 
-  const fetchComments = async () => {
-    try {
-      setLoadingComments(true);
-      const res = await api.get(`/comments/${postId}`);
-      setComments(res.data);
-    } catch (e) {
-      console.error(e);
-      toast.error("Couldn't load comments. Try again.");
-    } finally {
-      setLoadingComments(false);
-    }
-  };
-
-  const handleAddComment = async () => {
-    if (isCommentSending || !commentText.trim()) return;
-    setIsCommentSending(true);
-    try {
-      await api.post(`/comments/${postId}`, { text: commentText });
-      setCommentText("");
-    } catch (e) {
-      console.error(e);
-      toast.error("Couldn't post your comment. Try again.");
-    } finally {
-      setIsCommentSending(false);
-    }
-  };
-
-  const handleCommentTextChange = (e) => {
-    setCommentText(e.target.value);
-    commentMention.handleTextChange(e.target.value, e.target.selectionStart);
-  };
-
-  const handleSelectCommentMention = (uname) => {
-    const { text: newText, cursorPos } = commentMention.applySuggestion(
-      commentText,
-      uname,
-    );
-    setCommentText(newText);
-    requestAnimationFrame(() => {
-      commentInputRef.current?.focus();
-      commentInputRef.current?.setSelectionRange(cursorPos, cursorPos);
-    });
-  };
-
-  const handleReplyTextChange = (e) => {
-    setReplyText(e.target.value);
-    replyMention.handleTextChange(e.target.value, e.target.selectionStart);
-  };
-
-  const handleSelectReplyMention = (uname) => {
-    const { text: newText, cursorPos } = replyMention.applySuggestion(
-      replyText,
-      uname,
-    );
-    setReplyText(newText);
-    requestAnimationFrame(() => {
-      replyInputRef.current?.focus();
-      replyInputRef.current?.setSelectionRange(cursorPos, cursorPos);
-    });
-  };
-
-  const handleDeleteComment = async (commentId) => {
-    if (commentDeletingId) return;
-    setCommentDeletingId(commentId);
-    try {
-      const res = await api.delete(`/comments/${commentId}`);
-      setComments((prev) => prev.filter((c) => c._id !== commentId));
-      // Backend cascades: deleting a top-level comment deletes its replies
-      // too. Drop that comment's cached reply list locally to match.
-      setRepliesByComment((prev) => {
-        const next = { ...prev };
-        delete next[commentId];
-        return next;
-      });
-      setCommentCount(res.data.commentCount ?? Math.max(commentCount - 1, 0));
-    } catch (e) {
-      console.error(e);
-      toast.error("Couldn't delete comment. Try again.");
-    } finally {
-      setCommentDeletingId(null);
-    }
-  };
-
   // Mirrors Profile.jsx's user-report submit — same endpoint, same payload
-  // shape ({ targetType, targetId, reason, details }), same toasts, and
-  // closes the modal only on success.
+  // shape, same toasts, closes the modal only on success. Post-only now;
+  // comment/reply reports are handled inside CommentsPanel.
   const handleReportSubmit = async ({ reason, details }) => {
     if (!reportTarget) return;
-    const target =
-      reportTarget.type === "post"
-        ? { targetType: "post", targetId: postId }
-        : { targetType: "comment", targetId: reportTarget.id };
     try {
-      await api.post("/reports", { ...target, reason, details });
+      await api.post("/reports", {
+        targetType: "post",
+        targetId: postId,
+        reason,
+        details,
+      });
       toast.success("Report submitted. Thanks for the heads up.");
       setReportTarget(null);
     } catch (e) {
@@ -254,130 +149,6 @@ const PostCard = ({
         e.response?.data?.message || "Couldn't submit report. Try again.",
       );
     }
-  };
-
-  const fetchReplies = async (commentId) => {
-    try {
-      setLoadingReplies((prev) => ({ ...prev, [commentId]: true }));
-      const res = await api.get(`/comments/${commentId}/replies`);
-      setRepliesByComment((prev) => ({ ...prev, [commentId]: res.data }));
-    } catch (e) {
-      console.error(e);
-      toast.error("Couldn't load replies. Try again.");
-    } finally {
-      setLoadingReplies((prev) => ({ ...prev, [commentId]: false }));
-    }
-  };
-
-  const toggleReplies = (commentId) => {
-    const willOpen = !openReplies[commentId];
-    setOpenReplies((prev) => ({ ...prev, [commentId]: willOpen }));
-    if (willOpen && !repliesByComment[commentId]) fetchReplies(commentId);
-  };
-
-  const [commentLikingId, setCommentLikingId] = useState(null);
-
-  const handleCommentLike = async (commentId, parentCommentId) => {
-    if (commentLikingId) return;
-    setCommentLikingId(commentId);
-    try {
-      const res = await api.put(`/comments/like/${commentId}`);
-      const applyLike = (c) =>
-        c._id === commentId
-          ? { ...c, likesCount: res.data.likes, isLiked: res.data.liked }
-          : c;
-      if (parentCommentId) {
-        setRepliesByComment((prev) => ({
-          ...prev,
-          [parentCommentId]: (prev[parentCommentId] || []).map(applyLike),
-        }));
-      } else {
-        setComments((prev) => prev.map(applyLike));
-      }
-    } catch (e) {
-      console.error(e);
-      toast.error("Couldn't update like. Try again.");
-    } finally {
-      setCommentLikingId(null);
-    }
-  };
-
-  const handleAddReply = async (parentCommentId) => {
-    if (isReplySending || !replyText.trim()) return;
-    setIsReplySending(true);
-    try {
-      const res = await api.post(`/comments/${postId}`, {
-        text: replyText,
-        parentCommentId,
-      });
-      setReplyText("");
-      setReplyingTo(null);
-      // Open the thread and make sure it actually has data — either
-      // append the reply we just got back (fast path), or fall back to
-      // a fetch if for some reason it's missing from the response.
-      setOpenReplies((prev) => ({ ...prev, [parentCommentId]: true }));
-      if (res.data?._id) {
-        setRepliesByComment((prev) => ({
-          ...prev,
-          [parentCommentId]: prev[parentCommentId]
-            ? prev[parentCommentId].some((r) => r._id === res.data._id)
-              ? prev[parentCommentId]
-              : [...prev[parentCommentId], res.data]
-            : [res.data],
-        }));
-      } else {
-        fetchReplies(parentCommentId);
-      }
-    } catch (e) {
-      console.error(e);
-      toast.error("Couldn't post your reply. Try again.");
-    } finally {
-      setIsReplySending(false);
-    }
-  };
-
-  const handleDeleteReply = async (replyId, parentCommentId) => {
-    if (commentDeletingId) return;
-    setCommentDeletingId(replyId);
-    try {
-      const res = await api.delete(`/comments/${replyId}`);
-      setRepliesByComment((prev) => ({
-        ...prev,
-        [parentCommentId]: (prev[parentCommentId] || []).filter(
-          (r) => r._id !== replyId,
-        ),
-      }));
-      setComments((prev) =>
-        prev.map((c) =>
-          c._id === parentCommentId
-            ? { ...c, repliesCount: Math.max((c.repliesCount || 1) - 1, 0) }
-            : c,
-        ),
-      );
-      setCommentCount(res.data.commentCount ?? Math.max(commentCount - 1, 0));
-    } catch (e) {
-      console.error(e);
-      toast.error("Couldn't delete reply. Try again.");
-    } finally {
-      setCommentDeletingId(null);
-    }
-  };
-
-  // Single confirm handler for the ConfirmDeleteModal — routes to the
-  // existing comment or reply delete logic above based on which target
-  // was set when the menu's Delete item was clicked. Modal itself has no
-  // idea whether it's deleting a comment or reply.
-  const handleConfirmDeleteComment = async () => {
-    if (!deleteCommentTarget) return;
-    if (deleteCommentTarget.type === "reply") {
-      await handleDeleteReply(
-        deleteCommentTarget.id,
-        deleteCommentTarget.parentCommentId,
-      );
-    } else {
-      await handleDeleteComment(deleteCommentTarget.id);
-    }
-    setDeleteCommentTarget(null);
   };
 
   const handleLike = async () => {
@@ -426,6 +197,17 @@ const PostCard = ({
     setIsEditing(false);
   };
 
+  const handleCopyPost = async () => {
+    setMenuOpen(false);
+    try {
+      await navigator.clipboard.writeText(postText || "");
+      toast.success("Post text copied");
+    } catch (e) {
+      console.error(e);
+      toast.error("Couldn't copy post");
+    }
+  };
+
   const handleEditSave = async () => {
     const trimmed = editText.trim();
     if (!trimmed && media.length === 0) {
@@ -446,6 +228,19 @@ const PostCard = ({
       setIsEditing(false);
     } catch (e) {
       console.error(e);
+      // Safety net for a stale client (e.g. two tabs open) — the menu
+      // already hides "Edit post" during cooldown (see editCooldownActive
+      // below), so this path shouldn't normally be reachable.
+      if (e.response?.status === 429) {
+        const { nextAllowedAt } = e.response.data;
+        const remaining = formatRemainingShort(nextAllowedAt);
+        toast.error(
+          remaining
+            ? `You can edit again in ${remaining}`
+            : "You can only edit a post once every hour",
+        );
+        return;
+      }
       toast.error(
         e.response?.data?.message || "Couldn't save changes. Try again.",
       );
@@ -453,12 +248,6 @@ const PostCard = ({
       setIsSavingEdit(false);
     }
   };
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch-on-open; setState happens inside the async fn
-    if (showComments) fetchComments();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showComments]);
 
   // Close the post menu when clicking outside it
   useEffect(() => {
@@ -481,86 +270,25 @@ const PostCard = ({
     }
   }, [menuOpen]);
 
+  // Post-level socket events only — comment-scoped events (newComment,
+  // commentDeleted, commentLikeUpdate) are subscribed inside
+  // CommentsPanel, which owns that state now. newComment/commentDeleted
+  // are still listened to here too, but only for the running count —
+  // it needs to render in the action bar even when comments aren't
+  // expanded / the panel hasn't mounted yet.
   useEffect(() => {
     if (!socket || !postId) return;
     socket.emit("joinPost", postId);
     const handleLikeUpdate = (data) => {
       if (data.postId !== postId) return;
       setLikeCount(data.likesCount);
-      // Only update our own `liked` state if this event is about our own
-      // like/unlike action — another viewer's like on this post changes
-      // the count but not whether *we* have liked it.
       if (data.userId === currentUser?._id?.toString()) {
         setLiked(data.liked);
       }
     };
-    const handleNewComment = (data) => {
+    const handleCommentCountEvent = (data) => {
       if (data.postId !== postId) return;
       setCommentCount(data.commentCount);
-      if (data.parentCommentId) {
-        // It's a reply — bump the parent's repliesCount, and append to
-        // the cached reply list only if that thread is already loaded
-        // (avoids fetching a thread the user never opened).
-        setComments((prev) =>
-          prev.map((c) =>
-            c._id === data.parentCommentId
-              ? { ...c, repliesCount: (c.repliesCount || 0) + 1 }
-              : c,
-          ),
-        );
-        setRepliesByComment((prev) =>
-          prev[data.parentCommentId]
-            ? {
-                ...prev,
-                [data.parentCommentId]: prev[data.parentCommentId].some(
-                  (r) => r._id === data.comment._id,
-                )
-                  ? prev[data.parentCommentId]
-                  : [...prev[data.parentCommentId], data.comment],
-              }
-            : prev,
-        );
-      } else {
-        setComments((prev) =>
-          prev.some((c) => c._id === data.comment._id)
-            ? prev
-            : [data.comment, ...prev],
-        );
-      }
-    };
-    const handleCommentDeleted = (data) => {
-      if (data.postId !== postId) return;
-      setCommentCount(data.commentCount);
-      if (data.parentCommentId) {
-        // A reply was deleted — remove it from that thread's cache and
-        // decrement the parent's count.
-        setRepliesByComment((prev) =>
-          prev[data.parentCommentId]
-            ? {
-                ...prev,
-                [data.parentCommentId]: prev[data.parentCommentId].filter(
-                  (r) => r._id !== data.commentId,
-                ),
-              }
-            : prev,
-        );
-        setComments((prev) =>
-          prev.map((c) =>
-            c._id === data.parentCommentId
-              ? { ...c, repliesCount: Math.max((c.repliesCount || 1) - 1, 0) }
-              : c,
-          ),
-        );
-      } else {
-        // A top-level comment was deleted — remove it, and its cascaded
-        // replies (deletedReplyIds), from local state.
-        setComments((prev) => prev.filter((c) => c._id !== data.commentId));
-        setRepliesByComment((prev) => {
-          const next = { ...prev };
-          delete next[data.commentId];
-          return next;
-        });
-      }
     };
     const handlePostUpdated = (data) => {
       if (data.postId !== postId) return;
@@ -573,41 +301,16 @@ const PostCard = ({
       setPostHasBeenEdited(data.edited);
       setPostEditedAt(data.editedAt);
     };
-    const handleCommentLikeUpdate = (data) => {
-      if (data.postId !== postId) return;
-      const isSelf = data.userId === currentUser?._id?.toString();
-      const applyUpdate = (c) => {
-        if (c._id !== data.commentId) return c;
-        // Only trust the server's `liked` flag for our own action —
-        // other viewers' likes should bump the count without touching
-        // whether *we* have liked it.
-        return {
-          ...c,
-          likesCount: data.likesCount,
-          isLiked: isSelf ? data.liked : c.isLiked,
-        };
-      };
-      setComments((prev) => prev.map(applyUpdate));
-      setRepliesByComment((prev) => {
-        const next = { ...prev };
-        for (const parentId of Object.keys(next)) {
-          next[parentId] = next[parentId].map(applyUpdate);
-        }
-        return next;
-      });
-    };
     socket.on("likeUpdate", handleLikeUpdate);
-    socket.on("newComment", handleNewComment);
-    socket.on("commentDeleted", handleCommentDeleted);
+    socket.on("newComment", handleCommentCountEvent);
+    socket.on("commentDeleted", handleCommentCountEvent);
     socket.on("postUpdated", handlePostUpdated);
-    socket.on("commentLikeUpdate", handleCommentLikeUpdate);
     return () => {
       socket.emit("leavePost", postId);
       socket.off("likeUpdate", handleLikeUpdate);
-      socket.off("newComment", handleNewComment);
-      socket.off("commentDeleted", handleCommentDeleted);
+      socket.off("newComment", handleCommentCountEvent);
+      socket.off("commentDeleted", handleCommentCountEvent);
       socket.off("postUpdated", handlePostUpdated);
-      socket.off("commentLikeUpdate", handleCommentLikeUpdate);
     };
   }, [socket, postId, currentUser?._id, isEditing]);
 
@@ -643,8 +346,21 @@ const PostCard = ({
     setIsVideoMuted(videoEl.muted);
   };
 
-  const visibleComments = comments.slice(0, visibleCount);
-  const hasMore = visibleCount < comments.length;
+  // Client-side mirror of the backend's 1-hour edit cooldown — used only
+  // to decide whether "Edit post" appears in the menu at all, so the
+  // menu never offers an action guaranteed to 429. Recomputed on every
+  // render (cheap, no need for its own effect/interval).
+  const editCooldownActive = Boolean(
+    postEditedAt && cooldownRemainingMs(postEditedAt, POST_EDIT_COOLDOWN_MS),
+  );
+
+  // Click target for opening the detail modal: the media area, or the
+  // post body outside interactive controls. Interactive elements inside
+  // (buttons, links, the options menu) call stopPropagation so they
+  // don't also trigger the modal open.
+  const openDetail = () => {
+    if (!isEditing) setIsDetailOpen(true);
+  };
 
   return (
     <>
@@ -657,26 +373,29 @@ const PostCard = ({
 
       {reportTarget && (
         <ReportModal
-          targetLabel={
-            reportTarget.type === "post" ? "this post" : "this comment"
-          }
+          targetLabel="this post"
           onConfirm={handleReportSubmit}
           onCancel={() => setReportTarget(null)}
         />
       )}
 
-      {deleteCommentTarget && (
-        <ConfirmDeleteModal
-          title={
-            deleteCommentTarget.type === "reply"
-              ? "Delete Reply"
-              : "Delete Comment"
-          }
-          message={`Are you sure you want to delete this ${deleteCommentTarget.type === "reply" ? "reply" : "comment"}? This action cannot be undone.`}
-          onConfirm={handleConfirmDeleteComment}
-          onCancel={() => setDeleteCommentTarget(null)}
-        />
-      )}
+      <PostDetailModal
+        isOpen={isDetailOpen}
+        onClose={() => setIsDetailOpen(false)}
+        userId={userId}
+        name={name}
+        username={username}
+        profilePic={profilePic}
+        time={time}
+        postText={postText}
+        postHasBeenEdited={postHasBeenEdited}
+        postEditedAt={postEditedAt}
+        media={media}
+        postVideo={postVideo}
+        commentCount={commentCount}
+        onCommentCountChange={setCommentCount}
+        postId={postId}
+      />
 
       <div className="bg-card border border-stroke rounded-2xl p-5 transition hover:shadow-sm">
         {/* Header */}
@@ -692,6 +411,7 @@ const PostCard = ({
                 <Link
                   to={`/profile/${userId}`}
                   className="text-sm font-semibold text-ink hover:text-primary-600 transition"
+                  onClick={(e) => e.stopPropagation()}
                 >
                   {name}
                 </Link>
@@ -705,7 +425,10 @@ const PostCard = ({
           <div className="relative">
             <button
               ref={triggerRef}
-              onClick={() => setMenuOpen((o) => !o)}
+              onClick={(e) => {
+                e.stopPropagation();
+                setMenuOpen((o) => !o);
+              }}
               className="text-ink-muted hover:text-ink transition p-1.5 rounded-lg hover:bg-surface"
               title="Post options"
               aria-label="Post options"
@@ -716,13 +439,23 @@ const PostCard = ({
             {menuOpen && (
               <div
                 ref={menuRef}
-                className="absolute right-0 mt-2 w-40 bg-card rounded-lg shadow-lg border border-stroke z-40 py-1"
+                onClick={(e) => e.stopPropagation()}
+                className="absolute right-0 mt-2 w-44 bg-card rounded-lg shadow-lg border border-stroke z-40 py-1"
               >
-                {/* Owner menu: edit/delete. Non-owner menu: report only —
-                    mirrors Profile.jsx's report entry (icon + styling). */}
+                <button
+                  onClick={handleCopyPost}
+                  className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-ink-sub hover:bg-surface transition"
+                >
+                  <FaRegCopy size={13} />
+                  <span className="font-medium">Copy text</span>
+                </button>
+
                 {isOwner ? (
                   <>
-                    {!isEditing && (
+                    {/* "Edit post" is hidden entirely during the 1-hour
+                        cooldown, computed client-side, rather than shown
+                        and left to fail on submit. */}
+                    {!isEditing && !editCooldownActive && (
                       <button
                         onClick={() => {
                           setIsEditing(true);
@@ -768,6 +501,7 @@ const PostCard = ({
             <textarea
               value={editText}
               onChange={(e) => setEditText(e.target.value)}
+              onClick={(e) => e.stopPropagation()}
               maxLength={280}
               rows={3}
               autoFocus
@@ -779,14 +513,20 @@ const PostCard = ({
               </span>
               <div className="flex items-center gap-2">
                 <button
-                  onClick={handleEditCancel}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleEditCancel();
+                  }}
                   disabled={isSavingEdit}
                   className="text-xs font-medium text-ink-muted hover:text-ink px-3 py-1.5 rounded-lg transition disabled:opacity-50"
                 >
                   Cancel
                 </button>
                 <button
-                  onClick={handleEditSave}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleEditSave();
+                  }}
                   disabled={isSavingEdit}
                   className="text-xs font-semibold text-white bg-primary-600 hover:bg-primary-700 px-3 py-1.5 rounded-lg transition disabled:opacity-50"
                 >
@@ -796,7 +536,10 @@ const PostCard = ({
             </div>
           </div>
         ) : (
-          <p className="text-ink-sub text-sm leading-relaxed">
+          <p
+            onClick={openDetail}
+            className="text-ink-sub text-sm leading-relaxed cursor-pointer"
+          >
             <TextWithLinks text={postText} />
             {postHasBeenEdited && (
               <span
@@ -837,13 +580,17 @@ const PostCard = ({
               disablePictureInPicture
               controlsList="nodownload nofullscreen noplaybackrate"
               onContextMenu={(e) => e.preventDefault()}
+              onClick={(e) => e.stopPropagation()}
               className="w-full max-h-96 object-contain"
             />
             {/* Mute/unmute overlay — sits top-right, clear of the bottom
                 native-controls bar. */}
             <button
               type="button"
-              onClick={handleToggleVideoMute}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleToggleVideoMute();
+              }}
               aria-label={isVideoMuted ? "Unmute video" : "Mute video"}
               title={isVideoMuted ? "Unmute" : "Mute"}
               className="absolute top-2 right-2 w-8 h-8 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/70 transition"
@@ -857,9 +604,13 @@ const PostCard = ({
           </div>
         )}
 
-        {/* Media carousel */}
+        {/* Media carousel — click opens the detail modal (with zoom),
+            arrows/dots still work inline without opening it. */}
         {media.length > 0 && (
-          <div className="mt-4 relative rounded-xl overflow-hidden bg-surface">
+          <div
+            className="mt-4 relative rounded-xl overflow-hidden bg-surface cursor-pointer"
+            onClick={openDetail}
+          >
             <LazyImage
               src={media[activeSlide]}
               alt={`post-${activeSlide + 1}`}
@@ -869,16 +620,22 @@ const PostCard = ({
             {media.length > 1 && (
               <>
                 <button
-                  onClick={() =>
-                    setActiveSlide((i) => (i - 1 + media.length) % media.length)
-                  }
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setActiveSlide(
+                      (i) => (i - 1 + media.length) % media.length,
+                    );
+                  }}
                   className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 text-white rounded-full p-1.5 hover:bg-black/70 transition"
                   aria-label="Previous image"
                 >
                   <FaChevronLeft size={12} />
                 </button>
                 <button
-                  onClick={() => setActiveSlide((i) => (i + 1) % media.length)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setActiveSlide((i) => (i + 1) % media.length);
+                  }}
                   className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 text-white rounded-full p-1.5 hover:bg-black/70 transition"
                   aria-label="Next image"
                 >
@@ -888,7 +645,10 @@ const PostCard = ({
                   {media.map((_, i) => (
                     <button
                       key={i}
-                      onClick={() => setActiveSlide(i)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setActiveSlide(i);
+                      }}
                       className={`h-1.5 rounded-full transition-all ${
                         i === activeSlide ? "w-4 bg-card" : "w-1.5 bg-white/50"
                       }`}
@@ -949,232 +709,16 @@ const PostCard = ({
           </button>
         </div>
 
-        {/* Comments */}
+        {/* Inline comments — same CommentsPanel that also renders inside
+            PostDetailModal. Only mounted (and only fetches) once
+            expanded here. */}
         {showComments && (
-          <div className="mt-4 space-y-3">
-            {/* Input */}
-            <div className="flex gap-2 relative">
-              <div className="flex-1 relative">
-                <input
-                  ref={commentInputRef}
-                  value={commentText}
-                  onChange={handleCommentTextChange}
-                  onBlur={commentMention.closeSuggestions}
-                  placeholder="Write a comment..."
-                  className="w-full border border-stroke rounded-xl px-3 py-2 text-sm text-ink placeholder:text-ink-muted outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100 transition"
-                />
-                {commentMention.showSuggestions && (
-                  <MentionSuggestions
-                    suggestions={commentMention.suggestions}
-                    onSelect={handleSelectCommentMention}
-                  />
-                )}
-              </div>
-              <button
-                onClick={handleAddComment}
-                disabled={!commentText.trim() || isCommentSending}
-                className="px-4 py-2 rounded-xl text-sm font-medium text-white bg-primary-600 hover:bg-primary-800 disabled:opacity-50 disabled:cursor-not-allowed transition"
-              >
-                {isCommentSending ? "..." : "Send"}
-              </button>
-            </div>
-
-            {/* Empty state */}
-            {!loadingComments && comments.length === 0 && (
-              <p className="text-ink-muted text-xs text-center py-2">
-                No comments yet. Be the first!
-              </p>
-            )}
-
-            {/* Comment list */}
-            <div className="space-y-2">
-              {visibleComments.map((c) => (
-                <div key={c._id} className="bg-surface rounded-xl px-3 py-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1">
-                      <Link
-                        to={`/profile/${c.user._id}`}
-                        className="text-xs font-semibold text-ink hover:text-primary-600 transition"
-                      >
-                        {c.user.name}
-                      </Link>
-                      {c.user.username && (
-                        <span className="text-[11px] text-ink-muted">
-                          @{c.user.username}
-                        </span>
-                      )}
-                    </div>
-                    <CommentOptionsMenu
-                      isOwner={c.user._id === currentUser?._id}
-                      onDelete={() =>
-                        setDeleteCommentTarget({ type: "comment", id: c._id })
-                      }
-                      onReport={() =>
-                        setReportTarget({ type: "comment", id: c._id })
-                      }
-                    />
-                  </div>
-                  <p className="text-xs text-ink-sub mt-0.5">
-                    <TextWithLinks text={c.text} />
-                  </p>
-
-                  {/* Reply / thread / like controls */}
-                  <div className="flex items-center gap-3 mt-1.5">
-                    <button
-                      onClick={() => handleCommentLike(c._id, null)}
-                      disabled={commentLikingId === c._id}
-                      className={`flex items-center gap-1 text-xs transition disabled:opacity-50 ${
-                        c.isLiked
-                          ? "text-red-500"
-                          : "text-ink-muted hover:text-red-500"
-                      }`}
-                    >
-                      {c.isLiked ? (
-                        <FaHeart size={11} />
-                      ) : (
-                        <FaRegHeart size={11} />
-                      )}
-                      {c.likesCount > 0 && <span>{c.likesCount}</span>}
-                    </button>
-                    <button
-                      onClick={() =>
-                        setReplyingTo(replyingTo === c._id ? null : c._id)
-                      }
-                      className="text-xs text-ink-muted hover:text-primary-600 transition"
-                    >
-                      Reply
-                    </button>
-                    {c.repliesCount > 0 && (
-                      <button
-                        onClick={() => toggleReplies(c._id)}
-                        className="text-xs text-primary-600 font-medium hover:underline"
-                      >
-                        {openReplies[c._id]
-                          ? "Hide replies"
-                          : `View ${c.repliesCount} ${c.repliesCount === 1 ? "reply" : "replies"}`}
-                      </button>
-                    )}
-                  </div>
-
-                  {/* Reply input */}
-                  {replyingTo === c._id && (
-                    <div className="flex gap-2 mt-2 relative">
-                      <div className="flex-1 relative">
-                        <input
-                          ref={replyInputRef}
-                          value={replyText}
-                          onChange={handleReplyTextChange}
-                          onBlur={replyMention.closeSuggestions}
-                          placeholder={`Reply to ${c.user.name}...`}
-                          autoFocus
-                          onKeyDown={(e) =>
-                            e.key === "Enter" &&
-                            !replyMention.showSuggestions &&
-                            handleAddReply(c._id)
-                          }
-                          className="w-full border border-stroke rounded-lg px-3 py-1.5 text-xs text-ink placeholder:text-ink-muted outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100 transition"
-                        />
-                        {replyMention.showSuggestions && (
-                          <MentionSuggestions
-                            suggestions={replyMention.suggestions}
-                            onSelect={handleSelectReplyMention}
-                          />
-                        )}
-                      </div>
-                      <button
-                        onClick={() => handleAddReply(c._id)}
-                        disabled={!replyText.trim() || isReplySending}
-                        className="px-3 py-1.5 rounded-lg text-xs font-medium text-white bg-primary-600 hover:bg-primary-800 disabled:opacity-50 disabled:cursor-not-allowed transition"
-                      >
-                        {isReplySending ? "..." : "Reply"}
-                      </button>
-                    </div>
-                  )}
-
-                  {/* Reply thread */}
-                  {openReplies[c._id] && (
-                    <div className="mt-2 pl-3 border-l-2 border-stroke space-y-2">
-                      {loadingReplies[c._id] && (
-                        <p className="text-xs text-ink-muted">
-                          Loading replies...
-                        </p>
-                      )}
-                      {!loadingReplies[c._id] &&
-                        (repliesByComment[c._id] || []).map((r) => (
-                          <div
-                            key={r._id}
-                            className="bg-card rounded-lg px-3 py-2"
-                          >
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-1">
-                                <Link
-                                  to={`/profile/${r.user._id}`}
-                                  className="text-xs font-semibold text-ink hover:text-primary-600 transition"
-                                >
-                                  {r.user.name}
-                                </Link>
-                                {r.user.username && (
-                                  <span className="text-[11px] text-ink-muted">
-                                    @{r.user.username}
-                                  </span>
-                                )}
-                              </div>
-                              <CommentOptionsMenu
-                                isOwner={r.user._id === currentUser?._id}
-                                onDelete={() =>
-                                  setDeleteCommentTarget({
-                                    type: "reply",
-                                    id: r._id,
-                                    parentCommentId: c._id,
-                                  })
-                                }
-                                onReport={() =>
-                                  setReportTarget({ type: "reply", id: r._id })
-                                }
-                              />
-                            </div>
-                            <p className="text-xs text-ink-sub mt-0.5">
-                              <TextWithLinks text={r.text} />
-                            </p>
-                            <button
-                              onClick={() => handleCommentLike(r._id, c._id)}
-                              disabled={commentLikingId === r._id}
-                              className={`flex items-center gap-1 text-xs mt-1.5 transition disabled:opacity-50 ${
-                                r.isLiked
-                                  ? "text-red-500"
-                                  : "text-ink-muted hover:text-red-500"
-                              }`}
-                            >
-                              {r.isLiked ? (
-                                <FaHeart size={10} />
-                              ) : (
-                                <FaRegHeart size={10} />
-                              )}
-                              {r.likesCount > 0 && <span>{r.likesCount}</span>}
-                            </button>
-                          </div>
-                        ))}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-
-            {hasMore && (
-              <button
-                onClick={() => setVisibleCount((p) => p + 9)}
-                className="text-xs text-primary-600 font-semibold hover:underline"
-              >
-                Show more comments
-              </button>
-            )}
-
-            <button
-              onClick={() => setShowComments(false)}
-              className="text-xs text-ink-muted hover:underline"
-            >
-              Hide comments
-            </button>
+          <div className="mt-4">
+            <CommentsPanel
+              postId={postId}
+              initialCommentCount={commentCount}
+              onCommentCountChange={setCommentCount}
+            />
           </div>
         )}
       </div>

@@ -3,22 +3,13 @@ import toast from "react-hot-toast";
 import api from "../services/api";
 import { useAuth } from "../context/useAuth";
 import { FiCheck, FiX, FiLoader, FiEdit2, FiClock } from "react-icons/fi";
+import { formatRemainingDays as formatRemaining } from "../utils/cooldown";
 
 const USERNAME_RE = /^[a-z0-9_]{3,20}$/;
 // Mirrors the backend's \p{L}\p{M}['\- ] pattern (letters + marks +
 // apostrophe/hyphen/space, must start with a letter).
 const NAME_RE = /^[\p{L}\p{M}][\p{L}\p{M}' -]*$/u;
 
-// Shared "time remaining" formatter for both cooldowns — days is the
-// coarsest useful unit here since both windows are measured in days,
-// not hours.
-const formatRemaining = (nextAllowedAt) => {
-  const ms = new Date(nextAllowedAt).getTime() - Date.now();
-  if (ms <= 0) return null;
-  const days = Math.ceil(ms / (24 * 60 * 60 * 1000));
-  if (days <= 1) return "1 day";
-  return `${days} days`;
-};
 
 // Derives "can I change this yet" purely from the timestamp + duration,
 // same approach as suspendedUntil elsewhere in the app — no separate

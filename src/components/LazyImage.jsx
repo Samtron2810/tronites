@@ -6,6 +6,7 @@ const LazyImage = ({
   alt,
   className = "",
   aspectRatio,
+  style,
 }) => {
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState(false);
@@ -59,6 +60,7 @@ const LazyImage = ({
             decoding="async"
             onLoad={() => setLoaded(true)}
             onError={() => setError(true)}
+            style={style}
             className={`relative w-full ${className}`}
           />
         </>
