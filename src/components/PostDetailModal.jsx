@@ -27,6 +27,15 @@ import CommentsPanel from "./CommentBox";
 // (like/comment count/save), then the comments panel, all in one
 // scrollable column inside the modal.
 //
+// Vertical centering is done with my-auto on the CARD, never
+// items-center on the overlay: flex-centering the item inside this
+// scrollable overlay makes everything above the top edge unreachable
+// by scrolling once the card exceeds 100vh, so the sticky header ends
+// up pinned permanently over the top of the video/image carousel (the
+// >=640px / sm: clipping bug). Auto margins center while the card fits
+// and collapse to zero when it overflows, keeping the whole card
+// scroll-reachable at every height.
+//
 // Promotes the carousel interaction that already lived inline in
 // PostCard (arrows/dots/badge) into this dedicated view, and adds
 // click-to-toggle-2x zoom + keyboard/swipe nav on top of it — the
@@ -172,11 +181,11 @@ const PostDetailModal = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-black/70 flex items-start sm:items-center justify-center p-0 sm:p-4 overflow-y-auto"
+      className="fixed inset-0 z-50 bg-black/70 flex items-start justify-center p-0 sm:p-4 overflow-y-auto"
       onClick={onClose}
     >
       <div
-        className="bg-card w-full sm:max-w-lg sm:rounded-2xl sm:my-8 min-h-screen sm:min-h-0"
+        className="bg-card w-full sm:max-w-lg sm:rounded-2xl my-auto min-h-screen sm:min-h-0"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
