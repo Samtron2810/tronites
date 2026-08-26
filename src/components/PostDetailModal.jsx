@@ -136,7 +136,8 @@ const PostDetailModal = ({
     };
     if (menuOpen) {
       document.addEventListener("mousedown", handleClickOutside);
-      return () => document.removeEventListener("mousedown", handleClickOutside);
+      return () =>
+        document.removeEventListener("mousedown", handleClickOutside);
     }
   }, [menuOpen]);
 
@@ -181,11 +182,11 @@ const PostDetailModal = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-black/70 flex items-start justify-center p-0 sm:p-4 overflow-y-auto"
+      className="fixed inset-0 z-50 bg-black/80 flex items-start min-h-full justify-center p-0 overflow-y-auto"
       onClick={onClose}
     >
       <div
-        className="bg-card w-full sm:max-w-lg sm:rounded-2xl my-auto min-h-screen sm:min-h-0"
+        className="bg-card w-full sm:max-w-3xl sm:rounded-2xl my-auto min-h-screen sm:min-h-0"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
