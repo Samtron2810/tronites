@@ -6,23 +6,42 @@ import {
   FaVolumeUp,
   FaVolumeMute,
   FaTimes,
+  FaHeart,
+  FaRegHeart,
+  FaRegComment,
+  FaBookmark,
+  FaRegBookmark,
+  FaEllipsisV,
+  FaTrash,
+  FaPen,
+  FaRegCopy,
 } from "react-icons/fa";
+import { FiFlag } from "react-icons/fi";
 import defaultAvatar from "../assets/defaultAvatar";
 import LazyImage from "./LazyImage";
 import TextWithLinks from "./TextWithLinks";
 import CommentsPanel from "./CommentBox";
 
 // Stacked-only layout at every breakpoint (confirmed — no desktop
-// side-by-side variant). Media on top, post text below it, comments
-// panel underneath that, all in one scrollable column inside the modal.
+// side-by-side variant). Media on top, post text below it, action bar
+// (like/comment count/save), then the comments panel, all in one
+// scrollable column inside the modal.
 //
 // Promotes the carousel interaction that already lived inline in
 // PostCard (arrows/dots/badge) into this dedicated view, and adds
 // click-to-toggle-2x zoom + keyboard/swipe nav on top of it — the
 // carousel JSX itself is carried over as-is, not reinvented.
+//
+// Like/bookmark/edit/delete/report state and handlers are NOT
+// duplicated here — PostCard remains the single source of truth for
+// all of it and passes both the current values and the handlers down
+// as props, so liking from the modal and liking from the card update
+// the exact same state (no second API call, no drift between the two
+// views of the same post).
 const PostDetailModal = ({
   isOpen,
   onClose,
+  isOwner,
   userId,
   name,
   username,
@@ -36,13 +55,31 @@ const PostDetailModal = ({
   commentCount,
   onCommentCountChange,
   postId,
+  // Like
+  liked,
+  likeCount,
+  isLiking,
+  onLike,
+  // Bookmark
+  bookmarked,
+  isBookmarking,
+  onBookmark,
+  // Options menu (Copy always; Edit/Delete for owner; Report for non-owner)
+  onCopy,
+  onEdit,
+  onDelete,
+  onReport,
+  editCooldownActive,
 }) => {
   const [activeSlide, setActiveSlide] = useState(0);
   const [isZoomed, setIsZoomed] = useState(false);
   const [zoomOrigin, setZoomOrigin] = useState("50% 50%");
   const [isVideoMuted, setIsVideoMuted] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const videoRef = useRef(null);
   const touchStartX = useRef(null);
+  const menuRef = useRef(null);
+  const triggerRef = useRef(null);
 
   // Reset per-open state so a previously-zoomed/scrolled slide doesn't
   // carry over the next time this post's modal is reopened. Same
@@ -73,6 +110,25 @@ const PostDetailModal = ({
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [isOpen, media.length, onClose]);
+
+  // Close the options menu on outside click — same pattern PostCard and
+  // CommentOptionsMenu already use.
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        menuRef.current &&
+        !menuRef.current.contains(event.target) &&
+        triggerRef.current &&
+        !triggerRef.current.contains(event.target)
+      ) {
+        setMenuOpen(false);
+      }
+    };
+    if (menuOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => document.removeEventListener("mousedown", handleClickOutside);
+    }
+  }, [menuOpen]);
 
   if (!isOpen) return null;
 
@@ -145,13 +201,82 @@ const PostDetailModal = ({
               <p className="text-xs text-ink-muted">{time}</p>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            aria-label="Close"
-            className="text-ink-muted hover:text-ink transition p-1.5 rounded-lg hover:bg-surface"
-          >
-            <FaTimes size={16} />
-          </button>
+          <div className="flex items-center gap-1">
+            <div className="relative">
+              <button
+                ref={triggerRef}
+                onClick={() => setMenuOpen((o) => !o)}
+                className="text-ink-muted hover:text-ink transition p-1.5 rounded-lg hover:bg-surface"
+                title="Post options"
+                aria-label="Post options"
+              >
+                <FaEllipsisV size={14} />
+              </button>
+
+              {menuOpen && (
+                <div
+                  ref={menuRef}
+                  className="absolute right-0 mt-2 w-44 bg-card rounded-lg shadow-lg border border-stroke z-40 py-1"
+                >
+                  <button
+                    onClick={() => {
+                      setMenuOpen(false);
+                      onCopy();
+                    }}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-ink-sub hover:bg-surface transition"
+                  >
+                    <FaRegCopy size={13} />
+                    <span className="font-medium">Copy text</span>
+                  </button>
+
+                  {isOwner ? (
+                    <>
+                      {!editCooldownActive && (
+                        <button
+                          onClick={() => {
+                            setMenuOpen(false);
+                            onEdit();
+                          }}
+                          className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-ink hover:bg-primary-50 transition"
+                        >
+                          <FaPen className="text-primary-600" size={13} />
+                          <span className="font-medium">Edit post</span>
+                        </button>
+                      )}
+                      <button
+                        onClick={() => {
+                          setMenuOpen(false);
+                          onDelete();
+                        }}
+                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition"
+                      >
+                        <FaTrash size={13} />
+                        <span className="font-medium">Delete post</span>
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        setMenuOpen(false);
+                        onReport();
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-ink-sub hover:bg-surface transition"
+                    >
+                      <FiFlag className="text-amber-500" size={13} />
+                      <span className="font-medium">Report post</span>
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+            <button
+              onClick={onClose}
+              aria-label="Close"
+              className="text-ink-muted hover:text-ink transition p-1.5 rounded-lg hover:bg-surface"
+            >
+              <FaTimes size={16} />
+            </button>
+          </div>
         </div>
 
         {/* Video */}
@@ -276,6 +401,51 @@ const PostDetailModal = ({
             )}
           </p>
         )}
+
+        {/* Actions — same like/comment-count/save bar as PostCard,
+            driven by the same state via props so liking here and
+            liking on the card stay in sync (no second like/bookmark
+            state or API call duplicated in this component). */}
+        <div className="flex items-center gap-5 px-5 py-4 border-t border-stroke">
+          <button
+            onClick={onLike}
+            disabled={isLiking}
+            className={`flex items-center gap-1.5 text-sm transition ${
+              isLiking
+                ? "opacity-50 cursor-not-allowed"
+                : liked
+                  ? "text-red-500"
+                  : "text-ink-muted hover:text-red-500"
+            }`}
+          >
+            {liked ? <FaHeart size={15} /> : <FaRegHeart size={15} />}
+            <span>{likeCount}</span>
+          </button>
+
+          <div className="flex items-center gap-1.5 text-sm text-ink-muted">
+            <FaRegComment size={15} />
+            <span>{commentCount}</span>
+          </div>
+
+          <button
+            onClick={onBookmark}
+            disabled={isBookmarking}
+            title={bookmarked ? "Remove from saved" : "Save post"}
+            className={`ml-auto flex items-center text-sm transition ${
+              isBookmarking
+                ? "opacity-50 cursor-not-allowed"
+                : bookmarked
+                  ? "text-primary-600"
+                  : "text-ink-muted hover:text-primary-600"
+            }`}
+          >
+            {bookmarked ? (
+              <FaBookmark size={15} />
+            ) : (
+              <FaRegBookmark size={15} />
+            )}
+          </button>
+        </div>
 
         {/* Comments */}
         <div className="px-5 pb-5">

@@ -382,6 +382,7 @@ const PostCard = ({
       <PostDetailModal
         isOpen={isDetailOpen}
         onClose={() => setIsDetailOpen(false)}
+        isOwner={isOwner}
         userId={userId}
         name={name}
         username={username}
@@ -395,6 +396,30 @@ const PostCard = ({
         commentCount={commentCount}
         onCommentCountChange={setCommentCount}
         postId={postId}
+        liked={liked}
+        likeCount={likeCount}
+        isLiking={isLiking}
+        onLike={handleLike}
+        bookmarked={bookmarked}
+        isBookmarking={isBookmarking}
+        onBookmark={handleBookmark}
+        onCopy={handleCopyPost}
+        onEdit={() => {
+          // No modal-native edit UI — close the modal and drop into the
+          // same inline textarea PostCard already has, rather than
+          // building a second edit form.
+          setIsDetailOpen(false);
+          setIsEditing(true);
+        }}
+        onDelete={() => {
+          setIsDetailOpen(false);
+          setShowDeleteModal(true);
+        }}
+        onReport={() => {
+          setIsDetailOpen(false);
+          setReportTarget({ type: "post" });
+        }}
+        editCooldownActive={editCooldownActive}
       />
 
       <div className="bg-card border border-stroke rounded-2xl p-5 transition hover:shadow-sm">
