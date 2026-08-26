@@ -27,12 +27,30 @@ const Home = () => {
   const [loading, setLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const observerTarget = useRef(null);
+  // Synchronous in-flight guard — the observer's `!isLoadingMore` check
+  // reads React state, which commits asynchronously, so two intersection
+  // callbacks in the same tick can both pass it and double-fetch a page.
+  // A ref flips synchronously, so the second call is dropped before it
+  // can fire a request.
+  const fetchInFlightRef = useRef(false);
+  // Latest posts per tab, kept in a ref so the stable fetchPosts callback
+  // (empty deps) can read the current list for the trending excludeIds
+  // param without closing over a stale `feeds`. Synced via an effect —
+  // the react-hooks/refs rule forbids touching refs during render.
+  const feedsRef = useRef(feeds);
+  useEffect(() => {
+    feedsRef.current = feeds;
+  }, [feeds]);
   const { socket } = useSocket();
 
   const current = feeds[tab];
 
   const fetchPosts = useCallback(
     async (targetTab, afterCursor, isFirstPage) => {
+      // Drop concurrent fetches (see fetchInFlightRef above); the first
+      // call still completes and resets the ref in `finally`.
+      if (fetchInFlightRef.current) return;
+      fetchInFlightRef.current = true;
       try {
         if (isFirstPage) setLoading(true);
         else setIsLoadingMore(true);
@@ -45,6 +63,14 @@ const Home = () => {
                   ? {
                       afterScore: afterCursor.afterScore,
                       afterId: afterCursor.afterId,
+                      // Hard-exclude posts already delivered on earlier
+                      // trending pages — a post's score decays with age
+                      // between requests, so without this guard it can
+                      // drop below the page-1 cursor and be re-served on
+                      // page 2. The backend validates + caps this list.
+                      excludeIds: feedsRef.current[targetTab].posts
+                        .map((p) => p._id)
+                        .join(","),
                     }
                   : {}),
               }
@@ -58,23 +84,43 @@ const Home = () => {
 
         const res = await api.get(endpoint, { params });
 
-        setFeeds((prev) => ({
-          ...prev,
-          [targetTab]: {
-            posts: isFirstPage
-              ? res.data.posts
-              : [...prev[targetTab].posts, ...res.data.posts],
-            cursor: res.data.nextCursor,
-            hasMore: res.data.hasMore,
-            loaded: true,
-          },
-        }));
+        setFeeds((prev) => {
+          let nextPosts;
+          if (isFirstPage) {
+            // Full refresh (e.g. after creating a post) — replace
+            // wholesale. Never filter against the old list here: that
+            // would strip every already-displayed post and leave only
+            // the brand-new one(s).
+            nextPosts = res.data.posts;
+          } else {
+            // Append (load more): never re-add a post that's already in
+            // the list — this is the guard that keeps ordering drift /
+            // score decay in trending from duplicating posts.
+            const existingIds = new Set(
+              prev[targetTab].posts.map((p) => p._id),
+            );
+            nextPosts = [
+              ...prev[targetTab].posts,
+              ...res.data.posts.filter((p) => !existingIds.has(p._id)),
+            ];
+          }
+          return {
+            ...prev,
+            [targetTab]: {
+              posts: nextPosts,
+              cursor: res.data.nextCursor,
+              hasMore: res.data.hasMore,
+              loaded: true,
+            },
+          };
+        });
       } catch (e) {
         console.error(e);
         if (!isFirstPage) toast.error("Couldn't load more posts. Try again.");
       } finally {
         if (isFirstPage) setLoading(false);
         else setIsLoadingMore(false);
+        fetchInFlightRef.current = false;
       }
     },
     [],
