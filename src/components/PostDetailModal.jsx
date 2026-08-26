@@ -385,7 +385,7 @@ const PostDetailModal = ({
 
         {/* Text */}
         {postText && (
-          <p className="text-ink-sub text-sm leading-relaxed px-5 py-4">
+          <p className="text-ink-sub text-sm leading-relaxed px-5 py-4 whitespace-pre-line">
             <TextWithLinks text={postText} />
             {postHasBeenEdited && (
               <span

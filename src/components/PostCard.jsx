@@ -563,7 +563,7 @@ const PostCard = ({
         ) : (
           <p
             onClick={openDetail}
-            className="text-ink-sub text-sm leading-relaxed cursor-pointer"
+            className="text-ink-sub text-sm leading-relaxed cursor-pointer whitespace-pre-line"
           >
             <TextWithLinks text={postText} />
             {postHasBeenEdited && (
