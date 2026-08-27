@@ -7,6 +7,7 @@ import api from "../services/api";
 import { useSocket } from "../context/useSocket";
 import { FaHeart, FaRegComment, FaUserPlus, FaAt, FaReply, FaBell, FaShieldAlt, FaExclamationTriangle } from "react-icons/fa";
 import defaultAvatar from "../assets/defaultAvatar";
+import { resizedImageUrl, IMAGE_SIZES } from "../utils/cloudinaryImage";
 
 const typeConfig = {
   like:    { icon: FaHeart, color: "text-red-500", label: "liked your post" },
@@ -114,7 +115,7 @@ const Notifications = () => {
                 ) : (
                   <Link to={`/profile/${n.sender?._id}`} className="shrink-0">
                     <img
-                      src={n.sender?.profilePic || defaultAvatar}
+                      src={resizedImageUrl(n.sender?.profilePic, IMAGE_SIZES.avatarSmall) || defaultAvatar}
                       alt={n.sender?.name || "User"}
                       className="w-10 h-10 rounded-full object-cover ring-2 ring-primary-100"
                     />

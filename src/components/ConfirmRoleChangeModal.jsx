@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { FiAlertTriangle } from "react-icons/fi";
 import defaultAvatar from "../assets/defaultAvatar";
+import { resizedImageUrl, IMAGE_SIZES } from "../utils/cloudinaryImage";
 
 const ConfirmRoleChangeModal = ({
   targetUser,
@@ -42,7 +43,7 @@ const ConfirmRoleChangeModal = ({
 
         <div className="flex items-center gap-3 mb-3">
           <img
-            src={targetUser.profilePic || defaultAvatar}
+            src={resizedImageUrl(targetUser.profilePic, IMAGE_SIZES.avatarSmall) || defaultAvatar}
             alt={targetUser.name}
             className="w-10 h-10 rounded-full object-cover ring-2 ring-primary-100 shrink-0"
           />

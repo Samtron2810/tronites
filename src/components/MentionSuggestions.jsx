@@ -5,6 +5,7 @@
 // CreatePostModal). maxHeightClass lets a caller shrink the visible rows
 // when the space in the chosen direction is tight.
 import defaultAvatar from "../assets/defaultAvatar";
+import { resizedImageUrl, IMAGE_SIZES } from "../utils/cloudinaryImage";
 
 const MentionSuggestions = ({
   suggestions,
@@ -36,7 +37,7 @@ const MentionSuggestions = ({
           className="w-full flex items-center gap-2 px-3 py-2 hover:bg-surface transition text-left"
         >
           <img
-            src={u.profilePic || defaultAvatar}
+            src={resizedImageUrl(u.profilePic, IMAGE_SIZES.avatarTiny) || defaultAvatar}
             alt={u.name}
             className="w-6 h-6 rounded-full object-cover shrink-0"
           />

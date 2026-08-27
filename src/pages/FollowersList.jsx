@@ -5,6 +5,7 @@ import MainLayout from "../layouts/MainLayout";
 import UserCardSkeleton from "../components/UserCardSkeleton";
 import api from "../services/api";
 import defaultAvatar from "../assets/defaultAvatar";
+import { resizedImageUrl, IMAGE_SIZES } from "../utils/cloudinaryImage";
 
 const FollowersList = () => {
   const { id } = useParams();
@@ -137,7 +138,7 @@ const FollowersList = () => {
                 >
                   <div className="flex items-center gap-4">
                     <img
-                      src={user.profilePic || defaultAvatar}
+                      src={resizedImageUrl(user.profilePic, IMAGE_SIZES.avatarSmall) || defaultAvatar}
                       alt={user.name}
                       className="w-11 h-11 rounded-full object-cover ring-2 ring-primary-100"
                     />

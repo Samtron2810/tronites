@@ -14,6 +14,7 @@ import ChatSkeleton from "../components/ChatSkeleton";
 import { FaComment } from "react-icons/fa";
 import sfx from "../assets/sfx.mp3";
 import defaultAvatar from "../assets/defaultAvatar";
+import { resizedImageUrl, IMAGE_SIZES } from "../utils/cloudinaryImage";
 import toast from "react-hot-toast";
 
 const buildConversationId = (a, b) =>
@@ -848,7 +849,7 @@ const Chat = () => {
                     <div className="flex items-center gap-3">
                       <div className="relative shrink-0">
                         <img
-                          src={conv.otherUser.profilePic || defaultAvatar}
+                          src={resizedImageUrl(conv.otherUser.profilePic, IMAGE_SIZES.avatarSmall) || defaultAvatar}
                           alt={conv.otherUser.name}
                           className="w-11 h-11 rounded-full object-cover ring-2 ring-primary-100"
                         />
@@ -916,7 +917,7 @@ const Chat = () => {
                 <div key={req.conversationId} className="px-5 py-4">
                   <div className="flex items-center gap-3">
                     <img
-                      src={req.otherUser.profilePic || defaultAvatar}
+                      src={resizedImageUrl(req.otherUser.profilePic, IMAGE_SIZES.avatarSmall) || defaultAvatar}
                       alt={req.otherUser.name}
                       className="w-11 h-11 rounded-full object-cover ring-2 ring-primary-100 shrink-0"
                     />

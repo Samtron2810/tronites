@@ -8,6 +8,7 @@ import ConfirmPermissionChangeModal from "../components/ConfirmPermissionChangeM
 import ConfirmRestrictionModal from "../components/ConfirmRestrictionModal";
 import { useAuth } from "../context/useAuth";
 import defaultAvatar from "../assets/defaultAvatar";
+import { resizedImageUrl, IMAGE_SIZES } from "../utils/cloudinaryImage";
 import { PERMISSION_OPTIONS } from "../constants/permissions";
 import { FiSearch, FiShield, FiMoreVertical } from "react-icons/fi";
 
@@ -77,7 +78,7 @@ const RoleRow = ({
           />
         )}
         <img
-          src={target.profilePic || defaultAvatar}
+          src={resizedImageUrl(target.profilePic, IMAGE_SIZES.avatarSmall) || defaultAvatar}
           alt={target.name}
           className="w-10 h-10 rounded-full object-cover ring-2 ring-primary-100 shrink-0"
         />

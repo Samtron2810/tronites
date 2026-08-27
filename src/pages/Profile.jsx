@@ -21,6 +21,7 @@ import {
 } from "react-icons/fi";
 import BlockUserModal from "../components/BlockUserModal";
 import defaultAvatar from "../assets/defaultAvatar";
+import { resizedImageUrl, IMAGE_SIZES } from "../utils/cloudinaryImage";
 import ReportModal from "../components/ReportModal";
 
 const Profile = () => {
@@ -259,7 +260,7 @@ const Profile = () => {
           <div className="flex items-end justify-between -mt-10 mb-4">
             <div className="relative">
               <img
-                src={profile.profilePic || defaultAvatar}
+                src={resizedImageUrl(profile.profilePic, IMAGE_SIZES.avatarLarge) || defaultAvatar}
                 alt="profile"
                 className={`w-20 h-20 rounded-2xl object-cover ring-4 ring-white shadow-sm ${uploading ? "opacity-50" : ""}`}
               />

@@ -11,6 +11,7 @@ import MessageOptionsMenu from "./MessageOptionsMenu";
 import TextWithLinks from "./TextWithLinks";
 import { FaCheckDouble } from "react-icons/fa";
 import defaultAvatar from "../assets/defaultAvatar";
+import { resizedImageUrl, IMAGE_SIZES } from "../utils/cloudinaryImage";
 import {
   dayKey,
   formatDayLabel,
@@ -96,7 +97,7 @@ const ChatModal = ({
           </button>
           <div className="relative shrink-0">
             <img
-              src={activeUser?.profilePic || defaultAvatar}
+              src={resizedImageUrl(activeUser?.profilePic, IMAGE_SIZES.avatarSmall) || defaultAvatar}
               alt={activeUser?.name}
               className="w-9 h-9 rounded-full object-cover ring-2 ring-primary-100"
             />

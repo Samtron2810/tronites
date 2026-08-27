@@ -129,6 +129,7 @@ const Home = () => {
   // Load a tab the first time it's opened; switching back later reuses
   // what's already in state instead of re-fetching from scratch.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch-on-tab-open; setState happens inside the async fetchPosts fn, not synchronously in this effect body
     if (!feeds[tab].loaded) fetchPosts(tab, null, true);
     else setLoading(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -224,7 +225,7 @@ const Home = () => {
         )}
 
         {!loading &&
-          current.posts.map((post) => (
+          current.posts.map((post, index) => (
             <PostCard
               key={post._id}
               postId={post._id}
@@ -244,6 +245,7 @@ const Home = () => {
               privacy={post.privacy}
               editedAt={post.editedAt}
               onDelete={removePost}
+              priority={index === 0}
             />
           ))}
 

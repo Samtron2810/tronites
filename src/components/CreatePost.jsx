@@ -3,6 +3,7 @@ import toast from "react-hot-toast";
 import CreatePostModal from "./CreatePostModal";
 import { useAuth } from "../context/useAuth";
 import defaultAvatar from "../assets/defaultAvatar";
+import { resizedImageUrl, IMAGE_SIZES } from "../utils/cloudinaryImage";
 import api from "../services/api";
 import compressImage from "../utils/compressImage";
 import { uploadToCloudinary } from "../services/cloudinary";
@@ -115,7 +116,7 @@ const CreatePost = ({ fetchPosts }) => {
       <div className="bg-card border border-stroke rounded-2xl p-4">
         <div className="flex items-center gap-3">
           <img
-            src={user?.profilePic || defaultAvatar}
+            src={resizedImageUrl(user?.profilePic, IMAGE_SIZES.avatarSmall) || defaultAvatar}
             alt="profile"
             className="w-10 h-10 rounded-full object-cover ring-2 ring-primary-100 shrink-0"
           />

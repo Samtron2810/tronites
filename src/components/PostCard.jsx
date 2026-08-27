@@ -28,6 +28,7 @@ import LazyImage from "./LazyImage";
 import PostDetailModal from "./PostDetailModal";
 import CommentsPanel from "./CommentBox";
 import { formatRemainingShort, cooldownRemainingMs } from "../utils/cooldown";
+import { resizedImageUrl, IMAGE_SIZES } from "../utils/cloudinaryImage";
 
 // Same window as the backend's POST_EDIT_COOLDOWN_MS in postController.js
 // â€” kept in sync manually since there's no shared config between the two
@@ -54,6 +55,12 @@ const PostCard = ({
   editedAt,
   onDelete,
   onUnbookmark,
+  // True only for the very first post rendered on initial page load
+  // (e.g. index 0 of the Home feed) -- skips the lazy-load observer
+  // entirely so the one image that's already in the viewport on first
+  // paint doesn't wait an extra round trip before it even starts
+  // fetching. False (default) for every other post.
+  priority = false,
 }) => {
   const { user: currentUser } = useAuth();
   const isOwner = currentUser?._id === userId;
@@ -428,7 +435,7 @@ const PostCard = ({
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
             <img
-              src={profilePic || defaultAvatar}
+              src={resizedImageUrl(profilePic, IMAGE_SIZES.avatarSmall) || defaultAvatar}
               alt="user"
               className="w-10 h-10 rounded-full object-cover ring-2 ring-primary-100"
             />
@@ -656,9 +663,10 @@ const PostCard = ({
             onClick={openDetail}
           >
             <LazyImage
-              src={media[activeSlide]}
+              src={resizedImageUrl(media[activeSlide], IMAGE_SIZES.feedImage)}
               alt={`post-${activeSlide + 1}`}
               className="max-h-96 object-contain"
+              priority={priority}
             />
 
             {media.length > 1 && (

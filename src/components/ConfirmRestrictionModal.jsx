@@ -6,6 +6,7 @@ import {
   FiCheckCircle,
 } from "react-icons/fi";
 import defaultAvatar from "../assets/defaultAvatar";
+import { resizedImageUrl, IMAGE_SIZES } from "../utils/cloudinaryImage";
 
 // Duration presets for suspensions. "custom" reveals a datetime-local
 // input; the chosen preset converts to a Date on submit.
@@ -121,7 +122,7 @@ const ConfirmRestrictionModal = ({
         ) : (
           <div className="flex items-center gap-3 mb-3">
             <img
-              src={targetUser.profilePic || defaultAvatar}
+              src={resizedImageUrl(targetUser.profilePic, IMAGE_SIZES.avatarSmall) || defaultAvatar}
               alt={targetUser.name}
               className="w-10 h-10 rounded-full object-cover ring-2 ring-primary-100 shrink-0"
             />

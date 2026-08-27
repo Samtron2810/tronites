@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { FiAlertTriangle, FiShield } from "react-icons/fi";
 import defaultAvatar from "../assets/defaultAvatar";
+import { resizedImageUrl, IMAGE_SIZES } from "../utils/cloudinaryImage";
 import { PERMISSION_OPTIONS } from "../constants/permissions";
 
 // Sibling of ConfirmRoleChangeModal (Phase 5): checkbox draft editor for
@@ -57,7 +58,7 @@ const ConfirmPermissionChangeModal = ({
 
         <div className="flex items-center gap-3 mb-4">
           <img
-            src={targetUser.profilePic || defaultAvatar}
+            src={resizedImageUrl(targetUser.profilePic, IMAGE_SIZES.avatarSmall) || defaultAvatar}
             alt={targetUser.name}
             className="w-10 h-10 rounded-full object-cover ring-2 ring-primary-100 shrink-0"
           />

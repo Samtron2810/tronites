@@ -10,6 +10,7 @@ import { useAuth } from "../context/useAuth";
 import { useSocket } from "../context/useSocket";
 import { FiSearch, FiHash } from "react-icons/fi";
 import defaultAvatar from "../assets/defaultAvatar";
+import { resizedImageUrl, IMAGE_SIZES } from "../utils/cloudinaryImage";
 
 const Explore = () => {
   const { user: currentUser } = useAuth();
@@ -293,7 +294,7 @@ const Explore = () => {
                     >
                       <div className="relative shrink-0">
                         <img
-                          src={user.profilePic || defaultAvatar}
+                          src={resizedImageUrl(user.profilePic, IMAGE_SIZES.avatarSmall) || defaultAvatar}
                           alt={user.name}
                           className="w-11 h-11 rounded-full object-cover ring-2 ring-primary-100"
                         />

@@ -12,6 +12,7 @@ import {
   FaEllipsisH,
 } from "react-icons/fa";
 import defaultAvatar from "../assets/defaultAvatar";
+import { resizedImageUrl, IMAGE_SIZES } from "../utils/cloudinaryImage";
 import { useTheme } from "../context/useTheme";
 
 const UserMenu = ({ user, onLogoutClick }) => {
@@ -142,7 +143,7 @@ const UserMenu = ({ user, onLogoutClick }) => {
         title="User menu"
       >
         <img
-          src={user.profilePic || defaultAvatar}
+          src={resizedImageUrl(user.profilePic, IMAGE_SIZES.avatarTiny) || defaultAvatar}
           alt={user.name}
           className="w-full h-full rounded-full object-cover"
         />

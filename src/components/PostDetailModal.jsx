@@ -21,6 +21,7 @@ import defaultAvatar from "../assets/defaultAvatar";
 import LazyImage from "./LazyImage";
 import TextWithLinks from "./TextWithLinks";
 import CommentsPanel from "./CommentBox";
+import { resizedImageUrl, IMAGE_SIZES } from "../utils/cloudinaryImage";
 
 // Stacked-only layout at every breakpoint (confirmed â€” no desktop
 // side-by-side variant). Media on top, post text below it, action bar
@@ -193,7 +194,7 @@ const PostDetailModal = ({
         <div className="flex items-center justify-between px-5 py-4 border-b border-stroke sticky top-0 bg-card z-10 sm:rounded-t-2xl">
           <div className="flex items-center gap-3">
             <img
-              src={profilePic || defaultAvatar}
+              src={resizedImageUrl(profilePic, IMAGE_SIZES.avatarSmall) || defaultAvatar}
               alt="user"
               className="w-10 h-10 rounded-full object-cover ring-2 ring-primary-100"
             />
@@ -352,13 +353,14 @@ const PostDetailModal = ({
               onClick={handleImageClick}
             >
               <LazyImage
-                src={media[activeSlide]}
+                src={resizedImageUrl(media[activeSlide], IMAGE_SIZES.modalImage)}
                 alt={`post-${activeSlide + 1}`}
                 className="max-h-[70vh] w-full object-contain transition-transform duration-200"
                 style={{
                   transform: isZoomed ? "scale(2)" : "scale(1)",
                   transformOrigin: zoomOrigin,
                 }}
+                priority
               />
             </div>
 

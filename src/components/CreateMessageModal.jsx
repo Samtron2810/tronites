@@ -7,6 +7,7 @@ import {
   FaImage,
 } from "react-icons/fa";
 import defaultAvatar from "../assets/defaultAvatar";
+import { resizedImageUrl, IMAGE_SIZES } from "../utils/cloudinaryImage";
 
 const ChatModal = ({
   isOpen,
@@ -54,7 +55,7 @@ const ChatModal = ({
           </div>
           {activeUser && (
             <img
-              src={activeUser.profilePic || defaultAvatar}
+              src={resizedImageUrl(activeUser.profilePic, IMAGE_SIZES.avatarSmall) || defaultAvatar}
               alt={activeUser.name}
               className="w-10 h-10 rounded-full object-cover"
             />
