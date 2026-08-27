@@ -81,8 +81,9 @@ const PostDetailModal = ({
   onDelete,
   onReport,
   editCooldownActive,
+  initialSlide = 0,
 }) => {
-  const [activeSlide, setActiveSlide] = useState(0);
+  const [activeSlide, setActiveSlide] = useState(initialSlide);
   const [isZoomed, setIsZoomed] = useState(false);
   const [zoomOrigin, setZoomOrigin] = useState("50% 50%");
   const [isVideoMuted, setIsVideoMuted] = useState(false);
@@ -100,7 +101,7 @@ const PostDetailModal = ({
   if (isOpen !== syncedIsOpen) {
     setSyncedIsOpen(isOpen);
     if (isOpen) {
-      setActiveSlide(0);
+      setActiveSlide(initialSlide);
       setIsZoomed(false);
     }
   }

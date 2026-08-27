@@ -66,7 +66,7 @@ const LazyImage = ({
   return (
     <div
       ref={containerRef}
-      className="relative w-full overflow-hidden bg-surface"
+      className={`relative w-full h-full overflow-hidden bg-surface`}
       style={aspectRatio ? { aspectRatio } : undefined}
     >
       {error ? (

@@ -8,8 +8,6 @@ import {
   FaPen,
   FaBookmark,
   FaRegBookmark,
-  FaChevronLeft,
-  FaChevronRight,
   FaEllipsisV,
   FaVolumeUp,
   FaVolumeMute,
@@ -366,8 +364,10 @@ const PostCard = ({
   // post body outside interactive controls. Interactive elements inside
   // (buttons, links, the options menu) call stopPropagation so they
   // don't also trigger the modal open.
-  const openDetail = () => {
-    if (!isEditing) setIsDetailOpen(true);
+  const openDetail = (index) => {
+    if (isEditing) return;
+    if (typeof index === "number") setActiveSlide(index);
+    setIsDetailOpen(true);
   };
 
   return (
@@ -400,6 +400,7 @@ const PostCard = ({
         postHasBeenEdited={postHasBeenEdited}
         postEditedAt={postEditedAt}
         media={media}
+        initialSlide={activeSlide}
         postVideo={postVideo}
         commentCount={commentCount}
         onCommentCountChange={setCommentCount}
@@ -655,64 +656,65 @@ const PostCard = ({
           </div>
         )}
 
-        {/* Media carousel — click opens the detail modal (with zoom),
-            arrows/dots still work inline without opening it. */}
-        {media.length > 0 && (
+        {/* Single image: unchanged inline view, natural aspect ratio,
+            click opens the detail modal on the same (only) slide.
+            Multiple images: fixed-height grid (2/3/4-up, chat-style) so
+            a 4-image post takes up the same card footprint as a
+            1-image post — each cell uses object-contain so nothing is
+            stretched or cropped-distorted, just letterboxed on a
+            neutral cell background. Clicking a cell opens the detail
+            modal seeked to that image's index; the modal itself keeps
+            its own carousel/arrows/dots untouched. */}
+        {media.length === 1 && (
           <div
             className="mt-4 relative rounded-xl overflow-hidden bg-surface cursor-pointer"
-            onClick={openDetail}
+            onClick={() => openDetail(0)}
           >
             <LazyImage
-              src={resizedImageUrl(media[activeSlide], IMAGE_SIZES.feedImage)}
-              alt={`post-${activeSlide + 1}`}
+              src={resizedImageUrl(media[0], IMAGE_SIZES.feedImage)}
+              alt="post-1"
               className="max-h-96 object-contain"
               priority={priority}
             />
+          </div>
+        )}
 
-            {media.length > 1 && (
-              <>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setActiveSlide(
-                      (i) => (i - 1 + media.length) % media.length,
-                    );
-                  }}
-                  className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 text-white rounded-full p-1.5 hover:bg-black/70 transition"
-                  aria-label="Previous image"
+        {media.length > 1 && (
+          <div
+            className={`mt-4 grid gap-0.5 rounded-xl overflow-hidden h-80 ${
+              media.length === 2 ? "grid-cols-2" : "grid-cols-2 grid-rows-2"
+            }`}
+          >
+            {media.slice(0, 4).map((img, i) => {
+              const isFirstOfThree = media.length === 3 && i === 0;
+              const extraCount = media.length - 4;
+              const isLastVisibleOfFour = media.length > 4 && i === 3;
+
+              return (
+                <div
+                  key={i}
+                  className={`relative bg-surface cursor-pointer ${
+                    isFirstOfThree ? "row-span-2" : ""
+                  }`}
+                  onClick={() => openDetail(i)}
                 >
-                  <FaChevronLeft size={12} />
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setActiveSlide((i) => (i + 1) % media.length);
-                  }}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 text-white rounded-full p-1.5 hover:bg-black/70 transition"
-                  aria-label="Next image"
-                >
-                  <FaChevronRight size={12} />
-                </button>
-                <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5">
-                  {media.map((_, i) => (
-                    <button
-                      key={i}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setActiveSlide(i);
-                      }}
-                      className={`h-1.5 rounded-full transition-all ${
-                        i === activeSlide ? "w-4 bg-card" : "w-1.5 bg-white/50"
-                      }`}
-                      aria-label={`Go to image ${i + 1}`}
-                    />
-                  ))}
+                  <LazyImage
+                    src={resizedImageUrl(img, IMAGE_SIZES.feedImage)}
+                    alt={`post-${i + 1}`}
+                    className="h-full object-contain"
+                    style={{ height: "100%" }}
+                    priority={priority && i === 0}
+                  />
+                  {isLastVisibleOfFour && extraCount > 0 && (
+                    <div className="absolute inset-0 bg-black/60 flex items-center justify-center pointer-events-none">
+                      <span className="text-white text-2xl font-semibold">
+                        +{extraCount}
+                      </span>
+                    </div>
+                  )}
                 </div>
-                <span className="absolute top-2 right-2 bg-black/50 text-white text-sm px-2 py-0.5 rounded-full">
-                  {activeSlide + 1}/{media.length}
-                </span>
-              </>
-            )}
+              );
+            })}
           </div>
         )}
 
