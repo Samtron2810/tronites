@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef, useCallback } from "react";
+import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
 import MainLayout from "../layouts/MainLayout";
 import CreatePost from "../components/CreatePost";
@@ -7,7 +8,7 @@ import PostSkeleton from "../components/PostSkeleton";
 import api from "../services/api";
 import { useSocket } from "../context/useSocket";
 import { HiOutlineSparkles } from "react-icons/hi2";
-import { FiClock } from "react-icons/fi";
+import { FiClock, FiUsers } from "react-icons/fi";
 
 const TABS = [
   { key: "following", label: "Following", icon: FiClock },
@@ -262,6 +263,25 @@ const Home = () => {
                 ? "Check back once posts start getting engagement."
                 : "Follow users to start seeing posts."}
             </p>
+            {tab === "following" && (
+              <div className="flex flex-wrap items-center justify-center gap-3 mt-6">
+                <Link
+                  to="/explore"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-primary-600 text-white text-sm font-medium hover:bg-primary-700 transition"
+                >
+                  <FiUsers size={16} />
+                  Explore users
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => setTab("trending")}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border border-stroke text-ink text-sm font-medium hover:bg-surface transition"
+                >
+                  <HiOutlineSparkles size={16} />
+                  See trending posts
+                </button>
+              </div>
+            )}
           </div>
         )}
 
