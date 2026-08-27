@@ -6,7 +6,7 @@ import toast from "react-hot-toast";
 // Same open/outside-click/dropdown-style pattern as PostCard's own post
 // options menu (FaEllipsisV trigger, absolute-positioned card).
 //
-// Owner sees Copy + Delete. Non-owner sees Copy + Report. No Edit â€”
+// Owner sees Copy + Delete. Non-owner sees Copy + Report. No Edit —
 // comment editing is out of scope (explicitly removed from the build
 // plan); comments/replies are delete-and-repost only.
 const CommentOptionsMenu = ({ isOwner, text, onReport, onDelete }) => {

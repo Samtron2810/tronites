@@ -25,7 +25,7 @@ const Explore = () => {
   const [followingId, setFollowingId] = useState(null);
   const observerTarget = useRef(null);
 
-  // Separate state for post-content search â€” keeps the two tabs from
+  // Separate state for post-content search — keeps the two tabs from
   // stepping on each other's pagination/loading state when switching.
   const [posts, setPosts] = useState([]);
   const [postsLoading, setPostsLoading] = useState(false);
@@ -34,7 +34,7 @@ const Explore = () => {
   const [postsHasMore, setPostsHasMore] = useState(false);
   const postsObserverTarget = useRef(null);
 
-  // A query starting with # is unambiguously a hashtag lookup â€” offer a
+  // A query starting with # is unambiguously a hashtag lookup — offer a
   // direct jump to that hashtag's dedicated page instead of (or in
   // addition to) a content-search match.
   const hashtagMatch = search.trim().match(/^#?([a-z0-9_]{2,})$/i);

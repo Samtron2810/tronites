@@ -51,7 +51,7 @@ const ConfirmPermissionChangeModal = ({
               Moderator permissions
             </h2>
             <p className="text-sm text-ink-muted">
-              Saved as an explicit set â€” it overrides the defaults entirely.
+              Saved as an explicit set — it overrides the defaults entirely.
             </p>
           </div>
         </div>
@@ -102,7 +102,7 @@ const ConfirmPermissionChangeModal = ({
         <p className="text-sm text-ink-muted leading-relaxed flex items-start gap-1.5">
           <FiAlertTriangle className="text-amber-500 mt-0.5 shrink-0" size={12} />
           Saving replaces the whole set. An empty selection means this
-          moderator keeps working under the default set â€” tick nothing you
+          moderator keeps working under the default set — tick nothing you
           don't mean to grant.
         </p>
 

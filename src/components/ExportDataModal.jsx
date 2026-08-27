@@ -3,7 +3,7 @@ import { FiDownload } from "react-icons/fi";
 
 // Mirrors DeleteAccountModal's visual pattern (same overlay + centered
 // card + icon header) but uses neutral/primary styling since exporting
-// data is non-destructive â€” a stray click shouldn't trigger a download,
+// data is non-destructive — a stray click shouldn't trigger a download,
 // but it's not a red-warning action either.
 const ExportDataModal = ({ onConfirm, onCancel }) => {
   const [isExporting, setIsExporting] = useState(false);
@@ -33,8 +33,8 @@ const ExportDataModal = ({ onConfirm, onCancel }) => {
           </h2>
         </div>
         <p className="text-base text-ink-muted leading-relaxed">
-          This will download a copy of everything tied to your account â€” posts,
-          comments, likes, bookmarks, follows, messages, and more â€” as a JSON
+          This will download a copy of everything tied to your account — posts,
+          comments, likes, bookmarks, follows, messages, and more — as a JSON
           file.
         </p>
 

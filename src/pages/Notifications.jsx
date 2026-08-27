@@ -16,7 +16,7 @@ const typeConfig = {
   mention: { icon: FaAt, color: "text-primary-600", label: "mentioned you" },
   reply:   { icon: FaReply, color: "text-primary-600", label: "replied to your comment" },
   commentLike: { icon: FaHeart, color: "text-red-500", label: "liked your comment" },
-  // Phase 4 â€” rendered through a dedicated branch below: no sender link,
+  // Phase 4 — rendered through a dedicated branch below: no sender link,
   // shield avatar, reason text from n.message. The warned user must not
   // see WHICH moderator issued the warning.
   moderator_warning: { icon: FaExclamationTriangle, color: "text-amber-500", label: "" },
@@ -106,7 +106,7 @@ const Notifications = () => {
                 }`}
               >
                 {n.type === "moderator_warning" ? (
-                  // Phase 4 â€” no sender identity: a shield avatar instead
+                  // Phase 4 — no sender identity: a shield avatar instead
                   // of the issuing moderator's profile pic/link, so the
                   // warned user learns the reason but not who sent it.
                   <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center ring-2 ring-amber-200 shrink-0">

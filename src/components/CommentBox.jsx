@@ -15,7 +15,7 @@ import MentionSuggestions from "./MentionSuggestions";
 // Extracted from PostCard.jsx (was previously inline there) so the same
 // comment list/composer/reply implementation can mount in two places:
 // the feed card's inline expand-to-comment area, and PostDetailModal's
-// lower section. One implementation, two mount points â€” not a fork.
+// lower section. One implementation, two mount points — not a fork.
 //
 // This was formerly CommentBox.jsx, a 0-byte dead file left over from
 // an earlier pass; repurposed here rather than adding yet another file.
@@ -38,7 +38,7 @@ const CommentsPanel = ({ postId, initialCommentCount, onCommentCountChange }) =>
   const [commentDeletingId, setCommentDeletingId] = useState(null);
 
   const [reportTarget, setReportTarget] = useState(null);
-  // null | { type: "comment" | "reply", id, parentCommentId? } â€”
+  // null | { type: "comment" | "reply", id, parentCommentId? } —
   // parentCommentId only present for replies, so the confirm handler
   // knows which delete path to take.
   const [deleteCommentTarget, setDeleteCommentTarget] = useState(null);
@@ -137,7 +137,7 @@ const CommentsPanel = ({ postId, initialCommentCount, onCommentCountChange }) =>
   // "Reply" button (no prefill) and by a reply row's "Reply" button
   // (prefilled with the replied-to user's @username). Either way the
   // resulting reply is posted with parentCommentId = the top-level
-  // comment's id, never a reply's id â€” replies stay flat, one level
+  // comment's id, never a reply's id — replies stay flat, one level
   // deep, aligned in the same list. The backend also enforces this
   // (rejects a parentCommentId that itself has a parentComment set), so
   // this is belt-and-braces, not the only thing preventing nesting.
@@ -292,7 +292,7 @@ const CommentsPanel = ({ postId, initialCommentCount, onCommentCountChange }) =>
     setDeleteCommentTarget(null);
   };
 
-  // Mirrors PostCard's post-report submit â€” same endpoint/payload shape,
+  // Mirrors PostCard's post-report submit — same endpoint/payload shape,
   // scoped here to comment/reply targets only (post-level reporting
   // stays in PostCard since this component has no notion of the post
   // itself, only its comments).
@@ -315,7 +315,7 @@ const CommentsPanel = ({ postId, initialCommentCount, onCommentCountChange }) =>
     }
   };
 
-  // Comment-scoped socket events only â€” post-level events (likeUpdate,
+  // Comment-scoped socket events only — post-level events (likeUpdate,
   // postUpdated) stay subscribed in PostCard, which owns that state.
   useEffect(() => {
     if (!socket || !postId) return;
@@ -551,8 +551,8 @@ const CommentsPanel = ({ postId, initialCommentCount, onCommentCountChange }) =>
               )}
             </div>
 
-            {/* Reply input â€” shared by both "Reply" on the comment
-                itself and "Reply" on any of its replies (Â§3.5). Either
+            {/* Reply input — shared by both "Reply" on the comment
+                itself and "Reply" on any of its replies (§3.5). Either
                 path sets replyingTo to this comment's id, so the new
                 reply always lands here, flat, never nested. */}
             {replyingTo === c._id && (
@@ -589,7 +589,7 @@ const CommentsPanel = ({ postId, initialCommentCount, onCommentCountChange }) =>
               </div>
             )}
 
-            {/* Reply thread â€” flat, one level, all replies under this
+            {/* Reply thread — flat, one level, all replies under this
                 comment sit in the same list at the same indent
                 regardless of which reply prompted them. */}
             {openReplies[c._id] && (
@@ -651,10 +651,10 @@ const CommentsPanel = ({ postId, initialCommentCount, onCommentCountChange }) =>
                           )}
                           {r.likesCount > 0 && <span>{r.likesCount}</span>}
                         </button>
-                        {/* Reply-to-a-reply â€” still targets the parent
+                        {/* Reply-to-a-reply — still targets the parent
                             comment's id (c._id), prefilled with
                             @username, so it posts flat rather than
-                            nested (Â§3.5/Â§6). */}
+                            nested (§3.5/§6). */}
                         <button
                           onClick={() =>
                             openReplyComposer(c._id, r.user.username)

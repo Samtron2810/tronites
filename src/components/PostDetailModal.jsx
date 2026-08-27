@@ -23,7 +23,7 @@ import TextWithLinks from "./TextWithLinks";
 import CommentsPanel from "./CommentBox";
 import { resizedImageUrl, IMAGE_SIZES } from "../utils/cloudinaryImage";
 
-// Stacked-only layout at every breakpoint (confirmed â€” no desktop
+// Stacked-only layout at every breakpoint (confirmed — no desktop
 // side-by-side variant). Media on top, post text below it, action bar
 // (like/comment count/save), then the comments panel, all in one
 // scrollable column inside the modal.
@@ -39,11 +39,11 @@ import { resizedImageUrl, IMAGE_SIZES } from "../utils/cloudinaryImage";
 //
 // Promotes the carousel interaction that already lived inline in
 // PostCard (arrows/dots/badge) into this dedicated view, and adds
-// click-to-toggle-2x zoom + keyboard/swipe nav on top of it â€” the
+// click-to-toggle-2x zoom + keyboard/swipe nav on top of it — the
 // carousel JSX itself is carried over as-is, not reinvented.
 //
 // Like/bookmark/edit/delete/report state and handlers are NOT
-// duplicated here â€” PostCard remains the single source of truth for
+// duplicated here — PostCard remains the single source of truth for
 // all of it and passes both the current values and the handlers down
 // as props, so liking from the modal and liking from the card update
 // the exact same state (no second API call, no drift between the two
@@ -122,7 +122,7 @@ const PostDetailModal = ({
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [isOpen, media.length, onClose]);
 
-  // Close the options menu on outside click â€” same pattern PostCard and
+  // Close the options menu on outside click — same pattern PostCard and
   // CommentOptionsMenu already use.
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -340,7 +340,7 @@ const PostDetailModal = ({
           </div>
         )}
 
-        {/* Image carousel â€” same interaction promoted from PostCard,
+        {/* Image carousel — same interaction promoted from PostCard,
             plus click-to-toggle-2x zoom and keyboard/swipe nav. */}
         {media.length > 0 && (
           <div
@@ -433,7 +433,7 @@ const PostDetailModal = ({
           </p>
         )}
 
-        {/* Actions â€” same like/comment-count/save bar as PostCard,
+        {/* Actions — same like/comment-count/save bar as PostCard,
             driven by the same state via props so liking here and
             liking on the card stay in sync (no second like/bookmark
             state or API call duplicated in this component). */}

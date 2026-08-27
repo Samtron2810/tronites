@@ -16,7 +16,7 @@ import { validateVideoFile } from "../services/videoUpload";
 
 const MAX_IMAGES = 4;
 
-// Post audience options â€” mirrors the backend's Post.privacy enum
+// Post audience options — mirrors the backend's Post.privacy enum
 // (backend/models/Post.js) and the values validated in
 // backend/utils/validators.js.
 const PRIVACY_OPTIONS = [
@@ -30,7 +30,7 @@ const CreatePostModal = ({ closeModal, onSubmit, onSubmitVideo }) => {
   const [privacy, setPrivacy] = useState("public");
   const [images, setImages] = useState([]); // File[]
   const [previews, setPreviews] = useState([]); // objectURL[]
-  // Video is only validated (format/size) + previewed locally here â€” no
+  // Video is only validated (format/size) + previewed locally here — no
   // local decode/duration probe. The browser's <video> support doesn't
   // match what Cloudinary can actually accept (HEVC MOV, AVI/MKV with
   // exotic codecs all upload and transcode fine server-side even when
@@ -99,7 +99,7 @@ const CreatePostModal = ({ closeModal, onSubmit, onSubmitVideo }) => {
   };
 
   // Video selection: format/size validation only, no decode probe. Any
-  // file that passes gets uploaded â€” Cloudinary transcodes/trims
+  // file that passes gets uploaded — Cloudinary transcodes/trims
   // whatever codec is inside regardless of what the browser can preview.
   const handleSelectVideo = (e) => {
     if (images.length > 0) {
@@ -152,7 +152,7 @@ const CreatePostModal = ({ closeModal, onSubmit, onSubmitVideo }) => {
 
     // Both paths now close the modal immediately and hand off to the
     // parent, which runs the upload in the background and reports
-    // progress/result via toast â€” matches the image post UX.
+    // progress/result via toast — matches the image post UX.
     if (videoFile) {
       onSubmitVideo({ text, videoFile, privacy });
     } else {
@@ -244,7 +244,7 @@ const CreatePostModal = ({ closeModal, onSubmit, onSubmitVideo }) => {
             </label>
           </div>
 
-          {/* Image previews â€” carousel grid */}
+          {/* Image previews — carousel grid */}
           {previews.length > 0 && (
             <div className={`grid ${gridClass} gap-2`}>
               {previews.map((src, i) => (
@@ -274,7 +274,7 @@ const CreatePostModal = ({ closeModal, onSubmit, onSubmitVideo }) => {
               Note: Videos longer than 30 seconds will be trimmed to 30 seconds.
             </p>
           )}
-          {/* Video preview â€” local blob when the browser can decode it;
+          {/* Video preview — local blob when the browser can decode it;
               falls back to a file chip when it can't (HEVC MOV, exotic
               AVI/MKV codecs, etc). Either way the file still uploads and
               Cloudinary transcodes it server-side. */}
@@ -288,7 +288,7 @@ const CreatePostModal = ({ closeModal, onSubmit, onSubmitVideo }) => {
                       {videoFile?.name}
                     </p>
                     <p className="text-sm text-ink-muted">
-                      Preview isn't available in this browser â€” it'll still
+                      Preview isn't available in this browser — it'll still
                       upload and post normally.
                     </p>
                   </div>

@@ -44,7 +44,7 @@ const ChatModal = ({
   videoFile,
   videoPreviewUrl,
   // In-flight background video sends (one progress bar each). Their
-  // presence does NOT lock the composer â€” text/image sending continues.
+  // presence does NOT lock the composer — text/image sending continues.
   videoUploads,
   scrollRef,
   messagesContainerRef,
@@ -56,7 +56,7 @@ const ChatModal = ({
   onDeclineRequest,
   requestActionPending,
   // Submits a message report ({ message, reason, details }) and resolves
-  // to true only when it succeeded â€” owned by Chat.jsx like every other
+  // to true only when it succeeded — owned by Chat.jsx like every other
   // mutation; this component just collects the UI input.
   handleReportMessage,
 }) => {
@@ -158,7 +158,7 @@ const ChatModal = ({
 
           {!threadLoading && messages.length === 0 && (
             <div className="flex flex-col items-center justify-center h-full py-10 text-center">
-              <p className="text-3xl mb-2">ðŸ‘‹</p>
+              <p className="text-3xl mb-2">👋</p>
               <p className="text-base text-ink-muted">No messages yet. Say hi!</p>
             </div>
           )}
@@ -207,7 +207,7 @@ const ChatModal = ({
                     >
                       {isDeleting ? (
                         <span className="flex items-center gap-2">
-                          Deletingâ€¦
+                          Deleting…
                         </span>
                       ) : (
                         <span className="flex items-center gap-2">
@@ -353,7 +353,7 @@ const ChatModal = ({
 
           {requestInfo?.status === "pending" && requestInfo.isInitiator && (
             <p className="text-sm text-ink-muted text-center py-2">
-              Message request sent â€” waiting for {activeUser?.name} to accept.
+              Message request sent — waiting for {activeUser?.name} to accept.
             </p>
           )}
 
@@ -373,7 +373,7 @@ const ChatModal = ({
                 >
                   <div className="flex items-center justify-between text-sm text-ink-muted mb-1">
                     <span className="truncate max-w-[70%]">
-                      Uploading {upload.name}â€¦
+                      Uploading {upload.name}…
                     </span>
                     <span>{Math.min(upload.progress, 99)}%</span>
                   </div>
@@ -387,7 +387,7 @@ const ChatModal = ({
                   </div>
                   {upload.progress >= 100 && (
                     <p className="text-[11px] text-ink-muted mt-1">
-                      Processing videoâ€¦
+                      Processing video…
                     </p>
                   )}
                 </div>
@@ -407,7 +407,7 @@ const ChatModal = ({
                     onClick={handleRemoveVideo}
                     className="absolute -top-1.5 -right-1.5 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-sm"
                   >
-                    âœ•
+                    ✕
                   </button>
                   {videoFile && (
                     <p className="text-[10px] text-ink-muted mt-0.5 truncate">
@@ -429,7 +429,7 @@ const ChatModal = ({
                         onClick={() => handleRemoveImage(idx)}
                         className="absolute -top-1.5 -right-1.5 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-sm"
                       >
-                        âœ•
+                        ✕
                       </button>
                     </div>
                   ))}
@@ -508,7 +508,7 @@ const ChatModal = ({
                 reason,
                 details,
               });
-              // Close only on success, like Profile.jsx does â€” a failed
+              // Close only on success, like Profile.jsx does — a failed
               // submit keeps the modal open with the chosen reason intact.
               if (ok) setReportingMessage(null);
             }}

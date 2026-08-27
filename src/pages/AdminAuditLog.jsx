@@ -6,7 +6,7 @@ import toast from "react-hot-toast";
 import { FaArrowLeft, FaSyncAlt } from "react-icons/fa";
 import { useAuth } from "../context/useAuth";
 
-// PHASE 3 â€” admin-only view over the append-only moderation audit log
+// PHASE 3 — admin-only view over the append-only moderation audit log
 // (GET /admin/audit is requireAdmin server-side; the guard below mirrors
 // that so non-admins get a clear screen instead of a 403 toast).
 
@@ -49,7 +49,7 @@ const shortId = (id) => String(id || "").slice(-6);
 
 const formatWhen = (iso) => {
   const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "â€”";
+  if (Number.isNaN(d.getTime())) return "—";
   const diffMs = Date.now() - d.getTime();
   const mins = Math.floor(diffMs / 60000);
   if (mins < 1) return "just now";
@@ -75,17 +75,17 @@ const DetailCell = ({ log }) => {
     case "user_suspended":
       return (
         <span>
-          {d.reason ? `â€œ${d.reason}â€` : "No reason recorded"}
+          {d.reason ? `“${d.reason}â€` : "No reason recorded"}
           {formatUntil(d.suspendedUntil) && (
             <>
-              {" â€” until "}
+              {" — until "}
               <span className="font-medium">{formatUntil(d.suspendedUntil)}</span>
             </>
           )}
         </span>
       );
     case "user_banned":
-      return <span>{d.reason ? `â€œ${d.reason}â€` : "No reason recorded"}</span>;
+      return <span>{d.reason ? `“${d.reason}â€` : "No reason recorded"}</span>;
     case "user_unrestricted":
       return (
         <span>
@@ -104,9 +104,9 @@ const DetailCell = ({ log }) => {
     case "user_warned":
       return (
         <span>
-          {d.reason ? `â€œ${d.reason}â€` : "No reason recorded"}
+          {d.reason ? `“${d.reason}â€` : "No reason recorded"}
           {d.strikeCount
-            ? ` â€” ${d.strikeCount} strike${d.strikeCount === 1 ? "" : "s"} total`
+            ? ` — ${d.strikeCount} strike${d.strikeCount === 1 ? "" : "s"} total`
             : ""}
         </span>
       );
@@ -117,7 +117,7 @@ const DetailCell = ({ log }) => {
           <span className="font-medium">
             {d.permissions?.length ? d.permissions.join(", ") : "(default set)"}
           </span>
-          {" Â· was: "}
+          {" · was: "}
           {d.previousPermissions?.length
             ? d.previousPermissions.join(", ")
             : "(default set)"}
@@ -127,9 +127,9 @@ const DetailCell = ({ log }) => {
       return (
         <span>
           <span className="font-medium">{d.status}</span>
-          {" Â· "}
-          {d.note ? `â€œ${d.note}â€` : "no note"}
-          {log.target?.snapshot?.removeContent && " Â· content removed"}
+          {" · "}
+          {d.note ? `“${d.note}â€` : "no note"}
+          {log.target?.snapshot?.removeContent && " · content removed"}
         </span>
       );
     default:
@@ -137,7 +137,7 @@ const DetailCell = ({ log }) => {
   }
 };
 
-// "@username" for user actions, otherwise "<type> â€¦<short-id>".
+// "@username" for user actions, otherwise "<type> …<short-id>".
 const TargetCell = ({ log }) => {
   const t = log.target || {};
   const s = t.snapshot || {};
@@ -145,7 +145,7 @@ const TargetCell = ({ log }) => {
     return (
       <span>
         {s.targetType || "item"}{" "}
-        <span className="text-ink-muted">â€¦{shortId(s.targetId)}</span>
+        <span className="text-ink-muted">…{shortId(s.targetId)}</span>
       </span>
     );
   }
@@ -153,7 +153,7 @@ const TargetCell = ({ log }) => {
     <span>
       {t.type === "user" && s.username ? `@${s.username}` : `${t.type}`}
       {t.type !== "user" && (
-        <span className="text-ink-muted"> â€¦{shortId(t.ref)}</span>
+        <span className="text-ink-muted"> …{shortId(t.ref)}</span>
       )}
     </span>
   );
@@ -162,7 +162,7 @@ const TargetCell = ({ log }) => {
 const AdminAuditLog = () => {
   const { user } = useAuth();
   const isAdmin = user?.role === "admin";
-  // Phase 5 â€” moderators granted view_audit_log see this page too;
+  // Phase 5 — moderators granted view_audit_log see this page too;
   // everyone else gets the notice below (server enforces the same rule).
   const canView =
     isAdmin || !!user?.permissions?.includes("view_audit_log");
@@ -313,7 +313,7 @@ const AdminAuditLog = () => {
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap">
                       <div className="font-medium text-ink">
-                        {log.actor?.name || "â€”"}
+                        {log.actor?.name || "—"}
                       </div>
                       {log.actor?.username && (
                         <div className="text-sm text-ink-muted">
@@ -337,7 +337,7 @@ const AdminAuditLog = () => {
                       <DetailCell log={log} />
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap text-sm text-ink-muted font-mono">
-                      {log.ip || "â€”"}
+                      {log.ip || "—"}
                     </td>
                   </tr>
                 ))}
@@ -360,7 +360,7 @@ const AdminAuditLog = () => {
                 disabled={isLoading}
                 className="px-4 py-2 rounded-lg text-base font-medium text-primary-600 hover:bg-primary-50 transition disabled:opacity-50"
               >
-                {isLoading ? "Loadingâ€¦" : "Load more"}
+                {isLoading ? "Loading…" : "Load more"}
               </button>
             </div>
           )}

@@ -31,7 +31,7 @@ import { formatRemainingShort, cooldownRemainingMs } from "../utils/cooldown";
 import { resizedImageUrl, IMAGE_SIZES } from "../utils/cloudinaryImage";
 
 // Same window as the backend's POST_EDIT_COOLDOWN_MS in postController.js
-// â€” kept in sync manually since there's no shared config between the two
+// — kept in sync manually since there's no shared config between the two
 // codebases. Used only to decide whether to show "Edit post" in the menu;
 // the backend is still the source of truth and the real enforcement.
 const POST_EDIT_COOLDOWN_MS = 60 * 60 * 1000;
@@ -96,7 +96,7 @@ const PostCard = ({
   }
   const [showComments, setShowComments] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  // Post-level report only now â€” comment/reply reporting lives inside
+  // Post-level report only now — comment/reply reporting lives inside
   // CommentsPanel, which has its own ReportModal instance.
   const [reportTarget, setReportTarget] = useState(null); // null | { type: "post" }
   const [menuOpen, setMenuOpen] = useState(false);
@@ -108,7 +108,7 @@ const PostCard = ({
   const [postText, setPostText] = useState(text);
   const [postHasBeenEdited, setPostHasBeenEdited] = useState(edited);
   const [postEditedAt, setPostEditedAt] = useState(editedAt);
-  // Same derive-during-render sync pattern as liked/likeCount above â€” a
+  // Same derive-during-render sync pattern as liked/likeCount above — a
   // real prop change (parent refetch) should update the displayed text;
   // an in-flight local edit shouldn't be clobbered by it either, since
   // isEditing gates the textarea vs. the rendered text separately.
@@ -125,7 +125,7 @@ const PostCard = ({
   const [postVideo, setPostVideo] = useState(video);
   const videoRef = useRef(null);
   const [syncedVideoStatus, setSyncedVideoStatus] = useState(video?.status);
-  // Mute state for the post video's overlay button â€” mirrors the element's
+  // Mute state for the post video's overlay button — mirrors the element's
   // muted property so the icon stays in sync.
   const [isVideoMuted, setIsVideoMuted] = useState(false);
   if (video?.status !== syncedVideoStatus) {
@@ -137,7 +137,7 @@ const PostCard = ({
 
   const media = images || [];
 
-  // Mirrors Profile.jsx's user-report submit â€” same endpoint, same payload
+  // Mirrors Profile.jsx's user-report submit — same endpoint, same payload
   // shape, same toasts, closes the modal only on success. Post-only now;
   // comment/reply reports are handled inside CommentsPanel.
   const handleReportSubmit = async ({ reason, details }) => {
@@ -236,7 +236,7 @@ const PostCard = ({
       setIsEditing(false);
     } catch (e) {
       console.error(e);
-      // Safety net for a stale client (e.g. two tabs open) â€” the menu
+      // Safety net for a stale client (e.g. two tabs open) — the menu
       // already hides "Edit post" during cooldown (see editCooldownActive
       // below), so this path shouldn't normally be reachable.
       if (e.response?.status === 429) {
@@ -278,10 +278,10 @@ const PostCard = ({
     }
   }, [menuOpen]);
 
-  // Post-level socket events only â€” comment-scoped events (newComment,
+  // Post-level socket events only — comment-scoped events (newComment,
   // commentDeleted, commentLikeUpdate) are subscribed inside
   // CommentsPanel, which owns that state now. newComment/commentDeleted
-  // are still listened to here too, but only for the running count â€”
+  // are still listened to here too, but only for the running count —
   // it needs to render in the action bar even when comments aren't
   // expanded / the panel hasn't mounted yet.
   useEffect(() => {
@@ -301,7 +301,7 @@ const PostCard = ({
     const handlePostUpdated = (data) => {
       if (data.postId !== postId) return;
       // Don't clobber this viewer's own in-progress edit with the
-      // server echo of the save that's already in flight â€” handleEditSave
+      // server echo of the save that's already in flight — handleEditSave
       // applies its own response directly.
       if (isEditing) return;
       setPostText(data.text);
@@ -322,7 +322,7 @@ const PostCard = ({
     };
   }, [socket, postId, currentUser?._id, isEditing]);
 
-  // Auto-pause the video when it's scrolled out of view â€” an off-screen
+  // Auto-pause the video when it's scrolled out of view — an off-screen
   // playing video would otherwise keep blaring audio indefinitely. Only
   // pauses; never auto-plays (playback still requires an explicit user
   // action while the post is on screen).
@@ -354,7 +354,7 @@ const PostCard = ({
     setIsVideoMuted(videoEl.muted);
   };
 
-  // Client-side mirror of the backend's 1-hour edit cooldown â€” used only
+  // Client-side mirror of the backend's 1-hour edit cooldown — used only
   // to decide whether "Edit post" appears in the menu at all, so the
   // menu never offers an action guaranteed to 429. Recomputed on every
   // render (cheap, no need for its own effect/interval).
@@ -413,7 +413,7 @@ const PostCard = ({
         onBookmark={handleBookmark}
         onCopy={handleCopyPost}
         onEdit={() => {
-          // No modal-native edit UI â€” close the modal and drop into the
+          // No modal-native edit UI — close the modal and drop into the
           // same inline textarea PostCard already has, rather than
           // building a second edit form.
           setIsDetailOpen(false);
@@ -634,7 +634,7 @@ const PostCard = ({
               onClick={(e) => e.stopPropagation()}
               className="w-full max-h-96 object-contain"
             />
-            {/* Mute/unmute overlay â€” sits top-right, clear of the bottom
+            {/* Mute/unmute overlay — sits top-right, clear of the bottom
                 native-controls bar. */}
             <button
               type="button"
@@ -655,7 +655,7 @@ const PostCard = ({
           </div>
         )}
 
-        {/* Media carousel â€” click opens the detail modal (with zoom),
+        {/* Media carousel — click opens the detail modal (with zoom),
             arrows/dots still work inline without opening it. */}
         {media.length > 0 && (
           <div
@@ -761,7 +761,7 @@ const PostCard = ({
           </button>
         </div>
 
-        {/* Inline comments â€” same CommentsPanel that also renders inside
+        {/* Inline comments — same CommentsPanel that also renders inside
             PostDetailModal. Only mounted (and only fetches) once
             expanded here. */}
         {showComments && (

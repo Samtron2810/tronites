@@ -14,7 +14,7 @@ const REASONS = [
 ];
 
 // targetLabel is shown in the header, e.g. "this user", "this post",
-// "this comment" â€” kept generic since the same modal is reused for
+// "this comment" — kept generic since the same modal is reused for
 // user/post/comment/message reports (see targetType).
 const ReportModal = ({ targetLabel, onConfirm, onCancel }) => {
   const [reason, setReason] = useState("");

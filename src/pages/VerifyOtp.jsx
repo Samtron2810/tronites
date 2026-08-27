@@ -11,8 +11,8 @@ const VerifyOtp = () => {
   const { getMe } = useAuth();
 
   // Router state is the primary source (never touches the URL); session
-  // storage is only a fallback so a page refresh â€” which clears router
-  // state â€” doesn't strand someone mid-flow. Neither one is a security
+  // storage is only a fallback so a page refresh — which clears router
+  // state — doesn't strand someone mid-flow. Neither one is a security
   // control: the challengeId is just a UI handle for "which pending
   // challenge is this page showing". Every real check (rate limits,
   // attempt limits, expiry, hashed comparison) happens server-side
@@ -28,7 +28,7 @@ const VerifyOtp = () => {
   const [resendLoading, setResendLoading] = useState(false);
 
   // If there's nothing to verify (cold URL open, old bookmark, stale
-  // tab), there's no point showing this page â€” send them back to start
+  // tab), there's no point showing this page — send them back to start
   // a real flow. This is purely for a sane UX; it changes nothing about
   // what the server will accept.
   useEffect(() => {

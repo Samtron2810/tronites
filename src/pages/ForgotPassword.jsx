@@ -11,7 +11,7 @@ const ForgotPassword = () => {
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  // Already signed in â€” nothing to recover.
+  // Already signed in — nothing to recover.
   useEffect(() => {
     if (!loading && user) navigate("/");
   }, [loading, user, navigate]);
@@ -27,7 +27,7 @@ const ForgotPassword = () => {
         res.data.message || "If this address is registered, we've sent a code.",
       );
 
-      // challengeId is an opaque, server-issued, single-use handle â€” not
+      // challengeId is an opaque, server-issued, single-use handle — not
       // the email itself, and not a security control on its own. It just
       // lets ResetPassword know which pending challenge to show without
       // putting an email address in the URL. Same pattern as Register.jsx.

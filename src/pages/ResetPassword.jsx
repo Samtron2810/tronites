@@ -19,7 +19,7 @@ const ResetPassword = () => {
 
   // Same pattern as VerifyOtp: router state is the primary source;
   // sessionStorage is only a fallback so a page refresh doesn't strand
-  // someone mid-flow. Neither is a security control â€” the server
+  // someone mid-flow. Neither is a security control — the server
   // enforces everything via the challengeId.
   const [challengeId] = useState(
     () =>
@@ -38,7 +38,7 @@ const ResetPassword = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isResending, setIsResending] = useState(false);
 
-  // No challenge in progress â€” send them back to start a real flow.
+  // No challenge in progress — send them back to start a real flow.
   useEffect(() => {
     if (!challengeId) {
       toast.error("Please start by requesting a password reset.");
@@ -47,7 +47,7 @@ const ResetPassword = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Already signed in â€” nothing to recover.
+  // Already signed in — nothing to recover.
   useEffect(() => {
     if (!loading && user) navigate("/");
   }, [loading, user, navigate]);

@@ -49,7 +49,7 @@ const Settings = () => {
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   // Track both the local (possibly optimistic) value and the last server
-  // value we synced from, in one state object â€” avoids a useEffect sync
+  // value we synced from, in one state object — avoids a useEffect sync
   // and avoids reading/writing refs during render.
   const [state, setState] = useState(() => ({
     visibility: user?.presenceVisibility || "everyone",
@@ -98,7 +98,7 @@ const Settings = () => {
     setExporting(true);
     try {
       const res = await api.get("/users/me/export");
-      // Standard blob-download pattern â€” no server-side file, the JSON
+      // Standard blob-download pattern — no server-side file, the JSON
       // response itself becomes the downloaded file entirely client-side.
       const blob = new Blob([JSON.stringify(res.data, null, 2)], {
         type: "application/json",
@@ -123,7 +123,7 @@ const Settings = () => {
 
   const handleDeleteAccount = async (password) => {
     // Errors intentionally propagate to the modal (it catches them and
-    // shows the message inline) rather than being caught here â€” the
+    // shows the message inline) rather than being caught here — the
     // modal needs to know the attempt failed so it can stay open and
     // re-enable the form, not just show a toast and silently close.
     await api.delete("/users/me", { data: { password } });
@@ -208,7 +208,7 @@ const Settings = () => {
       <section className="bg-card border border-stroke rounded-2xl p-5 mt-4">
         <h2 className="text-base font-semibold text-ink mb-1">Your data</h2>
         <p className="text-base text-ink-muted mb-4">
-          Download a copy of everything tied to your account â€” posts, comments,
+          Download a copy of everything tied to your account — posts, comments,
           likes, bookmarks, follows, messages, and more.
         </p>
         <button

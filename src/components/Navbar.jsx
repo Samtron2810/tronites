@@ -37,7 +37,7 @@ const Navbar = () => {
   // unreadCount now lives in SocketContext, shared with the Chat page.
   // Chat calls refreshUnreadCount() itself right after marking a thread
   // read, so the badge no longer depends on a "messagesRead" socket
-  // event round-tripping back before it updates â€” that round trip was
+  // event round-tripping back before it updates — that round trip was
   // the source of the stale-badge-until-refresh bug, since Chat's own
   // socket didn't join the conversation room until after the read
   // request (and its resulting event) had already gone out.

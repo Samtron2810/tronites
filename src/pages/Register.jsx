@@ -18,7 +18,7 @@ const Register = () => {
 
   // Strips characters the backend would reject anyway (digits, most
   // symbols) as the user types. Allows Unicode letters/marks plus
-  // apostrophes, hyphens, and spaces â€” O'Brien, Mary-Jane, AdÃ©á»lÃ¡, etc.
+  // apostrophes, hyphens, and spaces — O'Brien, Mary-Jane, Renee, etc.
   const NAME_STRIP_PATTERN = /[^\p{L}\p{M}' -]/gu;
 
   const handleChange = (e) => {
@@ -41,7 +41,7 @@ const Register = () => {
     try {
       const res = await register(formData);
       toast.success(res.message || "OTP sent to your email");
-      // challengeId is an opaque, server-issued, single-use handle â€” not
+      // challengeId is an opaque, server-issued, single-use handle — not
       // the email itself, and not a security control on its own. It just
       // lets VerifyOtp know which pending challenge to show without
       // putting an email address in the URL. All real enforcement

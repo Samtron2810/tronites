@@ -44,7 +44,7 @@ const UserMenu = ({ user, onLogoutClick }) => {
 
   // Core items every user sees. Anything that used to be a permanently
   // disabled stub (Dashboard, Ads, Help, Privacy/Terms) now lives on the
-  // /more page instead of padding this dropdown out indefinitely â€” see
+  // /more page instead of padding this dropdown out indefinitely — see
   // pages/More.jsx. That page is where new lower-frequency features
   // should be added going forward, not here.
   const menuItems = [
@@ -64,7 +64,7 @@ const UserMenu = ({ user, onLogoutClick }) => {
         toggleTheme();
       },
     },
-    // Only shown to moderators/admins â€” role isn't in toPublicUserDTO,
+    // Only shown to moderators/admins — role isn't in toPublicUserDTO,
     // so this can never appear for a viewer looking at someone else's
     // menu; `user` here is always the logged-in account's own data.
     ...(["moderator", "admin"].includes(user.role)
@@ -79,7 +79,7 @@ const UserMenu = ({ user, onLogoutClick }) => {
         ]
       : []),
     // Role management is admin-only (stricter than the moderator gate
-    // above) â€” a moderator promoting peers to admin would be a
+    // above) — a moderator promoting peers to admin would be a
     // privilege-escalation path.
     ...(user.role === "admin"
       ? [
@@ -105,7 +105,7 @@ const UserMenu = ({ user, onLogoutClick }) => {
           },
         ]
       : []),
-    // Settings and More sit at the bottom, right above Logout â€” the
+    // Settings and More sit at the bottom, right above Logout — the
     // lowest-frequency top-level actions in the list.
     {
       icon: FaCog,

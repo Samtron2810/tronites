@@ -18,11 +18,11 @@ const DURATIONS = [
 
 // Confirm modal for the three account-restriction actions (Phase 2),
 // modeled on ConfirmRoleChangeModal. mode:
-//   "suspend"    â†’ duration picker + reason
-//   "ban"        â†’ reason only, permanent-action copy
-//   "unrestrict" â†’ plain confirm
-// onConfirm receives ({ until, reason }) â€” `until` is null except for
-// suspend â€” and the caller owns the API call.
+//   "suspend"    → duration picker + reason
+//   "ban"        → reason only, permanent-action copy
+//   "unrestrict" → plain confirm
+// onConfirm receives ({ until, reason }) — `until` is null except for
+// suspend — and the caller owns the API call.
 const ConfirmRestrictionModal = ({
   mode,
   targetUser,
@@ -35,7 +35,7 @@ const ConfirmRestrictionModal = ({
   const [reason, setReason] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   // datetime-local floor: now + 1 minute. Computed once per mount via
-  // useMemo â€” the purity rule rightly bans bare Date.now() in render,
+  // useMemo — the purity rule rightly bans bare Date.now() in render,
   // and a minute-stale floor is harmless: past picks are rejected on
   // submit here and re-checked server-side against its own clock.
   const customMin = useMemo(
@@ -74,7 +74,7 @@ const ConfirmRestrictionModal = ({
     }
   };
 
-  // Phase 6 â€” bulk mode triggers on count > 1 OR whenever the caller has
+  // Phase 6 — bulk mode triggers on count > 1 OR whenever the caller has
   // no single target to show (AdminUsers' selection bar passes
   // targetUser={null}, which also covers its one-account edge case).
   const isBulk = count > 1 || !targetUser;
@@ -111,7 +111,7 @@ const ConfirmRestrictionModal = ({
         </div>
 
         {isBulk ? (
-          // Bulk mode â€” no single avatar to show; the parent passes only
+          // Bulk mode — no single avatar to show; the parent passes only
           // the count. The amber treatment matches the suspend styling.
           <div className="flex items-center gap-3 mb-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5">
             <FiAlertTriangle className="text-amber-500 shrink-0" size={16} />

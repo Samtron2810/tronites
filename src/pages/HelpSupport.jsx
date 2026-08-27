@@ -17,11 +17,11 @@ const FAQ_SECTIONS = [
     items: [
       {
         q: "How do I change my username?",
-        a: "Your username is edited in Settings â†’ Account. It's how people find you via mentions, search, and your profile link. It must be 3â€“20 characters using lowercase letters, numbers, and underscores, and it has to be unique â€” if the one you want is taken, you'll be asked to pick another. After changing it, you can only change it again once every 30 days.",
+        a: "Your username is edited in Settings → Account. It's how people find you via mentions, search, and your profile link. It must be 3–20 characters using lowercase letters, numbers, and underscores, and it has to be unique — if the one you want is taken, you'll be asked to pick another. After changing it, you can only change it again once every 30 days.",
       },
       {
         q: "How do I change my name?",
-        a: "Your display name is edited in Settings â†’ Account. Both a first and last name are required, and this is the name shown on your profile and posts. After changing it, you can only change it again once every 3 days.",
+        a: "Your display name is edited in Settings → Account. Both a first and last name are required, and this is the name shown on your profile and posts. After changing it, you can only change it again once every 3 days.",
       },
       {
         q: "How do I reset my password?",
@@ -29,11 +29,11 @@ const FAQ_SECTIONS = [
       },
       {
         q: "How do I delete my account?",
-        a: "Go to Settings â†’ Delete account. Your account is deactivated immediately and permanently erased after a 30-day grace period. Contact support within that window if you change your mind.",
+        a: "Go to Settings → Delete account. Your account is deactivated immediately and permanently erased after a 30-day grace period. Contact support within that window if you change your mind.",
       },
       {
         q: "Can I download a copy of my data?",
-        a: "Yes. Settings â†’ Your data â†’ Download my data gives you a JSON export of your posts, comments, likes, bookmarks, follows, and messages.",
+        a: "Yes. Settings → Your data → Download my data gives you a JSON export of your posts, comments, likes, bookmarks, follows, and messages.",
       },
     ],
   },
@@ -42,7 +42,7 @@ const FAQ_SECTIONS = [
     items: [
       {
         q: "Who can see when I'm online?",
-        a: "You control this in Settings â†’ Who can see you're online, with options for Everyone, Followers only, or Nobody.",
+        a: "You control this in Settings → Who can see you're online, with options for Everyone, Followers only, or Nobody.",
       },
       {
         q: "How do I block someone?",
@@ -59,7 +59,7 @@ const FAQ_SECTIONS = [
     items: [
       {
         q: "Why is my video still processing?",
-        a: "Videos go through an upload and encoding step after you post. This is usually quick, but larger files can take a bit longer â€” the post updates automatically the moment it's ready.",
+        a: "Videos go through an upload and encoding step after you post. This is usually quick, but larger files can take a bit longer — the post updates automatically the moment it's ready.",
       },
       {
         q: "Can I edit a post after publishing?",
@@ -166,7 +166,7 @@ const HelpSupport = () => {
           Still need help?
         </h2>
         <p className="text-base text-ink-muted mb-4">
-          Our support team typically responds within 1â€“2 business days.
+          Our support team typically responds within 1–2 business days.
         </p>
         <a
           href="mailto:support@tronites.com"

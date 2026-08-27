@@ -112,7 +112,7 @@ const TermsOfUse = () => {
           share on Tronites ("User Content"). By posting, you grant Tronites a
           non-exclusive, worldwide, royalty-free license to host, store,
           reproduce, and display that content solely for the purpose of
-          operating and improving the platform â€” for example, showing your posts
+          operating and improving the platform — for example, showing your posts
           in feeds, search, and to the users you share them with.
         </p>
         <p>
@@ -194,7 +194,7 @@ const TermsOfUse = () => {
           where local law requires otherwise.
         </p>
         <p>
-          Before starting a dispute resolution proceeding, please contact us â€”
+          Before starting a dispute resolution proceeding, please contact us —
           most issues can be resolved directly.
         </p>
       </Section>

@@ -9,7 +9,7 @@ const Login = () => {
   const { login, user, loading } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  // Server's rejection code ("ACCOUNT_BANNED"/"ACCOUNT_SUSPENDED") â€” when
+  // Server's rejection code ("ACCOUNT_BANNED"/"ACCOUNT_SUSPENDED") — when
   // present we swap the generic failure toast for a dedicated inline
   // panel so restricted users get a specific screen, not a vague error.
   const [errorCode, setErrorCode] = useState(null);

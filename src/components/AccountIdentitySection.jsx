@@ -12,7 +12,7 @@ const NAME_RE = /^[\p{L}\p{M}][\p{L}\p{M}' -]*$/u;
 
 
 // Derives "can I change this yet" purely from the timestamp + duration,
-// same approach as suspendedUntil elsewhere in the app â€” no separate
+// same approach as suspendedUntil elsewhere in the app — no separate
 // server round-trip needed just to check eligibility.
 const cooldownRemaining = (changedAt, cooldownDays) => {
   if (!changedAt) return null;
@@ -52,7 +52,7 @@ const FieldRow = ({
 const AccountIdentitySection = () => {
   const { user, updateUser } = useAuth();
 
-  // â”€â”€ Name â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Name ──────────────────────────────────────────────────────────
   const [editingName, setEditingName] = useState(false);
   const [firstName, setFirstName] = useState(user?.name?.split(" ")[0] || "");
   const [lastName, setLastName] = useState(
@@ -104,7 +104,7 @@ const AccountIdentitySection = () => {
     }
   };
 
-  // â”€â”€ Username â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Username ──────────────────────────────────────────────────────
   const [editingUsername, setEditingUsername] = useState(false);
   const [username, setUsername] = useState(user?.username || "");
   const [status, setStatus] = useState("idle"); // idle | checking | available | taken | invalid | unchanged

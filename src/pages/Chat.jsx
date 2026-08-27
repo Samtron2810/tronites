@@ -64,7 +64,7 @@ const Chat = () => {
   const [videoFile, setVideoFile] = useState(null);
   const [videoPreviewUrl, setVideoPreviewUrl] = useState(null);
   // In-flight BACKGROUND video sends. Each entry is a video whose Send the
-  // user already pressed â€” the composer was freed at that moment, so text/
+  // user already pressed — the composer was freed at that moment, so text/
   // image sends continue working while these finish. One progress bar is
   // rendered per entry.
   const [videoUploads, setVideoUploads] = useState([]);
@@ -238,7 +238,7 @@ const Chat = () => {
       // -trip back. That event is emitted by the server as a side
       // effect of the GET above, but this client doesn't join the
       // conversation's socket room until the *next* effect run (after
-      // selectedChat updates) â€” so it reliably missed its own read
+      // selectedChat updates) — so it reliably missed its own read
       // event and the badge only ever caught up on a full page reload.
       refreshUnreadCount();
     } catch (e) {
@@ -263,7 +263,7 @@ const Chat = () => {
       setMessagesPage(nextPage);
       setMessagesHasMore(res.data.hasMore);
       // Restore scroll position so prepending older messages doesn't
-      // jump the view â€” wait a tick for the DOM to grow first.
+      // jump the view — wait a tick for the DOM to grow first.
       requestAnimationFrame(() => {
         if (container) {
           const newScrollHeight = container.scrollHeight;
@@ -305,9 +305,9 @@ const Chat = () => {
         lastMessage: message.text
           ? message.text
           : message.video?.url
-            ? "ðŸŽ¬ Video"
+            ? "🎬 Video"
             : message.images?.length || message.image
-              ? "ðŸ“· Photo(s)"
+              ? "📷 Photo(s)"
               : "",
         lastMessageFromMe: message.sender._id === user._id,
         lastMessageAt: message.createdAt,
@@ -324,7 +324,7 @@ const Chat = () => {
 
   const handleSendMessage = async () => {
     // `isSending` only covers the fast text/image POST. A video upload in
-    // flight does NOT lock the composer â€” it runs in the background so
+    // flight does NOT lock the composer — it runs in the background so
     // text/images can be sent while it finishes.
     if (isSending || !selectedChat) return;
     if (!messageText.trim() && imagePreviews.length === 0 && !videoFile)
@@ -358,7 +358,7 @@ const Chat = () => {
       if (messageText.trim()) formData.append("text", messageText.trim());
       for (const preview of imagePreviews) {
         const blob = await (await fetch(preview)).blob();
-        // Compress before upload â€” chat images can be full-resolution
+        // Compress before upload — chat images can be full-resolution
         // camera photos (multi-MB) which are expensive to store and slow
         // to send. Wrap in a File so compressImage has a name/size/type
         // to work with.
@@ -384,7 +384,7 @@ const Chat = () => {
       setImagePreviews([]);
       if (fileInputRef.current) fileInputRef.current.value = "";
       updateConversationPreview(res.data, false);
-      // A pending request just got its first (and only) message sent â€”
+      // A pending request just got its first (and only) message sent —
       // reflect that in local gating state without waiting for a refetch.
       if (requestInfo?.status !== "accepted") {
         setRequestInfo((prev) =>
@@ -413,7 +413,7 @@ const Chat = () => {
   // with per-item progress, creates the message, appends locally if the
   // user is still viewing the same thread, then removes itself from the
   // pending-uploads list on completion OR failure. Runs independently of
-  // the composer â€” text/image sends don't wait on it.
+  // the composer — text/image sends don't wait on it.
   const startVideoSend = async (item) => {
     try {
       const video = await uploadVideoMessageToCloudinary({
@@ -458,7 +458,7 @@ const Chat = () => {
   // Clears the video draft and revokes its object URL. Extracted so both
   // the remove button, image-select (mutual exclusion), and post-send
   // cleanup share one implementation. Does NOT touch in-flight background
-  // video sends â€” those live in `videoUploads`.
+  // video sends — those live in `videoUploads`.
   const clearVideoDraft = useCallback(() => {
     setVideoFile(null);
     setVideoPreviewUrl((prev) => {
@@ -477,7 +477,7 @@ const Chat = () => {
       if (videoInputRef.current) videoInputRef.current.value = "";
       return;
     }
-    // Videos and images are mutually exclusive in a message â€” picking a
+    // Videos and images are mutually exclusive in a message — picking a
     // video drops any staged images.
     setImagePreviews([]);
     if (fileInputRef.current) fileInputRef.current.value = "";
@@ -574,7 +574,7 @@ const Chat = () => {
       setMessages((prev) => prev.filter((m) => m._id !== messageId));
     } catch (e) {
       console.error(e);
-      toast.error("Couldn't delete the message â€” it's been restored.");
+      toast.error("Couldn't delete the message — it's been restored.");
     } finally {
       deletingIdsRef.current.delete(messageId);
       setDeletingIds((prev) => prev.filter((id) => id !== messageId));
@@ -610,7 +610,7 @@ const Chat = () => {
   //
   // Fix: play a muted, volume-0 primer on the first user gesture. This
   // satisfies the browser's gesture requirement and marks the element as
-  // allowed to autoplay for the rest of the session â€” no Web Audio API
+  // allowed to autoplay for the rest of the session — no Web Audio API
   // or AudioContext needed for a simple one-shot ping.
   useEffect(() => {
     audioRef.current = new Audio(sfx);
@@ -630,7 +630,7 @@ const Chat = () => {
           audioUnlockedRef.current = true;
         })
         .catch(() => {
-          // Still blocked (e.g. no gesture registered yet) â€” restore
+          // Still blocked (e.g. no gesture registered yet) — restore
           // volume and try again on the next gesture.
           el.volume = originalVolume;
         });
@@ -651,13 +651,13 @@ const Chat = () => {
     if (!audioRef.current) return;
     // Guard against the same sound firing twice within a short window
     // (e.g. StrictMode's dev-only double-effect mount, or a stray
-    // duplicate socket event) â€” only allow one play per ~400ms.
+    // duplicate socket event) — only allow one play per ~400ms.
     const now = Date.now();
     if (now - lastSoundPlayedAtRef.current < 400) return;
     lastSoundPlayedAtRef.current = now;
 
     audioRef.current.currentTime = 0;
-    // play() returns a Promise that rejects if the browser blocks it â€”
+    // play() returns a Promise that rejects if the browser blocks it —
     // must be handled or Chrome logs an "unhandled promise rejection"
     // and the old `void` didn't actually catch anything.
     audioRef.current.play().catch((err) => {
@@ -756,7 +756,7 @@ const Chat = () => {
     };
     // selectedChat/updateConversationPreview intentionally omitted: this
     // effect manages the socket subscription lifecycle (join/leave room),
-    // which should only re-run on socket/user identity change â€” not on
+    // which should only re-run on socket/user identity change — not on
     // every selectedChat update, which the handlers already read fresh
     // via closure re-creation each render anyway.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -765,7 +765,7 @@ const Chat = () => {
   useEffect(() => {
     if (!scrollRef.current) return;
     // Don't auto-scroll to bottom when older messages were just prepended
-    // via loadOlderMessages â€” that has its own scroll-position restore.
+    // via loadOlderMessages — that has its own scroll-position restore.
     if (isPrependingOlder.current) return;
     scrollRef.current.scrollIntoView({
       behavior: hasScrolledToBottom.current ? "smooth" : "auto",
@@ -933,7 +933,7 @@ const Chat = () => {
                       <p className="text-sm text-ink-muted truncate">
                         {req.message?.text ||
                           (req.message?.video?.url
-                            ? "ðŸŽ¬ Sent a video"
+                            ? "🎬 Sent a video"
                             : req.message?.images?.length
                               ? "Sent photos"
                               : req.message?.image

@@ -45,7 +45,7 @@ const ReportCard = ({
   const [resolving, setResolving] = useState(false);
   const [note, setNote] = useState("");
   const [showNoteFor, setShowNoteFor] = useState(null); // "actioned" | "dismissed" | null
-  // Phase 4 warn flow â€” user reports only; reason goes verbatim to the
+  // Phase 4 warn flow — user reports only; reason goes verbatim to the
   // warned account's notification.
   const [showWarnFor, setShowWarnFor] = useState(false);
   const [warnReason, setWarnReason] = useState("");
@@ -71,7 +71,7 @@ const ReportCard = ({
     }
   };
 
-  // Phase 4 â€” hand off to the parent's warn flow (API call, threshold
+  // Phase 4 — hand off to the parent's warn flow (API call, threshold
   // prompt and list updates live there). The card only resets its warn
   // UI when the parent reports success.
   const submitWarn = async () => {
@@ -100,7 +100,7 @@ const ReportCard = ({
         <div className="min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             {report.priority === "high" && (
-              // Phase 6 â€” set by the flagRepeatOffenders job when this
+              // Phase 6 — set by the flagRepeatOffenders job when this
               // owner crosses the repeat-offender threshold.
               <span className="text-sm font-semibold px-2 py-0.5 rounded-full bg-red-500 text-white">
                 HIGH PRIORITY
@@ -165,7 +165,7 @@ const ReportCard = ({
         </div>
 
         {/* User reports deep-link straight to the profile (a profile is
-            its own context â€” nothing to preview). Every other target type
+            its own context — nothing to preview). Every other target type
             opens the in-queue content modal, since there are no permalink
             pages to link out to. */}
         {report.targetType === "user" ? (
@@ -190,12 +190,12 @@ const ReportCard = ({
       {report.status === "open" && (
         <div className="mt-3 pt-3 border-t border-stroke">
           {showWarnFor ? (
-            // Phase 4 â€” reason is mandatory and goes verbatim into the
+            // Phase 4 — reason is mandatory and goes verbatim into the
             // warned user's notification; their identity of the sender is
             // stripped server-side ("Moderation team").
             <div className="space-y-2">
               <p className="text-sm font-medium text-ink-sub">
-                Reason â€” sent verbatim to{" "}
+                Reason — sent verbatim to{" "}
                 <span className="font-semibold">
                   {owner?.name || "the user"}
                 </span>{" "}
@@ -206,7 +206,7 @@ const ReportCard = ({
                 onChange={(e) => setWarnReason(e.target.value.slice(0, 500))}
                 rows={2}
                 autoFocus
-                placeholder="e.g. Repeated harassment â€” this is a formal warning"
+                placeholder="e.g. Repeated harassment — this is a formal warning"
                 className="w-full rounded-xl border border-stroke px-3 py-2 text-base text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-amber-300 resize-none"
               />
               <div className="flex gap-2">
@@ -274,7 +274,7 @@ const ReportCard = ({
                 <FiX size={13} /> Dismiss
               </button>
               {report.targetType === "user" && (
-                // Phase 4 â€” third resolve action: a formal strike. Only
+                // Phase 4 — third resolve action: a formal strike. Only
                 // meaningful on user reports (strikes attach to accounts).
                 <button
                   onClick={() => {
@@ -283,7 +283,7 @@ const ReportCard = ({
                   }}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold text-amber-700 border border-amber-300 hover:bg-amber-50 transition"
                 >
-                  <FiAlertTriangle size={13} /> Warnâ€¦
+                  <FiAlertTriangle size={13} /> Warn…
                 </button>
               )}
             </div>
@@ -291,7 +291,7 @@ const ReportCard = ({
         </div>
       )}
 
-      {/* Phase 2 â€” user reports get one-tap restrict/restore shortcuts in
+      {/* Phase 2 — user reports get one-tap restrict/restore shortcuts in
           addition to Action/Dismiss. Ban only surfaces for admins (the
           endpoint is requireAdmin regardless). */}
       {report.status === "open" && report.targetType === "user" && (
@@ -323,14 +323,14 @@ const ReportCard = ({
                 onClick={() => onRequestRestriction(report, "suspend")}
                 className="text-sm font-medium text-amber-700 border border-amber-300 hover:bg-amber-50 px-2.5 py-1 rounded-lg transition"
               >
-                {ownerSuspended ? "Adjust suspensionâ€¦" : "Suspendâ€¦"}
+                {ownerSuspended ? "Adjust suspension…" : "Suspend…"}
               </button>
               {canBanHere && (
                 <button
                   onClick={() => onRequestRestriction(report, "ban")}
                   className="text-sm font-medium text-red-600 border border-red-300 hover:bg-red-50 px-2.5 py-1 rounded-lg transition"
                 >
-                  Banâ€¦
+                  Ban…
                 </button>
               )}
             </>
@@ -358,7 +358,7 @@ const ModerationQueue = () => {
   const [totalPages, setTotalPages] = useState(1);
   // Report currently open in the in-queue context/preview modal.
   const [contextReport, setContextReport] = useState(null);
-  // { report, mode } â€” user-report restriction shortcut modal (Phase 2).
+  // { report, mode } — user-report restriction shortcut modal (Phase 2).
   const [pendingUserRestriction, setPendingUserRestriction] = useState(null);
 
   const isModerator = user && ["moderator", "admin"].includes(user.role);
@@ -382,7 +382,7 @@ const ModerationQueue = () => {
     if (isModerator) fetchReports();
   }, [isModerator, fetchReports]);
 
-  // Guard client-side too â€” the endpoints already 403 non-moderators,
+  // Guard client-side too — the endpoints already 403 non-moderators,
   // this just avoids rendering a queue UI that would only ever error.
   if (user && !isModerator) {
     return <Navigate to="/" replace />;
@@ -399,10 +399,10 @@ const ModerationQueue = () => {
     }
   };
 
-  // Phase 2 â€” suspend/ban/unrestrict straight from a user report card.
+  // Phase 2 — suspend/ban/unrestrict straight from a user report card.
   // Updates the card's targetOwner from the server DTO so chips flip
   // without a refetch. Returns success so the modal closes only on win.
-  // Phase 4 â€” issue a formal warning from the queue: send the strike,
+  // Phase 4 — issue a formal warning from the queue: send the strike,
   // prompt toward suspension when the threshold is crossed (reusing the
   // Phase 2 restriction modal so the moderator is one "Cancel" away from
   // doing nothing), then resolve the underlying report as actioned so
@@ -414,12 +414,12 @@ const ModerationQueue = () => {
         { reason, reportId: report._id },
       );
       toast.success(
-        `Warning sent â€” ${res.data.strikeCount} strike${
+        `Warning sent — ${res.data.strikeCount} strike${
           res.data.strikeCount === 1 ? "" : "s"
         } on record.`,
       );
       if (res.data.strikeThresholdReached) {
-        toast(`${res.data.strikeCount} strikes reached â€” review a suspension.`, {
+        toast(`${res.data.strikeCount} strikes reached — review a suspension.`, {
           icon: "âš ï¸",
           duration: 6000,
         });

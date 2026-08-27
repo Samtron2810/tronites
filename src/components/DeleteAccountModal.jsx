@@ -3,7 +3,7 @@ import { FiAlertTriangle } from "react-icons/fi";
 
 // Mirrors DeletePostModal's visual pattern (same red-warning treatment
 // for a destructive action) but adds a password field, since account
-// deletion is a much higher-stakes action than deleting a single post â€”
+// deletion is a much higher-stakes action than deleting a single post —
 // a stray click here shouldn't be enough on its own, and the backend
 // (deleteMyAccount) requires the password regardless, so the field is
 // mandatory here, not just a nice-to-have.
@@ -35,7 +35,7 @@ const DeleteAccountModal = ({ onConfirm, onCancel }) => {
           <h2 className="text-lg font-semibold text-ink">Delete Account</h2>
         </div>
         <p className="text-base text-ink-muted leading-relaxed">
-          This deactivates your account immediately. It's permanently erased after 30 days â€”
+          This deactivates your account immediately. It's permanently erased after 30 days —
           contact support before then if you change your mind.
         </p>
 

@@ -49,7 +49,7 @@ const toPostCardProps = (post) => ({
   privacy: post.privacy,
 });
 
-// Compact READ-ONLY thread window around a flagged message â€” mirrors
+// Compact READ-ONLY thread window around a flagged message — mirrors
 // ChatModal's visual language minus all composer/interactivity (this is
 // evidence viewing, not conversation). The flagged author's bubbles sit
 // on the right so the moderator reads from the reported person's side;
@@ -285,7 +285,7 @@ const ReportContextModal = ({ report, onClose, onResolved }) => {
           </div>
 
           {loading && (
-            <p className="text-base text-ink-muted py-6 text-center">Loadingâ€¦</p>
+            <p className="text-base text-ink-muted py-6 text-center">Loading…</p>
           )}
 
           {!loading && loadError && (
@@ -334,13 +334,13 @@ const ReportContextModal = ({ report, onClose, onResolved }) => {
             !ctx.comment &&
             !ctx.messages && (
               <p className="text-base text-ink-muted py-4 text-center">
-                User reports are reviewed on the profile page â€” no extra
+                User reports are reviewed on the profile page — no extra
                 content to preview here.
               </p>
             )}
         </div>
 
-        {/* Footer actions â€” open reports only; resolved ones are view-only */}
+        {/* Footer actions — open reports only; resolved ones are view-only */}
         {isOpenReport && (
           <div className="border-t border-stroke px-5 py-4 space-y-3 shrink-0">
             <textarea
@@ -359,7 +359,7 @@ const ReportContextModal = ({ report, onClose, onResolved }) => {
                   />
                   <p className="text-sm text-red-600 leading-relaxed">
                     This will hide the {targetLabel} from everyone on
-                    Tronites. The author keeps their account â€” only this{" "}
+                    Tronites. The author keeps their account — only this{" "}
                     {targetLabel} is removed.
                   </p>
                 </div>
@@ -397,7 +397,7 @@ const ReportContextModal = ({ report, onClose, onResolved }) => {
                   disabled={submitting}
                   className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-semibold text-white bg-red-500 hover:bg-red-600 transition disabled:opacity-50"
                 >
-                  <FiTrash2 size={13} /> Remove contentâ€¦
+                  <FiTrash2 size={13} /> Remove content…
                 </button>
               </div>
             )}

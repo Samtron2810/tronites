@@ -53,7 +53,7 @@ const RoleRow = ({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [menuOpen]);
 
-  // Restriction targets: never yourself, never admins â€” mirrors the
+  // Restriction targets: never yourself, never admins — mirrors the
   // backend guards so the menu simply doesn't offer impossible actions.
   const canRestrict = !isSelf && target.role !== "admin";
 
@@ -66,7 +66,7 @@ const RoleRow = ({
   return (
     <div className="bg-card border border-stroke rounded-2xl p-4 flex items-center justify-between gap-4">
       <div className="flex items-center gap-3 min-w-0">
-        {/* Phase 6 â€” bulk-selection checkbox. Hidden for self/admin rows
+        {/* Phase 6 — bulk-selection checkbox. Hidden for self/admin rows
             since the bulk endpoints can never target those anyway. */}
         {viewerIsAdmin && !isSelf && target.role !== "admin" && (
           <input
@@ -106,14 +106,14 @@ const RoleRow = ({
           <span
             className="text-sm font-semibold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700"
             title={
-              `${target.restrictionReason || "No reason recorded"} â€” ends ` +
+              `${target.restrictionReason || "No reason recorded"} — ends ` +
               new Date(target.suspendedUntil).toLocaleString()
             }
           >
             until {new Date(target.suspendedUntil).toLocaleDateString()}
           </span>
         )}
-        {/* Phase 4 â€” strike count. Count only comes through the admin
+        {/* Phase 4 — strike count. Count only comes through the admin
             DTO; individual reasons stay between mods and the audit log. */}
         {target.strikesCount > 0 && (
           <span
@@ -138,7 +138,7 @@ const RoleRow = ({
           <option value="admin">admin</option>
         </select>
 
-        {/* Phase 5 â€” per-moderator capability editor (admin only). */}
+        {/* Phase 5 — per-moderator capability editor (admin only). */}
         {viewerIsAdmin && target.role === "moderator" && (
           <button
             onClick={() => onRequestPermissions(target)}
@@ -187,7 +187,7 @@ const RoleRow = ({
                       className="w-full flex items-center gap-2 px-4 py-2.5 text-base text-ink-sub hover:bg-surface transition"
                     >
                       <span className="font-medium">
-                        {isSuspended ? "Adjust suspensionâ€¦" : "Suspendâ€¦"}
+                        {isSuspended ? "Adjust suspension…" : "Suspend…"}
                       </span>
                     </button>
                     {viewerIsAdmin && (
@@ -198,7 +198,7 @@ const RoleRow = ({
                         }}
                         className="w-full flex items-center gap-2 px-4 py-2.5 text-base text-red-600 hover:bg-red-50 transition"
                       >
-                        <span className="font-medium">Ban permanentlyâ€¦</span>
+                        <span className="font-medium">Ban permanently…</span>
                       </button>
                     )}
                   </>
@@ -225,9 +225,9 @@ const AdminUsers = () => {
   // { user, mode: "suspend" | "ban" | "unrestrict" } for the restriction
   // confirm modal.
   const [pendingRestriction, setPendingRestriction] = useState(null);
-  // Phase 5 â€” { user } for the permission editor modal.
+  // Phase 5 — { user } for the permission editor modal.
   const [pendingPermissions, setPendingPermissions] = useState(null);
-  // Phase 6 â€” bulk selection ("_id" strings), the bulk confirm modal,
+  // Phase 6 — bulk selection ("_id" strings), the bulk confirm modal,
   // and the user-list sort option ("Most reported").
   const [selectedIds, setSelectedIds] = useState(() => new Set());
   const [pendingBulk, setPendingBulk] = useState(null); // { mode }
@@ -313,7 +313,7 @@ const AdminUsers = () => {
     fetchUsers,
   ]);
 
-  // Guard client-side too â€” the endpoints already 403 non-admins, this
+  // Guard client-side too — the endpoints already 403 non-admins, this
   // just avoids rendering a role-management UI that would only ever
   // error.
   if (user && !isAdmin) {
@@ -378,7 +378,7 @@ const AdminUsers = () => {
     setPendingRoleChange(null);
   };
 
-  // Suspend / ban / unrestrict â€” endpoint picked by mode. Returns true on
+  // Suspend / ban / unrestrict — endpoint picked by mode. Returns true on
   // success so the modal only closes when the action actually landed;
   // row state updates from the server's DTO (single source of truth).
   const handleConfirmRestriction = async ({ until, reason }) => {
@@ -418,7 +418,7 @@ const AdminUsers = () => {
     if (closed) setPendingRestriction(null);
   };
 
-  // Phase 6 â€” bulk suspend/ban/unrestrict via /admin/users/bulk. The
+  // Phase 6 — bulk suspend/ban/unrestrict via /admin/users/bulk. The
   // modal closes only when the request itself landed; per-user failures
   // (self/admin targets, already-banned) are summarized in a toast, and
   // the page refetches so restriction chips reflect reality either way.
@@ -474,7 +474,7 @@ const AdminUsers = () => {
         />
       )}
 
-      {/* Phase 6 â€” bulk confirm. count>1 flips the shared modal into its
+      {/* Phase 6 — bulk confirm. count>1 flips the shared modal into its
           pluralized mode; targetUser stays null because the summary line
           replaces the avatar block. */}
       {pendingBulk && (
@@ -533,7 +533,7 @@ const AdminUsers = () => {
           ))}
         </div>
 
-        {/* Phase 6 â€” "most reported" surfaces accounts the community
+        {/* Phase 6 — "most reported" surfaces accounts the community
             flags most, via the report-count aggregation on the backend. */}
         <select
           value={sortBy}
@@ -545,7 +545,7 @@ const AdminUsers = () => {
         </select>
       </div>
 
-      {/* Phase 6 â€” bulk selection action bar. Only admins see checkboxes
+      {/* Phase 6 — bulk selection action bar. Only admins see checkboxes
           at all, so this only ever appears for them. */}
       {selectedIds.size > 0 && (
         <div className="flex flex-wrap items-center gap-2 mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
@@ -556,13 +556,13 @@ const AdminUsers = () => {
             onClick={() => setPendingBulk({ mode: "suspend" })}
             className="px-3 py-1.5 rounded-lg text-sm font-semibold text-white bg-amber-500 hover:bg-amber-600 transition"
           >
-            Suspendâ€¦
+            Suspend…
           </button>
           <button
             onClick={() => setPendingBulk({ mode: "ban" })}
             className="px-3 py-1.5 rounded-lg text-sm font-semibold text-white bg-red-500 hover:bg-red-600 transition"
           >
-            Banâ€¦
+            Ban…
           </button>
           <button
             onClick={() => setSelectedIds(new Set())}

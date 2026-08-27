@@ -124,7 +124,7 @@ const Profile = () => {
       setIsFollowing(res.data.following);
       // `profile.followers` is an array of populated { _id } objects (see
       // getUserProfile), so keep the shape consistent instead of pushing
-      // a raw id string â€” mixed shapes would break anything downstream
+      // a raw id string — mixed shapes would break anything downstream
       // that expects follower._id to exist.
       setProfile((prev) => ({
         ...prev,
@@ -200,7 +200,7 @@ const Profile = () => {
     if (!file) return;
     try {
       setUploading(true);
-      // Avatars only ever render small â€” compress client-side so we don't
+      // Avatars only ever render small — compress client-side so we don't
       // ship full-resolution camera photos (up to 10MB) over the wire.
       const compressed = await compressImage(file, {
         maxWidth: 512,
@@ -335,7 +335,7 @@ const Profile = () => {
                   Message
                 </button>
 
-                {/* More options â€” kept behind a dropdown so block/unblock
+                {/* More options — kept behind a dropdown so block/unblock
                     isn't a bare tappable button next to Follow/Message. */}
                 <button
                   onClick={() => setShowOptionsMenu((v) => !v)}
