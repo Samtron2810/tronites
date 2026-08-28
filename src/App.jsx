@@ -28,6 +28,7 @@ const Hashtag = lazy(() => import("./pages/Hashtag"));
 const Bookmarks = lazy(() => import("./pages/Bookmarks"));
 const Notifications = lazy(() => import("./pages/Notifications"));
 const Settings = lazy(() => import("./pages/Settings"));
+const SecuritySessions = lazy(() => import("./pages/SecuritySessions"));
 const ModerationQueue = lazy(() => import("./pages/ModerationQueue"));
 const AdminUsers = lazy(() => import("./pages/AdminUsers"));
 const AdminAuditLog = lazy(() => import("./pages/AdminAuditLog"));
@@ -171,6 +172,15 @@ const AppContent = () => {
             element={
               <ProtectedRoute>
                 <Settings />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/settings/sessions"
+            element={
+              <ProtectedRoute>
+                <SecuritySessions />
               </ProtectedRoute>
             }
           />

@@ -21,6 +21,7 @@ import {
   FiFileText,
   FiHelpCircle,
   FiChevronRight,
+  FiMonitor,
 } from "react-icons/fi";
 
 const VISIBILITY_OPTIONS = [
@@ -202,6 +203,22 @@ const Settings = () => {
               </button>
             );
           })}
+        </div>
+      </section>
+
+      <section className="bg-card border border-stroke rounded-2xl mt-4 overflow-hidden">
+        <h2 className="text-base font-semibold text-ink px-5 pt-5 pb-1">
+          Security
+        </h2>
+        <div className="divide-y divide-stroke mt-2">
+          <Link
+            to="/settings/sessions"
+            className="flex items-center gap-3 px-5 py-3.5 text-base text-ink hover:bg-surface transition"
+          >
+            <FiMonitor size={15} className="text-primary-600" />
+            <span className="flex-1">Sessions & devices</span>
+            <FiChevronRight size={14} className="text-ink-muted" />
+          </Link>
         </div>
       </section>
 
