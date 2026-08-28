@@ -96,8 +96,10 @@ const Hashtag = () => {
               video={post.video}
               likes={post.likesCount}
               commentsCount={post.commentsCount}
+              reposts={post.repostsCount}
               isLiked={post.isLiked}
               isBookmarked={post.isBookmarked}
+              isReposted={post.isReposted}
               edited={post.edited}
               privacy={post.privacy}
               editedAt={post.editedAt}

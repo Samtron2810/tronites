@@ -233,18 +233,23 @@ const Home = () => {
             <PostCard
               key={post._id}
               postId={post._id}
-              userId={post.user._id}
-              name={post.user.name}
-              username={post.user.username}
-              profilePic={post.user.profilePic}
+              userId={post.user?._id || post.quoteOf?.user?._id}
+              name={post.user?.name}
+              username={post.user?.username}
+              profilePic={post.user?.profilePic}
               time={new Date(post.createdAt).toLocaleString()}
               text={post.text}
               images={post.images}
               video={post.video}
               likes={post.likesCount}
               commentsCount={post.commentsCount}
+              reposts={post.repostsCount}
               isLiked={post.isLiked}
               isBookmarked={post.isBookmarked}
+              isReposted={post.isReposted}
+              repostedBy={post.repostedBy}
+              isQuotePost={post.isQuotePost}
+              quoteOf={post.quoteOf}
               edited={post.edited}
               privacy={post.privacy}
               editedAt={post.editedAt}

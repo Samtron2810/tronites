@@ -12,6 +12,8 @@ import {
   FaVolumeUp,
   FaVolumeMute,
   FaRegCopy,
+  FaRetweet,
+  FaQuoteRight,
 } from "react-icons/fa";
 import { FiFlag, FiUsers, FiLock } from "react-icons/fi";
 import toast from "react-hot-toast";
@@ -19,6 +21,8 @@ import api from "../services/api";
 import { useAuth } from "../context/useAuth";
 import DeletePostModal from "./DeletePostModal";
 import ReportModal from "./ReportModal";
+import QuotePostModal from "./QuotePostModal";
+import QuotedPostPreview from "./QuotedPostPreview";
 import { useSocket } from "../context/useSocket";
 import TextWithLinks from "./TextWithLinks";
 import defaultAvatar from "../assets/defaultAvatar";
@@ -47,8 +51,20 @@ const PostCard = ({
   video,
   likes,
   commentsCount,
+  reposts,
   isLiked,
   isBookmarked,
+  isReposted,
+  // Set only when this card is rendered because someone the viewer
+  // follows reposted it (plain repost, not a quote) — { _id, name,
+  // username } of the reposter. Drives the "🔁 X reposted" header.
+  repostedBy,
+  // Set only when this card IS a quote item (synthetic "quote:<id>"
+  // postId from getFeedPosts/createQuotePost) — the quoter's own
+  // text/hashtags live in the normal `text` prop; `quoteOf` is the
+  // embedded original post being quoted.
+  isQuotePost,
+  quoteOf,
   edited,
   editedAt,
   onDelete,
@@ -68,6 +84,10 @@ const PostCard = ({
   const [bookmarked, setBookmarked] = useState(isBookmarked);
   const [isBookmarking, setIsBookmarking] = useState(false);
   const [commentCount, setCommentCount] = useState(commentsCount);
+  const [reposted, setReposted] = useState(isReposted);
+  const [repostCount, setRepostCount] = useState(reposts);
+  const [isReposting, setIsReposting] = useState(false);
+  const [showQuoteModal, setShowQuoteModal] = useState(false);
   // Track the prop values last synced into state, so a real prop change
   // (parent refetch/pagination) resets local state without a useEffect.
   // Optimistic local mutations (from liking/commenting) aren't affected
@@ -76,6 +96,8 @@ const PostCard = ({
   const [syncedLikes, setSyncedLikes] = useState(likes);
   const [syncedCommentsCount, setSyncedCommentsCount] = useState(commentsCount);
   const [syncedIsBookmarked, setSyncedIsBookmarked] = useState(isBookmarked);
+  const [syncedIsReposted, setSyncedIsReposted] = useState(isReposted);
+  const [syncedReposts, setSyncedReposts] = useState(reposts);
   if (isLiked !== syncedIsLiked) {
     setSyncedIsLiked(isLiked);
     setLiked(isLiked);
@@ -92,6 +114,14 @@ const PostCard = ({
     setSyncedIsBookmarked(isBookmarked);
     setBookmarked(isBookmarked);
   }
+  if (isReposted !== syncedIsReposted) {
+    setSyncedIsReposted(isReposted);
+    setReposted(isReposted);
+  }
+  if (reposts !== syncedReposts) {
+    setSyncedReposts(reposts);
+    setRepostCount(reposts);
+  }
   const [showComments, setShowComments] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   // Post-level report only now — comment/reply reporting lives inside
@@ -100,6 +130,12 @@ const PostCard = ({
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
   const triggerRef = useRef(null);
+  // Separate small dropdown for the repost button (Repost vs Quote) —
+  // distinct from the "..." options menu above, since it's opened by a
+  // different trigger in the action bar, not the header ellipsis.
+  const [repostMenuOpen, setRepostMenuOpen] = useState(false);
+  const repostMenuRef = useRef(null);
+  const repostTriggerRef = useRef(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState(text);
   const [isSavingEdit, setIsSavingEdit] = useState(false);
@@ -184,6 +220,43 @@ const PostCard = ({
       toast.error("Couldn't update saved posts. Try again.");
     } finally {
       setIsBookmarking(false);
+    }
+  };
+
+  // Toggle a plain repost. Quotes go through handleQuoteSubmit instead
+  // (a separate POST, not this toggle) since undoing a quote isn't a
+  // meaningful "un-quote" action the same way un-reposting is — you'd
+  // delete the quote post itself, which isn't in scope here yet.
+  const handleRepost = async () => {
+    if (isReposting) return;
+    setRepostMenuOpen(false);
+    setIsReposting(true);
+    try {
+      const res = await api.put(`/posts/repost/${postId}`);
+      setReposted(res.data.reposted);
+      setRepostCount(res.data.reposts);
+      if (res.data.reposted) toast.success("Reposted");
+    } catch (e) {
+      console.error(e);
+      toast.error(
+        e.response?.data?.message || "Couldn't update repost. Try again.",
+      );
+    } finally {
+      setIsReposting(false);
+    }
+  };
+
+  const handleQuoteSubmit = async ({ text: quoteText }) => {
+    try {
+      await api.post(`/posts/quote/${postId}`, { text: quoteText });
+      setRepostCount((c) => c + 1);
+      toast.success("Quote posted!");
+    } catch (e) {
+      console.error(e);
+      toast.error(
+        e.response?.data?.message || "Couldn't post your quote. Try again.",
+      );
+      throw e; // keeps QuotePostModal open on failure
     }
   };
 
@@ -276,6 +349,29 @@ const PostCard = ({
     }
   }, [menuOpen]);
 
+  // Close the repost menu when clicking outside it — same pattern as
+  // the options menu above, separate ref/state since they're
+  // independent dropdowns.
+  useEffect(() => {
+    const handleClickOutsideRepost = (event) => {
+      if (
+        repostMenuRef.current &&
+        !repostMenuRef.current.contains(event.target) &&
+        repostTriggerRef.current &&
+        !repostTriggerRef.current.contains(event.target)
+      ) {
+        setRepostMenuOpen(false);
+      }
+    };
+
+    if (repostMenuOpen) {
+      document.addEventListener("mousedown", handleClickOutsideRepost);
+      return () => {
+        document.removeEventListener("mousedown", handleClickOutsideRepost);
+      };
+    }
+  }, [repostMenuOpen]);
+
   // Post-level socket events only — comment-scoped events (newComment,
   // commentDeleted, commentLikeUpdate) are subscribed inside
   // CommentsPanel, which owns that state now. newComment/commentDeleted
@@ -290,6 +386,13 @@ const PostCard = ({
       setLikeCount(data.likesCount);
       if (data.userId === currentUser?._id?.toString()) {
         setLiked(data.liked);
+      }
+    };
+    const handleRepostUpdate = (data) => {
+      if (data.postId !== postId) return;
+      setRepostCount(data.repostsCount);
+      if (data.userId === currentUser?._id?.toString()) {
+        setReposted(data.reposted);
       }
     };
     const handleCommentCountEvent = (data) => {
@@ -308,12 +411,14 @@ const PostCard = ({
       setPostEditedAt(data.editedAt);
     };
     socket.on("likeUpdate", handleLikeUpdate);
+    socket.on("repostUpdate", handleRepostUpdate);
     socket.on("newComment", handleCommentCountEvent);
     socket.on("commentDeleted", handleCommentCountEvent);
     socket.on("postUpdated", handlePostUpdated);
     return () => {
       socket.emit("leavePost", postId);
       socket.off("likeUpdate", handleLikeUpdate);
+      socket.off("repostUpdate", handleRepostUpdate);
       socket.off("newComment", handleCommentCountEvent);
       socket.off("commentDeleted", handleCommentCountEvent);
       socket.off("postUpdated", handlePostUpdated);
@@ -387,6 +492,20 @@ const PostCard = ({
         />
       )}
 
+      {showQuoteModal && (
+        <QuotePostModal
+          post={{
+            _id: postId,
+            user: { _id: userId, name, username, profilePic },
+            text: postText,
+            images: media,
+            video: postVideo,
+          }}
+          closeModal={() => setShowQuoteModal(false)}
+          onSubmit={handleQuoteSubmit}
+        />
+      )}
+
       <PostDetailModal
         isOpen={isDetailOpen}
         onClose={() => setIsDetailOpen(false)}
@@ -432,6 +551,26 @@ const PostCard = ({
       />
 
       <div className="bg-card border border-stroke rounded-2xl p-5 transition hover:shadow-sm">
+        {/* "Reposted by X" header — only for plain reposts surfaced
+            into a follower's feed (repostedBy is null for the
+            reposter's own original post and for quotes, which get
+            their own text below instead). */}
+        {repostedBy && (
+          <Link
+            to={`/profile/${repostedBy._id}`}
+            onClick={(e) => e.stopPropagation()}
+            className="flex items-center gap-2 text-sm text-ink-muted hover:text-ink transition mb-3 -mt-1"
+          >
+            <FaRetweet size={13} className="text-primary-600 shrink-0" />
+            <span>
+              <span className="font-medium">
+                {repostedBy._id === currentUser?._id ? "You" : repostedBy.name}
+              </span>{" "}
+              reposted
+            </span>
+          </Link>
+        )}
+
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
@@ -608,19 +747,32 @@ const PostCard = ({
           </p>
         )}
 
+        {/* Embedded original post — quote items only. A quote has no
+            media/video of its own (text-only caption, see
+            QuotePostModal), so this replaces the media sections below
+            rather than sitting alongside them. Not clickable into its
+            own detail modal in this pass — see QuotedPostPreview's
+            comment on why (Tier 2.5's future /post/:id permalink is
+            the natural click target). */}
+        {isQuotePost && (
+          <div className="mt-3">
+            <QuotedPostPreview post={quoteOf} />
+          </div>
+        )}
+
         {/* Video */}
-        {postVideo?.status === "processing" && (
+        {!isQuotePost && postVideo?.status === "processing" && (
           <div className="mt-4 rounded-xl overflow-hidden bg-surface aspect-video flex flex-col items-center justify-center gap-2 text-ink-muted">
             <div className="h-6 w-6 border-2 border-primary-600 border-t-transparent rounded-full animate-spin" />
             <span className="text-sm">Processing video...</span>
           </div>
         )}
-        {postVideo?.status === "failed" && (
+        {!isQuotePost && postVideo?.status === "failed" && (
           <div className="mt-4 rounded-xl overflow-hidden bg-surface aspect-video flex flex-col items-center justify-center gap-1 text-ink-muted">
             <span className="text-sm">Video processing failed.</span>
           </div>
         )}
-        {postVideo?.status === "ready" && postVideo.url && (
+        {!isQuotePost && postVideo?.status === "ready" && postVideo.url && (
           <div className="mt-4 relative rounded-xl overflow-hidden bg-black">
             <video
               ref={videoRef}
@@ -665,7 +817,7 @@ const PostCard = ({
             neutral cell background. Clicking a cell opens the detail
             modal seeked to that image's index; the modal itself keeps
             its own carousel/arrows/dots untouched. */}
-        {media.length === 1 && (
+        {!isQuotePost && media.length === 1 && (
           <div
             className="mt-4 relative rounded-xl overflow-hidden bg-surface cursor-pointer"
             onClick={() => openDetail(0)}
@@ -679,7 +831,7 @@ const PostCard = ({
           </div>
         )}
 
-        {media.length > 1 && (
+        {!isQuotePost && media.length > 1 && (
           <div
             className={`mt-4 grid gap-0.5 rounded-xl overflow-hidden h-80 ${
               media.length === 2 ? "grid-cols-2" : "grid-cols-2 grid-rows-2"
@@ -742,6 +894,75 @@ const PostCard = ({
             <FaRegComment size={15} />
             <span>{commentCount}</span>
           </button>
+
+          {/* Repost isn't offered on a quote item itself in this pass
+              — quotes aren't backed by a Post document (see
+              models/Repost.js), only the original post they embed is
+              repostable. Reposting/quoting the ORIGINAL is still
+              available from its own card wherever that renders. */}
+          {!isQuotePost && (
+            <div className="relative">
+              <button
+                ref={repostTriggerRef}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (isOwner) {
+                    // Owners can't quote their own post from here in
+                    // this pass (only plain repost, which is a no-op
+                    // shown for consistency) — skip the dropdown and
+                    // just toggle.
+                    handleRepost();
+                  } else {
+                    setRepostMenuOpen((o) => !o);
+                  }
+                }}
+                disabled={isReposting}
+                title={reposted ? "Undo repost" : "Repost"}
+                className={`flex items-center gap-1.5 text-base transition ${
+                  isReposting
+                    ? "opacity-50 cursor-not-allowed"
+                    : reposted
+                      ? "text-green-600"
+                      : "text-ink-muted hover:text-green-600"
+                }`}
+              >
+                <FaRetweet size={15} />
+                <span>{repostCount}</span>
+              </button>
+
+              {repostMenuOpen && (
+                <div
+                  ref={repostMenuRef}
+                  onClick={(e) => e.stopPropagation()}
+                  className="absolute left-0 bottom-full mb-2 w-40 bg-card rounded-lg shadow-lg border border-stroke z-40 py-1"
+                >
+                  <button
+                    onClick={handleRepost}
+                    disabled={isReposting}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-base text-ink hover:bg-surface transition disabled:opacity-50"
+                  >
+                    <FaRetweet
+                      className={reposted ? "text-green-600" : "text-ink-muted"}
+                      size={13}
+                    />
+                    <span className="font-medium">
+                      {reposted ? "Undo repost" : "Repost"}
+                    </span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setRepostMenuOpen(false);
+                      setShowQuoteModal(true);
+                    }}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-base text-ink hover:bg-surface transition"
+                  >
+                    <FaQuoteRight className="text-ink-muted" size={13} />
+                    <span className="font-medium">Quote</span>
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
 
           <button
             onClick={handleBookmark}
