@@ -5,6 +5,7 @@ import MainLayout from "../layouts/MainLayout";
 import UserCardSkeleton from "../components/UserCardSkeleton";
 import PostCard from "../components/PostCard";
 import PostSkeleton from "../components/PostSkeleton";
+import TrendingHashtagsWidget from "../components/TrendingHashtagsWidget";
 import api from "../services/api";
 import { useAuth } from "../context/useAuth";
 import { useSocket } from "../context/useSocket";
@@ -196,6 +197,8 @@ const Explore = () => {
   return (
     <MainLayout>
       <div className="space-y-4">
+        <TrendingHashtagsWidget />
+
         {/* Tab switcher */}
         <div className="bg-card border border-stroke rounded-2xl p-1 flex gap-1">
           <button

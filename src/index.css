@@ -71,6 +71,18 @@
   background-size: 320px 320px;
 }
 
+/* Hides the scrollbar on horizontally-scrollable chip rows (trending
+   hashtags, etc.) while keeping the element natively scrollable/swipeable
+   — a visible scrollbar on a short chip strip reads as a layout glitch
+   on mobile rather than an intentional affordance. */
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 
 @layer base {
   body {

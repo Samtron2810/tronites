@@ -5,6 +5,7 @@ import MainLayout from "../layouts/MainLayout";
 import CreatePost from "../components/CreatePost";
 import PostCard from "../components/PostCard";
 import PostSkeleton from "../components/PostSkeleton";
+import TrendingHashtagsWidget from "../components/TrendingHashtagsWidget";
 import api from "../services/api";
 import { useSocket } from "../context/useSocket";
 import { HiOutlineSparkles } from "react-icons/hi2";
@@ -195,6 +196,8 @@ const Home = () => {
     <MainLayout>
       <div className="space-y-4">
         <CreatePost fetchPosts={() => fetchPosts("following", null, true)} />
+
+        <TrendingHashtagsWidget />
 
         {/* Underline tab switcher — deliberately not the filled-pill
             style Explore uses, so Home reads as its own surface. */}
