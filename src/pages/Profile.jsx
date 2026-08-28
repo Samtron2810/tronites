@@ -496,10 +496,16 @@ const Profile = () => {
           <PostCard
             key={post._id}
             postId={post._id}
+            // For a quote item, post.user is the quoter (this profile
+            // owner). For a plain repost, post.user is the ORIGINAL
+            // author (not this profile owner) — falling back to
+            // profile.* would mislabel the card as authored by the
+            // profile owner instead of showing the true original author
+            // under the "Reposted" header.
             userId={post.user?._id || profile._id}
-            name={profile.name}
-            username={profile.username}
-            profilePic={profile.profilePic}
+            name={post.user?.name || profile.name}
+            username={post.user?.username || profile.username}
+            profilePic={post.user?.profilePic || profile.profilePic}
             time={new Date(post.createdAt).toLocaleString()}
             text={post.text}
             images={post.images}
@@ -510,6 +516,12 @@ const Profile = () => {
             isLiked={post.isLiked}
             isBookmarked={post.isBookmarked}
             isReposted={post.isReposted}
+            // Only set on plain reposts (never on authored posts or
+            // quotes — see userController's getUserProfile), so this
+            // naturally stays undefined for the owner's own content.
+            repostedBy={post.repostedBy}
+            isQuotePost={post.isQuotePost}
+            quoteOf={post.quoteOf}
             edited={post.edited}
             privacy={post.privacy}
             editedAt={post.editedAt}
