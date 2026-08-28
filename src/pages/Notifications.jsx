@@ -22,6 +22,39 @@ const typeConfig = {
   moderator_warning: { icon: FaExclamationTriangle, color: "text-amber-500", label: "" },
 };
 
+// Builds the "Ada, Bob and 12 others liked your post" line from a
+// grouped row's actors[]/othersCount — mirrors how Instagram/Twitter
+// phrase collapsed activity. Falls back gracefully for the single-actor
+// case so it reads identically to the old ungrouped copy.
+const actorsLine = (row, label) => {
+  const names = row.actors.map((a) => a?.name || "Someone");
+  const totalOtherActors = row.othersCount;
+
+  if (names.length === 0) return <span className="text-ink-sub">{label}</span>;
+
+  if (names.length === 1 && totalOtherActors === 0) {
+    return <span className="text-ink-sub">{label}</span>;
+  }
+
+  const displayNames =
+    names.length === 1
+      ? names[0]
+      : `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
+
+  const suffix =
+    totalOtherActors > 0
+      ? ` and ${totalOtherActors} other${totalOtherActors === 1 ? "" : "s"}`
+      : "";
+
+  return (
+    <>
+      <span className="font-semibold">{displayNames}</span>
+      {suffix && <span className="font-semibold">{suffix}</span>}{" "}
+      <span className="text-ink-sub">{label}</span>
+    </>
+  );
+};
+
 const Notifications = () => {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -60,9 +93,28 @@ const Notifications = () => {
 
   useEffect(() => {
     if (!socket) return;
+    // The socket delivers one raw Notification doc per event (server-side
+    // emitToUser call sites aren't grouped — grouping only happens on the
+    // GET /notifications read path). Wrap it into the same row shape the
+    // grouped list renders, as a singleton group, so it displays
+    // correctly when live-prepended rather than needing a second render
+    // branch for "raw" vs "grouped" items.
     const handle = async (newNotif) => {
+      const row = {
+        _id: newNotif._id,
+        type: newNotif.type,
+        post: newNotif.post,
+        comment: newNotif.comment,
+        message: newNotif.message,
+        read: true,
+        createdAt: newNotif.createdAt,
+        actors: newNotif.sender ? [newNotif.sender] : [],
+        othersCount: 0,
+        groupSize: 1,
+        memberIds: [newNotif._id],
+      };
       setNotifications((prev) =>
-        prev.some((n) => n._id === newNotif._id) ? prev : [{ ...newNotif, read: true }, ...prev]
+        prev.some((n) => n._id === row._id) ? prev : [row, ...prev]
       );
       try { await api.put("/notifications/mark-read"); } catch (e) { console.error(e); }
     };
@@ -91,37 +143,54 @@ const Notifications = () => {
         )}
 
         <div className="divide-y divide-stroke">
-          {notifications.map((n) => {
-            const cfg = typeConfig[n.type] || { icon: FaBell, color: "text-ink-muted", label: "" };
+          {notifications.map((row) => {
+            const cfg = typeConfig[row.type] || { icon: FaBell, color: "text-ink-muted", label: "" };
             const Icon = cfg.icon;
+            const primaryActor = row.actors[0];
+            const profileTarget = row.actors.length === 1 ? primaryActor?._id : null;
             return (
               <div
-                key={n._id}
+                key={row._id}
                 className={`flex items-center gap-3 px-5 py-4 transition ${
-                  n.read
+                  row.read
                     ? ""
-                    : n.type === "moderator_warning"
+                    : row.type === "moderator_warning"
                       ? "bg-amber-50"
                       : "bg-primary-50"
                 }`}
               >
-                {n.type === "moderator_warning" ? (
+                {row.type === "moderator_warning" ? (
                   // Phase 4 — no sender identity: a shield avatar instead
                   // of the issuing moderator's profile pic/link, so the
                   // warned user learns the reason but not who sent it.
                   <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center ring-2 ring-amber-200 shrink-0">
                     <FaShieldAlt className="text-amber-600" size={16} />
                   </div>
+                ) : row.actors.length > 1 ? (
+                  // Grouped row — stacked avatars for the actors shown,
+                  // no single profile link (there's no one destination
+                  // that makes sense for "3 people liked this").
+                  <div className="flex -space-x-3 shrink-0">
+                    {row.actors.map((actor, i) => (
+                      <img
+                        key={actor?._id || i}
+                        src={resizedImageUrl(actor?.profilePic, IMAGE_SIZES.avatarSmall) || defaultAvatar}
+                        alt={actor?.name || "User"}
+                        className="w-9 h-9 rounded-full object-cover ring-2 ring-card"
+                        style={{ zIndex: row.actors.length - i }}
+                      />
+                    ))}
+                  </div>
                 ) : (
-                  <Link to={`/profile/${n.sender?._id}`} className="shrink-0">
+                  <Link to={`/profile/${profileTarget}`} className="shrink-0">
                     <img
-                      src={resizedImageUrl(n.sender?.profilePic, IMAGE_SIZES.avatarSmall) || defaultAvatar}
-                      alt={n.sender?.name || "User"}
+                      src={resizedImageUrl(primaryActor?.profilePic, IMAGE_SIZES.avatarSmall) || defaultAvatar}
+                      alt={primaryActor?.name || "User"}
                       className="w-10 h-10 rounded-full object-cover ring-2 ring-primary-100"
                     />
                   </Link>
                 )}
-                {n.type === "moderator_warning" ? (
+                {row.type === "moderator_warning" ? (
                   <div className="flex-1 min-w-0">
                     <p className="text-base text-ink">
                       <span className="font-semibold">Moderation team</span>{" "}
@@ -129,31 +198,37 @@ const Notifications = () => {
                         sent you a formal warning
                       </span>
                     </p>
-                    {n.message && (
+                    {row.message && (
                       <p className="text-base text-ink-sub mt-1">
-                        "{n.message}"
+                        "{row.message}"
                       </p>
                     )}
                     <p className="text-sm text-ink-muted mt-0.5">
-                      {new Date(n.createdAt).toLocaleString()}
+                      {new Date(row.createdAt).toLocaleString()}
                     </p>
                   </div>
                 ) : (
                   <div className="flex-1 min-w-0">
                     <p className="text-base text-ink">
-                      <Link
-                        to={`/profile/${n.sender?._id}`}
-                        className="font-semibold hover:text-primary-600 transition"
-                      >
-                        {n.sender?.name || "Someone"}
-                      </Link>
-                      {n.sender?.username && (
-                        <span className="text-ink-muted text-sm"> @{n.sender.username}</span>
-                      )}{" "}
-                      <span className="text-ink-sub">{cfg.label}</span>
+                      {row.actors.length === 1 ? (
+                        <>
+                          <Link
+                            to={`/profile/${profileTarget}`}
+                            className="font-semibold hover:text-primary-600 transition"
+                          >
+                            {primaryActor?.name || "Someone"}
+                          </Link>
+                          {primaryActor?.username && (
+                            <span className="text-ink-muted text-sm"> @{primaryActor.username}</span>
+                          )}{" "}
+                          <span className="text-ink-sub">{cfg.label}</span>
+                        </>
+                      ) : (
+                        actorsLine(row, cfg.label)
+                      )}
                     </p>
                     <p className="text-sm text-ink-muted mt-0.5">
-                      {new Date(n.createdAt).toLocaleString()}
+                      {new Date(row.createdAt).toLocaleString()}
                     </p>
                   </div>
                 )}
