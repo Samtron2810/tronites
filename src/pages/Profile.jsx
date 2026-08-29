@@ -522,6 +522,8 @@ const Profile = () => {
             isLiked={post.isLiked}
             isBookmarked={post.isBookmarked}
             isReposted={post.isReposted}
+            reactionSummary={post.reactionSummary}
+            myReaction={post.myReaction}
             // Only set on plain reposts (never on authored posts or
             // quotes — see userController's getUserProfile), so this
             // naturally stays undefined for the owner's own content.

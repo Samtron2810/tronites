@@ -520,6 +520,54 @@ const Chat = () => {
     setImagePreviews((prev) => prev.filter((_, i) => i !== index));
   };
 
+  // Double-tap / reaction-bar select on a message bubble. Same set/
+  // switch/clear semantics as PostCard's handleReact — optimistic
+  // update, reconciled with the server response.
+  const handleReactMessage = async (messageId, emoji) => {
+    const target = messages.find((m) => m._id === messageId);
+    const prevMine = target?.myReaction || null;
+    const prevSummary = target?.reactionSummary || {};
+    const nextMine = prevMine === emoji ? null : emoji;
+
+    const optimisticSummary = { ...prevSummary };
+    if (prevMine) {
+      optimisticSummary[prevMine] = Math.max(0, (optimisticSummary[prevMine] || 1) - 1);
+    }
+    if (nextMine) {
+      optimisticSummary[nextMine] = (optimisticSummary[nextMine] || 0) + 1;
+    }
+    setMessages((prev) =>
+      prev.map((m) =>
+        m._id === messageId
+          ? { ...m, myReaction: nextMine, reactionSummary: optimisticSummary }
+          : m,
+      ),
+    );
+
+    try {
+      const res = await api.put(`/messages/${messageId}/react`, {
+        emoji: nextMine,
+      });
+      setMessages((prev) =>
+        prev.map((m) =>
+          m._id === messageId
+            ? { ...m, myReaction: res.data.myReaction, reactionSummary: res.data.summary }
+            : m,
+        ),
+      );
+    } catch (e) {
+      console.error(e);
+      setMessages((prev) =>
+        prev.map((m) =>
+          m._id === messageId
+            ? { ...m, myReaction: prevMine, reactionSummary: prevSummary }
+            : m,
+        ),
+      );
+      toast.error("Couldn't update reaction. Try again.");
+    }
+  };
+
   const handleDeleteMessage = (messageId) => {
     if (
       pendingDeletesRef.current[messageId] ||
@@ -715,8 +763,28 @@ const Chat = () => {
     };
     const handleDeleted = ({ messageId }) =>
       setMessages((prev) => prev.filter((m) => m._id !== messageId));
+    const handleReactionUpdate = ({ messageId, summary, emoji, userId: fromUserId }) => {
+      setMessages((prev) =>
+        prev.map((m) =>
+          m._id === messageId
+            ? {
+                ...m,
+                reactionSummary: summary,
+                // This event only ever comes from the OTHER participant
+                // (see messageController.reactToMessage's emitToUser
+                // target) — this viewer's own reaction is already set
+                // optimistically by handleMessageReact below, so never
+                // overwrite myReaction from here.
+                _lastReactionFrom: fromUserId,
+                _lastReactionEmoji: emoji,
+              }
+            : m,
+        ),
+      );
+    };
     socket.on("receiveMessage", handleReceive);
     socket.on("messageDeleted", handleDeleted);
+    socket.on("messageReactionUpdate", handleReactionUpdate);
     const handleRequestAccepted = (data) => {
       // If we're currently viewing the thread that just got accepted,
       // refresh the gating state so the composer unlocks immediately.
@@ -749,6 +817,7 @@ const Chat = () => {
     return () => {
       socket.off("receiveMessage", handleReceive);
       socket.off("messageDeleted", handleDeleted);
+      socket.off("messageReactionUpdate", handleReactionUpdate);
       socket.off("messagesRead");
       socket.off("messageRequestAccepted", handleRequestAccepted);
       if (selectedChat?.conversationId)
@@ -982,6 +1051,7 @@ const Chat = () => {
           handleRemoveVideo={handleRemoveVideo}
           handleDeleteMessage={handleDeleteMessage}
           handleUndoDelete={handleUndoDelete}
+          handleReactMessage={handleReactMessage}
           pendingDeletes={pendingDeletes}
           deletingIds={deletingIds}
           messageText={messageText}

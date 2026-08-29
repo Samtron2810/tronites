@@ -247,6 +247,8 @@ const Home = () => {
               isLiked={post.isLiked}
               isBookmarked={post.isBookmarked}
               isReposted={post.isReposted}
+              reactionSummary={post.reactionSummary}
+              myReaction={post.myReaction}
               repostedBy={post.repostedBy}
               isQuotePost={post.isQuotePost}
               quoteOf={post.quoteOf}

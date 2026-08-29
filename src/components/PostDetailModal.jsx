@@ -24,6 +24,8 @@ import LazyImage from "./LazyImage";
 import TextWithLinks from "./TextWithLinks";
 import CommentsPanel from "./CommentBox";
 import QuotedPostPreview from "./QuotedPostPreview";
+import ReactionPicker from "./ReactionPicker";
+import ReactionSummaryBar from "./ReactionSummaryBar";
 import { resizedImageUrl, IMAGE_SIZES } from "../utils/cloudinaryImage";
 
 // Stacked-only layout at every breakpoint (confirmed — no desktop
@@ -78,6 +80,12 @@ const PostDetailModal = ({
   bookmarked,
   isBookmarking,
   onBookmark,
+  // Reactions — same set/switch/clear shape as PostCard's own
+  // handleReact, just forwarded so this modal never owns a second copy
+  // of the reaction state.
+  reactionSummary,
+  myReaction,
+  onReact,
   // Repost — same on/off toggle shape as PostCard's action bar.
   // Reposting from here reposts whatever THIS modal is showing (the
   // quote itself if a quote is open, or the original if the original
@@ -114,6 +122,34 @@ const PostDetailModal = ({
   const touchStartX = useRef(null);
   const menuRef = useRef(null);
   const triggerRef = useRef(null);
+  const [reactionPickerOpen, setReactionPickerOpen] = useState(false);
+  const longPressTimer = useRef(null);
+  const longPressFired = useRef(false);
+  const hoverIntentTimer = useRef(null);
+
+  const handleLikeTouchStart = () => {
+    longPressFired.current = false;
+    longPressTimer.current = setTimeout(() => {
+      longPressFired.current = true;
+      setReactionPickerOpen(true);
+    }, 400);
+  };
+  const handleLikeTouchEnd = () => clearTimeout(longPressTimer.current);
+  const handleLikeClick = () => {
+    if (longPressFired.current) {
+      longPressFired.current = false;
+      return;
+    }
+    onLike();
+  };
+  const handleLikeMouseEnter = () => {
+    hoverIntentTimer.current = setTimeout(() => setReactionPickerOpen(true), 500);
+  };
+  const handleLikeMouseLeave = () => clearTimeout(hoverIntentTimer.current);
+  const handleReactSelect = (emoji) => {
+    setReactionPickerOpen(false);
+    onReact?.(emoji);
+  };
 
   // Reset per-open state so a previously-zoomed/scrolled slide doesn't
   // carry over the next time this post's modal is reopened. Same
@@ -481,21 +517,44 @@ const PostDetailModal = ({
             driven by the same state via props so liking here and
             liking on the card stay in sync (no second like/bookmark
             state or API call duplicated in this component). */}
+        {onReact && (
+          <div className="px-5 pt-3">
+            <ReactionSummaryBar
+              summary={reactionSummary}
+              myReaction={myReaction}
+              onToggle={handleReactSelect}
+            />
+          </div>
+        )}
         <div className="flex items-center gap-5 px-5 py-4 border-t border-stroke">
-          <button
-            onClick={onLike}
-            disabled={isLiking}
-            className={`flex items-center gap-1.5 text-base transition ${
-              isLiking
-                ? "opacity-50 cursor-not-allowed"
-                : liked
-                  ? "text-red-500"
-                  : "text-ink-muted hover:text-red-500"
-            }`}
-          >
-            {liked ? <FaHeart size={15} /> : <FaRegHeart size={15} />}
-            <span>{likeCount}</span>
-          </button>
+          <div className="relative">
+            <button
+              onClick={onReact ? handleLikeClick : onLike}
+              onTouchStart={onReact ? handleLikeTouchStart : undefined}
+              onTouchEnd={onReact ? handleLikeTouchEnd : undefined}
+              onTouchCancel={onReact ? handleLikeTouchEnd : undefined}
+              onMouseEnter={onReact ? handleLikeMouseEnter : undefined}
+              onMouseLeave={onReact ? handleLikeMouseLeave : undefined}
+              disabled={isLiking}
+              className={`flex items-center gap-1.5 text-base transition ${
+                isLiking
+                  ? "opacity-50 cursor-not-allowed"
+                  : liked
+                    ? "text-red-500"
+                    : "text-ink-muted hover:text-red-500"
+              }`}
+            >
+              {liked ? <FaHeart size={15} /> : <FaRegHeart size={15} />}
+              <span>{likeCount}</span>
+            </button>
+            {onReact && (
+              <ReactionPicker
+                open={reactionPickerOpen}
+                onSelect={handleReactSelect}
+                onClose={() => setReactionPickerOpen(false)}
+              />
+            )}
+          </div>
 
           <div className="flex items-center gap-1.5 text-base text-ink-muted">
             <FaRegComment size={15} />

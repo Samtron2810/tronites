@@ -101,6 +101,8 @@ const Bookmarks = () => {
               isLiked={post.isLiked}
               isBookmarked={post.isBookmarked}
               isReposted={post.isReposted}
+              reactionSummary={post.reactionSummary}
+              myReaction={post.myReaction}
               isQuotePost={post.isQuotePost}
               quoteOf={post.quoteOf}
               edited={post.edited}

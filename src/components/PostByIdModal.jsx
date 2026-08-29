@@ -26,6 +26,7 @@ const PostByIdModal = ({ postId, isOpen, onClose }) => {
   const [isLiking, setIsLiking] = useState(false);
   const [isBookmarking, setIsBookmarking] = useState(false);
   const [isReposting, setIsReposting] = useState(false);
+  const [isReacting, setIsReacting] = useState(false);
   const [commentCount, setCommentCount] = useState(0);
 
   const fetchPost = useCallback(async (id) => {
@@ -122,6 +123,32 @@ const PostByIdModal = ({ postId, isOpen, onClose }) => {
     }
   };
 
+  // Same set/switch/clear semantics as PostCard's handleReact — kept
+  // here rather than lifted to a shared hook since PostByIdModal is
+  // already a deliberately standalone, self-contained state owner (see
+  // this file's top comment).
+  const handleReact = async (emoji) => {
+    if (isReacting || !post) return;
+    setIsReacting(true);
+    const prevMine = post.myReaction || null;
+    const nextMine = prevMine === emoji ? null : emoji;
+    try {
+      const res = await api.put(`/posts/react/${post._id}`, {
+        emoji: nextMine,
+      });
+      setPost((p) => ({
+        ...p,
+        reactionSummary: res.data.summary,
+        myReaction: res.data.myReaction,
+      }));
+    } catch (e) {
+      console.error(e);
+      toast.error("Couldn't update reaction. Try again.");
+    } finally {
+      setIsReacting(false);
+    }
+  };
+
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(post?.text || "");
@@ -207,6 +234,9 @@ const PostByIdModal = ({ postId, isOpen, onClose }) => {
           bookmarked={post.isBookmarked}
           isBookmarking={isBookmarking}
           onBookmark={handleBookmark}
+          reactionSummary={post.reactionSummary}
+          myReaction={post.myReaction}
+          onReact={handleReact}
           reposted={post.isReposted}
           repostCount={post.repostsCount}
           isReposting={isReposting}

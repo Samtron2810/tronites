@@ -30,6 +30,8 @@ import defaultAvatar from "../assets/defaultAvatar";
 import LazyImage from "./LazyImage";
 import PostDetailModal from "./PostDetailModal";
 import CommentsPanel from "./CommentBox";
+import ReactionPicker from "./ReactionPicker";
+import ReactionSummaryBar from "./ReactionSummaryBar";
 import { formatRemainingShort, cooldownRemainingMs } from "../utils/cooldown";
 import { resizedImageUrl, IMAGE_SIZES } from "../utils/cloudinaryImage";
 
@@ -56,6 +58,8 @@ const PostCard = ({
   isLiked,
   isBookmarked,
   isReposted,
+  reactionSummary,
+  myReaction,
   // Set only when this card is rendered because someone the viewer
   // follows reposted it (plain repost, not a quote) — { _id, name,
   // username } of the reposter. Drives the "🔁 X reposted" header.
@@ -93,6 +97,25 @@ const PostCard = ({
   const [repostCount, setRepostCount] = useState(reposts);
   const [isReposting, setIsReposting] = useState(false);
   const [showQuoteModal, setShowQuoteModal] = useState(false);
+  // 1.2 — emoji reactions. `myReactionState` is this viewer's own emoji
+  // (or null); `reactionSummaryState` is the grouped counts. Separate
+  // from `liked`/`likeCount` above — a like and a reaction are
+  // independent actions on the same post (mirrors Facebook: the heart
+  // is a real reaction inside the same set, not a distinct mechanic
+  // hidden behind it).
+  const [myReactionState, setMyReactionState] = useState(myReaction || null);
+  const [reactionSummaryState, setReactionSummaryState] = useState(
+    reactionSummary || {},
+  );
+  const [reactionPickerOpen, setReactionPickerOpen] = useState(false);
+  const [isReacting, setIsReacting] = useState(false);
+  // Briefly flags which emoji pill just changed (own action or live
+  // socket update) so ReactionSummaryBar can pop it — cleared after the
+  // CSS animation window.
+  const [justUpdatedEmoji, setJustUpdatedEmoji] = useState(null);
+  const longPressTimer = useRef(null);
+  const longPressFired = useRef(false);
+  const hoverIntentTimer = useRef(null);
   // Track the prop values last synced into state, so a real prop change
   // (parent refetch/pagination) resets local state without a useEffect.
   // Optimistic local mutations (from liking/commenting) aren't affected
@@ -103,6 +126,15 @@ const PostCard = ({
   const [syncedIsBookmarked, setSyncedIsBookmarked] = useState(isBookmarked);
   const [syncedIsReposted, setSyncedIsReposted] = useState(isReposted);
   const [syncedReposts, setSyncedReposts] = useState(reposts);
+  const [syncedMyReaction, setSyncedMyReaction] = useState(myReaction || null);
+  // Stores the RAW prop (not `|| {}`): comparing a missing/undefined prop
+  // against a normalized `{}` never converges, which caused an infinite
+  // render-phase update loop ("Too many re-renders") on surfaces whose API
+  // omits reactionSummary (e.g. the profile endpoint). Normalization to {}
+  // happens only when writing to the display state in the sync block below.
+  const [syncedReactionSummary, setSyncedReactionSummary] = useState(
+    reactionSummary,
+  );
   if (isLiked !== syncedIsLiked) {
     setSyncedIsLiked(isLiked);
     setLiked(isLiked);
@@ -126,6 +158,16 @@ const PostCard = ({
   if (reposts !== syncedReposts) {
     setSyncedReposts(reposts);
     setRepostCount(reposts);
+  }
+  if ((myReaction || null) !== syncedMyReaction) {
+    setSyncedMyReaction(myReaction || null);
+    setMyReactionState(myReaction || null);
+  }
+  if (reactionSummary !== syncedReactionSummary) {
+    // Sync the RAW prop so this comparison can become false (undefined ===
+    // undefined); normalize to {} only for the display state.
+    setSyncedReactionSummary(reactionSummary);
+    setReactionSummaryState(reactionSummary || {});
   }
   const [showComments, setShowComments] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -217,6 +259,77 @@ const PostCard = ({
     } finally {
       setIsLiking(false);
     }
+  };
+
+  // Sets/switches/clears this viewer's reaction. Same emoji tapped
+  // again clears it (handled server-side — see reactToPost) so the
+  // client just always sends the tapped emoji.
+  const handleReact = async (emoji) => {
+    if (isReacting) return;
+    setReactionPickerOpen(false);
+    setIsReacting(true);
+    // Optimistic update — flip immediately, reconcile with the server
+    // response (and roll back on failure).
+    const prevSummary = reactionSummaryState;
+    const prevMine = myReactionState;
+    const optimisticSummary = { ...prevSummary };
+    if (prevMine) {
+      optimisticSummary[prevMine] = Math.max(0, (optimisticSummary[prevMine] || 1) - 1);
+    }
+    const nextMine = prevMine === emoji ? null : emoji;
+    if (nextMine) {
+      optimisticSummary[nextMine] = (optimisticSummary[nextMine] || 0) + 1;
+    }
+    setMyReactionState(nextMine);
+    setReactionSummaryState(optimisticSummary);
+    setJustUpdatedEmoji(emoji);
+
+    try {
+      const res = await api.put(`/posts/react/${postId}`, {
+        emoji: prevMine === emoji ? null : emoji,
+      });
+      setMyReactionState(res.data.myReaction);
+      setReactionSummaryState(res.data.summary);
+    } catch (e) {
+      console.error(e);
+      setMyReactionState(prevMine);
+      setReactionSummaryState(prevSummary);
+      toast.error("Couldn't update reaction. Try again.");
+    } finally {
+      setIsReacting(false);
+      setTimeout(() => setJustUpdatedEmoji(null), 300);
+    }
+  };
+
+  // Long-press (touch) opens the reaction picker instead of firing the
+  // like tap; a quick tap still likes as before. Mouse users get the
+  // same picker via onMouseEnter's hover-intent delay below, so desktop
+  // never needs the press-and-hold gesture at all.
+  const handleLikeTouchStart = () => {
+    longPressFired.current = false;
+    longPressTimer.current = setTimeout(() => {
+      longPressFired.current = true;
+      setReactionPickerOpen(true);
+    }, 400);
+  };
+  const handleLikeTouchEnd = () => {
+    clearTimeout(longPressTimer.current);
+  };
+  const handleLikeClick = () => {
+    if (longPressFired.current) {
+      longPressFired.current = false;
+      return;
+    }
+    handleLike();
+  };
+
+  const handleLikeMouseEnter = () => {
+    hoverIntentTimer.current = setTimeout(() => {
+      setReactionPickerOpen(true);
+    }, 500);
+  };
+  const handleLikeMouseLeave = () => {
+    clearTimeout(hoverIntentTimer.current);
   };
 
   const handleBookmark = async () => {
@@ -399,6 +512,16 @@ const PostCard = ({
         setLiked(data.liked);
       }
     };
+    const handleReactionUpdate = (data) => {
+      if (data.postId !== postId) return;
+      setReactionSummaryState(data.summary);
+      if (data.userId === currentUser?._id?.toString()) {
+        setMyReactionState(data.emoji);
+      } else if (data.emoji) {
+        setJustUpdatedEmoji(data.emoji);
+        setTimeout(() => setJustUpdatedEmoji(null), 300);
+      }
+    };
     const handleRepostUpdate = (data) => {
       if (data.postId !== postId) return;
       setRepostCount(data.repostsCount);
@@ -422,6 +545,7 @@ const PostCard = ({
       setPostEditedAt(data.editedAt);
     };
     socket.on("likeUpdate", handleLikeUpdate);
+    socket.on("reactionUpdate", handleReactionUpdate);
     socket.on("repostUpdate", handleRepostUpdate);
     socket.on("newComment", handleCommentCountEvent);
     socket.on("commentDeleted", handleCommentCountEvent);
@@ -429,6 +553,7 @@ const PostCard = ({
     return () => {
       socket.emit("leavePost", postId);
       socket.off("likeUpdate", handleLikeUpdate);
+      socket.off("reactionUpdate", handleReactionUpdate);
       socket.off("repostUpdate", handleRepostUpdate);
       socket.off("newComment", handleCommentCountEvent);
       socket.off("commentDeleted", handleCommentCountEvent);
@@ -542,6 +667,9 @@ const PostCard = ({
         bookmarked={bookmarked}
         isBookmarking={isBookmarking}
         onBookmark={handleBookmark}
+        reactionSummary={reactionSummaryState}
+        myReaction={myReactionState}
+        onReact={handleReact}
         reposted={reposted}
         repostCount={repostCount}
         isReposting={isReposting}
@@ -910,22 +1038,45 @@ const PostCard = ({
           </div>
         )}
 
+        {/* Reaction summary — sits above the action bar, same info
+            tier as the like count today. Hidden entirely when no one
+            has reacted yet (no empty state clutter). */}
+        <ReactionSummaryBar
+          summary={reactionSummaryState}
+          myReaction={myReactionState}
+          onToggle={handleReact}
+          justUpdated={justUpdatedEmoji}
+        />
+
         {/* Actions */}
         <div className="flex items-center gap-5 mt-4 pt-4 border-t border-stroke">
-          <button
-            onClick={handleLike}
-            disabled={isLiking}
-            className={`flex items-center gap-1.5 text-base transition ${
-              isLiking
-                ? "opacity-50 cursor-not-allowed"
-                : liked
-                  ? "text-red-500"
-                  : "text-ink-muted hover:text-red-500"
-            }`}
-          >
-            {liked ? <FaHeart size={15} /> : <FaRegHeart size={15} />}
-            <span>{likeCount}</span>
-          </button>
+          <div className="relative">
+            <button
+              onClick={handleLikeClick}
+              onTouchStart={handleLikeTouchStart}
+              onTouchEnd={handleLikeTouchEnd}
+              onTouchCancel={handleLikeTouchEnd}
+              onMouseEnter={handleLikeMouseEnter}
+              onMouseLeave={handleLikeMouseLeave}
+              disabled={isLiking}
+              className={`flex items-center gap-1.5 text-base transition ${
+                isLiking
+                  ? "opacity-50 cursor-not-allowed"
+                  : liked
+                    ? "text-red-500"
+                    : "text-ink-muted hover:text-red-500"
+              }`}
+            >
+              {liked ? <FaHeart size={15} /> : <FaRegHeart size={15} />}
+              <span>{likeCount}</span>
+            </button>
+            <ReactionPicker
+              open={reactionPickerOpen}
+              onSelect={handleReact}
+              onClose={() => setReactionPickerOpen(false)}
+            />
+          </div>
+
 
           <button
             onClick={() => setShowComments(!showComments)}

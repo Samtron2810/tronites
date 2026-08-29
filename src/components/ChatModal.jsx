@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import {
   FiArrowLeft,
   FiImage,
@@ -9,6 +9,8 @@ import ChatVideoMessage from "./ChatVideoMessage";
 import ReportModal from "./ReportModal";
 import MessageOptionsMenu from "./MessageOptionsMenu";
 import TextWithLinks from "./TextWithLinks";
+import ReactionPicker from "./ReactionPicker";
+import ReactionSummaryBar from "./ReactionSummaryBar";
 import { FaCheckDouble } from "react-icons/fa";
 import defaultAvatar from "../assets/defaultAvatar";
 import { resizedImageUrl, IMAGE_SIZES } from "../utils/cloudinaryImage";
@@ -33,6 +35,7 @@ const ChatModal = ({
   handleRemoveVideo,
   handleDeleteMessage,
   handleUndoDelete,
+  handleReactMessage,
   pendingDeletes,
   deletingIds,
   messageText,
@@ -64,7 +67,27 @@ const ChatModal = ({
   // Message currently being reported via ReportModal (null when closed).
   // Only other users' bubbles expose the flag trigger.
   const [reportingMessage, setReportingMessage] = useState(null);
+  // Which message's reaction picker is open (null when none) — only one
+  // at a time, same convention as the options menu.
+  const [reactionPickerFor, setReactionPickerFor] = useState(null);
+  const lastTapRef = useRef({ id: null, time: 0 });
   const hasPendingDeletes = Object.keys(pendingDeletes).length > 0;
+
+  // Double-tap detection for touch devices — two taps within 300ms on
+  // the same bubble opens the picker instead of just toggling a
+  // default emoji, so the person still picks which reaction to send
+  // (a bare double-tap-to-heart pattern would surprise anyone reaching
+  // for a different emoji).
+  const handleBubbleTap = (messageId) => {
+    const now = Date.now();
+    const last = lastTapRef.current;
+    if (last.id === messageId && now - last.time < 300) {
+      setReactionPickerFor(messageId);
+      lastTapRef.current = { id: null, time: 0 };
+    } else {
+      lastTapRef.current = { id: messageId, time: now };
+    }
+  };
 
   useEffect(() => {
     if (!hasPendingDeletes) return;
@@ -259,23 +282,51 @@ const ChatModal = ({
                         );
                       })()}
                       {message.text && (
-                        <div
-                          className={`px-4 py-2.5 rounded-2xl text-base whitespace-pre-wrap ${
-                            isMine
-                              ? "bg-primary-600 text-white self-end rounded-br-sm"
-                              : "bg-card text-ink self-start rounded-bl-sm border border-stroke"
-                          }`}
-                        >
-                          <TextWithLinks
-                            text={message.text}
-                            linkClassName={
+                        <div className="relative">
+                          <div
+                            onClick={() => handleBubbleTap(message._id)}
+                            onDoubleClick={(e) => {
+                              e.preventDefault();
+                              setReactionPickerFor(message._id);
+                            }}
+                            className={`px-4 py-2.5 rounded-2xl text-base whitespace-pre-wrap cursor-pointer select-none ${
                               isMine
-                                ? "underline text-white/90 hover:text-white font-medium"
-                                : "text-primary-600 font-medium hover:underline"
-                            }
+                                ? "bg-primary-600 text-white self-end rounded-br-sm"
+                                : "bg-card text-ink self-start rounded-bl-sm border border-stroke"
+                            }`}
+                          >
+                            <TextWithLinks
+                              text={message.text}
+                              linkClassName={
+                                isMine
+                                  ? "underline text-white/90 hover:text-white font-medium"
+                                  : "text-primary-600 font-medium hover:underline"
+                              }
+                            />
+                          </div>
+                          <ReactionPicker
+                            open={reactionPickerFor === message._id}
+                            align={isMine ? "right" : "left"}
+                            onSelect={(emoji) => {
+                              setReactionPickerFor(null);
+                              handleReactMessage(message._id, emoji);
+                            }}
+                            onClose={() => setReactionPickerFor(null)}
                           />
                         </div>
                       )}
+                      {message.reactionSummary &&
+                        Object.keys(message.reactionSummary).length > 0 && (
+                          <div className={isMine ? "self-end" : "self-start"}>
+                            <ReactionSummaryBar
+                              summary={message.reactionSummary}
+                              myReaction={message.myReaction}
+                              onToggle={(emoji) =>
+                                handleReactMessage(message._id, emoji)
+                              }
+                            />
+                          </div>
+                        )}
                       <div
                         className={`flex items-center gap-1.5 ${isMine ? "justify-end" : "justify-start"}`}
                       >
