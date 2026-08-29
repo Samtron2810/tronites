@@ -256,8 +256,9 @@ const Profile = () => {
         <div className="h-24 bg-linear-to-r from-primary-600 to-primary-400" />
 
         <div className="px-6 pb-6">
-          {/* Avatar row */}
-          <div className="flex items-end justify-between -mt-10 mb-4">
+          {/* Avatar row — stacks below the avatar under 430px so the
+              Follow/Message buttons never squeeze the profile pic. */}
+          <div className="flex flex-col items-start gap-3 -mt-10 mb-4 min-[430px]:flex-row min-[430px]:items-end min-[430px]:justify-between">
             <div className="relative">
               <img
                 src={
@@ -299,7 +300,7 @@ const Profile = () => {
             {isOwnProfile && (
               <Link
                 to="/settings"
-                className="mt-10 p-2 rounded-xl border border-stroke text-ink-muted hover:text-ink hover:bg-surface transition"
+                className="self-end p-2 rounded-xl border border-stroke text-ink-muted hover:text-ink hover:bg-surface transition min-[430px]:mt-10"
                 aria-label="Settings"
                 title="Settings"
               >
@@ -308,7 +309,7 @@ const Profile = () => {
             )}
 
             {!isOwnProfile && (
-              <div className="flex gap-2 mt-10 relative">
+              <div className="flex gap-2 relative min-[430px]:mt-10">
                 <button
                   onClick={handleFollow}
                   disabled={isFollowingLoading}
