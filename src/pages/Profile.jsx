@@ -260,7 +260,12 @@ const Profile = () => {
           <div className="flex items-end justify-between -mt-10 mb-4">
             <div className="relative">
               <img
-                src={resizedImageUrl(profile.profilePic, IMAGE_SIZES.avatarLarge) || defaultAvatar}
+                src={
+                  resizedImageUrl(
+                    profile.profilePic,
+                    IMAGE_SIZES.avatarLarge,
+                  ) || defaultAvatar
+                }
                 alt="profile"
                 className={`w-20 h-20 rounded-2xl object-cover ring-4 ring-white shadow-sm ${uploading ? "opacity-50" : ""}`}
               />
@@ -272,7 +277,7 @@ const Profile = () => {
               {/* only show this if not own profile */}
               {!isOwnProfile && (
                 <span
-                  className={`absolute bottom-1 right-1 block h-3 w-3 rounded-full border-2 border-white ${isOnline ? "bg-primary-400" : "bg-gray-300"}`}
+                  className={`absolute bottom-0 right-0 block h-4 w-4 rounded-full border-2 border-white ${isOnline ? "bg-primary-400" : "bg-gray-300"}`}
                   title={isOnline ? "Online" : "Offline"}
                 />
               )}
@@ -307,7 +312,7 @@ const Profile = () => {
                 <button
                   onClick={handleFollow}
                   disabled={isFollowingLoading}
-                  className={`px-4 py-2 rounded-xl text-base font-semibold transition disabled:opacity-50 ${
+                  className={`px-2 py-2 rounded-xl text-base font-semibold transition disabled:opacity-50 ${
                     isFollowing
                       ? "bg-surface border border-stroke text-ink-sub hover:border-red-300 hover:text-red-500"
                       : "bg-primary-600 text-white hover:bg-primary-800"
@@ -329,7 +334,7 @@ const Profile = () => {
                         ? "You can't message this user"
                         : undefined
                   }
-                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-base font-semibold border border-stroke text-ink-sub hover:border-primary-400 hover:text-primary-600 transition disabled:opacity-40 disabled:hover:border-stroke disabled:hover:text-ink-sub disabled:cursor-not-allowed"
+                  className="flex items-center gap-1.5 px-2 py-2 rounded-xl text-base font-semibold border border-stroke text-ink-sub hover:border-primary-400 hover:text-primary-600 transition disabled:opacity-40 disabled:hover:border-stroke disabled:hover:text-ink-sub disabled:cursor-not-allowed"
                 >
                   <FiMessageCircle size={14} />
                   Message

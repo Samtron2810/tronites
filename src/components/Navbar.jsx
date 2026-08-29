@@ -21,7 +21,7 @@ const NavLink = ({ to, icon: Icon, label, badge }) => {
           : "text-ink-sub hover:text-ink hover:bg-primary-50"
       }`}
     >
-      <Icon className="text-lg" />
+      <Icon className="text-2xl" />
       <span className="hidden lg:inline">{label}</span>
       {badge > 0 && (
         <span className="absolute -top-1 -right-1 flex items-center justify-center min-w-4 h-4 rounded-full bg-primary-600 text-white text-sm font-bold px-1">
@@ -59,13 +59,13 @@ const Navbar = () => {
   if (!user) return null;
 
   return (
-    <nav className="sticky top-0 z-50 bg-card/90 backdrop-blur-md border-b border-stroke">
-      <div className="mx-auto flex max-w-5xl items-center justify-between px-4 sm:px-6 h-14">
+    <nav className="sticky top-0 z-50 bg-card/90 backdrop-blur-md border-b border-stroke py-2">
+      <div className="mx-auto flex max-w-5xl items-center justify-between  px-4 sm:px-6 h-14">
         <Link to="/" className="flex items-center gap-2 shrink-0">
           <img
             src={logo}
             alt="Tronites"
-            className="h-8 w-auto object-contain"
+            className="h-10 w-auto object-contain"
           />
           <span className="font-bold text-ink text-xl hidden sm:inline">
             Tron<span className="text-primary-600">ites</span>

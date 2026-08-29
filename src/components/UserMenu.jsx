@@ -139,11 +139,14 @@ const UserMenu = ({ user, onLogoutClick }) => {
       <button
         ref={triggerRef}
         onClick={() => setIsOpen(!isOpen)}
-        className="ml-2 flex items-center justify-center w-9 h-9 rounded-full border-2 border-primary-600 text-ink-sub hover:text-ink hover:bg-primary-50 transition-all duration-200"
+        className="ml-2 flex items-center justify-center w-12 h-12 rounded-full border-2 border-primary-600 text-ink-sub hover:text-ink hover:bg-primary-50 transition-all duration-200"
         title="User menu"
       >
         <img
-          src={resizedImageUrl(user.profilePic, IMAGE_SIZES.avatarTiny) || defaultAvatar}
+          src={
+            resizedImageUrl(user.profilePic, IMAGE_SIZES.avatarTiny) ||
+            defaultAvatar
+          }
           alt={user.name}
           className="w-full h-full rounded-full object-cover"
         />

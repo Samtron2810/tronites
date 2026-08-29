@@ -14,7 +14,9 @@ const NotificationBell = () => {
       try {
         const res = await api.get("/notifications/unread-count");
         setCount(res.data.count);
-      } catch (e) { console.error(e); }
+      } catch (e) {
+        console.error(e);
+      }
     };
     fetchCount();
     if (!socket) return;
@@ -25,10 +27,13 @@ const NotificationBell = () => {
 
   return (
     <button
-      onClick={() => { setCount(0); navigate("/notifications"); }}
+      onClick={() => {
+        setCount(0);
+        navigate("/notifications");
+      }}
       className="relative flex items-center justify-center px-3 py-2 rounded-lg text-ink-sub hover:text-ink hover:bg-primary-50 transition"
     >
-      <FiBell size={17} />
+      <FiBell size={24} />
       {count > 0 && (
         <span className="absolute -top-1 -right-1 min-w-4 h-4 rounded-full bg-primary-600 text-white text-sm font-bold flex items-center justify-center px-1">
           {count > 9 ? "9+" : count}
