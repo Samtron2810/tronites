@@ -1,24 +1,23 @@
 import { Fragment, useEffect, useRef, useState } from "react";
-import {
-  FiArrowLeft,
-  FiImage,
-  FiVideo,
-  FiCheck,
-} from "react-icons/fi";
-import ChatVideoMessage from "./ChatVideoMessage";
+import { FiArrowLeft, FiImage, FiVideo, FiCheck } from "react-icons/fi";
+import ChatMediaViewer from "./ChatMediaViewer";
 import ReportModal from "./ReportModal";
 import MessageOptionsMenu from "./MessageOptionsMenu";
 import TextWithLinks from "./TextWithLinks";
 import ReactionPicker from "./ReactionPicker";
 import ReactionSummaryBar from "./ReactionSummaryBar";
-import { FaCheckDouble, FaChevronDown } from "react-icons/fa";
+import { FaCheckDouble, FaChevronDown, FaPlay } from "react-icons/fa";
 import defaultAvatar from "../assets/defaultAvatar";
 import { resizedImageUrl, IMAGE_SIZES } from "../utils/cloudinaryImage";
-import {
-  dayKey,
-  formatDayLabel,
-  formatMessageTime,
-} from "../utils/chatDate";
+import { dayKey, formatDayLabel, formatMessageTime } from "../utils/chatDate";
+
+// 63 -> "1:03", 7 -> "0:07" — used only for the static video-thumbnail's
+// duration badge; the full-screen viewer's native controls show timing
+// during actual playback.
+const formatChatDuration = (seconds) => {
+  const total = Math.max(0, Math.round(seconds));
+  return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, "0")}`;
+};
 
 const ChatModal = ({
   isOpen,
@@ -87,7 +86,11 @@ const ChatModal = ({
   // currently shown — the picker renders 10px above THIS point (see
   // ReactionPicker's anchorPoint prop), not flush above the bubble.
   const [reactionAnchorPoint, setReactionAnchorPoint] = useState(null);
-  const lastTapRef = useRef({ id: null, time: 0 });
+  // Full-screen media viewer (ChatMediaViewer) — null when closed. Video
+  // messages open it as { type: "video", video }, image messages as
+  // { type: "image", images, index }, where index is the tapped grid cell
+  // so the carousel starts on the exact image that was clicked.
+  const [mediaViewer, setMediaViewer] = useState(null);
   // Long-press state: timer handle for the pending press, and a flag that
   // tells the following click/tap handler to no-op so a long-press
   // doesn't also register as a single tap once the finger/mouse lifts.
@@ -147,28 +150,17 @@ const ChatModal = ({
 
   const hasPendingDeletes = Object.keys(pendingDeletes).length > 0;
 
-  // Double-tap detection for touch devices — two taps within 300ms on
-  // the same bubble opens the picker instead of just toggling a
-  // default emoji, so the person still picks which reaction to send
-  // (a bare double-tap-to-heart pattern would surprise anyone reaching
-  // for a different emoji).
-  const handleBubbleTap = (messageId, e) => {
-    // Swallow the tap that follows a long-press firing (touchend/click
-    // still land after the timer resolves) so it doesn't also count as
-    // tap #1 of a fresh double-tap sequence.
+  // Media bubbles (video thumbnails, image grid cells) open the full-screen
+  // viewer on click — except when the click is the trailing event of a
+  // fired long-press, which already opened the reaction picker and must
+  // not ALSO open the viewer. Reactions on every bubble type are long-press
+  // only; double-click/double-tap no longer triggers anything.
+  const openMediaViewer = (payload) => {
     if (longPressFiredRef.current) {
       longPressFiredRef.current = false;
       return;
     }
-    const now = Date.now();
-    const last = lastTapRef.current;
-    if (last.id === messageId && now - last.time < 300) {
-      if (e) setReactionAnchorPoint({ x: e.clientX, y: e.clientY });
-      setReactionPickerFor(messageId);
-      lastTapRef.current = { id: null, time: 0 };
-    } else {
-      lastTapRef.current = { id: messageId, time: now };
-    }
+    setMediaViewer(payload);
   };
 
   useEffect(() => {
@@ -204,7 +196,12 @@ const ChatModal = ({
           </button>
           <div className="relative shrink-0">
             <img
-              src={resizedImageUrl(activeUser?.profilePic, IMAGE_SIZES.avatarSmall) || defaultAvatar}
+              src={
+                resizedImageUrl(
+                  activeUser?.profilePic,
+                  IMAGE_SIZES.avatarSmall,
+                ) || defaultAvatar
+              }
               alt={activeUser?.name}
               className="w-9 h-9 rounded-full object-cover ring-2 ring-primary-100"
             />
@@ -255,285 +252,329 @@ const ChatModal = ({
             onScroll={onMessagesScroll}
             className="flex-1 overflow-y-auto overflow-x-hidden min-w-0 px-4 py-4 space-y-3 app-bg"
           >
-          {isLoadingOlderMessages && (
-            <p className="text-center text-[11px] text-ink-muted py-1">
-              Loading older messages...
-            </p>
-          )}
-          {!threadLoading &&
-            !isLoadingOlderMessages &&
-            !messagesHasMore &&
-            messages.length > 0 && (
+            {isLoadingOlderMessages && (
               <p className="text-center text-[11px] text-ink-muted py-1">
-                Start of conversation
+                Loading older messages...
               </p>
             )}
-          {threadLoading && (
-            <div className="space-y-3 animate-pulse">
-              {[1, 2, 3].map((i) => (
-                <div
-                  key={i}
-                  className={`flex ${i % 2 === 0 ? "justify-end" : "justify-start"}`}
-                >
+            {!threadLoading &&
+              !isLoadingOlderMessages &&
+              !messagesHasMore &&
+              messages.length > 0 && (
+                <p className="text-center text-[11px] text-ink-muted py-1">
+                  Start of conversation
+                </p>
+              )}
+            {threadLoading && (
+              <div className="space-y-3 animate-pulse">
+                {[1, 2, 3].map((i) => (
                   <div
-                    className={`h-9 rounded-2xl ${i % 2 === 0 ? "bg-primary-200 w-40" : "bg-gray-200 w-52"}`}
-                  />
-                </div>
-              ))}
-            </div>
-          )}
-
-          {!threadLoading && messages.length === 0 && (
-            <div className="flex flex-col items-center justify-center h-full py-10 text-center">
-              <p className="text-3xl mb-2">👋</p>
-              <p className="text-base text-ink-muted">No messages yet. Say hi!</p>
-            </div>
-          )}
-
-          {messages.map((message, idx) => {
-            const isMine = message.sender._id === user._id;
-            // Date context: a centered chip above the first message and
-            // again whenever the local calendar day changes between
-            // consecutive messages, so time-only stamps stay unambiguous.
-            const curKey = dayKey(message.createdAt);
-            const prevKey = idx > 0 ? dayKey(messages[idx - 1].createdAt) : "";
-            const showDayDivider =
-              (idx === 0 && curKey !== "") ||
-              (curKey !== "" && prevKey !== "" && curKey !== prevKey);
-            const isPendingDelete = !!pendingDeletes[message._id];
-            const isDeleting = deletingIds.includes(message._id);
-            const showDeletedPlaceholder = isPendingDelete || isDeleting;
-            const remainingSecs = isPendingDelete
-              ? Math.max(
-                  0,
-                  Math.ceil((pendingDeletes[message._id] - now) / 1000),
-                )
-              : 0;
-            return (
-              <Fragment key={message._id}>
-                {showDayDivider && (
-                  <div className="flex justify-center py-1">
-                    <span className="text-[10px] font-medium text-ink-muted bg-surface border border-stroke rounded-full px-3 py-0.5">
-                      {formatDayLabel(message.createdAt)}
-                    </span>
-                  </div>
-                )}
-              <div
-                className={`flex ${isMine ? "justify-end" : "justify-start"}`}
-              >
-                <div
-                  className={`flex flex-col max-w-[75%] min-w-0 wrap-break-word gap-1`}
-                >
-                  {showDeletedPlaceholder ? (
+                    key={i}
+                    className={`flex ${i % 2 === 0 ? "justify-end" : "justify-start"}`}
+                  >
                     <div
-                      className={`px-4 py-2.5 rounded-2xl text-base border ${
-                        isMine
-                          ? "bg-surface text-ink-sub self-end rounded-br-sm border-stroke"
-                          : "bg-card text-ink-muted self-start rounded-bl-sm border-stroke"
-                      }`}
+                      className={`h-9 rounded-2xl ${i % 2 === 0 ? "bg-primary-200 w-40" : "bg-gray-200 w-52"}`}
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {!threadLoading && messages.length === 0 && (
+              <div className="flex flex-col items-center justify-center h-full py-10 text-center">
+                <p className="text-3xl mb-2">👋</p>
+                <p className="text-base text-ink-muted">
+                  No messages yet. Say hi!
+                </p>
+              </div>
+            )}
+
+            {messages.map((message, idx) => {
+              const isMine = message.sender._id === user._id;
+              // Date context: a centered chip above the first message and
+              // again whenever the local calendar day changes between
+              // consecutive messages, so time-only stamps stay unambiguous.
+              const curKey = dayKey(message.createdAt);
+              const prevKey =
+                idx > 0 ? dayKey(messages[idx - 1].createdAt) : "";
+              const showDayDivider =
+                (idx === 0 && curKey !== "") ||
+                (curKey !== "" && prevKey !== "" && curKey !== prevKey);
+              const isPendingDelete = !!pendingDeletes[message._id];
+              const isDeleting = deletingIds.includes(message._id);
+              const showDeletedPlaceholder = isPendingDelete || isDeleting;
+              const remainingSecs = isPendingDelete
+                ? Math.max(
+                    0,
+                    Math.ceil((pendingDeletes[message._id] - now) / 1000),
+                  )
+                : 0;
+              return (
+                <Fragment key={message._id}>
+                  {showDayDivider && (
+                    <div className="flex justify-center py-1">
+                      <span className="text-[10px] font-medium text-ink-muted bg-surface border border-stroke rounded-full px-3 py-0.5">
+                        {formatDayLabel(message.createdAt)}
+                      </span>
+                    </div>
+                  )}
+                  <div
+                    className={`flex ${isMine ? "justify-end" : "justify-start"}`}
+                  >
+                    <div
+                      className={`flex flex-col max-w-[75%] min-w-0 wrap-break-word gap-1`}
                     >
-                      {isDeleting ? (
-                        <span className="flex items-center gap-2">
-                          Deleting…
-                        </span>
+                      {showDeletedPlaceholder ? (
+                        <div
+                          className={`px-4 py-2.5 rounded-2xl text-base border ${
+                            isMine
+                              ? "bg-surface text-ink-sub self-end rounded-br-sm border-stroke"
+                              : "bg-card text-ink-muted self-start rounded-bl-sm border-stroke"
+                          }`}
+                        >
+                          {isDeleting ? (
+                            <span className="flex items-center gap-2">
+                              Deleting…
+                            </span>
+                          ) : (
+                            <span className="flex items-center gap-2">
+                              Message deleted ({remainingSecs}s)
+                              <button
+                                onClick={() => handleUndoDelete(message._id)}
+                                className="text-primary-600 hover:text-primary-800 font-semibold transition"
+                              >
+                                Undo
+                              </button>
+                            </span>
+                          )}
+                        </div>
                       ) : (
-                        <span className="flex items-center gap-2">
-                          Message deleted ({remainingSecs}s)
-                          <button
-                            onClick={() => handleUndoDelete(message._id)}
-                            className="text-primary-600 hover:text-primary-800 font-semibold transition"
+                        <>
+                          {message.video?.url && (
+                            <div className="relative">
+                              <div
+                                onClick={() =>
+                                  openMediaViewer({
+                                    type: "video",
+                                    video: message.video,
+                                  })
+                                }
+                                {...longPressHandlers(message._id)}
+                                className={`cursor-pointer select-none w-[30%] min-w-18 max-w-45 ${
+                                  isMine ? "ml-auto" : ""
+                                }`}
+                              >
+                                {/* Static thumbnail — the conversation never
+                                plays video inline (no controls, no sound);
+                                tapping opens the full-screen viewer. */}
+                                <div className="relative rounded-xl overflow-hidden bg-black border border-stroke">
+                                  {message.video.thumbnailUrl ? (
+                                    <img
+                                      src={resizedImageUrl(
+                                        message.video.thumbnailUrl,
+                                        IMAGE_SIZES.chatThumbnail,
+                                      )}
+                                      alt="video message"
+                                      draggable={false}
+                                      className="w-full h-auto object-cover"
+                                    />
+                                  ) : (
+                                    <video
+                                      src={`${message.video.url}#t=0.1`}
+                                      preload="metadata"
+                                      muted
+                                      playsInline
+                                      className="w-full h-auto object-cover pointer-events-none"
+                                    />
+                                  )}
+                                  {/* Play badge + duration make it obvious this
+                                  is a video and not a plain image. */}
+                                  <span className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                    <span className="w-8 h-8 rounded-full bg-black/50 text-white flex items-center justify-center">
+                                      <FaPlay size={12} className="ml-0.5" />
+                                    </span>
+                                  </span>
+                                  {typeof message.video.durationSeconds ===
+                                    "number" && (
+                                    <span className="absolute bottom-1 right-1 bg-black/60 text-white text-[10px] font-medium px-1.5 py-0.5 rounded-md pointer-events-none">
+                                      {formatChatDuration(
+                                        message.video.durationSeconds,
+                                      )}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                              <ReactionPicker
+                                open={reactionPickerFor === message._id}
+                                align={isMine ? "right" : "left"}
+                                anchorPoint={reactionAnchorPoint}
+                                onSelect={(emoji) => {
+                                  setReactionPickerFor(null);
+                                  handleReactMessage(message._id, emoji);
+                                }}
+                                onClose={() => setReactionPickerFor(null)}
+                              />
+                            </div>
+                          )}
+                          {(() => {
+                            const images = message.images?.length
+                              ? message.images
+                              : message.image
+                                ? [message.image]
+                                : [];
+                            if (images.length === 0) return null;
+                            return (
+                              <div className="relative">
+                                <div
+                                  {...longPressHandlers(message._id)}
+                                  className={`grid grid-cols-2 gap-1 rounded-xl overflow-hidden cursor-pointer select-none w-[90%] min-w-18 max-w-45 ${isMine ? "ml-auto" : ""}`}
+                                >
+                                  {images.map((src, idx) => (
+                                    <img
+                                      key={idx}
+                                      src={resizedImageUrl(
+                                        src,
+                                        IMAGE_SIZES.chatThumbnail,
+                                      )}
+                                      alt={`message ${idx + 1}`}
+                                      draggable={false}
+                                      onClick={() =>
+                                        openMediaViewer({
+                                          type: "image",
+                                          images,
+                                          index: idx,
+                                        })
+                                      }
+                                      className={`w-full h-auto object-cover border border-stroke ${
+                                        images.length === 1
+                                          ? "col-span-2"
+                                          : images.length === 3 && idx === 0
+                                            ? "col-span-2"
+                                            : ""
+                                      }`}
+                                    />
+                                  ))}
+                                </div>
+                                <ReactionPicker
+                                  open={reactionPickerFor === message._id}
+                                  align={isMine ? "right" : "left"}
+                                  anchorPoint={reactionAnchorPoint}
+                                  onSelect={(emoji) => {
+                                    setReactionPickerFor(null);
+                                    handleReactMessage(message._id, emoji);
+                                  }}
+                                  onClose={() => setReactionPickerFor(null)}
+                                />
+                              </div>
+                            );
+                          })()}
+                          {message.text && (
+                            <div className="relative">
+                              <div
+                                {...longPressHandlers(message._id)}
+                                className={`px-4 py-2.5 rounded-2xl text-base whitespace-pre-wrap select-none ${
+                                  isMine
+                                    ? "bg-primary-600 text-white self-end rounded-br-sm"
+                                    : "bg-card text-ink self-start rounded-bl-sm border border-stroke"
+                                }`}
+                              >
+                                <TextWithLinks
+                                  text={message.text}
+                                  linkClassName={
+                                    isMine
+                                      ? "underline text-white/90 hover:text-white font-medium"
+                                      : "text-primary-600 font-medium hover:underline"
+                                  }
+                                />
+                              </div>
+                              <ReactionPicker
+                                open={reactionPickerFor === message._id}
+                                align={isMine ? "right" : "left"}
+                                anchorPoint={reactionAnchorPoint}
+                                onSelect={(emoji) => {
+                                  setReactionPickerFor(null);
+                                  handleReactMessage(message._id, emoji);
+                                }}
+                                onClose={() => setReactionPickerFor(null)}
+                              />
+                            </div>
+                          )}
+                          {message.reactionSummary &&
+                            Object.keys(message.reactionSummary).length > 0 && (
+                              <div
+                                className={isMine ? "self-end" : "self-start"}
+                              >
+                                <ReactionSummaryBar
+                                  summary={message.reactionSummary}
+                                  myReaction={message.myReaction}
+                                  onToggle={(emoji) =>
+                                    handleReactMessage(message._id, emoji)
+                                  }
+                                />
+                              </div>
+                            )}
+                          <div
+                            className={`flex items-center gap-1.5 ${isMine ? "justify-end" : "justify-start"}`}
                           >
-                            Undo
-                          </button>
-                        </span>
+                            <p
+                              className="text-[10px] text-ink-muted"
+                              title={new Date(
+                                message.createdAt,
+                              ).toLocaleString()}
+                            >
+                              {formatMessageTime(message.createdAt)}
+                            </p>
+                            {!isMine && (
+                              <MessageOptionsMenu
+                                isMine={false}
+                                anchor="left"
+                                onReport={() => setReportingMessage(message)}
+                              />
+                            )}
+                            {isMine && (
+                              <>
+                                <MessageOptionsMenu
+                                  isMine
+                                  anchor="right"
+                                  onDelete={() =>
+                                    handleDeleteMessage(message._id)
+                                  }
+                                />
+                                <span
+                                  className={
+                                    message.read
+                                      ? "text-primary-400"
+                                      : "text-ink-muted"
+                                  }
+                                >
+                                  {message.read ? (
+                                    <FaCheckDouble size={11} />
+                                  ) : (
+                                    <FiCheck size={11} />
+                                  )}
+                                </span>
+                              </>
+                            )}
+                          </div>
+                        </>
                       )}
                     </div>
-                  ) : (
-                    <>
-                      {message.video?.url && (
-                        <div className="relative">
-                          <div
-                            onClick={(e) => handleBubbleTap(message._id, e)}
-                            onDoubleClick={(e) => {
-                              e.preventDefault();
-                              setReactionAnchorPoint({ x: e.clientX, y: e.clientY });
-                              setReactionPickerFor(message._id);
-                            }}
-                            {...longPressHandlers(message._id)}
-                            className="cursor-pointer select-none"
-                          >
-                            <ChatVideoMessage
-                              url={message.video.url}
-                              poster={message.video.thumbnailUrl}
-                              alignmentClass={isMine ? "ml-auto self-end" : "self-start"}
-                            />
-                          </div>
-                          <ReactionPicker
-                            open={reactionPickerFor === message._id}
-                            align={isMine ? "right" : "left"}
-                            anchorPoint={reactionAnchorPoint}
-                            onSelect={(emoji) => {
-                              setReactionPickerFor(null);
-                              handleReactMessage(message._id, emoji);
-                            }}
-                            onClose={() => setReactionPickerFor(null)}
-                          />
-                        </div>
-                      )}
-                      {(() => {
-                        const images = message.images?.length
-                          ? message.images
-                          : message.image
-                            ? [message.image]
-                            : [];
-                        if (images.length === 0) return null;
-                        return (
-                          <div className="relative">
-                            <div
-                              onClick={(e) => handleBubbleTap(message._id, e)}
-                              onDoubleClick={(e) => {
-                                e.preventDefault();
-                                setReactionAnchorPoint({ x: e.clientX, y: e.clientY });
-                                setReactionPickerFor(message._id);
-                              }}
-                              {...longPressHandlers(message._id)}
-                              className={`grid grid-cols-2 gap-1 rounded-xl overflow-hidden cursor-pointer select-none ${isMine ? "ml-auto" : ""}`}
-                            >
-                              {images.map((src, idx) => (
-                                <img
-                                  key={idx}
-                                  src={src}
-                                  alt={`message ${idx + 1}`}
-                                  className={`w-full h-auto object-cover ${
-                                    images.length === 1
-                                      ? "col-span-2"
-                                      : images.length === 3 && idx === 0
-                                        ? "col-span-2"
-                                        : ""
-                                  }`}
-                                />
-                              ))}
-                            </div>
-                            <ReactionPicker
-                              open={reactionPickerFor === message._id}
-                              align={isMine ? "right" : "left"}
-                              anchorPoint={reactionAnchorPoint}
-                              onSelect={(emoji) => {
-                                setReactionPickerFor(null);
-                                handleReactMessage(message._id, emoji);
-                              }}
-                              onClose={() => setReactionPickerFor(null)}
-                            />
-                          </div>
-                        );
-                      })()}
-                      {message.text && (
-                        <div className="relative">
-                          <div
-                            onClick={(e) => handleBubbleTap(message._id, e)}
-                            onDoubleClick={(e) => {
-                              e.preventDefault();
-                              setReactionAnchorPoint({ x: e.clientX, y: e.clientY });
-                              setReactionPickerFor(message._id);
-                            }}
-                            {...longPressHandlers(message._id)}
-                            className={`px-4 py-2.5 rounded-2xl text-base whitespace-pre-wrap cursor-pointer select-none ${
-                              isMine
-                                ? "bg-primary-600 text-white self-end rounded-br-sm"
-                                : "bg-card text-ink self-start rounded-bl-sm border border-stroke"
-                            }`}
-                          >
-                            <TextWithLinks
-                              text={message.text}
-                              linkClassName={
-                                isMine
-                                  ? "underline text-white/90 hover:text-white font-medium"
-                                  : "text-primary-600 font-medium hover:underline"
-                              }
-                            />
-                          </div>
-                          <ReactionPicker
-                            open={reactionPickerFor === message._id}
-                            align={isMine ? "right" : "left"}
-                            anchorPoint={reactionAnchorPoint}
-                            onSelect={(emoji) => {
-                              setReactionPickerFor(null);
-                              handleReactMessage(message._id, emoji);
-                            }}
-                            onClose={() => setReactionPickerFor(null)}
-                          />
-                        </div>
-                      )}
-                      {message.reactionSummary &&
-                        Object.keys(message.reactionSummary).length > 0 && (
-                          <div className={isMine ? "self-end" : "self-start"}>
-                            <ReactionSummaryBar
-                              summary={message.reactionSummary}
-                              myReaction={message.myReaction}
-                              onToggle={(emoji) =>
-                                handleReactMessage(message._id, emoji)
-                              }
-                            />
-                          </div>
-                        )}
-                      <div
-                        className={`flex items-center gap-1.5 ${isMine ? "justify-end" : "justify-start"}`}
-                      >
-                        <p
-                          className="text-[10px] text-ink-muted"
-                          title={new Date(message.createdAt).toLocaleString()}
-                        >
-                          {formatMessageTime(message.createdAt)}
-                        </p>
-                        {!isMine && (
-                          <MessageOptionsMenu
-                            isMine={false}
-                            anchor="left"
-                            onReport={() => setReportingMessage(message)}
-                          />
-                        )}
-                        {isMine && (
-                          <>
-                            <MessageOptionsMenu
-                              isMine
-                              anchor="right"
-                              onDelete={() => handleDeleteMessage(message._id)}
-                            />
-                            <span
-                              className={
-                                message.read
-                                  ? "text-primary-400"
-                                  : "text-ink-muted"
-                              }
-                            >
-                              {message.read ? (
-                                <FaCheckDouble size={11} />
-                              ) : (
-                                <FiCheck size={11} />
-                              )}
-                            </span>
-                          </>
-                        )}
-                      </div>
-                    </>
-                  )}
+                  </div>
+                </Fragment>
+              );
+            })}
+            {otherUserTyping && (
+              <div className="flex justify-start">
+                <div className="px-4 py-2.5 rounded-2xl rounded-bl-sm bg-card border border-stroke self-start">
+                  <span className="flex gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-ink-muted animate-bounce [animation-delay:-0.3s]" />
+                    <span className="w-1.5 h-1.5 rounded-full bg-ink-muted animate-bounce [animation-delay:-0.15s]" />
+                    <span className="w-1.5 h-1.5 rounded-full bg-ink-muted animate-bounce" />
+                  </span>
                 </div>
               </div>
-              </Fragment>
-            );
-          })}
-          {otherUserTyping && (
-            <div className="flex justify-start">
-              <div className="px-4 py-2.5 rounded-2xl rounded-bl-sm bg-card border border-stroke self-start">
-                <span className="flex gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-ink-muted animate-bounce [animation-delay:-0.3s]" />
-                  <span className="w-1.5 h-1.5 rounded-full bg-ink-muted animate-bounce [animation-delay:-0.15s]" />
-                  <span className="w-1.5 h-1.5 rounded-full bg-ink-muted animate-bounce" />
-                </span>
-              </div>
-            </div>
-          )}
-          <div ref={scrollRef} />
+            )}
+            <div ref={scrollRef} />
           </div>
 
           {showScrollToBottom && (
@@ -545,7 +586,7 @@ const ChatModal = ({
             >
               <FaChevronDown size={12} className="text-primary-600" />
               {newMessagesBelowCount > 0 && (
-                <span className="min-w-[18px] px-1 h-[18px] flex items-center justify-center rounded-full bg-primary-600 text-white text-[11px] leading-none">
+                <span className="min-w-4.5 px-1 h-4.5 flex items-center justify-center rounded-full bg-primary-600 text-white text-[11px] leading-none">
                   {newMessagesBelowCount > 99 ? "99+" : newMessagesBelowCount}
                 </span>
               )}
@@ -745,6 +786,16 @@ const ChatModal = ({
               if (ok) setReportingMessage(null);
             }}
             onCancel={() => setReportingMessage(null)}
+          />
+        )}
+
+        {mediaViewer && (
+          <ChatMediaViewer
+            type={mediaViewer.type}
+            video={mediaViewer.video}
+            images={mediaViewer.images}
+            initialIndex={mediaViewer.index}
+            onClose={() => setMediaViewer(null)}
           />
         )}
       </div>

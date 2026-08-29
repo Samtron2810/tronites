@@ -40,6 +40,10 @@ export const IMAGE_SIZES = {
   avatarTiny: 24, // mention-suggestion rows, nav-bar avatar
   avatarSmall: 40, // post/comment header avatars
   avatarLarge: 96, // profile page header
+  // ChatModal media bubbles (video-message stills + image grid cells).
+  // Cells render at ~72-180px wide, so this fetches a small variant
+  // (the function asks for 2x for retina) instead of the full upload.
+  chatThumbnail: 160,
   feedImage: 600, // post carousel image inside a feed card
   modalImage: 900, // PostDetailModal's larger carousel view
 };
