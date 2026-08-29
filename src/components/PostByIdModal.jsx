@@ -111,6 +111,7 @@ const PostByIdModal = ({ postId, isOpen, onClose }) => {
         repostsCount: res.data.reposts,
       }));
       if (res.data.reposted) toast.success("Reposted");
+      else toast.success("Repost undone");
     } catch (e) {
       console.error(e);
       toast.error(

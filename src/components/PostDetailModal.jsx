@@ -16,6 +16,7 @@ import {
   FaPen,
   FaRegCopy,
   FaRetweet,
+  FaQuoteRight,
 } from "react-icons/fa";
 import { FiFlag, FiUsers, FiLock } from "react-icons/fi";
 import defaultAvatar from "../assets/defaultAvatar";
@@ -230,6 +231,15 @@ const PostDetailModal = ({
                 </Link>
                 {username && (
                   <span className="text-sm text-ink-muted">@{username}</span>
+                )}
+                {quoteOf && (
+                  <span
+                    className="flex items-center gap-1 text-[11px] font-medium text-primary-600 bg-primary-50 px-1.5 py-0.5 rounded-full"
+                    title="This post quotes another post"
+                  >
+                    <FaQuoteRight size={9} />
+                    Quote
+                  </span>
                 )}
               </div>
               <p className="flex items-center gap-1 text-sm text-ink-muted">

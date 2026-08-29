@@ -246,7 +246,7 @@ const PostCard = ({
       const res = await api.put(`/posts/repost/${postId}`);
       setReposted(res.data.reposted);
       setRepostCount(res.data.reposts);
-      if (res.data.reposted) toast.success("Reposted");
+      toast.success(res.data.reposted ? "Reposted" : "Repost undone");
     } catch (e) {
       console.error(e);
       toast.error(
@@ -617,6 +617,15 @@ const PostCard = ({
                 </Link>
                 {username && (
                   <span className="text-sm text-ink-muted">@{username}</span>
+                )}
+                {isQuotePost && (
+                  <span
+                    className="flex items-center gap-1 text-[11px] font-medium text-primary-600 bg-primary-50 px-1.5 py-0.5 rounded-full"
+                    title="This post quotes another post"
+                  >
+                    <FaQuoteRight size={9} />
+                    Quote
+                  </span>
                 )}
               </div>
               <p className="flex items-center gap-1 text-sm text-ink-muted">
