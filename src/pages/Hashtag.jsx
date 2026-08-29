@@ -100,6 +100,8 @@ const Hashtag = () => {
               isLiked={post.isLiked}
               isBookmarked={post.isBookmarked}
               isReposted={post.isReposted}
+              isQuotePost={post.isQuotePost}
+              quoteOf={post.quoteOf}
               edited={post.edited}
               privacy={post.privacy}
               editedAt={post.editedAt}

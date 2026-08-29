@@ -15,12 +15,14 @@ import {
   FaTrash,
   FaPen,
   FaRegCopy,
+  FaRetweet,
 } from "react-icons/fa";
 import { FiFlag, FiUsers, FiLock } from "react-icons/fi";
 import defaultAvatar from "../assets/defaultAvatar";
 import LazyImage from "./LazyImage";
 import TextWithLinks from "./TextWithLinks";
 import CommentsPanel from "./CommentBox";
+import QuotedPostPreview from "./QuotedPostPreview";
 import { resizedImageUrl, IMAGE_SIZES } from "../utils/cloudinaryImage";
 
 // Stacked-only layout at every breakpoint (confirmed — no desktop
@@ -75,6 +77,15 @@ const PostDetailModal = ({
   bookmarked,
   isBookmarking,
   onBookmark,
+  // Repost — same on/off toggle shape as PostCard's action bar.
+  // Reposting from here reposts whatever THIS modal is showing (the
+  // quote itself if a quote is open, or the original if the original
+  // is open) — never the embedded quoteOf, which has its own repost
+  // state and its own detail view.
+  reposted,
+  repostCount,
+  isReposting,
+  onRepost,
   // Options menu (Copy always; Edit/Delete for owner; Report for non-owner)
   onCopy,
   onEdit,
@@ -82,6 +93,16 @@ const PostDetailModal = ({
   onReport,
   editCooldownActive,
   initialSlide = 0,
+  // Set only when this modal is showing a quote — the embedded
+  // original to render below the quote's own text. Passing the
+  // formatted post (same shape QuotedPostPreview already expects).
+  quoteOf,
+  // Called when the person clicks the embedded original (here, or
+  // inside PostCard/QuotedPostPreview) — opens THAT post's own detail
+  // view rather than this one. Not this modal's job to know how (a
+  // fetch-by-id, a second modal instance, etc.) — that's the caller's
+  // concern, this component just forwards the click.
+  onOpenOriginal,
 }) => {
   const [activeSlide, setActiveSlide] = useState(initialSlide);
   const [isZoomed, setIsZoomed] = useState(false);
@@ -434,6 +455,18 @@ const PostDetailModal = ({
           </p>
         )}
 
+        {/* Embedded original — quote posts only. Clicking it opens the
+            ORIGINAL post's own detail view (a separate post, with its
+            own likes/comments/state), not this modal. */}
+        {quoteOf && (
+          <div
+            className="px-5 pb-4 -mt-1 cursor-pointer"
+            onClick={() => onOpenOriginal?.(quoteOf._id)}
+          >
+            <QuotedPostPreview post={quoteOf} />
+          </div>
+        )}
+
         {/* Actions — same like/comment-count/save bar as PostCard,
             driven by the same state via props so liking here and
             liking on the card stay in sync (no second like/bookmark
@@ -458,6 +491,24 @@ const PostDetailModal = ({
             <FaRegComment size={15} />
             <span>{commentCount}</span>
           </div>
+
+          {onRepost && (
+            <button
+              onClick={onRepost}
+              disabled={isReposting}
+              title={reposted ? "Undo repost" : "Repost"}
+              className={`flex items-center gap-1.5 text-base transition ${
+                isReposting
+                  ? "opacity-50 cursor-not-allowed"
+                  : reposted
+                    ? "text-green-600"
+                    : "text-ink-muted hover:text-green-600"
+              }`}
+            >
+              <FaRetweet size={15} />
+              <span>{repostCount}</span>
+            </button>
+          )}
 
           <button
             onClick={onBookmark}

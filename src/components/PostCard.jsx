@@ -23,6 +23,7 @@ import DeletePostModal from "./DeletePostModal";
 import ReportModal from "./ReportModal";
 import QuotePostModal from "./QuotePostModal";
 import QuotedPostPreview from "./QuotedPostPreview";
+import PostByIdModal from "./PostByIdModal";
 import { useSocket } from "../context/useSocket";
 import TextWithLinks from "./TextWithLinks";
 import defaultAvatar from "../assets/defaultAvatar";
@@ -59,10 +60,14 @@ const PostCard = ({
   // follows reposted it (plain repost, not a quote) — { _id, name,
   // username } of the reposter. Drives the "🔁 X reposted" header.
   repostedBy,
-  // Set only when this card IS a quote item (synthetic "quote:<id>"
-  // postId from getFeedPosts/createQuotePost) — the quoter's own
-  // text/hashtags live in the normal `text` prop; `quoteOf` is the
-  // embedded original post being quoted.
+  // Set only when this card IS a quote item — postId is the quote's
+  // OWN Post id (quotes are real, independently-authored posts now,
+  // see backend models/Post.js's quoteOf), so every action below
+  // (like/comment/bookmark/repost) already targets the quote itself
+  // with zero special-casing. `quoteOf` is the embedded original
+  // post — a separate Post with its own independent state, opened in
+  // its own detail view via the "open original" modal below, never
+  // mutated by actions taken on this card.
   isQuotePost,
   quoteOf,
   edited,
@@ -167,6 +172,12 @@ const PostCard = ({
     setPostVideo(video);
   }
   const [isDetailOpen, setIsDetailOpen] = useState(false);
+  // "Open original" — opens the embedded post's OWN detail view (by
+  // id, via PostByIdModal) when the person clicks the embed, either
+  // from this card directly or from inside this card's own detail
+  // modal. Independent of isDetailOpen so both can theoretically be
+  // open in sequence without state collisions.
+  const [openOriginalId, setOpenOriginalId] = useState(null);
   const { socket } = useSocket();
 
   const media = images || [];
@@ -531,6 +542,10 @@ const PostCard = ({
         bookmarked={bookmarked}
         isBookmarking={isBookmarking}
         onBookmark={handleBookmark}
+        reposted={reposted}
+        repostCount={repostCount}
+        isReposting={isReposting}
+        onRepost={handleRepost}
         onCopy={handleCopyPost}
         onEdit={() => {
           // No modal-native edit UI — close the modal and drop into the
@@ -548,6 +563,18 @@ const PostCard = ({
           setReportTarget({ type: "post" });
         }}
         editCooldownActive={editCooldownActive}
+        quoteOf={isQuotePost ? quoteOf : null}
+        onOpenOriginal={(id) => setOpenOriginalId(id)}
+      />
+
+      {/* The embedded original's own detail view — opened by id,
+          fully independent of this card's/quote's own state. See
+          PostByIdModal's comment for why this isn't just PostCard
+          reused. */}
+      <PostByIdModal
+        postId={openOriginalId}
+        isOpen={Boolean(openOriginalId)}
+        onClose={() => setOpenOriginalId(null)}
       />
 
       <div className="bg-card border border-stroke rounded-2xl p-5 transition hover:shadow-sm">
@@ -747,15 +774,19 @@ const PostCard = ({
           </p>
         )}
 
-        {/* Embedded original post — quote items only. A quote has no
-            media/video of its own (text-only caption, see
-            QuotePostModal), so this replaces the media sections below
-            rather than sitting alongside them. Not clickable into its
-            own detail modal in this pass — see QuotedPostPreview's
-            comment on why (Tier 2.5's future /post/:id permalink is
-            the natural click target). */}
+        {/* Embedded original — quote cards only. Clicking it opens the
+            ORIGINAL post's own detail view (a separate post, with its
+            own like/comment/bookmark/repost state) — stopPropagation
+            keeps this from also triggering the quote's own detail
+            modal via the text paragraph's onClick above it. */}
         {isQuotePost && (
-          <div className="mt-3">
+          <div
+            className="mt-3 cursor-pointer"
+            onClick={(e) => {
+              e.stopPropagation();
+              setOpenOriginalId(quoteOf?._id);
+            }}
+          >
             <QuotedPostPreview post={quoteOf} />
           </div>
         )}
@@ -895,60 +926,61 @@ const PostCard = ({
             <span>{commentCount}</span>
           </button>
 
-          {/* Repost isn't offered on a quote item itself in this pass
-              — quotes aren't backed by a Post document (see
-              models/Repost.js), only the original post they embed is
-              repostable. Reposting/quoting the ORIGINAL is still
-              available from its own card wherever that renders. */}
-          {!isQuotePost && (
-            <div className="relative">
-              <button
-                ref={repostTriggerRef}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (isOwner) {
-                    // Owners can't quote their own post from here in
-                    // this pass (only plain repost, which is a no-op
-                    // shown for consistency) — skip the dropdown and
-                    // just toggle.
-                    handleRepost();
-                  } else {
-                    setRepostMenuOpen((o) => !o);
-                  }
-                }}
-                disabled={isReposting}
-                title={reposted ? "Undo repost" : "Repost"}
-                className={`flex items-center gap-1.5 text-base transition ${
-                  isReposting
-                    ? "opacity-50 cursor-not-allowed"
-                    : reposted
-                      ? "text-green-600"
-                      : "text-ink-muted hover:text-green-600"
-                }`}
-              >
-                <FaRetweet size={15} />
-                <span>{repostCount}</span>
-              </button>
+          {/* Repost is available on every card, including a quote's own
+              card — reposting a quote reposts the quote itself (see
+              backend models/Repost.js), never the original it embeds.
+              Quoting a quote is not allowed (one level of embedding
+              only) — the "Quote" option is simply omitted from the
+              dropdown when this card IS a quote, leaving only Repost. */}
+          <div className="relative">
+            <button
+              ref={repostTriggerRef}
+              onClick={(e) => {
+                e.stopPropagation();
+                if (isOwner || isQuotePost) {
+                  // Owners can't quote their own post from here in
+                  // this pass (only plain repost, which is a no-op
+                  // shown for consistency); a quote card never offers
+                  // Quote at all — skip the dropdown and just toggle.
+                  handleRepost();
+                } else {
+                  setRepostMenuOpen((o) => !o);
+                }
+              }}
+              disabled={isReposting}
+              title={reposted ? "Undo repost" : "Repost"}
+              className={`flex items-center gap-1.5 text-base transition ${
+                isReposting
+                  ? "opacity-50 cursor-not-allowed"
+                  : reposted
+                    ? "text-green-600"
+                    : "text-ink-muted hover:text-green-600"
+              }`}
+            >
+              <FaRetweet size={15} />
+              <span>{repostCount}</span>
+            </button>
 
-              {repostMenuOpen && (
-                <div
-                  ref={repostMenuRef}
-                  onClick={(e) => e.stopPropagation()}
-                  className="absolute left-0 bottom-full mb-2 w-40 bg-card rounded-lg shadow-lg border border-stroke z-40 py-1"
+            {repostMenuOpen && (
+              <div
+                ref={repostMenuRef}
+                onClick={(e) => e.stopPropagation()}
+                className="absolute left-0 bottom-full mb-2 w-40 bg-card rounded-lg shadow-lg border border-stroke z-40 py-1"
+              >
+                <button
+                  onClick={handleRepost}
+                  disabled={isReposting}
+                  className="w-full flex items-center gap-3 px-4 py-2.5 text-base text-ink hover:bg-surface transition disabled:opacity-50"
                 >
-                  <button
-                    onClick={handleRepost}
-                    disabled={isReposting}
-                    className="w-full flex items-center gap-3 px-4 py-2.5 text-base text-ink hover:bg-surface transition disabled:opacity-50"
-                  >
-                    <FaRetweet
-                      className={reposted ? "text-green-600" : "text-ink-muted"}
-                      size={13}
-                    />
-                    <span className="font-medium">
-                      {reposted ? "Undo repost" : "Repost"}
-                    </span>
-                  </button>
+                  <FaRetweet
+                    className={reposted ? "text-green-600" : "text-ink-muted"}
+                    size={13}
+                  />
+                  <span className="font-medium">
+                    {reposted ? "Undo repost" : "Repost"}
+                  </span>
+                </button>
+                {!isQuotePost && (
                   <button
                     onClick={() => {
                       setRepostMenuOpen(false);
@@ -959,10 +991,10 @@ const PostCard = ({
                     <FaQuoteRight className="text-ink-muted" size={13} />
                     <span className="font-medium">Quote</span>
                   </button>
-                </div>
-              )}
-            </div>
-          )}
+                )}
+              </div>
+            )}
+          </div>
 
           <button
             onClick={handleBookmark}

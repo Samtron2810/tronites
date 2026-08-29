@@ -3,15 +3,18 @@ import defaultAvatar from "../assets/defaultAvatar";
 import TextWithLinks from "./TextWithLinks";
 import { resizedImageUrl, IMAGE_SIZES } from "../utils/cloudinaryImage";
 
-// Compact, non-interactive preview of an original post — used to embed
-// "what's being quoted" inside QuotePostModal (before posting) and
-// inside a quote's feed card (after posting). Deliberately NOT the
-// full PostCard: no like/comment/repost actions of its own here (those
-// belong to the original post's own card elsewhere in the app) — this
-// is a reference/preview, not a second interactive surface for the
-// same post. Clicking it navigates to the original author's profile;
-// a future /post/:id permalink page (Tier 2.5 in the roadmap) would be
-// the more natural click target once it exists.
+// Compact preview of the ORIGINAL post embedded inside a quote — used
+// inside QuotePostModal (before posting) and inside a quote's own
+// card/detail-modal (after posting). Not a second interactive surface
+// for the original's like/comment/repost actions (those belong to the
+// original's own card/modal, opened via the click here) — this is a
+// reference/preview only.
+//
+// The parent is responsible for making this clickable (see PostCard's
+// and PostDetailModal's onClick wrappers) — this component itself
+// stays presentational so it renders identically inside
+// QuotePostModal, where a click-through wouldn't make sense (the
+// original hasn't fully posted the quote yet).
 const QuotedPostPreview = ({ post }) => {
   if (!post) {
     return (
@@ -25,7 +28,7 @@ const QuotedPostPreview = ({ post }) => {
   const thumb = media[0];
 
   return (
-    <div className="rounded-xl border border-stroke bg-surface p-3">
+    <div className="rounded-xl border border-stroke bg-surface p-3 hover:border-primary-200 transition">
       <div className="flex items-center gap-2 mb-1.5">
         <img
           src={
