@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import MainLayout from "../layouts/MainLayout";
 import NotificationSkeleton from "../components/NotificationSkeleton";
 import api from "../services/api";
 import { useSocket } from "../context/useSocket";
-import { FaHeart, FaRegComment, FaUserPlus, FaAt, FaReply, FaBell, FaShieldAlt, FaExclamationTriangle } from "react-icons/fa";
+import { FaHeart, FaRegComment, FaUserPlus, FaAt, FaReply, FaBell, FaShieldAlt, FaExclamationTriangle, FaRetweet, FaQuoteRight, FaRegSmile } from "react-icons/fa";
 import defaultAvatar from "../assets/defaultAvatar";
 import { resizedImageUrl, IMAGE_SIZES } from "../utils/cloudinaryImage";
 
@@ -16,10 +16,60 @@ const typeConfig = {
   mention: { icon: FaAt, color: "text-primary-600", label: "mentioned you" },
   reply:   { icon: FaReply, color: "text-primary-600", label: "replied to your comment" },
   commentLike: { icon: FaHeart, color: "text-red-500", label: "liked your comment" },
+  // 1.1 — repost/quote. The backend distinguishes them (a plain repost
+  // emits type "repost", a quote emits type "quote"); both deep-link to
+  // the ORIGINAL post they target.
+  repost:  { icon: FaRetweet, color: "text-green-600", label: "reposted your post" },
+  quote:   { icon: FaQuoteRight, color: "text-green-600", label: "quoted your post" },
+  // 1.2 — emoji reaction. The emoji itself arrives in n.message, and
+  // the label is rebuilt per-row around it ("reacted ❤️ to your post");
+  // the static label here is only a fallback for a missing message.
+  reaction: { icon: FaRegSmile, color: "text-amber-500", label: "reacted to your post" },
   // Phase 4 — rendered through a dedicated branch below: no sender link,
   // shield avatar, reason text from n.message. The warned user must not
   // see WHICH moderator issued the warning.
   moderator_warning: { icon: FaExclamationTriangle, color: "text-amber-500", label: "" },
+};
+
+// Router target a notification row navigates to when clicked — the
+// post the notification was generated on, plus (for comment-scoped
+// types) the comment/reply to scroll to and highlight once there.
+// REST rows carry populated post/comment objects; rows built from
+// socket payloads carry raw ObjectIds — `x?._id || x` normalizes both
+// (same pattern notificationGrouping.js uses for its grouping keys).
+// Returns null for types with no post destination (follow,
+// moderator_warning) — those rows stay non-clickable.
+const rowTarget = (row) => {
+  const postId = row.post?._id || row.post;
+  if (!postId) return null;
+  const commentId = row.comment?._id || row.comment;
+
+  switch (row.type) {
+    case "like":
+    case "mention":
+    case "repost":
+    case "quote":
+    case "reaction":
+      return `/post/${postId}`;
+    case "comment":
+    case "commentLike":
+      return commentId
+        ? `/post/${postId}?comment=${commentId}`
+        : `/post/${postId}`;
+    case "reply": {
+      // A reply notification's `comment` is the reply itself; its
+      // parent's id (populated by GET /notifications) tells the
+      // comments panel which thread to expand before highlighting.
+      const parentId =
+        row.comment?.parentComment?._id || row.comment?.parentComment;
+      if (!commentId) return `/post/${postId}`;
+      return `/post/${postId}?comment=${commentId}${
+        parentId ? `&parent=${parentId}` : ""
+      }`;
+    }
+    default:
+      return null;
+  }
 };
 
 // Builds the "Ada, Bob and 12 others liked your post" line from a
@@ -62,6 +112,7 @@ const Notifications = () => {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
   const { socket } = useSocket();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetch = async () => {
@@ -148,16 +199,26 @@ const Notifications = () => {
             const Icon = cfg.icon;
             const primaryActor = row.actors[0];
             const profileTarget = row.actors.length === 1 ? primaryActor?._id : null;
+            // Where this row navigates when clicked — null = not
+            // clickable (follow/moderator_warning have no post target).
+            const target = rowTarget(row);
+            // Reaction rows phrase their label around the emoji the
+            // backend stored in `message`.
+            const label =
+              row.type === "reaction" && row.message
+                ? `reacted ${row.message} to your post`
+                : cfg.label;
             return (
               <div
                 key={row._id}
+                onClick={target ? () => navigate(target) : undefined}
                 className={`flex items-center gap-3 px-5 py-4 transition ${
                   row.read
                     ? ""
                     : row.type === "moderator_warning"
                       ? "bg-amber-50"
                       : "bg-primary-50"
-                }`}
+                } ${target ? "cursor-pointer" : ""}`}
               >
                 {row.type === "moderator_warning" ? (
                   // Phase 4 — no sender identity: a shield avatar instead
@@ -182,7 +243,11 @@ const Notifications = () => {
                     ))}
                   </div>
                 ) : (
-                  <Link to={`/profile/${profileTarget}`} className="shrink-0">
+                  <Link
+                    to={`/profile/${profileTarget}`}
+                    className="shrink-0"
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     <img
                       src={resizedImageUrl(primaryActor?.profilePic, IMAGE_SIZES.avatarSmall) || defaultAvatar}
                       alt={primaryActor?.name || "User"}
@@ -215,16 +280,27 @@ const Notifications = () => {
                           <Link
                             to={`/profile/${profileTarget}`}
                             className="font-semibold hover:text-primary-600 transition"
+                            onClick={(e) => e.stopPropagation()}
                           >
                             {primaryActor?.name || "Someone"}
                           </Link>
                           {primaryActor?.username && (
                             <span className="text-ink-muted text-sm"> @{primaryActor.username}</span>
                           )}{" "}
-                          <span className="text-ink-sub">{cfg.label}</span>
+                          {target ? (
+                            <Link
+                              to={target}
+                              onClick={(e) => e.stopPropagation()}
+                              className="text-ink-sub hover:text-primary-600 hover:underline transition"
+                            >
+                              {label}
+                            </Link>
+                          ) : (
+                            <span className="text-ink-sub">{label}</span>
+                          )}
                         </>
                       ) : (
-                        actorsLine(row, cfg.label)
+                        actorsLine(row, label)
                       )}
                     </p>
                     <p className="text-sm text-ink-muted mt-0.5">

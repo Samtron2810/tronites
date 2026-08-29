@@ -17,10 +17,25 @@ import ReportModal from "./ReportModal";
 // feed-item-shaped (needs a full prop set the caller may not have for
 // a post it's only linking to, not rendering), whereas this only ever
 // needs to open a modal.
-const PostByIdModal = ({ postId, isOpen, onClose }) => {
+//
+// highlightCommentId/highlightParentId forward the notification
+// "go to comment" deep-link target (see PostView) into the detail
+// modal's comments panel.
+const PostByIdModal = ({
+  postId,
+  isOpen,
+  onClose,
+  highlightCommentId,
+  highlightParentId,
+}) => {
   const { user: currentUser } = useAuth();
   const [post, setPost] = useState(null);
   const [loading, setLoading] = useState(false);
+  // Set when the fetch fails (404 for a deleted/hidden post, network
+  // error otherwise) so a persistent fallback card can render instead
+  // of an empty overlay — the inline toasts were easy to miss and left
+  // the /post/:id page-looking route showing nothing at all.
+  const [loadError, setLoadError] = useState(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [reportTarget, setReportTarget] = useState(null);
   const [isLiking, setIsLiking] = useState(false);
@@ -35,12 +50,13 @@ const PostByIdModal = ({ postId, isOpen, onClose }) => {
       const res = await api.get(`/posts/${id}`);
       setPost(res.data);
       setCommentCount(res.data.commentsCount);
+      setLoadError(null);
     } catch (e) {
       console.error(e);
-      toast.error(
+      setLoadError(
         e.response?.status === 404
           ? "This post is no longer available."
-          : "Couldn't load this post. Try again.",
+          : "Couldn't load this post.",
       );
       setPost(null);
     } finally {
@@ -56,6 +72,7 @@ const PostByIdModal = ({ postId, isOpen, onClose }) => {
     setPost(null);
     setShowDeleteModal(false);
     setReportTarget(null);
+    setLoadError(null);
   }, [isOpen]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
@@ -208,6 +225,26 @@ const PostByIdModal = ({ postId, isOpen, onClose }) => {
         />
       )}
 
+      {loadError && !loading && !post && (
+        <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center px-4">
+          <div className="bg-card border border-stroke rounded-2xl shadow-xl p-6 w-full max-w-sm text-center">
+            <p className="text-base font-semibold text-ink mb-1">
+              {loadError}
+            </p>
+            <p className="text-sm text-ink-muted mb-4">
+              It may have been deleted, or you don't have permission to view
+              it.
+            </p>
+            <button
+              onClick={onClose}
+              className="px-4 py-2 rounded-xl text-base font-medium text-white bg-primary-600 hover:bg-primary-800 transition"
+            >
+              Go back
+            </button>
+          </div>
+        </div>
+      )}
+
       {!loading && post && (
         <PostDetailModal
           isOpen={isOpen}
@@ -247,6 +284,8 @@ const PostByIdModal = ({ postId, isOpen, onClose }) => {
           onReport={() => setReportTarget({ type: "post" })}
           editCooldownActive
           quoteOf={post.isQuotePost ? post.quoteOf : null}
+          highlightCommentId={highlightCommentId}
+          highlightParentId={highlightParentId}
         />
       )}
     </>

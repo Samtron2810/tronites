@@ -112,6 +112,11 @@ const PostDetailModal = ({
   // fetch-by-id, a second modal instance, etc.) — that's the caller's
   // concern, this component just forwards the click.
   onOpenOriginal,
+  // Deep-link targeting passthrough (notification "go to comment"
+  // navigation) — forwarded to the comments panel, which owns the
+  // scroll-to-and-highlight behavior. See CommentsPanel's props.
+  highlightCommentId,
+  highlightParentId,
 }) => {
   const [activeSlide, setActiveSlide] = useState(initialSlide);
   const [isZoomed, setIsZoomed] = useState(false);
@@ -605,6 +610,8 @@ const PostDetailModal = ({
             postId={postId}
             initialCommentCount={commentCount}
             onCommentCountChange={onCommentCountChange}
+            highlightCommentId={highlightCommentId}
+            highlightParentId={highlightParentId}
           />
         </div>
       </div>

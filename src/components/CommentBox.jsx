@@ -25,7 +25,17 @@ import MentionSuggestions from "./MentionSuggestions";
 // reports the running comment count back up via onCommentCountChange so
 // PostCard's like/comment/bookmark action bar (which lives outside this
 // component) can display it without duplicating comment state.
-const CommentsPanel = ({ postId, initialCommentCount, onCommentCountChange }) => {
+const CommentsPanel = ({
+  postId,
+  initialCommentCount,
+  onCommentCountChange,
+  // Deep-link targeting (notification "go to comment" navigation):
+  // highlightCommentId is the row to scroll to and flash; for reply
+  // targets highlightParentId is the top-level comment whose reply
+  // thread must be expanded and loaded before the reply row exists.
+  highlightCommentId,
+  highlightParentId,
+}) => {
   const { user: currentUser } = useAuth();
   const { socket } = useSocket();
 
@@ -50,6 +60,17 @@ const CommentsPanel = ({ postId, initialCommentCount, onCommentCountChange }) =>
   const [repliesByComment, setRepliesByComment] = useState({}); // { [commentId]: replies[] }
   const [loadingReplies, setLoadingReplies] = useState({});
   const [commentLikingId, setCommentLikingId] = useState(null);
+
+  // Deep-link highlight state — which row (if any) is currently flashed.
+  const containerRef = useRef(null);
+  const [highlightedCommentId, setHighlightedCommentId] = useState(null);
+  const highlightTimerRef = useRef(null);
+
+  useEffect(() => {
+    return () => {
+      if (highlightTimerRef.current) clearTimeout(highlightTimerRef.current);
+    };
+  }, []);
 
   const commentInputRef = useRef(null);
   const replyInputRef = useRef(null);
@@ -415,8 +436,129 @@ const CommentsPanel = ({ postId, initialCommentCount, onCommentCountChange }) =>
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [socket, postId, currentUser?._id]);
 
-  const visibleComments = comments.slice(0, visibleCount);
-  const hasMore = visibleCount < comments.length;
+  // Deep-link derivations — computed during render rather than set from
+  // an effect, so widening the list causes no cascading setState
+  // re-render. If the highlight target — or, for a reply target, the
+  // parent comment it threads under — sits behind the "Show more
+  // comments" slice, widen the slice so the row mounts and the
+  // highlight effect below can scroll to it.
+  const deepLinkTopIdx = highlightCommentId
+    ? comments.findIndex((c) => c._id === highlightCommentId)
+    : -1;
+  const deepLinkParentIdx = highlightParentId
+    ? comments.findIndex((c) => c._id === highlightParentId)
+    : -1;
+  const needsWidenedSlice =
+    deepLinkTopIdx >= visibleCount ||
+    (highlightParentId && deepLinkParentIdx >= visibleCount);
+  const effectiveVisibleCount = needsWidenedSlice
+    ? comments.length
+    : visibleCount;
+  const visibleComments = comments.slice(0, effectiveVisibleCount);
+  const hasMore = effectiveVisibleCount < comments.length;
+
+  // Deep-link highlighting — notification "go to comment" navigation
+  // lands here with the target comment's id (and, for replies, its
+  // parent's id). Scrolls the target row into view and flashes a
+  // highlight ring. Runs after comments load; retries briefly because
+  // the target row may still be mounting (reply threads load async).
+  // No synchronous setState here — thread opening is deferred to a
+  // frame and slice widening is derived during render above.
+  useEffect(() => {
+    if (loadingComments || !highlightCommentId) return;
+    let cancelled = false;
+
+    const flash = (el) => {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      setHighlightedCommentId(highlightCommentId);
+      if (highlightTimerRef.current) clearTimeout(highlightTimerRef.current);
+      highlightTimerRef.current = setTimeout(
+        () => setHighlightedCommentId(null),
+        2500,
+      );
+    };
+
+    const tryScroll = (attempt = 0) => {
+      if (cancelled) return;
+      const el = containerRef.current?.querySelector(
+        `[data-comment-id="${highlightCommentId}"]`,
+      );
+      if (el) {
+        flash(el);
+        return;
+      }
+      if (attempt < 15) setTimeout(() => tryScroll(attempt + 1), 200);
+    };
+
+    // Force the parent's reply thread open a frame from now (not sync
+    // in the effect body) so the user can still hide it afterwards —
+    // it becomes ordinary openReplies state.
+    const openThread = (onReady) => {
+      requestAnimationFrame(() => {
+        if (cancelled) return;
+        setOpenReplies((prev) =>
+          prev[highlightParentId]
+            ? prev
+            : { ...prev, [highlightParentId]: true },
+        );
+        onReady();
+      });
+    };
+
+    if (highlightParentId) {
+      // Reply target — its row lives inside the parent's reply thread,
+      // so the parent must exist and its replies must be open and
+      // loaded before the reply row exists to scroll to.
+      if (deepLinkParentIdx === -1) return;
+      if (repliesByComment[highlightParentId]) {
+        openThread(() => tryScroll());
+      } else {
+        (async () => {
+          try {
+            setLoadingReplies((prev) => ({
+              ...prev,
+              [highlightParentId]: true,
+            }));
+            const res = await api.get(`/comments/${highlightParentId}/replies`);
+            if (cancelled) return;
+            setRepliesByComment((prev) => ({
+              ...prev,
+              [highlightParentId]: res.data,
+            }));
+          } catch {
+            // Replies failed to load — the parent row still shows; skip
+            // the flash rather than erroring over a deep-link nicety.
+          } finally {
+            if (!cancelled)
+              setLoadingReplies((prev) => ({
+                ...prev,
+                [highlightParentId]: false,
+              }));
+          }
+          openThread(() => tryScroll());
+        })();
+      }
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    // Top-level comment target — slice widening already happened
+    // during render; scroll once the row is mounted.
+    if (deepLinkTopIdx === -1) return;
+    requestAnimationFrame(() => tryScroll());
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    loadingComments,
+    comments,
+    deepLinkTopIdx,
+    deepLinkParentIdx,
+    highlightCommentId,
+    highlightParentId,
+    repliesByComment,
+  ]);
 
   return (
     <div className="space-y-3">
@@ -484,9 +626,17 @@ const CommentsPanel = ({ postId, initialCommentCount, onCommentCountChange }) =>
         </p>
       )}
 
-      <div className="space-y-3">
+      <div className="space-y-3" ref={containerRef}>
         {visibleComments.map((c) => (
-          <div key={c._id} className="bg-surface rounded-xl px-3 py-2.5">
+          <div
+            key={c._id}
+            data-comment-id={c._id}
+            className={`rounded-xl px-3 py-2.5 transition ${
+              highlightedCommentId === c._id
+                ? "bg-primary-50 ring-2 ring-primary-300"
+                : "bg-surface"
+            }`}
+          >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-1">
                 <Link
@@ -601,7 +751,15 @@ const CommentsPanel = ({ postId, initialCommentCount, onCommentCountChange }) =>
                 )}
                 {!loadingReplies[c._id] &&
                   (repliesByComment[c._id] || []).map((r) => (
-                    <div key={r._id} className="bg-card rounded-lg px-3 py-2">
+                    <div
+                      key={r._id}
+                      data-comment-id={r._id}
+                      className={`rounded-lg px-3 py-2 transition ${
+                        highlightedCommentId === r._id
+                          ? "bg-primary-50 ring-2 ring-primary-300"
+                          : "bg-card"
+                      }`}
+                    >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-1">
                           <Link

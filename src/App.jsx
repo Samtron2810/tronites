@@ -27,6 +27,7 @@ const UsernameRedirect = lazy(() => import("./pages/UsernameRedirect"));
 const Hashtag = lazy(() => import("./pages/Hashtag"));
 const Bookmarks = lazy(() => import("./pages/Bookmarks"));
 const Notifications = lazy(() => import("./pages/Notifications"));
+const PostView = lazy(() => import("./pages/PostView"));
 const Settings = lazy(() => import("./pages/Settings"));
 const SecuritySessions = lazy(() => import("./pages/SecuritySessions"));
 const ModerationQueue = lazy(() => import("./pages/ModerationQueue"));
@@ -118,6 +119,17 @@ const AppContent = () => {
             element={
               <ProtectedRoute>
                 <Notifications />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* A single post's own detail view, linkable from anywhere
+              that only knows the post's id (notifications, etc.). */}
+          <Route
+            path="/post/:id"
+            element={
+              <ProtectedRoute>
+                <PostView />
               </ProtectedRoute>
             }
           />
