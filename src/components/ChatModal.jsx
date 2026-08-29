@@ -51,6 +51,10 @@ const ChatModal = ({
   scrollRef,
   messagesContainerRef,
   onMessagesScroll,
+  // Fires when any media bubble's image/video finishes loading — Chat.jsx
+  // re-anchors the thread to its bottom while the user is parked there,
+  // since h-auto media grows the thread after it has been laid out.
+  onMediaLoaded,
   // Floating "jump to latest" affordance — Chat.jsx owns the near-bottom
   // detection (see handleMessagesScroll) and just tells this component
   // whether to show the button and what badge count to render.
@@ -206,7 +210,7 @@ const ChatModal = ({
               className="w-9 h-9 rounded-full object-cover ring-2 ring-primary-100"
             />
             <span
-              className={`absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-white ${activeIsOnline ? "bg-primary-400" : "bg-gray-300"}`}
+              className={`absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border border-white ${activeIsOnline ? "bg-primary-400" : "bg-gray-300"}`}
             />
           </div>
           <div className="flex-1 min-w-0">
@@ -360,7 +364,7 @@ const ChatModal = ({
                                   })
                                 }
                                 {...longPressHandlers(message._id)}
-                                className={`cursor-pointer select-none w-[30%] min-w-18 max-w-45 ${
+                                className={`cursor-pointer select-none w-[90%] min-w-18 max-w-45 ${
                                   isMine ? "ml-auto" : ""
                                 }`}
                               >
@@ -376,6 +380,7 @@ const ChatModal = ({
                                       )}
                                       alt="video message"
                                       draggable={false}
+                                      onLoad={onMediaLoaded}
                                       className="w-full h-auto object-cover"
                                     />
                                   ) : (
@@ -384,6 +389,7 @@ const ChatModal = ({
                                       preload="metadata"
                                       muted
                                       playsInline
+                                      onLoadedData={onMediaLoaded}
                                       className="w-full h-auto object-cover pointer-events-none"
                                     />
                                   )}
@@ -438,6 +444,7 @@ const ChatModal = ({
                                       )}
                                       alt={`message ${idx + 1}`}
                                       draggable={false}
+                                      onLoad={onMediaLoaded}
                                       onClick={() =>
                                         openMediaViewer({
                                           type: "image",
@@ -445,7 +452,7 @@ const ChatModal = ({
                                           index: idx,
                                         })
                                       }
-                                      className={`w-full h-auto object-cover border border-stroke ${
+                                      className={`w-full h-auto object-cover border-2 border-stroke ${
                                         images.length === 1
                                           ? "col-span-2"
                                           : images.length === 3 && idx === 0

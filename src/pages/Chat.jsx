@@ -320,14 +320,39 @@ const Chat = () => {
     if (nearBottom) setNewMessagesBelowCount(0);
   };
 
+  // Scrolls the messages container itself to its bottom edge. Scoped to the
+  // container on purpose: scrollIntoView on the bottom anchor would also
+  // scroll every other scrollable ancestor, including the page behind the
+  // fixed-position chat modal. behavior omitted = instant jump.
+  const scrollMessagesToBottom = useCallback((behavior) => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+    if (behavior) {
+      container.scrollTo({ top: container.scrollHeight, behavior });
+    } else {
+      container.scrollTop = container.scrollHeight;
+    }
+  }, []);
+
   // Manual "jump to latest" — used by the floating button. Always scrolls
   // (unlike the passive effect below, which only auto-scrolls when
   // already near the bottom) since this is an explicit user action.
   const scrollToBottom = (behavior = "smooth") => {
-    scrollRef.current?.scrollIntoView({ behavior });
+    scrollMessagesToBottom(behavior);
     setNewMessagesBelowCount(0);
     setShowScrollToBottom(false);
     isNearBottomRef.current = true;
+  };
+
+  // Chat media (image-grid images, video stills) loads asynchronously with
+  // h-auto heights, so the thread keeps growing AFTER it has been laid out
+  // and scrolled to the bottom. Re-anchor on each load — but only while the
+  // user is still parked at the bottom (isNearBottomRef goes false the
+  // moment they scroll up to read), which is the "don't yank my reading
+  // position" rule the message effect below also follows.
+  const handleChatMediaLoaded = () => {
+    if (!isNearBottomRef.current) return;
+    scrollMessagesToBottom();
   };
 
   const updateConversationPreview = (message, incrementUnread = false) => {
@@ -367,7 +392,11 @@ const Chat = () => {
   // setMessageText directly, since programmatic clears (send, chat switch)
   // shouldn't re-trigger typing.
   const emitTyping = useCallback(() => {
-    if (!socket || !selectedChat?.conversationId || !selectedChat?.otherUser?._id)
+    if (
+      !socket ||
+      !selectedChat?.conversationId ||
+      !selectedChat?.otherUser?._id
+    )
       return;
     const payload = {
       conversationId: selectedChat.conversationId,
@@ -391,7 +420,11 @@ const Chat = () => {
     clearTimeout(stopTypingTimeoutRef.current);
     if (!isTypingRef.current) return;
     isTypingRef.current = false;
-    if (socket && selectedChat?.conversationId && selectedChat?.otherUser?._id) {
+    if (
+      socket &&
+      selectedChat?.conversationId &&
+      selectedChat?.otherUser?._id
+    ) {
       socket.emit("stopTyping", {
         conversationId: selectedChat.conversationId,
         recipientId: selectedChat.otherUser._id,
@@ -410,8 +443,7 @@ const Chat = () => {
     // flight does NOT lock the composer — it runs in the background so
     // text/images can be sent while it finishes.
     if (isSending || !selectedChat) return;
-    if (!messageText.trim() && imagePreviews.length === 0 && !videoFile)
-      return;
+    if (!messageText.trim() && imagePreviews.length === 0 && !videoFile) return;
     emitStopTypingNow();
     // Sending always means "I want to see this go out" — force the
     // near-bottom flag so the message-tracking effect follows it down
@@ -535,9 +567,7 @@ const Chat = () => {
       }
     } catch (e) {
       alert(
-        `Couldn't send your video: ${
-          e?.response?.data?.message || e.message
-        }`,
+        `Couldn't send your video: ${e?.response?.data?.message || e.message}`,
       );
     } finally {
       setVideoUploads((prev) => prev.filter((u) => u.id !== item.id));
@@ -620,7 +650,10 @@ const Chat = () => {
 
     const optimisticSummary = { ...prevSummary };
     if (prevMine) {
-      optimisticSummary[prevMine] = Math.max(0, (optimisticSummary[prevMine] || 1) - 1);
+      optimisticSummary[prevMine] = Math.max(
+        0,
+        (optimisticSummary[prevMine] || 1) - 1,
+      );
     }
     if (nextMine) {
       optimisticSummary[nextMine] = (optimisticSummary[nextMine] || 0) + 1;
@@ -640,7 +673,11 @@ const Chat = () => {
       setMessages((prev) =>
         prev.map((m) =>
           m._id === messageId
-            ? { ...m, myReaction: res.data.myReaction, reactionSummary: res.data.summary }
+            ? {
+                ...m,
+                myReaction: res.data.myReaction,
+                reactionSummary: res.data.summary,
+              }
             : m,
         ),
       );
@@ -852,7 +889,12 @@ const Chat = () => {
     };
     const handleDeleted = ({ messageId }) =>
       setMessages((prev) => prev.filter((m) => m._id !== messageId));
-    const handleReactionUpdate = ({ messageId, summary, emoji, userId: fromUserId }) => {
+    const handleReactionUpdate = ({
+      messageId,
+      summary,
+      emoji,
+      userId: fromUserId,
+    }) => {
       setMessages((prev) =>
         prev.map((m) =>
           m._id === messageId
@@ -943,7 +985,11 @@ const Chat = () => {
       // doesn't need that callback in its dep array — it fires on every
       // selectedChat change already, which is exactly when we want it.
       clearTimeout(stopTypingTimeoutRef.current);
-      if (isTypingRef.current && selectedChat?.conversationId && selectedChat?.otherUser?._id) {
+      if (
+        isTypingRef.current &&
+        selectedChat?.conversationId &&
+        selectedChat?.otherUser?._id
+      ) {
         isTypingRef.current = false;
         socket.emit("stopTyping", {
           conversationId: selectedChat.conversationId,
@@ -964,7 +1010,8 @@ const Chat = () => {
   const prevConversationIdRef = useRef(null);
 
   useEffect(() => {
-    if (!scrollRef.current) return;
+    // The messages container only exists while the chat modal is open.
+    if (!messagesContainerRef.current) return;
     // Don't auto-scroll to bottom when older messages were just prepended
     // via loadOlderMessages — that has its own scroll-position restore.
     if (isPrependingOlder.current) return;
@@ -985,6 +1032,15 @@ const Chat = () => {
       setNewMessagesBelowCount(0);
     }
 
+    // While threadLoading is true the modal renders its skeleton — the real
+    // messages aren't in the DOM yet. Scrolling (or consuming the
+    // fresh-thread jump) here would be wasted on the skeleton, and this
+    // effect wouldn't re-run for the real render since `messages` and the
+    // conversationId don't change again. So wait for threadLoading to flip
+    // false (it's in the deps below), THEN do the jump. This is what used
+    // to leave the modal parked at the top of the thread on open.
+    if (threadLoading) return;
+
     const prevCount = prevMessageCountRef.current;
     const currentCount = messages.length;
     prevMessageCountRef.current = currentCount;
@@ -994,7 +1050,9 @@ const Chat = () => {
     const isFreshThread = !hasScrolledToBottom.current;
 
     if (isFreshThread) {
-      scrollRef.current.scrollIntoView({ behavior: "auto" });
+      // Instant jump — a smooth animation over a long thread on open
+      // reads as a glitch.
+      scrollMessagesToBottom();
       hasScrolledToBottom.current = true;
       isNearBottomRef.current = true;
       setShowScrollToBottom(false);
@@ -1009,17 +1067,32 @@ const Chat = () => {
     const isNewMessage = currentCount > prevCount;
     if (!isNewMessage) return;
 
-    if (isNearBottomRef.current) {
+    // Recompute from the DOM rather than trusting isNearBottomRef alone:
+    // the ref is only updated on scroll events, and layout shifts (e.g. a
+    // chat image finishing loading above the viewport) can move the user
+    // away from the bottom without one firing. This is the "never yank a
+    // reader" guard.
+    const container = messagesContainerRef.current;
+    const distanceFromBottom = container
+      ? container.scrollHeight - container.scrollTop - container.clientHeight
+      : 0;
+
+    if (distanceFromBottom < NEAR_BOTTOM_PX) {
       // Already at/near the bottom — follow the conversation down, the
       // behavior every chat app users expect while actively watching.
-      scrollRef.current.scrollIntoView({ behavior: "smooth" });
+      scrollMessagesToBottom("smooth");
     } else {
       // Reading older messages further up — never yank the view. Surface
       // the arrival via the floating "jump to latest" badge instead.
       setNewMessagesBelowCount((c) => c + (currentCount - prevCount));
       setShowScrollToBottom(true);
     }
-  }, [messages, selectedChat?.conversationId]);
+  }, [
+    messages,
+    threadLoading,
+    selectedChat?.conversationId,
+    scrollMessagesToBottom,
+  ]);
 
   return (
     <MainLayout>
@@ -1091,12 +1164,17 @@ const Chat = () => {
                     <div className="flex items-center gap-3">
                       <div className="relative shrink-0">
                         <img
-                          src={resizedImageUrl(conv.otherUser.profilePic, IMAGE_SIZES.avatarSmall) || defaultAvatar}
+                          src={
+                            resizedImageUrl(
+                              conv.otherUser.profilePic,
+                              IMAGE_SIZES.avatarSmall,
+                            ) || defaultAvatar
+                          }
                           alt={conv.otherUser.name}
                           className="w-11 h-11 rounded-full object-cover ring-2 ring-primary-100"
                         />
                         <span
-                          className={`absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-white ${isOnline ? "bg-primary-400" : "bg-gray-300"}`}
+                          className={`absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-white ${isOnline ? "bg-primary-600" : "bg-gray-300"}`}
                         />
                       </div>
                       <div className="flex-1 min-w-0">
@@ -1159,7 +1237,12 @@ const Chat = () => {
                 <div key={req.conversationId} className="px-5 py-4">
                   <div className="flex items-center gap-3">
                     <img
-                      src={resizedImageUrl(req.otherUser.profilePic, IMAGE_SIZES.avatarSmall) || defaultAvatar}
+                      src={
+                        resizedImageUrl(
+                          req.otherUser.profilePic,
+                          IMAGE_SIZES.avatarSmall,
+                        ) || defaultAvatar
+                      }
                       alt={req.otherUser.name}
                       className="w-11 h-11 rounded-full object-cover ring-2 ring-primary-100 shrink-0"
                     />
@@ -1240,6 +1323,7 @@ const Chat = () => {
           scrollRef={scrollRef}
           messagesContainerRef={messagesContainerRef}
           onMessagesScroll={handleMessagesScroll}
+          onMediaLoaded={handleChatMediaLoaded}
           showScrollToBottom={showScrollToBottom}
           newMessagesBelowCount={newMessagesBelowCount}
           onScrollToBottom={() => scrollToBottom("smooth")}
