@@ -78,6 +78,50 @@ const ChatModal = ({
   // at a time, same convention as the options menu.
   const [reactionPickerFor, setReactionPickerFor] = useState(null);
   const lastTapRef = useRef({ id: null, time: 0 });
+  // Long-press state: timer handle for the pending press, and a flag that
+  // tells the following click/tap handler to no-op so a long-press
+  // doesn't also register as a single tap once the finger/mouse lifts.
+  const longPressTimerRef = useRef(null);
+  const longPressFiredRef = useRef(false);
+  const LONG_PRESS_MS = 450;
+
+  const clearLongPressTimer = () => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+  };
+
+  // Returns the on*Start/End/Cancel handlers for one bubble. Works for
+  // both touch (onTouchStart/End/Cancel) and mouse (onMouseDown/Up/Leave)
+  // so desktop users get the same affordance instead of being limited to
+  // double-click. Fires reactionPickerFor after LONG_PRESS_MS of holding;
+  // any move/release/cancel before that just cancels the timer.
+  const longPressHandlers = (messageId) => ({
+    onTouchStart: () => {
+      longPressFiredRef.current = false;
+      clearLongPressTimer();
+      longPressTimerRef.current = setTimeout(() => {
+        longPressFiredRef.current = true;
+        setReactionPickerFor(messageId);
+        if (navigator.vibrate) navigator.vibrate(15);
+      }, LONG_PRESS_MS);
+    },
+    onTouchEnd: clearLongPressTimer,
+    onTouchMove: clearLongPressTimer,
+    onTouchCancel: clearLongPressTimer,
+    onMouseDown: () => {
+      longPressFiredRef.current = false;
+      clearLongPressTimer();
+      longPressTimerRef.current = setTimeout(() => {
+        longPressFiredRef.current = true;
+        setReactionPickerFor(messageId);
+      }, LONG_PRESS_MS);
+    },
+    onMouseUp: clearLongPressTimer,
+    onMouseLeave: clearLongPressTimer,
+  });
+
   const hasPendingDeletes = Object.keys(pendingDeletes).length > 0;
 
   // Double-tap detection for touch devices — two taps within 300ms on
@@ -86,6 +130,13 @@ const ChatModal = ({
   // (a bare double-tap-to-heart pattern would surprise anyone reaching
   // for a different emoji).
   const handleBubbleTap = (messageId) => {
+    // Swallow the tap that follows a long-press firing (touchend/click
+    // still land after the timer resolves) so it doesn't also count as
+    // tap #1 of a fresh double-tap sequence.
+    if (longPressFiredRef.current) {
+      longPressFiredRef.current = false;
+      return;
+    }
     const now = Date.now();
     const last = lastTapRef.current;
     if (last.id === messageId && now - last.time < 300) {
@@ -101,6 +152,8 @@ const ChatModal = ({
     const interval = setInterval(() => setNow(Date.now()), 250);
     return () => clearInterval(interval);
   }, [hasPendingDeletes]);
+
+  useEffect(() => clearLongPressTimer, []);
 
   if (!isOpen || !selectedChat) return null;
   const activeUser = selectedChat.otherUser;
@@ -273,11 +326,32 @@ const ChatModal = ({
                   ) : (
                     <>
                       {message.video?.url && (
-                        <ChatVideoMessage
-                          url={message.video.url}
-                          poster={message.video.thumbnailUrl}
-                          alignmentClass={isMine ? "ml-auto self-end" : "self-start"}
-                        />
+                        <div className="relative">
+                          <div
+                            onClick={() => handleBubbleTap(message._id)}
+                            onDoubleClick={(e) => {
+                              e.preventDefault();
+                              setReactionPickerFor(message._id);
+                            }}
+                            {...longPressHandlers(message._id)}
+                            className="cursor-pointer select-none"
+                          >
+                            <ChatVideoMessage
+                              url={message.video.url}
+                              poster={message.video.thumbnailUrl}
+                              alignmentClass={isMine ? "ml-auto self-end" : "self-start"}
+                            />
+                          </div>
+                          <ReactionPicker
+                            open={reactionPickerFor === message._id}
+                            align={isMine ? "right" : "left"}
+                            onSelect={(emoji) => {
+                              setReactionPickerFor(null);
+                              handleReactMessage(message._id, emoji);
+                            }}
+                            onClose={() => setReactionPickerFor(null)}
+                          />
+                        </div>
                       )}
                       {(() => {
                         const images = message.images?.length
@@ -287,23 +361,40 @@ const ChatModal = ({
                             : [];
                         if (images.length === 0) return null;
                         return (
-                          <div
-                            className={`grid grid-cols-2 gap-1 rounded-xl overflow-hidden ${isMine ? "ml-auto" : ""}`}
-                          >
-                            {images.map((src, idx) => (
-                              <img
-                                key={idx}
-                                src={src}
-                                alt={`message ${idx + 1}`}
-                                className={`w-full h-auto object-cover ${
-                                  images.length === 1
-                                    ? "col-span-2"
-                                    : images.length === 3 && idx === 0
+                          <div className="relative">
+                            <div
+                              onClick={() => handleBubbleTap(message._id)}
+                              onDoubleClick={(e) => {
+                                e.preventDefault();
+                                setReactionPickerFor(message._id);
+                              }}
+                              {...longPressHandlers(message._id)}
+                              className={`grid grid-cols-2 gap-1 rounded-xl overflow-hidden cursor-pointer select-none ${isMine ? "ml-auto" : ""}`}
+                            >
+                              {images.map((src, idx) => (
+                                <img
+                                  key={idx}
+                                  src={src}
+                                  alt={`message ${idx + 1}`}
+                                  className={`w-full h-auto object-cover ${
+                                    images.length === 1
                                       ? "col-span-2"
-                                      : ""
-                                }`}
-                              />
-                            ))}
+                                      : images.length === 3 && idx === 0
+                                        ? "col-span-2"
+                                        : ""
+                                  }`}
+                                />
+                              ))}
+                            </div>
+                            <ReactionPicker
+                              open={reactionPickerFor === message._id}
+                              align={isMine ? "right" : "left"}
+                              onSelect={(emoji) => {
+                                setReactionPickerFor(null);
+                                handleReactMessage(message._id, emoji);
+                              }}
+                              onClose={() => setReactionPickerFor(null)}
+                            />
                           </div>
                         );
                       })()}
@@ -315,6 +406,7 @@ const ChatModal = ({
                               e.preventDefault();
                               setReactionPickerFor(message._id);
                             }}
+                            {...longPressHandlers(message._id)}
                             className={`px-4 py-2.5 rounded-2xl text-base whitespace-pre-wrap cursor-pointer select-none ${
                               isMine
                                 ? "bg-primary-600 text-white self-end rounded-br-sm"
