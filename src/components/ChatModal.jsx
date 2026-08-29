@@ -11,7 +11,7 @@ import MessageOptionsMenu from "./MessageOptionsMenu";
 import TextWithLinks from "./TextWithLinks";
 import ReactionPicker from "./ReactionPicker";
 import ReactionSummaryBar from "./ReactionSummaryBar";
-import { FaCheckDouble } from "react-icons/fa";
+import { FaCheckDouble, FaChevronDown } from "react-icons/fa";
 import defaultAvatar from "../assets/defaultAvatar";
 import { resizedImageUrl, IMAGE_SIZES } from "../utils/cloudinaryImage";
 import {
@@ -52,6 +52,12 @@ const ChatModal = ({
   scrollRef,
   messagesContainerRef,
   onMessagesScroll,
+  // Floating "jump to latest" affordance — Chat.jsx owns the near-bottom
+  // detection (see handleMessagesScroll) and just tells this component
+  // whether to show the button and what badge count to render.
+  showScrollToBottom,
+  newMessagesBelowCount,
+  onScrollToBottom,
   isLoadingOlderMessages,
   messagesHasMore,
   requestInfo,
@@ -77,12 +83,20 @@ const ChatModal = ({
   // Which message's reaction picker is open (null when none) — only one
   // at a time, same convention as the options menu.
   const [reactionPickerFor, setReactionPickerFor] = useState(null);
+  // Viewport coords {x, y} of the click/touch that opened the picker
+  // currently shown — the picker renders 10px above THIS point (see
+  // ReactionPicker's anchorPoint prop), not flush above the bubble.
+  const [reactionAnchorPoint, setReactionAnchorPoint] = useState(null);
   const lastTapRef = useRef({ id: null, time: 0 });
   // Long-press state: timer handle for the pending press, and a flag that
   // tells the following click/tap handler to no-op so a long-press
   // doesn't also register as a single tap once the finger/mouse lifts.
   const longPressTimerRef = useRef(null);
   const longPressFiredRef = useRef(false);
+  // Live pointer position during a hold — a finger/mouse can drift a few
+  // px without the browser treating it as a "move" cancel, so the picker
+  // anchors to where the press ends up, not just where it started.
+  const longPressPointRef = useRef(null);
   const LONG_PRESS_MS = 450;
 
   const clearLongPressTimer = () => {
@@ -95,26 +109,35 @@ const ChatModal = ({
   // Returns the on*Start/End/Cancel handlers for one bubble. Works for
   // both touch (onTouchStart/End/Cancel) and mouse (onMouseDown/Up/Leave)
   // so desktop users get the same affordance instead of being limited to
-  // double-click. Fires reactionPickerFor after LONG_PRESS_MS of holding;
-  // any move/release/cancel before that just cancels the timer.
+  // double-click. Fires reactionPickerFor after LONG_PRESS_MS of holding,
+  // anchored to the current pointer position; any move/release/cancel
+  // before that just cancels the timer.
   const longPressHandlers = (messageId) => ({
-    onTouchStart: () => {
+    onTouchStart: (e) => {
+      const touch = e.touches[0];
+      longPressPointRef.current = { x: touch.clientX, y: touch.clientY };
       longPressFiredRef.current = false;
       clearLongPressTimer();
       longPressTimerRef.current = setTimeout(() => {
         longPressFiredRef.current = true;
+        setReactionAnchorPoint(longPressPointRef.current);
         setReactionPickerFor(messageId);
         if (navigator.vibrate) navigator.vibrate(15);
       }, LONG_PRESS_MS);
     },
+    onTouchMove: (e) => {
+      const touch = e.touches[0];
+      longPressPointRef.current = { x: touch.clientX, y: touch.clientY };
+    },
     onTouchEnd: clearLongPressTimer,
-    onTouchMove: clearLongPressTimer,
     onTouchCancel: clearLongPressTimer,
-    onMouseDown: () => {
+    onMouseDown: (e) => {
+      longPressPointRef.current = { x: e.clientX, y: e.clientY };
       longPressFiredRef.current = false;
       clearLongPressTimer();
       longPressTimerRef.current = setTimeout(() => {
         longPressFiredRef.current = true;
+        setReactionAnchorPoint(longPressPointRef.current);
         setReactionPickerFor(messageId);
       }, LONG_PRESS_MS);
     },
@@ -129,7 +152,7 @@ const ChatModal = ({
   // default emoji, so the person still picks which reaction to send
   // (a bare double-tap-to-heart pattern would surprise anyone reaching
   // for a different emoji).
-  const handleBubbleTap = (messageId) => {
+  const handleBubbleTap = (messageId, e) => {
     // Swallow the tap that follows a long-press firing (touchend/click
     // still land after the timer resolves) so it doesn't also count as
     // tap #1 of a fresh double-tap sequence.
@@ -140,6 +163,7 @@ const ChatModal = ({
     const now = Date.now();
     const last = lastTapRef.current;
     if (last.id === messageId && now - last.time < 300) {
+      if (e) setReactionAnchorPoint({ x: e.clientX, y: e.clientY });
       setReactionPickerFor(messageId);
       lastTapRef.current = { id: null, time: 0 };
     } else {
@@ -225,11 +249,12 @@ const ChatModal = ({
         </div>
 
         {/* Messages */}
-        <div
-          ref={messagesContainerRef}
-          onScroll={onMessagesScroll}
-          className="flex-1 overflow-y-auto overflow-x-hidden min-w-0 px-4 py-4 space-y-3 app-bg"
-        >
+        <div className="relative flex-1 min-h-0 flex flex-col">
+          <div
+            ref={messagesContainerRef}
+            onScroll={onMessagesScroll}
+            className="flex-1 overflow-y-auto overflow-x-hidden min-w-0 px-4 py-4 space-y-3 app-bg"
+          >
           {isLoadingOlderMessages && (
             <p className="text-center text-[11px] text-ink-muted py-1">
               Loading older messages...
@@ -328,9 +353,10 @@ const ChatModal = ({
                       {message.video?.url && (
                         <div className="relative">
                           <div
-                            onClick={() => handleBubbleTap(message._id)}
+                            onClick={(e) => handleBubbleTap(message._id, e)}
                             onDoubleClick={(e) => {
                               e.preventDefault();
+                              setReactionAnchorPoint({ x: e.clientX, y: e.clientY });
                               setReactionPickerFor(message._id);
                             }}
                             {...longPressHandlers(message._id)}
@@ -345,6 +371,7 @@ const ChatModal = ({
                           <ReactionPicker
                             open={reactionPickerFor === message._id}
                             align={isMine ? "right" : "left"}
+                            anchorPoint={reactionAnchorPoint}
                             onSelect={(emoji) => {
                               setReactionPickerFor(null);
                               handleReactMessage(message._id, emoji);
@@ -363,9 +390,10 @@ const ChatModal = ({
                         return (
                           <div className="relative">
                             <div
-                              onClick={() => handleBubbleTap(message._id)}
+                              onClick={(e) => handleBubbleTap(message._id, e)}
                               onDoubleClick={(e) => {
                                 e.preventDefault();
+                                setReactionAnchorPoint({ x: e.clientX, y: e.clientY });
                                 setReactionPickerFor(message._id);
                               }}
                               {...longPressHandlers(message._id)}
@@ -389,6 +417,7 @@ const ChatModal = ({
                             <ReactionPicker
                               open={reactionPickerFor === message._id}
                               align={isMine ? "right" : "left"}
+                              anchorPoint={reactionAnchorPoint}
                               onSelect={(emoji) => {
                                 setReactionPickerFor(null);
                                 handleReactMessage(message._id, emoji);
@@ -401,9 +430,10 @@ const ChatModal = ({
                       {message.text && (
                         <div className="relative">
                           <div
-                            onClick={() => handleBubbleTap(message._id)}
+                            onClick={(e) => handleBubbleTap(message._id, e)}
                             onDoubleClick={(e) => {
                               e.preventDefault();
+                              setReactionAnchorPoint({ x: e.clientX, y: e.clientY });
                               setReactionPickerFor(message._id);
                             }}
                             {...longPressHandlers(message._id)}
@@ -425,6 +455,7 @@ const ChatModal = ({
                           <ReactionPicker
                             open={reactionPickerFor === message._id}
                             align={isMine ? "right" : "left"}
+                            anchorPoint={reactionAnchorPoint}
                             onSelect={(emoji) => {
                               setReactionPickerFor(null);
                               handleReactMessage(message._id, emoji);
@@ -503,6 +534,23 @@ const ChatModal = ({
             </div>
           )}
           <div ref={scrollRef} />
+          </div>
+
+          {showScrollToBottom && (
+            <button
+              type="button"
+              onClick={onScrollToBottom}
+              aria-label="Scroll to latest messages"
+              className="absolute bottom-4 right-4 flex items-center gap-1.5 bg-card border border-stroke shadow-lg rounded-full pl-3 pr-3.5 py-2 text-sm font-medium text-ink hover:bg-surface transition z-30"
+            >
+              <FaChevronDown size={12} className="text-primary-600" />
+              {newMessagesBelowCount > 0 && (
+                <span className="min-w-[18px] px-1 h-[18px] flex items-center justify-center rounded-full bg-primary-600 text-white text-[11px] leading-none">
+                  {newMessagesBelowCount > 99 ? "99+" : newMessagesBelowCount}
+                </span>
+              )}
+            </button>
+          )}
         </div>
 
         {/* Input */}

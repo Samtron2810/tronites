@@ -100,6 +100,17 @@ const Chat = () => {
   const conversationsObserverTarget = useRef(null);
   const hasScrolledToBottom = useRef(false);
   const isPrependingOlder = useRef(false);
+  // Tracks whether the user is currently scrolled near the bottom of the
+  // thread — drives whether new messages/reactions auto-scroll (near
+  // bottom) or just increment the "jump to latest" badge (reading older
+  // messages further up). Kept in a ref for the message-effect's
+  // decision (avoids stale closures) and mirrored to state to drive the
+  // floating button's visibility/badge without extra re-renders elsewhere.
+  const isNearBottomRef = useRef(true);
+  const [showScrollToBottom, setShowScrollToBottom] = useState(false);
+  const [newMessagesBelowCount, setNewMessagesBelowCount] = useState(0);
+  const prevMessageCountRef = useRef(0);
+  const NEAR_BOTTOM_PX = 120;
 
   // Keep activeChatIdRef in sync with the currently-open thread so the
   // async video-send path can detect a mid-upload conversation switch.
@@ -301,6 +312,22 @@ const Chat = () => {
     ) {
       loadOlderMessages();
     }
+    const distanceFromBottom =
+      container.scrollHeight - container.scrollTop - container.clientHeight;
+    const nearBottom = distanceFromBottom < NEAR_BOTTOM_PX;
+    isNearBottomRef.current = nearBottom;
+    setShowScrollToBottom(!nearBottom);
+    if (nearBottom) setNewMessagesBelowCount(0);
+  };
+
+  // Manual "jump to latest" — used by the floating button. Always scrolls
+  // (unlike the passive effect below, which only auto-scrolls when
+  // already near the bottom) since this is an explicit user action.
+  const scrollToBottom = (behavior = "smooth") => {
+    scrollRef.current?.scrollIntoView({ behavior });
+    setNewMessagesBelowCount(0);
+    setShowScrollToBottom(false);
+    isNearBottomRef.current = true;
   };
 
   const updateConversationPreview = (message, incrementUnread = false) => {
@@ -386,6 +413,11 @@ const Chat = () => {
     if (!messageText.trim() && imagePreviews.length === 0 && !videoFile)
       return;
     emitStopTypingNow();
+    // Sending always means "I want to see this go out" — force the
+    // near-bottom flag so the message-tracking effect follows it down
+    // even if the composer was somehow used while scrolled up reading
+    // history (e.g. via keyboard shortcut).
+    isNearBottomRef.current = true;
 
     // Video draft? Snapshot everything needed, free the composer
     // immediately, then run upload + create-message in the background.
@@ -929,22 +961,65 @@ const Chat = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [socket, selectedChat, user._id]);
 
+  const prevConversationIdRef = useRef(null);
+
   useEffect(() => {
     if (!scrollRef.current) return;
     // Don't auto-scroll to bottom when older messages were just prepended
     // via loadOlderMessages — that has its own scroll-position restore.
     if (isPrependingOlder.current) return;
-    scrollRef.current.scrollIntoView({
-      behavior: hasScrolledToBottom.current ? "smooth" : "auto",
-    });
-    hasScrolledToBottom.current = true;
-  }, [messages, selectedChat?.conversationId]);
 
-  useEffect(() => {
-    if (!selectedChat) hasScrolledToBottom.current = false;
-    // Only .conversationId identity matters here, not the whole object.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedChat?.conversationId]);
+    const conversationId = selectedChat?.conversationId || null;
+    const switchedThread = conversationId !== prevConversationIdRef.current;
+    if (switchedThread) {
+      // Reset per-thread scroll bookkeeping inline (not a separate
+      // effect) so this always resolves before the fresh-thread check
+      // below runs in the same pass — avoids an effect-ordering race
+      // where a stale hasScrolledToBottom from the previous thread
+      // could leak into this one's first render.
+      prevConversationIdRef.current = conversationId;
+      hasScrolledToBottom.current = false;
+      prevMessageCountRef.current = 0;
+      isNearBottomRef.current = true;
+      setShowScrollToBottom(false);
+      setNewMessagesBelowCount(0);
+    }
+
+    const prevCount = prevMessageCountRef.current;
+    const currentCount = messages.length;
+    prevMessageCountRef.current = currentCount;
+    // A brand-new thread (conversation switch) or the very first load
+    // always jumps to bottom outright — there's no "reading position"
+    // to preserve yet.
+    const isFreshThread = !hasScrolledToBottom.current;
+
+    if (isFreshThread) {
+      scrollRef.current.scrollIntoView({ behavior: "auto" });
+      hasScrolledToBottom.current = true;
+      isNearBottomRef.current = true;
+      setShowScrollToBottom(false);
+      setNewMessagesBelowCount(0);
+      return;
+    }
+
+    // messages array also changes on reaction updates (same length, a
+    // bubble's reactionSummary mutated) and on read-receipt updates —
+    // neither should ever force-scroll regardless of position, only a
+    // genuine new message (array grew) is scroll-worthy at all.
+    const isNewMessage = currentCount > prevCount;
+    if (!isNewMessage) return;
+
+    if (isNearBottomRef.current) {
+      // Already at/near the bottom — follow the conversation down, the
+      // behavior every chat app users expect while actively watching.
+      scrollRef.current.scrollIntoView({ behavior: "smooth" });
+    } else {
+      // Reading older messages further up — never yank the view. Surface
+      // the arrival via the floating "jump to latest" badge instead.
+      setNewMessagesBelowCount((c) => c + (currentCount - prevCount));
+      setShowScrollToBottom(true);
+    }
+  }, [messages, selectedChat?.conversationId]);
 
   return (
     <MainLayout>
@@ -1165,6 +1240,9 @@ const Chat = () => {
           scrollRef={scrollRef}
           messagesContainerRef={messagesContainerRef}
           onMessagesScroll={handleMessagesScroll}
+          showScrollToBottom={showScrollToBottom}
+          newMessagesBelowCount={newMessagesBelowCount}
+          onScrollToBottom={() => scrollToBottom("smooth")}
           isLoadingOlderMessages={isLoadingOlderMessages}
           messagesHasMore={messagesHasMore}
           requestInfo={requestInfo}
