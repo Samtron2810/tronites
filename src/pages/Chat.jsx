@@ -74,6 +74,18 @@ const Chat = () => {
   const deletingIdsRef = useRef(new Set());
   const fileInputRef = useRef(null);
   const videoInputRef = useRef(null);
+  // Whether the OTHER participant in the open thread is currently typing.
+  // Server-pushed only — this client never infers its own typing state
+  // from this, see isTypingRef/typingTimeoutRef below for that side.
+  const [otherUserTyping, setOtherUserTyping] = useState(false);
+  const otherUserTypingTimeoutRef = useRef(null);
+  // Local "am I currently broadcasting typing" flag — lets handleMessageTextChange
+  // emit "typing" only on the leading edge (first keystroke after idle)
+  // instead of on every keystroke, and emit "stopTyping" once, not per key.
+  const isTypingRef = useRef(false);
+  const stopTypingTimeoutRef = useRef(null);
+  const TYPING_IDLE_MS = 2500; // no keystroke for this long -> stopTyping
+  const TYPING_STALE_MS = 4000; // no "typing" event from peer -> assume stopped (dropped stopTyping)
   // Tracks which conversation is currently open, updated on every render
   // where selectedChat changes. Used by the async video-send path to
   // detect a mid-upload thread switch (the closure's selectedChat is stale
@@ -322,6 +334,50 @@ const Chat = () => {
     });
   };
 
+  // Broadcasts "typing" on the leading edge, resets a trailing idle timer
+  // on every keystroke, and emits "stopTyping" once the user pauses for
+  // TYPING_IDLE_MS. Called from the composer's onChange, not from
+  // setMessageText directly, since programmatic clears (send, chat switch)
+  // shouldn't re-trigger typing.
+  const emitTyping = useCallback(() => {
+    if (!socket || !selectedChat?.conversationId || !selectedChat?.otherUser?._id)
+      return;
+    const payload = {
+      conversationId: selectedChat.conversationId,
+      recipientId: selectedChat.otherUser._id,
+    };
+    if (!isTypingRef.current) {
+      isTypingRef.current = true;
+      socket.emit("typing", payload);
+    }
+    clearTimeout(stopTypingTimeoutRef.current);
+    stopTypingTimeoutRef.current = setTimeout(() => {
+      isTypingRef.current = false;
+      socket.emit("stopTyping", payload);
+    }, TYPING_IDLE_MS);
+  }, [socket, selectedChat]);
+
+  // Fires stopTyping immediately (send, blur-away, chat switch) instead of
+  // waiting out the idle timer — keeps the peer's indicator from lingering
+  // after the message actually goes out.
+  const emitStopTypingNow = useCallback(() => {
+    clearTimeout(stopTypingTimeoutRef.current);
+    if (!isTypingRef.current) return;
+    isTypingRef.current = false;
+    if (socket && selectedChat?.conversationId && selectedChat?.otherUser?._id) {
+      socket.emit("stopTyping", {
+        conversationId: selectedChat.conversationId,
+        recipientId: selectedChat.otherUser._id,
+      });
+    }
+  }, [socket, selectedChat]);
+
+  const handleMessageTextChange = (value) => {
+    setMessageText(value);
+    if (value.trim()) emitTyping();
+    else emitStopTypingNow();
+  };
+
   const handleSendMessage = async () => {
     // `isSending` only covers the fast text/image POST. A video upload in
     // flight does NOT lock the composer — it runs in the background so
@@ -329,6 +385,7 @@ const Chat = () => {
     if (isSending || !selectedChat) return;
     if (!messageText.trim() && imagePreviews.length === 0 && !videoFile)
       return;
+    emitStopTypingNow();
 
     // Video draft? Snapshot everything needed, free the composer
     // immediately, then run upload + create-message in the background.
@@ -793,6 +850,32 @@ const Chat = () => {
       }
     };
     socket.on("messageRequestAccepted", handleRequestAccepted);
+    const handleTyping = ({ conversationId, userId: fromUserId }) => {
+      if (
+        conversationId !== selectedChat?.conversationId ||
+        fromUserId !== selectedChat?.otherUser?._id
+      )
+        return;
+      setOtherUserTyping(true);
+      // Server "stopTyping" can be dropped (tab close, network blip) —
+      // age the indicator out on its own so it never sticks forever.
+      clearTimeout(otherUserTypingTimeoutRef.current);
+      otherUserTypingTimeoutRef.current = setTimeout(
+        () => setOtherUserTyping(false),
+        TYPING_STALE_MS,
+      );
+    };
+    const handleStopTyping = ({ conversationId, userId: fromUserId }) => {
+      if (
+        conversationId !== selectedChat?.conversationId ||
+        fromUserId !== selectedChat?.otherUser?._id
+      )
+        return;
+      clearTimeout(otherUserTypingTimeoutRef.current);
+      setOtherUserTyping(false);
+    };
+    socket.on("typing", handleTyping);
+    socket.on("stopTyping", handleStopTyping);
     socket.on("messagesRead", (data) => {
       // Always update the conversation list to clear unread count
       setConversations((prev) =>
@@ -820,6 +903,21 @@ const Chat = () => {
       socket.off("messageReactionUpdate", handleReactionUpdate);
       socket.off("messagesRead");
       socket.off("messageRequestAccepted", handleRequestAccepted);
+      socket.off("typing", handleTyping);
+      socket.off("stopTyping", handleStopTyping);
+      clearTimeout(otherUserTypingTimeoutRef.current);
+      setOtherUserTyping(false);
+      // Inline stopTyping emit (not emitStopTypingNow) so this cleanup
+      // doesn't need that callback in its dep array — it fires on every
+      // selectedChat change already, which is exactly when we want it.
+      clearTimeout(stopTypingTimeoutRef.current);
+      if (isTypingRef.current && selectedChat?.conversationId && selectedChat?.otherUser?._id) {
+        isTypingRef.current = false;
+        socket.emit("stopTyping", {
+          conversationId: selectedChat.conversationId,
+          recipientId: selectedChat.otherUser._id,
+        });
+      }
       if (selectedChat?.conversationId)
         socket.emit("leaveConversation", selectedChat.conversationId);
     };
@@ -1084,6 +1182,8 @@ const Chat = () => {
           }
           requestActionPending={requestActionId === selectedChat.conversationId}
           handleReportMessage={handleReportMessage}
+          onMessageTextChange={handleMessageTextChange}
+          otherUserTyping={otherUserTyping}
         />
       )}
     </MainLayout>

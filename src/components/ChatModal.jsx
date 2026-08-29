@@ -62,6 +62,13 @@ const ChatModal = ({
   // to true only when it succeeded — owned by Chat.jsx like every other
   // mutation; this component just collects the UI input.
   handleReportMessage,
+  // Called on every composer keystroke instead of setMessageText directly
+  // so Chat.jsx can piggyback the typing/stopTyping socket emits on the
+  // same change event without this component knowing about sockets.
+  onMessageTextChange,
+  // True while the other participant has an active "typing" broadcast
+  // for this open thread (server-pushed, auto-expires — see Chat.jsx).
+  otherUserTyping,
 }) => {
   const [now, setNow] = useState(() => Date.now());
   // Message currently being reported via ReportModal (null when closed).
@@ -138,9 +145,28 @@ const ChatModal = ({
               )}
             </p>
             <p
-              className={`text-sm ${activeIsOnline ? "text-primary-600" : "text-ink-muted"}`}
+              className={`text-sm transition-colors ${
+                otherUserTyping
+                  ? "text-primary-600 font-medium"
+                  : activeIsOnline
+                    ? "text-primary-600"
+                    : "text-ink-muted"
+              }`}
             >
-              {activeIsOnline ? "Online" : "Offline"}
+              {otherUserTyping ? (
+                <span className="inline-flex items-center gap-1">
+                  typing
+                  <span className="flex gap-0.5">
+                    <span className="w-1 h-1 rounded-full bg-primary-600 animate-bounce [animation-delay:-0.3s]" />
+                    <span className="w-1 h-1 rounded-full bg-primary-600 animate-bounce [animation-delay:-0.15s]" />
+                    <span className="w-1 h-1 rounded-full bg-primary-600 animate-bounce" />
+                  </span>
+                </span>
+              ) : activeIsOnline ? (
+                "Online"
+              ) : (
+                "Offline"
+              )}
             </p>
           </div>
         </div>
@@ -373,6 +399,17 @@ const ChatModal = ({
               </Fragment>
             );
           })}
+          {otherUserTyping && (
+            <div className="flex justify-start">
+              <div className="px-4 py-2.5 rounded-2xl rounded-bl-sm bg-card border border-stroke self-start">
+                <span className="flex gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-ink-muted animate-bounce [animation-delay:-0.3s]" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-ink-muted animate-bounce [animation-delay:-0.15s]" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-ink-muted animate-bounce" />
+                </span>
+              </div>
+            </div>
+          )}
           <div ref={scrollRef} />
         </div>
 
@@ -489,7 +526,11 @@ const ChatModal = ({
               <div className="flex items-center gap-2">
                 <input
                   value={messageText}
-                  onChange={(e) => setMessageText(e.target.value)}
+                  onChange={(e) =>
+                    onMessageTextChange
+                      ? onMessageTextChange(e.target.value)
+                      : setMessageText(e.target.value)
+                  }
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && !e.shiftKey) {
                       e.preventDefault();
