@@ -1090,18 +1090,19 @@ const PostCard = ({
               card — reposting a quote reposts the quote itself (see
               backend models/Repost.js), never the original it embeds.
               Quoting a quote is not allowed (one level of embedding
-              only) — the "Quote" option is simply omitted from the
-              dropdown when this card IS a quote, leaving only Repost. */}
+              only) — the "Quote" option is omitted from the dropdown
+              only when this card IS a quote, never just because it's
+              the viewer's own post (createQuotePost's block/mute check
+              explicitly exempts self, so self-quoting is allowed). */}
           <div className="relative">
             <button
               ref={repostTriggerRef}
               onClick={(e) => {
                 e.stopPropagation();
-                if (isOwner || isQuotePost) {
-                  // Owners can't quote their own post from here in
-                  // this pass (only plain repost, which is a no-op
-                  // shown for consistency); a quote card never offers
-                  // Quote at all — skip the dropdown and just toggle.
+                if (isQuotePost) {
+                  // A quote card never offers Quote at all (one level
+                  // of embedding only) — skip the dropdown and just
+                  // toggle plain repost.
                   handleRepost();
                 } else {
                   setRepostMenuOpen((o) => !o);
