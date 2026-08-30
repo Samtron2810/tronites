@@ -7,6 +7,13 @@ import {
   uploadVideoMessageToCloudinary,
   validateVideoFile,
 } from "../services/videoUpload";
+import {
+  VoiceRecorder,
+  uploadVoiceMessageToCloudinary,
+  computeWaveform,
+  isVoiceRecordingSupported,
+  MAX_VOICE_DURATION_SECONDS,
+} from "../services/voiceUpload";
 import { useAuth } from "../context/useAuth";
 import { useSocket } from "../context/useSocket";
 import ChatModal from "../components/ChatModal";
@@ -75,6 +82,18 @@ const Chat = () => {
   // image sends continue working while these finish. One progress bar is
   // rendered per entry.
   const [videoUploads, setVideoUploads] = useState([]);
+  // Voice-note recording state. `isRecordingVoice` drives the composer's
+  // recording UI (waveform-free live timer + stop/cancel); the actual
+  // MediaRecorder instance lives in voiceRecorderRef so it survives
+  // re-renders without becoming state itself.
+  const [isRecordingVoice, setIsRecordingVoice] = useState(false);
+  const [recordingElapsed, setRecordingElapsed] = useState(0);
+  const voiceRecorderRef = useRef(null);
+  // In-flight BACKGROUND voice-note sends — same one-progress-bar-per-item
+  // pattern as videoUploads, since recording is instant but the upload
+  // afterward is not.
+  const [voiceUploads, setVoiceUploads] = useState([]);
+  const voiceSendIdRef = useRef(0);
   const [pendingDeletes, setPendingDeletes] = useState({}); // messageId -> expiresAt (ms)
   const [deletingIds, setDeletingIds] = useState([]); // ids whose API delete is in flight
   const pendingDeletesRef = useRef({});
@@ -121,8 +140,19 @@ const Chat = () => {
 
   // Keep activeChatIdRef in sync with the currently-open thread so the
   // async video-send path can detect a mid-upload conversation switch.
+  // Also cancels any in-progress voice recording — switching threads (or
+  // navigating away) while the mic is open would otherwise leave a live
+  // getUserMedia stream running against the thread you just left.
   useEffect(() => {
     activeChatIdRef.current = selectedChat?.conversationId || null;
+    return () => {
+      if (voiceRecorderRef.current) {
+        voiceRecorderRef.current.cancel();
+        voiceRecorderRef.current = null;
+        setIsRecordingVoice(false);
+        setRecordingElapsed(0);
+      }
+    };
   }, [selectedChat]);
 
   const fetchConversations = async () => {
@@ -377,9 +407,11 @@ const Chat = () => {
           ? message.text
           : message.video?.url
             ? "🎬 Video"
-            : message.images?.length || message.image
-              ? "📷 Photo(s)"
-              : "",
+            : message.voice?.url
+              ? "🎤 Voice message"
+              : message.images?.length || message.image
+                ? "📷 Photo(s)"
+                : "",
         lastMessageFromMe: message.sender._id === user._id,
         lastMessageAt: message.createdAt,
         unreadCount: incrementUnread
@@ -617,6 +649,112 @@ const Chat = () => {
   };
 
   const handleRemoveVideo = () => clearVideoDraft();
+
+  // Background worker for one queued voice-note send — mirrors
+  // startVideoSend exactly: upload with progress, create the message,
+  // append locally only if still on the same thread, self-remove from the
+  // pending list on completion or failure.
+  const startVoiceSend = async (item) => {
+    try {
+      const voice = await uploadVoiceMessageToCloudinary({
+        blob: item.blob,
+        onProgress: (pct) =>
+          setVoiceUploads((prev) =>
+            prev.map((u) => (u.id === item.id ? { ...u, progress: pct } : u)),
+          ),
+      });
+      voice.waveform = item.waveform;
+      voice.durationSeconds = voice.durationSeconds || item.durationSeconds;
+
+      const res = await api.post(`/messages/${item.receiverId}/voice`, {
+        voice,
+      });
+
+      if (item.chatId === activeChatIdRef.current) {
+        setMessages((prev) => insertMessageSorted(prev, res.data));
+      }
+      updateConversationPreview(res.data, false);
+      if (item.markPendingRequest) {
+        setRequestInfo((prev) =>
+          prev?.status === "pending"
+            ? prev
+            : { status: "pending", isInitiator: true },
+        );
+      }
+    } catch (e) {
+      alert(
+        `Couldn't send your voice note: ${e?.response?.data?.message || e.message}`,
+      );
+    } finally {
+      setVoiceUploads((prev) => prev.filter((u) => u.id !== item.id));
+    }
+  };
+
+  // Mic button press: request the microphone and start recording. Silently
+  // no-ops with an alert if the browser lacks MediaRecorder/getUserMedia
+  // support (older Safari/embedded webviews) rather than showing a broken
+  // control.
+  const handleStartRecording = async () => {
+    if (!selectedChat || isRecordingVoice) return;
+    if (!isVoiceRecordingSupported()) {
+      alert("Voice notes aren't supported in this browser.");
+      return;
+    }
+    const recorder = new VoiceRecorder({
+      onTick: (elapsed) => setRecordingElapsed(elapsed),
+      // Auto-stop and send at the cap so a forgotten-open mic doesn't
+      // record indefinitely — same UX as WhatsApp's hard stop.
+      onMaxDuration: () => handleStopRecording({ send: true }),
+    });
+    try {
+      await recorder.start();
+      voiceRecorderRef.current = recorder;
+      setRecordingElapsed(0);
+      setIsRecordingVoice(true);
+    } catch {
+      alert("Microphone access was denied or is unavailable.");
+    }
+  };
+
+  // Stops the active recording. `send: false` (the ✕ button) discards it;
+  // `send: true` (the ✓ button, or hitting the max duration) uploads it as
+  // a background send, same free-the-composer-immediately pattern as
+  // video sends.
+  const handleStopRecording = async ({ send }) => {
+    const recorder = voiceRecorderRef.current;
+    if (!recorder) return;
+    setIsRecordingVoice(false);
+    voiceRecorderRef.current = null;
+
+    if (!send) {
+      recorder.cancel();
+      setRecordingElapsed(0);
+      return;
+    }
+
+    try {
+      const { blob, durationSeconds } = await recorder.stop();
+      setRecordingElapsed(0);
+      // Discard anything below half a second — almost certainly an
+      // accidental tap, not an intended note.
+      if (durationSeconds < 0.5) return;
+      const waveform = await computeWaveform(blob);
+      const item = {
+        id: `voice-${++voiceSendIdRef.current}`,
+        blob,
+        durationSeconds,
+        waveform,
+        chatId: selectedChat.conversationId,
+        receiverId: selectedChat.otherUser._id,
+        progress: 0,
+        markPendingRequest: requestInfo?.status !== "accepted",
+      };
+      setVoiceUploads((prev) => [...prev, item]);
+      void startVoiceSend(item);
+    } catch {
+      setRecordingElapsed(0);
+    }
+  };
 
   const handleImageSelect = (e) => {
     const files = Array.from(e.target.files || []);
@@ -1328,6 +1466,12 @@ const Chat = () => {
           videoFile={videoFile}
           videoPreviewUrl={videoPreviewUrl}
           videoUploads={videoUploads}
+          isRecordingVoice={isRecordingVoice}
+          recordingElapsed={recordingElapsed}
+          maxVoiceDurationSeconds={MAX_VOICE_DURATION_SECONDS}
+          onStartRecording={handleStartRecording}
+          onStopRecording={handleStopRecording}
+          voiceUploads={voiceUploads}
           scrollRef={scrollRef}
           messagesContainerRef={messagesContainerRef}
           onMessagesScroll={handleMessagesScroll}

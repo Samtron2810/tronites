@@ -1,6 +1,7 @@
 import { Fragment, useEffect, useRef, useState } from "react";
-import { FiArrowLeft, FiImage, FiVideo, FiCheck } from "react-icons/fi";
+import { FiArrowLeft, FiImage, FiVideo, FiCheck, FiMic, FiX } from "react-icons/fi";
 import ChatMediaViewer from "./ChatMediaViewer";
+import VoiceNotePlayer from "./VoiceNotePlayer";
 import ReportModal from "./ReportModal";
 import MessageOptionsMenu from "./MessageOptionsMenu";
 import TextWithLinks from "./TextWithLinks";
@@ -52,6 +53,18 @@ const ChatModal = ({
   // In-flight background video sends (one progress bar each). Their
   // presence does NOT lock the composer — text/image sending continues.
   videoUploads,
+  // Voice-note recording — mirrors the video-attach fields above but for
+  // the mic flow. isRecordingVoice swaps the composer for a live-timer
+  // recording bar; onStopRecording({ send }) is called by both the ✕
+  // (discard) and ✓ (send) buttons.
+  isRecordingVoice,
+  recordingElapsed,
+  maxVoiceDurationSeconds,
+  onStartRecording,
+  onStopRecording,
+  // In-flight background voice-note sends — same one-bar-per-item pattern
+  // as videoUploads.
+  voiceUploads,
   scrollRef,
   messagesContainerRef,
   onMessagesScroll,
@@ -375,6 +388,29 @@ const ChatModal = ({
                         </div>
                       ) : (
                         <>
+                          {message.voice?.url && (
+                            <div className="relative flex flex-col">
+                              <div
+                                {...longPressHandlers(message._id)}
+                                className="select-none"
+                              >
+                                <VoiceNotePlayer
+                                  voice={message.voice}
+                                  isMine={isMine}
+                                />
+                              </div>
+                              <ReactionPicker
+                                open={reactionPickerFor === message._id}
+                                align={isMine ? "right" : "left"}
+                                anchorPoint={reactionAnchorPoint}
+                                onSelect={(emoji) => {
+                                  setReactionPickerFor(null);
+                                  handleReactMessage(message._id, emoji);
+                                }}
+                                onClose={() => setReactionPickerFor(null)}
+                              />
+                            </div>
+                          )}
                           {message.video?.url && (
                             <div className="relative">
                               <div
@@ -689,6 +725,25 @@ const ChatModal = ({
                   )}
                 </div>
               ))}
+              {voiceUploads.map((upload) => (
+                <div
+                  key={upload.id}
+                  className="mb-3 rounded-xl border border-stroke bg-surface px-3 py-2"
+                >
+                  <div className="flex items-center justify-between text-sm text-ink-muted mb-1">
+                    <span>Sending voice note…</span>
+                    <span>{Math.min(upload.progress, 99)}%</span>
+                  </div>
+                  <div className="h-1.5 rounded-full bg-gray-200 overflow-hidden">
+                    <div
+                      className="h-full bg-primary-600 transition-all"
+                      style={{
+                        width: `${Math.min(upload.progress, 99)}%`,
+                      }}
+                    />
+                  </div>
+                </div>
+              ))}
               {videoPreviewUrl && (
                 <div className="mb-3 relative max-w-55">
                   <video
@@ -733,68 +788,118 @@ const ChatModal = ({
                 </div>
               )}
               <div className="flex items-center gap-2">
-                <input
-                  value={messageText}
-                  onChange={(e) =>
-                    onMessageTextChange
-                      ? onMessageTextChange(e.target.value)
-                      : setMessageText(e.target.value)
-                  }
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && !e.shiftKey) {
-                      e.preventDefault();
-                      handleSendMessage();
-                    }
-                  }}
-                  placeholder="Write a message..."
-                  className="flex-1 border border-stroke rounded-xl px-4 py-2.5 text-base text-ink placeholder:text-ink-muted outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100 transition"
-                />
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={!!videoFile}
-                  className="p-2.5 rounded-xl border border-stroke text-ink-muted hover:text-primary-600 hover:border-primary-400 transition disabled:opacity-40 disabled:cursor-not-allowed"
-                  title="Attach image"
-                >
-                  <FiImage size={16} />
-                </button>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  onChange={handleImageSelect}
-                  className="hidden"
-                />
-                <button
-                  type="button"
-                  onClick={() => videoInputRef.current?.click()}
-                  disabled={!!videoFile || imagePreviews.length > 0}
-                  className="p-2.5 rounded-xl border border-stroke text-ink-muted hover:text-primary-600 hover:border-primary-400 transition disabled:opacity-40 disabled:cursor-not-allowed"
-                  title="Attach video"
-                >
-                  <FiVideo size={16} />
-                </button>
-                <input
-                  ref={videoInputRef}
-                  type="file"
-                  accept="video/*"
-                  onChange={handleVideoSelect}
-                  className="hidden"
-                />
-                <button
-                  type="button"
-                  onClick={handleSendMessage}
-                  disabled={
-                    (!messageText.trim() &&
-                      imagePreviews.length === 0 &&
-                      !videoFile) ||
-                    isSending
-                  }
-                  className="px-4 py-2.5 rounded-xl text-base font-semibold text-white bg-primary-600 hover:bg-primary-800 disabled:opacity-50 disabled:cursor-not-allowed transition"
-                >
-                  {isSending ? "..." : "Send"}
-                </button>
+                {isRecordingVoice ? (
+                  <div className="flex-1 flex items-center gap-3 border border-stroke rounded-xl px-4 py-2.5 bg-surface">
+                    <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse shrink-0" />
+                    <span className="text-base text-ink font-medium tabular-nums">
+                      {Math.floor(recordingElapsed / 60)}:
+                      {String(Math.floor(recordingElapsed % 60)).padStart(2, "0")}
+                    </span>
+                    <span className="text-sm text-ink-muted">
+                      / {Math.floor(maxVoiceDurationSeconds / 60)}:
+                      {String(maxVoiceDurationSeconds % 60).padStart(2, "0")}
+                    </span>
+                    <span className="flex-1" />
+                    <button
+                      type="button"
+                      onClick={() => onStopRecording({ send: false })}
+                      aria-label="Cancel recording"
+                      className="p-1.5 rounded-full text-ink-muted hover:text-red-500 hover:bg-red-50 transition"
+                    >
+                      <FiX size={18} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onStopRecording({ send: true })}
+                      aria-label="Send voice note"
+                      className="p-1.5 rounded-full bg-primary-600 text-white hover:bg-primary-800 transition"
+                    >
+                      <FiCheck size={18} />
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <input
+                      value={messageText}
+                      onChange={(e) =>
+                        onMessageTextChange
+                          ? onMessageTextChange(e.target.value)
+                          : setMessageText(e.target.value)
+                      }
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && !e.shiftKey) {
+                          e.preventDefault();
+                          handleSendMessage();
+                        }
+                      }}
+                      placeholder="Write a message..."
+                      className="flex-1 border border-stroke rounded-xl px-4 py-2.5 text-base text-ink placeholder:text-ink-muted outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100 transition"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={!!videoFile}
+                      className="p-2.5 rounded-xl border border-stroke text-ink-muted hover:text-primary-600 hover:border-primary-400 transition disabled:opacity-40 disabled:cursor-not-allowed"
+                      title="Attach image"
+                    >
+                      <FiImage size={16} />
+                    </button>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={handleImageSelect}
+                      className="hidden"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => videoInputRef.current?.click()}
+                      disabled={!!videoFile || imagePreviews.length > 0}
+                      className="p-2.5 rounded-xl border border-stroke text-ink-muted hover:text-primary-600 hover:border-primary-400 transition disabled:opacity-40 disabled:cursor-not-allowed"
+                      title="Attach video"
+                    >
+                      <FiVideo size={16} />
+                    </button>
+                    <input
+                      ref={videoInputRef}
+                      type="file"
+                      accept="video/*"
+                      onChange={handleVideoSelect}
+                      className="hidden"
+                    />
+                    {/* Mic only shows when the composer is otherwise empty —
+                        same mutual-exclusion spirit as image/video: a voice
+                        note is its own message, not an attachment tacked
+                        onto typed text. */}
+                    {!messageText.trim() &&
+                    imagePreviews.length === 0 &&
+                    !videoFile ? (
+                      <button
+                        type="button"
+                        onClick={onStartRecording}
+                        className="p-2.5 rounded-xl border border-stroke text-ink-muted hover:text-primary-600 hover:border-primary-400 transition"
+                        title="Record voice note"
+                      >
+                        <FiMic size={16} />
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={handleSendMessage}
+                        disabled={
+                          (!messageText.trim() &&
+                            imagePreviews.length === 0 &&
+                            !videoFile) ||
+                          isSending
+                        }
+                        className="px-4 py-2.5 rounded-xl text-base font-semibold text-white bg-primary-600 hover:bg-primary-800 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                      >
+                        {isSending ? "..." : "Send"}
+                      </button>
+                    )}
+                  </>
+                )}
               </div>
             </>
           )}
