@@ -392,7 +392,9 @@ const ChatModal = ({
                             <div className="relative flex flex-col">
                               <div
                                 {...longPressHandlers(message._id)}
-                                className="select-none"
+                                className={`select-none flex ${
+                                  isMine ? "justify-end" : "justify-start"
+                                }`}
                               >
                                 <VoiceNotePlayer
                                   voice={message.voice}
