@@ -121,7 +121,16 @@ const ChatModal = ({
   // px without the browser treating it as a "move" cancel, so the picker
   // anchors to where the press ends up, not just where it started.
   const longPressPointRef = useRef(null);
+  // Start point of the current touch — compared against live position in
+  // onTouchMove to tell a hold apart from a scroll. A genuine long-press
+  // stays within a few px; a scroll moves well past that within the same
+  // 450ms window, so we cancel the pending timer as soon as the finger
+  // drifts too far instead of waiting for touchend/touchcancel (which
+  // don't fire until the finger lifts, by which point a slow scroll would
+  // have already triggered the picker).
+  const longPressStartRef = useRef(null);
   const LONG_PRESS_MS = 450;
+  const LONG_PRESS_MOVE_TOLERANCE_PX = 10;
 
   const clearLongPressTimer = () => {
     if (longPressTimerRef.current) {
@@ -140,6 +149,7 @@ const ChatModal = ({
     onTouchStart: (e) => {
       const touch = e.touches[0];
       longPressPointRef.current = { x: touch.clientX, y: touch.clientY };
+      longPressStartRef.current = { x: touch.clientX, y: touch.clientY };
       longPressFiredRef.current = false;
       clearLongPressTimer();
       longPressTimerRef.current = setTimeout(() => {
@@ -152,11 +162,19 @@ const ChatModal = ({
     onTouchMove: (e) => {
       const touch = e.touches[0];
       longPressPointRef.current = { x: touch.clientX, y: touch.clientY };
+      const start = longPressStartRef.current;
+      if (!start) return;
+      const dx = touch.clientX - start.x;
+      const dy = touch.clientY - start.y;
+      if (Math.hypot(dx, dy) > LONG_PRESS_MOVE_TOLERANCE_PX) {
+        clearLongPressTimer();
+      }
     },
     onTouchEnd: clearLongPressTimer,
     onTouchCancel: clearLongPressTimer,
     onMouseDown: (e) => {
       longPressPointRef.current = { x: e.clientX, y: e.clientY };
+      longPressStartRef.current = { x: e.clientX, y: e.clientY };
       longPressFiredRef.current = false;
       clearLongPressTimer();
       longPressTimerRef.current = setTimeout(() => {
@@ -164,6 +182,16 @@ const ChatModal = ({
         setReactionAnchorPoint(longPressPointRef.current);
         setReactionPickerFor(messageId);
       }, LONG_PRESS_MS);
+    },
+    onMouseMove: (e) => {
+      if (!longPressTimerRef.current) return;
+      const start = longPressStartRef.current;
+      if (!start) return;
+      const dx = e.clientX - start.x;
+      const dy = e.clientY - start.y;
+      if (Math.hypot(dx, dy) > LONG_PRESS_MOVE_TOLERANCE_PX) {
+        clearLongPressTimer();
+      }
     },
     onMouseUp: clearLongPressTimer,
     onMouseLeave: clearLongPressTimer,
