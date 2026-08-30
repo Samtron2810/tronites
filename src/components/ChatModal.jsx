@@ -429,16 +429,6 @@ const ChatModal = ({
                                   isMine={isMine}
                                 />
                               </div>
-                              <ReactionPicker
-                                open={reactionPickerFor === message._id}
-                                align={isMine ? "right" : "left"}
-                                anchorPoint={reactionAnchorPoint}
-                                onSelect={(emoji) => {
-                                  setReactionPickerFor(null);
-                                  handleReactMessage(message._id, emoji);
-                                }}
-                                onClose={() => setReactionPickerFor(null)}
-                              />
                             </div>
                           )}
                           {message.video?.url && (
@@ -497,16 +487,6 @@ const ChatModal = ({
                                   )}
                                 </div>
                               </div>
-                              <ReactionPicker
-                                open={reactionPickerFor === message._id}
-                                align={isMine ? "right" : "left"}
-                                anchorPoint={reactionAnchorPoint}
-                                onSelect={(emoji) => {
-                                  setReactionPickerFor(null);
-                                  handleReactMessage(message._id, emoji);
-                                }}
-                                onClose={() => setReactionPickerFor(null)}
-                              />
                             </div>
                           )}
                           {(() => {
@@ -549,16 +529,6 @@ const ChatModal = ({
                                     />
                                   ))}
                                 </div>
-                                <ReactionPicker
-                                  open={reactionPickerFor === message._id}
-                                  align={isMine ? "right" : "left"}
-                                  anchorPoint={reactionAnchorPoint}
-                                  onSelect={(emoji) => {
-                                    setReactionPickerFor(null);
-                                    handleReactMessage(message._id, emoji);
-                                  }}
-                                  onClose={() => setReactionPickerFor(null)}
-                                />
                               </div>
                             );
                           })()}
@@ -581,18 +551,29 @@ const ChatModal = ({
                                   }
                                 />
                               </div>
-                              <ReactionPicker
-                                open={reactionPickerFor === message._id}
-                                align={isMine ? "right" : "left"}
-                                anchorPoint={reactionAnchorPoint}
-                                onSelect={(emoji) => {
-                                  setReactionPickerFor(null);
-                                  handleReactMessage(message._id, emoji);
-                                }}
-                                onClose={() => setReactionPickerFor(null)}
-                              />
                             </div>
                           )}
+                          {/* Single picker per message, regardless of how
+                          many media/text blocks it has — previously each
+                          block rendered its own ReactionPicker, so a
+                          text+image (or text+video) message mounted two
+                          `fixed`, identically-positioned pickers stacked on
+                          top of each other. Whichever mounted later (text,
+                          since it renders after media in this list) ate
+                          the tap; a click landing on the OTHER instance's
+                          emoji registered as "outside click" for the top
+                          instance's own ref check and closed the picker in
+                          the same tick, silently swallowing the reaction. */}
+                          <ReactionPicker
+                            open={reactionPickerFor === message._id}
+                            align={isMine ? "right" : "left"}
+                            anchorPoint={reactionAnchorPoint}
+                            onSelect={(emoji) => {
+                              setReactionPickerFor(null);
+                              handleReactMessage(message._id, emoji);
+                            }}
+                            onClose={() => setReactionPickerFor(null)}
+                          />
                           {message.reactionSummary &&
                             Object.keys(message.reactionSummary).length > 0 && (
                               <div
