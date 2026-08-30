@@ -36,6 +36,10 @@ const ChatModal = ({
   handleUndoDelete,
   handleReactMessage,
   pendingDeletes,
+  // Undo window length (ms) — Chat.jsx owns the delete grace period and
+  // passes the same constant it stamps deadlines with, so this display can
+  // clamp against it without duplicating the number.
+  undoWindowMs = 5000,
   deletingIds,
   messageText,
   setMessageText,
@@ -167,6 +171,13 @@ const ChatModal = ({
     setMediaViewer(payload);
   };
 
+  // The countdown clock: `now` only ticks while at least one delete is
+  // pending (this interval stops otherwise), so when a NEW delete starts
+  // it can be stale by minutes — ChatModal stays mounted (returning null)
+  // after close, and the last tick froze whenever the previous countdown
+  // ended. The first interval tick re-grounds it within 250ms; the
+  // remainingSecs clamp below makes sure that first, pre-tick frame
+  // already displays a sane number instead of a huge flash.
   useEffect(() => {
     if (!hasPendingDeletes) return;
     const interval = setInterval(() => setNow(Date.now()), 250);
@@ -307,10 +318,20 @@ const ChatModal = ({
               const isPendingDelete = !!pendingDeletes[message._id];
               const isDeleting = deletingIds.includes(message._id);
               const showDeletedPlaceholder = isPendingDelete || isDeleting;
+              // Remaining undo seconds. The upper clamp exists because
+              // `now` can be up to a few hundred ms — or, on a modal that
+              // has been open a while, minutes — behind real time when a
+              // delete first appears. Remaining can never legitimately
+              // exceed the undo window, so clamping to it turns what used
+              // to flash as "(stale clock gap + 5s)" into the correct
+              // starting number until the interval's first tick lands.
               const remainingSecs = isPendingDelete
                 ? Math.max(
                     0,
-                    Math.ceil((pendingDeletes[message._id] - now) / 1000),
+                    Math.min(
+                      Math.ceil(undoWindowMs / 1000),
+                      Math.ceil((pendingDeletes[message._id] - now) / 1000),
+                    ),
                   )
                 : 0;
               return (

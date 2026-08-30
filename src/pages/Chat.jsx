@@ -20,6 +20,13 @@ import toast from "react-hot-toast";
 const buildConversationId = (a, b) =>
   [a.toString(), b.toString()].sort().join("_");
 
+// Undo window for message deletion — the single source of truth for how
+// long a deleted message stays restorable. It stamps the deadline in
+// handleDeleteMessage AND is passed to ChatModal (undoWindowMs) so the
+// countdown display can clamp its first painted frame to the window length
+// instead of flashing a stale-clock artifact.
+const UNDO_WINDOW_MS = 5000;
+
 // Inserts a message into the ascending-createdAt thread at its correct
 // position. Needed because a background video send can complete AFTER
 // later-sent texts/images; appending blindly would render it out of order
@@ -702,7 +709,7 @@ const Chat = () => {
       return;
     pendingDeletesRef.current = {
       ...pendingDeletesRef.current,
-      [messageId]: Date.now() + 5000,
+      [messageId]: Date.now() + UNDO_WINDOW_MS,
     };
     setPendingDeletes(pendingDeletesRef.current);
   };
@@ -1309,6 +1316,7 @@ const Chat = () => {
           handleUndoDelete={handleUndoDelete}
           handleReactMessage={handleReactMessage}
           pendingDeletes={pendingDeletes}
+          undoWindowMs={UNDO_WINDOW_MS}
           deletingIds={deletingIds}
           messageText={messageText}
           setMessageText={setMessageText}
