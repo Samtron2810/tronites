@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import MainLayout from "../layouts/MainLayout";
 import api from "../services/api";
+import { useRefetchOnFocus } from "../hooks/useRefetchOnFocus";
 import compressImage from "../utils/compressImage";
 import {
   uploadVideoMessageToCloudinary,
@@ -158,8 +159,10 @@ const Chat = () => {
   const fetchConversations = async () => {
     try {
       setLoading(true);
-      const res = await api.get("/messages/conversations", {
+      const res = await api.getCached("/messages/conversations", {
         params: { page: 1, limit: 20 },
+        ttlMs: 30_000,
+        revalidate: true,
       });
       setConversations(res.data.conversations);
       setConversationsPage(1);
@@ -212,7 +215,7 @@ const Chat = () => {
   const fetchRequests = async () => {
     try {
       setRequestsLoading(true);
-      const res = await api.get("/messages/requests");
+      const res = await api.getCached("/messages/requests", { ttlMs: 30_000, revalidate: true });
       setRequests(res.data.requests);
     } catch (e) {
       console.error(e);
@@ -231,6 +234,7 @@ const Chat = () => {
       setRequests((prev) =>
         prev.filter((r) => r.conversationId !== req.conversationId),
       );
+      api.invalidate("/messages/conversations");
       // Open the now-accepted thread directly.
       setActiveTab("messages");
       loadConversation(req.otherUser);
@@ -252,6 +256,7 @@ const Chat = () => {
       setRequests((prev) =>
         prev.filter((r) => r.conversationId !== req.conversationId),
       );
+      api.invalidate("/messages/conversations");
     } catch (e) {
       console.error(e);
       alert(e?.response?.data?.message || "Couldn't decline request.");
@@ -280,8 +285,10 @@ const Chat = () => {
       // Refresh just the first page (for updated unread counts/order),
       // then merge with whatever's already loaded via "load more" so we
       // don't lose conversations further down the list.
-      const convsRes = await api.get("/messages/conversations", {
+      const convsRes = await api.getCached("/messages/conversations", {
         params: { page: 1, limit: 20 },
+        ttlMs: 10_000,
+        revalidate: true,
       });
       setConversations((prev) => {
         const freshIds = new Set(
@@ -544,6 +551,7 @@ const Chat = () => {
       setImagePreviews([]);
       if (fileInputRef.current) fileInputRef.current.value = "";
       updateConversationPreview(res.data, false);
+      api.invalidate("/messages/conversations");
       // A pending request just got its first (and only) message sent —
       // reflect that in local gating state without waiting for a refetch.
       if (requestInfo?.status !== "accepted") {
@@ -597,6 +605,7 @@ const Chat = () => {
         setMessages((prev) => insertMessageSorted(prev, res.data));
       }
       updateConversationPreview(res.data, false);
+      api.invalidate("/messages/conversations");
       if (item.markPendingRequest) {
         setRequestInfo((prev) =>
           prev?.status === "pending"
@@ -674,6 +683,7 @@ const Chat = () => {
         setMessages((prev) => insertMessageSorted(prev, res.data));
       }
       updateConversationPreview(res.data, false);
+      api.invalidate("/messages/conversations");
       if (item.markPendingRequest) {
         setRequestInfo((prev) =>
           prev?.status === "pending"
@@ -992,6 +1002,11 @@ const Chat = () => {
     fetchRequests();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useRefetchOnFocus(() => {
+    fetchConversations();
+    fetchRequests();
+  });
 
   useEffect(() => {
     const target = conversationsObserverTarget.current;

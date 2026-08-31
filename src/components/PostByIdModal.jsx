@@ -47,7 +47,7 @@ const PostByIdModal = ({
   const fetchPost = useCallback(async (id) => {
     setLoading(true);
     try {
-      const res = await api.get(`/posts/${id}`);
+      const res = await api.getCached(`/posts/${id}`, { ttlMs: 60_000, revalidate: true });
       setPost(res.data);
       setCommentCount(res.data.commentsCount);
       setLoadError(null);
@@ -182,6 +182,16 @@ const PostByIdModal = ({
       await api.delete(`/posts/${post._id}`);
       setShowDeleteModal(false);
       onClose();
+      api.invalidateMany([
+        "/posts/for-you",
+        "/posts/feed",
+        "/posts/trending",
+        "/posts/hashtag/",
+        "/posts/bookmarks",
+        "/users/profile/",
+        "/posts/search",
+        `/posts/${post._id}`,
+      ]);
       toast.success("Post deleted");
     } catch (e) {
       console.error(e);

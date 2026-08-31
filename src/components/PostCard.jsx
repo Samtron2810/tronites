@@ -397,6 +397,15 @@ const PostCard = ({
     try {
       await api.delete(`/posts/${postId}`);
       setShowDeleteModal(false);
+      api.invalidateMany([
+        "/posts/for-you",
+        "/posts/feed",
+        "/posts/trending",
+        "/posts/hashtag/",
+        "/posts/bookmarks",
+        "/users/profile/",
+        "/posts/search",
+      ]);
       if (onDelete) onDelete(postId);
     } catch (e) {
       console.error(e);

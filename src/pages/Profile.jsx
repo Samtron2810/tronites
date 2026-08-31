@@ -5,6 +5,7 @@ import toast from "react-hot-toast";
 import PostCard from "../components/PostCard";
 import ProfileSkeleton from "../components/ProfileSkeleton";
 import api from "../services/api";
+import { useRefetchOnFocus } from "../hooks/useRefetchOnFocus";
 import compressImage from "../utils/compressImage";
 import { useAuth } from "../context/useAuth";
 import { useSocket } from "../context/useSocket";
@@ -52,7 +53,11 @@ const Profile = () => {
 
   const fetchProfile = useCallback(async () => {
     try {
-      const res = await api.get(`/users/profile/${id}?page=1&limit=12`);
+      const res = await api.getCached(`/users/profile/${id}`, {
+        params: { page: 1, limit: 12 },
+        ttlMs: 30_000,
+        revalidate: true,
+      });
       setProfile(res.data.user);
       setPosts(res.data.posts);
       setTotalPosts(res.data.totalPosts);
@@ -61,8 +66,8 @@ const Profile = () => {
       setIsFollowing(res.data.isFollowing);
       if (currentUser?._id !== id) {
         const [blockRes, muteRes] = await Promise.all([
-          api.get(`/users/${id}/block-status`),
-          api.get(`/users/${id}/mute-status`),
+          api.getCached(`/users/${id}/block-status`, { ttlMs: 30_000, revalidate: true }),
+          api.getCached(`/users/${id}/mute-status`, { ttlMs: 30_000, revalidate: true }),
         ]);
         setIBlockedThem(blockRes.data.iBlockedThem);
         setTheyBlockedMe(blockRes.data.theyBlockedMe);
@@ -101,6 +106,8 @@ const Profile = () => {
     fetchProfile();
   }, [fetchProfile]);
 
+  useRefetchOnFocus(fetchProfile);
+
   useEffect(() => {
     const target = postsObserverTarget.current;
     const observer = new IntersectionObserver(
@@ -134,6 +141,12 @@ const Profile = () => {
               (f) => (f._id || f).toString() !== currentUser._id.toString(),
             ),
       }));
+      api.invalidateMany([
+        `/users/profile/${id}`,
+        "/users/followers/",
+        "/users/following/",
+        "/users/search",
+      ]);
     } catch (e) {
       console.error(e);
       toast.error("Couldn't update follow status. Try again.");
@@ -153,6 +166,7 @@ const Profile = () => {
         setIBlockedThem(true);
         toast.success(`Blocked ${profile.name}`);
       }
+      api.invalidate(`/users/profile/${id}`);
       setShowBlockModal(false);
     } catch (e) {
       console.error(e);
@@ -171,6 +185,7 @@ const Profile = () => {
         setIsMuted(true);
         toast.success(`Muted ${profile.name}. They won't know.`);
       }
+      api.invalidate(`/users/profile/${id}`);
     } catch (e) {
       console.error(e);
       toast.error("Couldn't update mute status. Try again.");

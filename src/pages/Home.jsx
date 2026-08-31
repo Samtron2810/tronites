@@ -7,6 +7,7 @@ import PostCard from "../components/PostCard";
 import PostSkeleton from "../components/PostSkeleton";
 import TrendingHashtagsWidget from "../components/TrendingHashtagsWidget";
 import api from "../services/api";
+import { useRefetchOnFocus } from "../hooks/useRefetchOnFocus";
 import { useSocket } from "../context/useSocket";
 import { HiOutlineSparkles } from "react-icons/hi2";
 import { FiClock, FiUsers } from "react-icons/fi";
@@ -86,7 +87,9 @@ const Home = () => {
         const endpoint =
           targetTab === "forYou" ? "/posts/for-you" : "/posts/feed";
 
-        const res = await api.get(endpoint, { params });
+        const res = isFirstPage
+          ? await api.getCached(endpoint, { params, ttlMs: 30_000, revalidate: true })
+          : await api.get(endpoint, { params });
 
         setFeeds((prev) => {
           let nextPosts;
@@ -138,6 +141,11 @@ const Home = () => {
     else setLoading(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab]);
+
+  // Tier-2 revalidate-on-focus — re-runs the CURRENT tab's first-page
+  // fetch. getCached's revalidate:true paints the cached list instantly
+  // and refreshes it silently behind the scenes.
+  useRefetchOnFocus(() => fetchPosts(tab, null, true));
 
   useEffect(() => {
     const target = observerTarget.current;
@@ -197,7 +205,12 @@ const Home = () => {
   return (
     <MainLayout>
       <div className="space-y-4">
-        <CreatePost fetchPosts={() => fetchPosts("following", null, true)} />
+        <CreatePost
+          fetchPosts={() => {
+            api.invalidateMany(["/posts/for-you", "/posts/feed", "/posts/hashtag/"]);
+            fetchPosts("following", null, true);
+          }}
+        />
 
         <TrendingHashtagsWidget />
 

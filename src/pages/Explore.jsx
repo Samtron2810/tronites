@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, useCallback } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import toast from "react-hot-toast";
 import MainLayout from "../layouts/MainLayout";
 import UserCardSkeleton from "../components/UserCardSkeleton";
@@ -11,6 +11,7 @@ import SearchFiltersModal from "../components/SearchFiltersModal";
 import SearchHistoryPanel from "../components/SearchHistoryPanel";
 import TrendingHashtagsWidget from "../components/TrendingHashtagsWidget";
 import api from "../services/api";
+import { useRefetchOnFocus } from "../hooks/useRefetchOnFocus";
 import { useAuth } from "../context/useAuth";
 import { useSocket } from "../context/useSocket";
 import { FiSearch, FiHash, FiSliders, FiStar } from "react-icons/fi";
@@ -32,8 +33,41 @@ const countActiveFilters = (f) =>
 const Explore = () => {
   const { user: currentUser } = useAuth();
   const { onlineUsers } = useSocket();
-  const [activeTab, setActiveTab] = useState("users"); // "users" | "posts" | "comments" | "messages" | "trending"
-  const [search, setSearch] = useState("");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [activeTab, setActiveTabState] = useState(
+    searchParams.get("tab") || "users",
+  ); // "users" | "posts" | "comments" | "messages" | "trending"
+  const [search, setSearchState] = useState(searchParams.get("q") || "");
+
+  // Keeps ?tab=&q= in sync with state so Back/forward restores exactly
+  // what the user had open, instead of resetting to the users tab and
+  // refetching. replace: true — tab/query changes aren't separate
+  // history entries a user would want to step back through one at a
+  // time.
+  const setActiveTab = (tab) => {
+    setActiveTabState(tab);
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        next.set("tab", tab);
+        return next;
+      },
+      { replace: true },
+    );
+  };
+  const setSearch = (value) => {
+    setSearchState(value);
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        if (value) next.set("q", value);
+        else next.delete("q");
+        return next;
+      },
+      { replace: true },
+    );
+  };
+
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -124,16 +158,17 @@ const Explore = () => {
       if (isFirstPage) setPostsLoading(true);
       else setPostsIsLoadingMore(true);
 
-      const res = await api.get(`/posts/search`, {
-        params: {
-          q: query,
-          limit: 10,
-          ...filterParams(),
-          ...(afterCursor
-            ? { afterScore: afterCursor.afterScore, afterId: afterCursor.afterId }
-            : {}),
-        },
-      });
+      const params = {
+        q: query,
+        limit: 10,
+        ...filterParams(),
+        ...(afterCursor
+          ? { afterScore: afterCursor.afterScore, afterId: afterCursor.afterId }
+          : {}),
+      };
+      const res = isFirstPage
+        ? await api.getCached("/posts/search", { params, ttlMs: 60_000, revalidate: true })
+        : await api.get("/posts/search", { params });
 
       if (isFirstPage) setPosts(res.data.posts);
       else setPosts((prev) => [...prev, ...res.data.posts]);
@@ -214,9 +249,11 @@ const Explore = () => {
       if (pageNum === 1) setLoading(true);
       else setIsLoadingMore(true);
 
-      const res = await api.get(`/users/search`, {
-        params: { q: query, page: pageNum, limit: 10 },
-      });
+      const params = { q: query, page: pageNum, limit: 10 };
+      const res =
+        pageNum === 1
+          ? await api.getCached("/users/search", { params, ttlMs: 60_000, revalidate: true })
+          : await api.get("/users/search", { params });
 
       if (pageNum === 1) setUsers(res.data.users);
       else setUsers((prev) => [...prev, ...res.data.users]);
@@ -237,22 +274,23 @@ const Explore = () => {
       if (isFirstPage) setTrendingLoading(true);
       else setTrendingIsLoadingMore(true);
 
-      const res = await api.get("/posts/trending", {
-        params: {
-          limit: 10,
-          ...(afterCursor
-            ? {
-                afterScore: afterCursor.afterScore,
-                afterId: afterCursor.afterId,
-                // Hard-exclude posts already delivered - a post's score
-                // decays with age between requests, so without this a
-                // post can drop below the page-1 cursor and get
-                // re-served on page 2.
-                excludeIds: trendingPostsRef.current.map((p) => p._id).join(","),
-              }
-            : {}),
-        },
-      });
+      const params = {
+        limit: 10,
+        ...(afterCursor
+          ? {
+              afterScore: afterCursor.afterScore,
+              afterId: afterCursor.afterId,
+              // Hard-exclude posts already delivered - a post's score
+              // decays with age between requests, so without this a
+              // post can drop below the page-1 cursor and get
+              // re-served on page 2.
+              excludeIds: trendingPostsRef.current.map((p) => p._id).join(","),
+            }
+          : {}),
+      };
+      const res = isFirstPage
+        ? await api.getCached("/posts/trending", { params, ttlMs: 60_000, revalidate: true })
+        : await api.get("/posts/trending", { params });
 
       if (isFirstPage) setTrendingPosts(res.data.posts);
       else {
@@ -505,6 +543,16 @@ const Explore = () => {
     trendingIsLoadingMore,
     trendingLoading,
   ]);
+
+  // Tier-2 revalidate-on-focus — re-runs the active tab's first-page
+  // fetch. getCached's revalidate:true paints cached results instantly
+  // and refreshes behind the scenes; only wired for the three cached
+  // tabs (users/posts/trending).
+  useRefetchOnFocus(() => {
+    if (activeTab === "users") fetchUsers(search.trim(), 1);
+    else if (activeTab === "posts") fetchPosts(search.trim(), null, true);
+    else if (activeTab === "trending") fetchTrending(null, true);
+  });
 
   const handleFollow = async (userId) => {
     if (followingId) return;

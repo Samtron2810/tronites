@@ -89,7 +89,7 @@ const CommentsPanel = ({
   const fetchComments = async () => {
     try {
       setLoadingComments(true);
-      const res = await api.get(`/comments/${postId}`);
+      const res = await api.getCached(`/comments/${postId}`, { ttlMs: 60_000, revalidate: true });
       setComments(res.data);
     } catch (e) {
       console.error(e);
@@ -128,6 +128,7 @@ const CommentsPanel = ({
     try {
       await api.post(`/comments/${postId}`, { text: commentText });
       setCommentText("");
+      api.invalidate(`/comments/${postId}`);
     } catch (e) {
       console.error(e);
       toast.error("Couldn't post your comment. Try again.");
@@ -188,6 +189,7 @@ const CommentsPanel = ({
       setCommentCount(
         (prev) => res.data.commentCount ?? Math.max(prev - 1, 0),
       );
+      api.invalidate(`/comments/${postId}`);
     } catch (e) {
       console.error(e);
       toast.error("Couldn't delete comment. Try again.");
@@ -199,7 +201,10 @@ const CommentsPanel = ({
   const fetchReplies = async (commentId) => {
     try {
       setLoadingReplies((prev) => ({ ...prev, [commentId]: true }));
-      const res = await api.get(`/comments/${commentId}/replies`);
+      const res = await api.getCached(`/comments/${commentId}/replies`, {
+        ttlMs: 60_000,
+        revalidate: true,
+      });
       setRepliesByComment((prev) => ({ ...prev, [commentId]: res.data }));
     } catch (e) {
       console.error(e);
@@ -263,6 +268,7 @@ const CommentsPanel = ({
       } else {
         fetchReplies(parentCommentId);
       }
+      api.invalidate(`/comments/${postId}`);
     } catch (e) {
       console.error(e);
       toast.error("Couldn't post your reply. Try again.");
@@ -292,6 +298,7 @@ const CommentsPanel = ({
       setCommentCount(
         (prev) => res.data.commentCount ?? Math.max(prev - 1, 0),
       );
+      api.invalidate(`/comments/${postId}`);
     } catch (e) {
       console.error(e);
       toast.error("Couldn't delete reply. Try again.");

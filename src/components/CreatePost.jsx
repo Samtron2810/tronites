@@ -40,6 +40,7 @@ const CreatePost = ({ fetchPosts }) => {
         toast.success("Post created!", { id: toastId });
       }
 
+      api.invalidate("/posts/search");
       fetchPosts();
     } catch (error) {
       if (error.code === "ECONNABORTED") {
@@ -100,6 +101,7 @@ const CreatePost = ({ fetchPosts }) => {
       } else {
         toast.success("Video posted!", { id: toastId });
       }
+      api.invalidate("/posts/search");
       fetchPosts();
     } catch (error) {
       toast.error(

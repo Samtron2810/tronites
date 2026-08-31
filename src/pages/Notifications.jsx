@@ -4,6 +4,7 @@ import toast from "react-hot-toast";
 import MainLayout from "../layouts/MainLayout";
 import NotificationSkeleton from "../components/NotificationSkeleton";
 import api from "../services/api";
+import { useRefetchOnFocus } from "../hooks/useRefetchOnFocus";
 import { useSocket } from "../context/useSocket";
 import { FaHeart, FaRegComment, FaUserPlus, FaAt, FaReply, FaBell, FaShieldAlt, FaExclamationTriangle, FaRetweet, FaQuoteRight, FaRegSmile } from "react-icons/fa";
 import defaultAvatar from "../assets/defaultAvatar";
@@ -114,19 +115,34 @@ const Notifications = () => {
   const { socket } = useSocket();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const fetch = async () => {
-      try {
-        const res = await api.get("/notifications", { params: { page: 1, limit: 20 } });
-        setNotifications(res.data.notifications);
-        setPage(res.data.currentPage);
-        setHasMore(res.data.hasMore);
+  const fetchFirstPage = async () => {
+    try {
+      const res = await api.getCached("/notifications", {
+        params: { page: 1, limit: 20 },
+        ttlMs: 30_000,
+        revalidate: true,
+      });
+      setNotifications(res.data.notifications);
+      setPage(res.data.currentPage);
+      setHasMore(res.data.hasMore);
+      // Only fire the PUT when there's actually something unread —
+      // stops the wasteful mark-read call on every visit (§7).
+      if (res.data.notifications.some((r) => !r.read)) {
         await api.put("/notifications/mark-read");
-      } catch (e) { console.error(e); }
-      finally { setLoading(false); }
-    };
-    fetch();
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch-on-mount
+    fetchFirstPage();
   }, []);
+
+  useRefetchOnFocus(fetchFirstPage);
 
   const loadMore = async () => {
     if (loadingMore || !hasMore) return;
