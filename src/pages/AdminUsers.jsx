@@ -249,15 +249,17 @@ const AdminUsers = () => {
       if (pageNum === 1) setLoading(true);
       else setIsLoadingMore(true);
 
-      const res = await api.get("/admin/users", {
-        params: {
-          q: query,
-          role: role || undefined,
-          page: pageNum,
-          limit: 20,
-          sort: sort || undefined,
-        },
-      });
+      const params = {
+        q: query,
+        role: role || undefined,
+        page: pageNum,
+        limit: 20,
+        sort: sort || undefined,
+      };
+      const res =
+        pageNum === 1
+          ? await api.getCached("/admin/users", { params, ttlMs: Infinity })
+          : await api.get("/admin/users", { params });
 
       if (pageNum === 1) setUsers(res.data.users);
       else setUsers((prev) => [...prev, ...res.data.users]);
@@ -338,6 +340,7 @@ const AdminUsers = () => {
             : u,
         ),
       );
+      api.invalidate("/admin/users");
       toast.success(`Role updated to ${res.data.user.role}.`);
     } catch (e) {
       console.error(e);
@@ -362,6 +365,7 @@ const AdminUsers = () => {
             : u,
         ),
       );
+      api.invalidate("/admin/users");
       toast.success("Permissions updated.");
     } catch (e) {
       console.error(e);
@@ -397,6 +401,7 @@ const AdminUsers = () => {
       setUsers((prev) =>
         prev.map((u) => (u._id === target._id ? res.data.user : u)),
       );
+      api.invalidate("/admin/users");
       toast.success(
         mode === "suspend"
           ? `Suspended until ${new Date(until).toLocaleString()}.`
@@ -445,6 +450,7 @@ const AdminUsers = () => {
         );
       }
       setSelectedIds(new Set());
+      api.invalidate("/admin/users");
       await fetchUsers(search.trim(), roleFilter, 1, sortBy);
       return true;
     } catch (e) {

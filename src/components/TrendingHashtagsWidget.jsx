@@ -3,20 +3,33 @@ import { Link } from "react-router-dom";
 import { FiHash, FiTrendingUp } from "react-icons/fi";
 import api from "../services/api";
 
+// Module-level singleton — deliberately NOT routed through httpCache.js.
+// Shared by every mount of this widget (Home + Explore), so navigating
+// between them never fires a duplicate request. 5-minute freshness
+// window; outside that, refetch and overwrite.
+let cachedTags = null;
+let cachedAt = 0;
+const TTL_MS = 5 * 60 * 1000;
+
 // Compact horizontal-scroll chip row rather than a tall list — this app
 // has no sidebar/right-rail layout (single centered column throughout),
 // so a vertical "Trending" panel would eat a full screen's height on
 // mobile before any actual content appears. A scrollable chip strip
 // gives the same discovery value in a fixed ~60px band.
 const TrendingHashtagsWidget = () => {
-  const [tags, setTags] = useState(null); // null = loading, [] = loaded-empty
+  const [tags, setTags] = useState(cachedTags); // null = loading, [] = loaded-empty
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
+    const isFresh = cachedTags !== null && Date.now() - cachedAt < TTL_MS;
+    if (isFresh) return; // useState(cachedTags) already seeded this render
+
     let cancelled = false;
     api
       .get("/posts/trending-hashtags", { params: { limit: 12 } })
       .then((res) => {
+        cachedTags = res.data;
+        cachedAt = Date.now();
         if (!cancelled) setTags(res.data);
       })
       .catch((e) => {

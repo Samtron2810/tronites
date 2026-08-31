@@ -2,6 +2,7 @@
 // this fallback only ever applies during local dev, where the backend
 // is assumed to be running on localhost:5000.
 import axios from "axios";
+import * as httpCache from "./httpCache";
 
 let baseURL = import.meta.env.VITE_API_URL;
 
@@ -80,5 +81,49 @@ api.interceptors.response.use(
     }
   },
 );
+
+// getCached — see caching-spec.md §4. Only for first-page/first-load
+// GETs; "load more" / cursor / offset>0 calls must keep using plain
+// api.get so partial pages never get served from cache.
+api.getCached = (url, { params, ttlMs = 60_000, revalidate = false } = {}) => {
+  if (ttlMs === 0) return api.get(url, { params });
+
+  const key = httpCache.buildKey("GET", url, params);
+
+  const inFlight = httpCache.getPending(key);
+  if (inFlight) return inFlight;
+
+  if (httpCache.hasFresh(key)) {
+    const cachedValue = httpCache.get(key).value;
+    if (!revalidate) {
+      return Promise.resolve({ data: cachedValue });
+    }
+    // Instant paint from cache + silent background refresh.
+    const bg = api
+      .get(url, { params })
+      .then((res) => {
+        httpCache.set(key, res.data, ttlMs);
+        return res;
+      })
+      .catch((e) => {
+        console.error("[httpCache] background revalidate failed", key, e);
+      });
+    httpCache.setPending(key, bg);
+    return Promise.resolve({ data: cachedValue });
+  }
+
+  const fetchPromise = api.get(url, { params }).then((res) => {
+    httpCache.set(key, res.data, ttlMs);
+    return res;
+  });
+  httpCache.setPending(key, fetchPromise);
+  return fetchPromise;
+};
+
+api.invalidate = (prefix) => httpCache.invalidatePrefix(prefix);
+
+api.invalidateMany = (prefixes) => prefixes.forEach((p) => httpCache.invalidatePrefix(p));
+
+api.clearCache = () => httpCache.clearAll();
 
 export default api;

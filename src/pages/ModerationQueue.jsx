@@ -366,7 +366,10 @@ const ModerationQueue = () => {
   const fetchReports = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await api.get("/reports", { params: { status, page, limit: 25 } });
+      const res = await api.getCached("/reports", {
+        params: { status, page, limit: 25 },
+        ttlMs: Infinity,
+      });
       setReports(res.data.reports);
       setTotalPages(res.data.totalPages);
     } catch (e) {
@@ -393,6 +396,7 @@ const ModerationQueue = () => {
       await api.put(`/reports/${reportId}/resolve`, { status: resolveStatus, note });
       toast.success(resolveStatus === "actioned" ? "Marked as actioned." : "Dismissed.");
       setReports((prev) => prev.filter((r) => r._id !== reportId));
+      api.invalidate("/reports");
     } catch (e) {
       console.error(e);
       toast.error(e.response?.data?.message || "Couldn't resolve report.");
@@ -453,6 +457,7 @@ const ModerationQueue = () => {
           r._id === report._id ? { ...r, targetOwner: res.data.user } : r,
         ),
       );
+      api.invalidateMany(["/reports", "/admin/users"]);
       toast.success(
         mode === "suspend"
           ? `Suspended until ${new Date(until).toLocaleString()}.`

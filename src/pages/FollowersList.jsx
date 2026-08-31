@@ -27,9 +27,11 @@ const FollowersList = () => {
       else setIsLoadingMore(true);
 
       const endpoint = activeTab === "followers" ? "followers" : "following";
-      const res = await api.get(`/users/${endpoint}/${id}`, {
-        params: { page: pageNum, limit: 20 },
-      });
+      const params = { page: pageNum, limit: 20 };
+      const res =
+        pageNum === 1
+          ? await api.getCached(`/users/${endpoint}/${id}`, { params, ttlMs: Infinity })
+          : await api.get(`/users/${endpoint}/${id}`, { params });
       const list = activeTab === "followers" ? res.data.followers : res.data.following;
 
       if (pageNum === 1) setUsers(list);
@@ -49,7 +51,7 @@ const FollowersList = () => {
 
   const fetchProfileName = async () => {
     try {
-      const res = await api.get(`/users/profile/${id}`);
+      const res = await api.getCached(`/users/profile/${id}`, { ttlMs: Infinity });
       setProfileName(res.data.user.name);
     } catch (error) {
       console.error(error);

@@ -20,7 +20,13 @@ const Bookmarks = () => {
     try {
       if (pageNum === 1) setLoading(true);
       else setIsLoadingMore(true);
-      const res = await api.get(`/posts/bookmarks?page=${pageNum}&limit=12`);
+      const res =
+        pageNum === 1
+          ? await api.getCached("/posts/bookmarks", {
+              params: { page: pageNum, limit: 12 },
+              ttlMs: Infinity,
+            })
+          : await api.get(`/posts/bookmarks?page=${pageNum}&limit=12`);
       if (pageNum === 1) setPosts(res.data.posts);
       else setPosts((prev) => [...prev, ...res.data.posts]);
       setHasMore(res.data.hasMore);
@@ -56,8 +62,15 @@ const Bookmarks = () => {
 
   // A post can be unbookmarked from within PostCard while viewing this
   // list — remove it locally instead of waiting for a refetch.
-  const handleUnbookmarked = (postId) =>
+  const handleUnbookmarked = (postId) => {
     setPosts((prev) => prev.filter((p) => p._id !== postId));
+    api.invalidate("/posts/bookmarks");
+  };
+
+  const handleDelete = (id) => {
+    setPosts((prev) => prev.filter((p) => p._id !== id));
+    api.invalidate("/posts/bookmarks");
+  };
 
   return (
     <MainLayout>
@@ -108,9 +121,7 @@ const Bookmarks = () => {
               edited={post.edited}
               privacy={post.privacy}
               editedAt={post.editedAt}
-              onDelete={(id) =>
-                setPosts((prev) => prev.filter((p) => p._id !== id))
-              }
+              onDelete={handleDelete}
               onUnbookmark={() => handleUnbookmarked(post._id)}
             />
           ))}

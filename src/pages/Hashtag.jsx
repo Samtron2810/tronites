@@ -27,9 +27,10 @@ const Hashtag = () => {
     try {
       if (isFirstPage) setLoading(true);
       else setIsLoadingMore(true);
-      const res = await api.get(`/posts/hashtag/${tag}`, {
-        params: { limit: 10, ...(afterCursor ? { before: afterCursor } : {}) },
-      });
+      const params = { limit: 10, ...(afterCursor ? { before: afterCursor } : {}) };
+      const res = isFirstPage
+        ? await api.getCached(`/posts/hashtag/${tag}`, { params, ttlMs: Infinity })
+        : await api.get(`/posts/hashtag/${tag}`, { params });
       if (isFirstPage) setPosts(res.data.posts);
       else setPosts((prev) => [...prev, ...res.data.posts]);
       setHasMore(res.data.hasMore);
@@ -184,9 +185,10 @@ const Hashtag = () => {
               edited={post.edited}
               privacy={post.privacy}
               editedAt={post.editedAt}
-              onDelete={(id) =>
-                setPosts((prev) => prev.filter((p) => p._id !== id))
-              }
+              onDelete={(id) => {
+                setPosts((prev) => prev.filter((p) => p._id !== id));
+                api.invalidate("/posts/hashtag/");
+              }}
             />
           ))}
 

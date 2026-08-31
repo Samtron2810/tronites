@@ -179,14 +179,17 @@ const AdminAuditLog = () => {
     async (nextOffset, append) => {
       setIsLoading(true);
       try {
-        const params = new URLSearchParams({
-          limit: String(PAGE_SIZE),
-          offset: String(nextOffset),
-        });
-        if (actionFilter) params.set("action", actionFilter);
-        if (targetFilter) params.set("targetType", targetFilter);
+        const params = {
+          limit: PAGE_SIZE,
+          offset: nextOffset,
+          ...(actionFilter ? { action: actionFilter } : {}),
+          ...(targetFilter ? { targetType: targetFilter } : {}),
+        };
 
-        const res = await api.get(`/admin/audit?${params.toString()}`);
+        const res =
+          nextOffset === 0 && !append
+            ? await api.getCached("/admin/audit", { params, ttlMs: Infinity })
+            : await api.get("/admin/audit", { params });
         setLogs((prev) =>
           append ? [...prev, ...res.data.logs] : res.data.logs,
         );
@@ -248,7 +251,10 @@ const AdminAuditLog = () => {
             </p>
           </div>
           <button
-            onClick={() => fetchPage(0, false)}
+            onClick={() => {
+              api.invalidate("/admin/audit");
+              fetchPage(0, false);
+            }}
             disabled={isLoading}
             className="flex items-center gap-2 px-3 py-2 rounded-lg border border-stroke text-base font-medium text-ink-sub hover:text-ink hover:bg-surface transition disabled:opacity-50"
           >
