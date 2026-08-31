@@ -139,9 +139,8 @@ const PostCard = ({
   // render-phase update loop ("Too many re-renders") on surfaces whose API
   // omits reactionSummary (e.g. the profile endpoint). Normalization to {}
   // happens only when writing to the display state in the sync block below.
-  const [syncedReactionSummary, setSyncedReactionSummary] = useState(
-    reactionSummary,
-  );
+  const [syncedReactionSummary, setSyncedReactionSummary] =
+    useState(reactionSummary);
   if (isLiked !== syncedIsLiked) {
     setSyncedIsLiked(isLiked);
     setLiked(isLiked);
@@ -281,7 +280,10 @@ const PostCard = ({
     const prevMine = myReactionState;
     const optimisticSummary = { ...prevSummary };
     if (prevMine) {
-      optimisticSummary[prevMine] = Math.max(0, (optimisticSummary[prevMine] || 1) - 1);
+      optimisticSummary[prevMine] = Math.max(
+        0,
+        (optimisticSummary[prevMine] || 1) - 1,
+      );
     }
     const nextMine = prevMine === emoji ? null : emoji;
     if (nextMine) {
@@ -740,7 +742,10 @@ const PostCard = ({
             arbitrary. Never shown outside the For You tab. */}
         {!repostedBy && forYouSource && forYouSource !== "followed" && (
           <div className="flex items-center gap-1.5 text-[11.5px] text-ink-muted mb-3 -mt-1">
-            <HiOutlineSparkles size={12} className="text-primary-500 shrink-0" />
+            <HiOutlineSparkles
+              size={12}
+              className="text-primary-500 shrink-0"
+            />
             <span>
               {forYouSource === "fof" && "From someone you might know"}
               {forYouSource === "trending" && "Trending right now"}
@@ -753,7 +758,10 @@ const PostCard = ({
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
             <img
-              src={resizedImageUrl(profilePic, IMAGE_SIZES.avatarSmall) || defaultAvatar}
+              src={
+                resizedImageUrl(profilePic, IMAGE_SIZES.avatarSmall) ||
+                defaultAvatar
+              }
               alt="user"
               className="w-10 h-10 rounded-full object-cover ring-2 ring-primary-100"
             />
@@ -768,6 +776,16 @@ const PostCard = ({
                 </Link>
                 {username && (
                   <span className="text-sm text-ink-muted">@{username}</span>
+                )}
+                {/* show "You" if isowned */}
+                {isOwner && (
+                  <span
+                    className="flex items-center gap-1 text-[11px] font-medium text-primary-600 bg-primary-50 px-1.5 py-0.5 rounded-full"
+                    title="This is your post"
+                  >
+                    {" "}
+                    You{" "}
+                  </span>
                 )}
                 {isQuotePost && (
                   <span
@@ -1099,7 +1117,6 @@ const PostCard = ({
               onClose={() => setReactionPickerOpen(false)}
             />
           </div>
-
 
           <button
             onClick={() => setShowComments(!showComments)}
