@@ -16,6 +16,7 @@ import {
   FaQuoteRight,
 } from "react-icons/fa";
 import { FiFlag, FiUsers, FiLock } from "react-icons/fi";
+import { HiOutlineSparkles } from "react-icons/hi2";
 import toast from "react-hot-toast";
 import api from "../services/api";
 import { useAuth } from "../context/useAuth";
@@ -78,6 +79,12 @@ const PostCard = ({
   editedAt,
   onDelete,
   onUnbookmark,
+  // Set only on cards rendered from the For You tab — "followed" |
+  // "fof" | "trending" | "exploration" | undefined. Drives the small
+  // "why am I seeing this" badge below the author line; omitted
+  // entirely (undefined) on Following/Explore/profile renders, and
+  // "followed" renders no badge since that needs no explanation.
+  forYouSource,
   // True only for the very first post rendered on initial page load
   // (e.g. index 0 of the Home feed) -- skips the lazy-load observer
   // entirely so the one image that's already in the viewport on first
@@ -724,6 +731,22 @@ const PostCard = ({
               reposted
             </span>
           </Link>
+        )}
+
+        {/* For You provenance badge — only shown for sources that
+            actually need explaining. "followed" is silent (that's the
+            expected/default case); "exploration" and "fof"/"trending"
+            get a one-line reason so the ranked tab never feels
+            arbitrary. Never shown outside the For You tab. */}
+        {!repostedBy && forYouSource && forYouSource !== "followed" && (
+          <div className="flex items-center gap-1.5 text-[11.5px] text-ink-muted mb-3 -mt-1">
+            <HiOutlineSparkles size={12} className="text-primary-500 shrink-0" />
+            <span>
+              {forYouSource === "fof" && "From someone you might know"}
+              {forYouSource === "trending" && "Trending right now"}
+              {forYouSource === "exploration" && "New voice worth a look"}
+            </span>
+          </div>
         )}
 
         {/* Header */}

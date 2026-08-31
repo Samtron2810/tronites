@@ -11,20 +11,24 @@ import { useSocket } from "../context/useSocket";
 import { HiOutlineSparkles } from "react-icons/hi2";
 import { FiClock, FiUsers } from "react-icons/fi";
 
+// Two tabs — see tab-architecture.html. For You absorbs Trending as a
+// weighted source (services/forYouService.js on the backend) rather
+// than sitting alongside it as a third, overlapping algorithmic tab.
+// Following stays the strictly-chronological, never-ranked promise.
 const TABS = [
+  { key: "forYou", label: "For You", icon: HiOutlineSparkles },
   { key: "following", label: "Following", icon: FiClock },
-  { key: "trending", label: "Trending", icon: HiOutlineSparkles },
 ];
 
 const Home = () => {
-  const [tab, setTab] = useState("following"); // "following" | "trending"
+  const [tab, setTab] = useState("forYou"); // "forYou" | "following"
 
   // Each tab keeps fully independent feed/pagination state so switching
   // back and forth never re-fetches or loses scroll-position-relevant
   // data for the tab you're leaving.
   const [feeds, setFeeds] = useState({
+    forYou: { posts: [], cursor: null, hasMore: true, loaded: false },
     following: { posts: [], cursor: null, hasMore: true, loaded: false },
-    trending: { posts: [], cursor: null, hasMore: true, loaded: false },
   });
   const [loading, setLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -36,7 +40,7 @@ const Home = () => {
   // can fire a request.
   const fetchInFlightRef = useRef(false);
   // Latest posts per tab, kept in a ref so the stable fetchPosts callback
-  // (empty deps) can read the current list for the trending excludeIds
+  // (empty deps) can read the current list for the For You excludeIds
   // param without closing over a stale `feeds`. Synced via an effect —
   // the react-hooks/refs rule forbids touching refs during render.
   const feedsRef = useRef(feeds);
@@ -58,21 +62,19 @@ const Home = () => {
         else setIsLoadingMore(true);
 
         const params =
-          targetTab === "trending"
+          targetTab === "forYou"
             ? {
                 limit: 10,
                 ...(afterCursor
                   ? {
-                      afterScore: afterCursor.afterScore,
-                      afterId: afterCursor.afterId,
-                      // Hard-exclude posts already delivered on earlier
-                      // trending pages — a post's score decays with age
-                      // between requests, so without this guard it can
-                      // drop below the page-1 cursor and be re-served on
-                      // page 2. The backend validates + caps this list.
-                      excludeIds: feedsRef.current[targetTab].posts
-                        .map((p) => p._id)
-                        .join(","),
+                      // Opaque comma-joined id cursor — see
+                      // getForYouFeed in postController.js. Unlike
+                      // Trending's score+id cursor, For You's ranking
+                      // shifts between loads (affinity/exploration are
+                      // meant to vary), so it hard-excludes everything
+                      // already delivered rather than trying to resume
+                      // from a stable rank position.
+                      excludeIds: afterCursor,
                     }
                   : {}),
               }
@@ -82,7 +84,7 @@ const Home = () => {
               };
 
         const endpoint =
-          targetTab === "trending" ? "/posts/trending" : "/posts/feed";
+          targetTab === "forYou" ? "/posts/for-you" : "/posts/feed";
 
         const res = await api.get(endpoint, { params });
 
@@ -97,7 +99,7 @@ const Home = () => {
           } else {
             // Append (load more): never re-add a post that's already in
             // the list — this is the guard that keeps ordering drift /
-            // score decay in trending from duplicating posts.
+            // score decay in For You from duplicating posts.
             const existingIds = new Set(
               prev[targetTab].posts.map((p) => p._id),
             );
@@ -161,8 +163,8 @@ const Home = () => {
     if (!socket) return;
     const handleNewPost = (newPost) => {
       // New posts only prepend into the reverse-chronological Following
-      // feed — Trending is ranked by engagement/decay, so a brand new
-      // post belongs wherever its score lands, not at the top.
+      // feed — For You is ranked by score, so a brand new post belongs
+      // wherever its score lands, not at the top.
       setFeeds((prev) =>
         prev.following.posts.some((p) => p._id === newPost._id)
           ? prev
@@ -181,13 +183,13 @@ const Home = () => {
 
   const removePost = (id) => {
     setFeeds((prev) => ({
+      forYou: {
+        ...prev.forYou,
+        posts: prev.forYou.posts.filter((p) => p._id !== id),
+      },
       following: {
         ...prev.following,
         posts: prev.following.posts.filter((p) => p._id !== id),
-      },
-      trending: {
-        ...prev.trending,
-        posts: prev.trending.posts.filter((p) => p._id !== id),
       },
     }));
   };
@@ -256,42 +258,43 @@ const Home = () => {
               privacy={post.privacy}
               editedAt={post.editedAt}
               onDelete={removePost}
+              forYouSource={tab === "forYou" ? post.forYouSource : undefined}
               priority={index === 0}
             />
           ))}
 
         {!loading && current.posts.length === 0 && (
           <div className="bg-card border border-stroke rounded-2xl p-10 text-center">
-            <p className="text-3xl mb-2">{tab === "trending" ? "✨" : "👋"}</p>
+            <p className="text-3xl mb-2">{tab === "forYou" ? "✨" : "👋"}</p>
             <h2 className="text-lg font-semibold text-ink">
-              {tab === "trending"
-                ? "Nothing trending yet"
+              {tab === "forYou"
+                ? "Nothing to show yet"
                 : "Your feed is empty"}
             </h2>
             <p className="text-base text-ink-muted mt-1">
-              {tab === "trending"
-                ? "Check back once posts start getting engagement."
+              {tab === "forYou"
+                ? "Follow a few people or explore to get this tab started."
                 : "Follow users to start seeing posts."}
             </p>
-            {tab === "following" && (
-              <div className="flex flex-wrap items-center justify-center gap-3 mt-6">
-                <Link
-                  to="/explore"
-                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-primary-600 text-white text-sm font-medium hover:bg-primary-700 transition"
-                >
-                  <FiUsers size={16} />
-                  Explore users
-                </Link>
+            <div className="flex flex-wrap items-center justify-center gap-3 mt-6">
+              <Link
+                to="/explore"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-primary-600 text-white text-sm font-medium hover:bg-primary-700 transition"
+              >
+                <FiUsers size={16} />
+                Explore users
+              </Link>
+              {tab === "following" && (
                 <button
                   type="button"
-                  onClick={() => setTab("trending")}
+                  onClick={() => setTab("forYou")}
                   className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border border-stroke text-ink text-sm font-medium hover:bg-surface transition"
                 >
                   <HiOutlineSparkles size={16} />
-                  See trending posts
+                  See For You
                 </button>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         )}
 
@@ -312,3 +315,4 @@ const Home = () => {
 };
 
 export default Home;
+
