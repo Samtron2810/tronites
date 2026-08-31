@@ -10,13 +10,14 @@ import api from "../services/api";
 import { useAuth } from "../context/useAuth";
 import { useSocket } from "../context/useSocket";
 import { FiSearch, FiHash } from "react-icons/fi";
+import { HiOutlineSparkles } from "react-icons/hi2";
 import defaultAvatar from "../assets/defaultAvatar";
 import { resizedImageUrl, IMAGE_SIZES } from "../utils/cloudinaryImage";
 
 const Explore = () => {
   const { user: currentUser } = useAuth();
   const { onlineUsers } = useSocket();
-  const [activeTab, setActiveTab] = useState("users"); // "users" | "posts"
+  const [activeTab, setActiveTab] = useState("users"); // "users" | "posts" | "trending"
   const [search, setSearch] = useState("");
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -34,6 +35,24 @@ const Explore = () => {
   const [postsCursor, setPostsCursor] = useState(null); // { afterScore, afterId } | null
   const [postsHasMore, setPostsHasMore] = useState(false);
   const postsObserverTarget = useRef(null);
+
+  // Trending — moved here from Home (see tab-architecture.html: For You
+  // absorbs Trending as a weighted source on Home, and the standalone
+  // "what's big right now" surface belongs in Explore's discovery
+  // context instead). Own state, own cursor shape (score+id, decays
+  // between requests, so it also tracks delivered ids to hard-exclude
+  // re-served posts — same reasoning the old Home tab used).
+  const [trendingPosts, setTrendingPosts] = useState([]);
+  const [trendingLoading, setTrendingLoading] = useState(false);
+  const [trendingIsLoadingMore, setTrendingIsLoadingMore] = useState(false);
+  const [trendingCursor, setTrendingCursor] = useState(null); // { afterScore, afterId } | null
+  const [trendingHasMore, setTrendingHasMore] = useState(false);
+  const [trendingLoaded, setTrendingLoaded] = useState(false);
+  const trendingObserverTarget = useRef(null);
+  const trendingPostsRef = useRef(trendingPosts);
+  useEffect(() => {
+    trendingPostsRef.current = trendingPosts;
+  }, [trendingPosts]);
 
   // A query starting with # is unambiguously a hashtag lookup — offer a
   // direct jump to that hashtag's dedicated page instead of (or in
@@ -96,6 +115,47 @@ const Explore = () => {
     }
   };
 
+  const fetchTrending = async (afterCursor, isFirstPage) => {
+    try {
+      if (isFirstPage) setTrendingLoading(true);
+      else setTrendingIsLoadingMore(true);
+
+      const res = await api.get("/posts/trending", {
+        params: {
+          limit: 10,
+          ...(afterCursor
+            ? {
+                afterScore: afterCursor.afterScore,
+                afterId: afterCursor.afterId,
+                // Hard-exclude posts already delivered — a post's score
+                // decays with age between requests, so without this a
+                // post can drop below the page-1 cursor and get
+                // re-served on page 2.
+                excludeIds: trendingPostsRef.current.map((p) => p._id).join(","),
+              }
+            : {}),
+        },
+      });
+
+      if (isFirstPage) setTrendingPosts(res.data.posts);
+      else {
+        setTrendingPosts((prev) => {
+          const existingIds = new Set(prev.map((p) => p._id));
+          return [...prev, ...res.data.posts.filter((p) => !existingIds.has(p._id))];
+        });
+      }
+      setTrendingHasMore(res.data.hasMore);
+      setTrendingCursor(res.data.nextCursor);
+      setTrendingLoaded(true);
+    } catch (e) {
+      console.error(e);
+      if (!isFirstPage) toast.error("Couldn't load more posts. Try again.");
+    } finally {
+      if (isFirstPage) setTrendingLoading(false);
+      else setTrendingIsLoadingMore(false);
+    }
+  };
+
   useEffect(() => {
     const trimmed = search.trim();
     if (trimmed.length > 0 && trimmed.length < 2) {
@@ -111,10 +171,20 @@ const Explore = () => {
     const delay = trimmed.length === 0 ? 0 : 400;
     const t = window.setTimeout(() => {
       if (activeTab === "users") fetchUsers(trimmed, 1);
-      else fetchPosts(trimmed, null, true);
+      else if (activeTab === "posts") fetchPosts(trimmed, null, true);
     }, delay);
     return () => window.clearTimeout(t);
   }, [search, activeTab]);
+
+  // Trending ignores the search box entirely (global ranked surface,
+  // not a query) — load once on first visit to the tab, same
+  // load-once-then-reuse-state pattern the old Home tabs used.
+  useEffect(() => {
+    if (activeTab !== "trending" || trendingLoaded) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch-on-tab-open; setState happens inside the async fetchTrending fn
+    fetchTrending(null, true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, trendingLoaded]);
 
   useEffect(() => {
     if (activeTab !== "users") return;
@@ -165,6 +235,34 @@ const Explore = () => {
     postsIsLoadingMore,
     postsLoading,
     search,
+  ]);
+
+  useEffect(() => {
+    if (activeTab !== "trending") return;
+    const target = trendingObserverTarget.current;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (
+          entries[0].isIntersecting &&
+          trendingHasMore &&
+          !trendingIsLoadingMore &&
+          !trendingLoading
+        ) {
+          fetchTrending(trendingCursor, false);
+        }
+      },
+      { threshold: 0.1 },
+    );
+    if (target) observer.observe(target);
+    return () => {
+      if (target) observer.unobserve(target);
+    };
+  }, [
+    activeTab,
+    trendingCursor,
+    trendingHasMore,
+    trendingIsLoadingMore,
+    trendingLoading,
   ]);
 
   const handleFollow = async (userId) => {
@@ -221,23 +319,37 @@ const Explore = () => {
           >
             Posts
           </button>
+          <button
+            onClick={() => setActiveTab("trending")}
+            className={`flex-1 flex items-center justify-center gap-1 text-base font-semibold py-2 rounded-xl transition ${
+              activeTab === "trending"
+                ? "bg-primary-600 text-white"
+                : "text-ink-muted hover:text-ink"
+            }`}
+          >
+            <HiOutlineSparkles size={15} />
+            Trending
+          </button>
         </div>
 
-        {/* Search bar */}
-        <div className="bg-card border border-stroke rounded-2xl px-4 py-3 flex items-center gap-3">
-          <FiSearch className="text-ink-muted shrink-0" size={16} />
-          <input
-            type="text"
-            placeholder={
-              activeTab === "users"
-                ? "Search users..."
-                : "Search posts or #hashtag..."
-            }
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="flex-1 text-base text-ink placeholder:text-ink-muted outline-none bg-transparent"
-          />
-        </div>
+        {/* Search bar — Trending has no query, so the bar hides for it
+            entirely rather than rendering a disabled input. */}
+        {activeTab !== "trending" && (
+          <div className="bg-card border border-stroke rounded-2xl px-4 py-3 flex items-center gap-3">
+            <FiSearch className="text-ink-muted shrink-0" size={16} />
+            <input
+              type="text"
+              placeholder={
+                activeTab === "users"
+                  ? "Search users..."
+                  : "Search posts or #hashtag..."
+              }
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="flex-1 text-base text-ink placeholder:text-ink-muted outline-none bg-transparent"
+            />
+          </div>
+        )}
 
         {/* Hashtag shortcut */}
         {possibleHashtag && (
@@ -318,6 +430,16 @@ const Explore = () => {
                         <p className="text-sm text-ink-muted truncate">
                           {user.bio || "No bio"}
                         </p>
+                        {/* 2.2 — surfaces the mutual-follow signal that
+                            drives the ranking, only when it's actually
+                            > 0 (a raw "0 mutual" line adds noise, not
+                            trust). */}
+                        {!search.trim() && user.mutualFollowersCount > 0 && (
+                          <p className="text-xs text-primary-600 truncate">
+                            {user.mutualFollowersCount} mutual follower
+                            {user.mutualFollowersCount === 1 ? "" : "s"}
+                          </p>
+                        )}
                       </div>
                     </Link>
 
@@ -420,9 +542,79 @@ const Explore = () => {
             )}
           </>
         )}
+
+        {activeTab === "trending" && (
+          <>
+            {trendingLoading && (
+              <>
+                <PostSkeleton />
+                <PostSkeleton />
+              </>
+            )}
+
+            {!trendingLoading && trendingPosts.length === 0 && (
+              <div className="bg-card border border-stroke rounded-2xl p-10 text-center">
+                <p className="text-3xl mb-2">✨</p>
+                <h2 className="text-lg font-semibold text-ink">
+                  Nothing trending yet
+                </h2>
+                <p className="text-base text-ink-muted mt-1">
+                  Check back once posts start getting engagement.
+                </p>
+              </div>
+            )}
+
+            {!trendingLoading &&
+              trendingPosts.map((post) => (
+                <PostCard
+                  key={post._id}
+                  postId={post._id}
+                  userId={post.user._id}
+                  name={post.user.name}
+                  username={post.user.username}
+                  profilePic={post.user.profilePic}
+                  time={new Date(post.createdAt).toLocaleString()}
+                  text={post.text}
+                  images={post.images}
+                  video={post.video}
+                  likes={post.likesCount}
+                  commentsCount={post.commentsCount}
+                  reposts={post.repostsCount}
+                  isLiked={post.isLiked}
+                  isBookmarked={post.isBookmarked}
+                  isReposted={post.isReposted}
+                  reactionSummary={post.reactionSummary}
+                  myReaction={post.myReaction}
+                  isQuotePost={post.isQuotePost}
+                  quoteOf={post.quoteOf}
+                  edited={post.edited}
+                  privacy={post.privacy}
+                  editedAt={post.editedAt}
+                  onDelete={(id) =>
+                    setTrendingPosts((prev) => prev.filter((p) => p._id !== id))
+                  }
+                />
+              ))}
+
+            {!trendingLoading && trendingPosts.length > 0 && (
+              <div ref={trendingObserverTarget} className="py-4 text-center">
+                {trendingIsLoadingMore && (
+                  <>
+                    <PostSkeleton />
+                    <PostSkeleton />
+                  </>
+                )}
+                {!trendingHasMore && (
+                  <p className="text-sm text-ink-muted">You're all caught up</p>
+                )}
+              </div>
+            )}
+          </>
+        )}
       </div>
     </MainLayout>
   );
 };
 
 export default Explore;
+

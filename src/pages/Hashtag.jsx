@@ -5,7 +5,7 @@ import MainLayout from "../layouts/MainLayout";
 import PostCard from "../components/PostCard";
 import PostSkeleton from "../components/PostSkeleton";
 import api from "../services/api";
-import { FiHash, FiArrowLeft } from "react-icons/fi";
+import { FiHash, FiArrowLeft, FiBell, FiBellOff } from "react-icons/fi";
 
 const Hashtag = () => {
   const { tag } = useParams();
@@ -15,6 +15,13 @@ const Hashtag = () => {
   const [hasMore, setHasMore] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const observerTarget = useRef(null);
+
+  // 2.3 — follow hashtags. Loaded independently of the post list (a
+  // separate, cheap GET) so a slow post-page fetch never blocks the
+  // follow button from rendering its real state.
+  const [isFollowingTag, setIsFollowingTag] = useState(false);
+  const [followLoaded, setFollowLoaded] = useState(false);
+  const [followBusy, setFollowBusy] = useState(false);
 
   const fetchPosts = async (afterCursor, isFirstPage) => {
     try {
@@ -43,6 +50,48 @@ const Hashtag = () => {
   }, [tag]);
 
   useEffect(() => {
+    let cancelled = false;
+    setFollowLoaded(false);
+    api
+      .get("/posts/hashtag-follows")
+      .then((res) => {
+        if (cancelled) return;
+        setIsFollowingTag(res.data.tags.includes(tag.toLowerCase()));
+        setFollowLoaded(true);
+      })
+      .catch((e) => {
+        console.error(e);
+        // Silent — the button just falls back to "Follow" until the
+        // next successful load; not worth a toast for a background
+        // state check.
+        if (!cancelled) setFollowLoaded(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [tag]);
+
+  const handleToggleFollow = async () => {
+    if (followBusy) return;
+    setFollowBusy(true);
+    const previous = isFollowingTag;
+    // Optimistic — this is a low-stakes personal preference toggle, not
+    // an action with a visible side effect on other users, so instant
+    // feedback matters more than waiting for the round trip.
+    setIsFollowingTag(!previous);
+    try {
+      const res = await api.put(`/posts/hashtag-follows/${tag}`);
+      setIsFollowingTag(res.data.following);
+    } catch (e) {
+      console.error(e);
+      setIsFollowingTag(previous);
+      toast.error("Couldn't update. Try again.");
+    } finally {
+      setFollowBusy(false);
+    }
+  };
+
+  useEffect(() => {
     const target = observerTarget.current;
     const observer = new IntersectionObserver(
       (entries) => {
@@ -61,17 +110,45 @@ const Hashtag = () => {
   return (
     <MainLayout>
       <div className="space-y-4">
-        <div className="flex items-center gap-3">
-          <Link
-            to="/"
-            className="text-ink-muted hover:text-ink transition p-2 rounded-lg hover:bg-surface"
-          >
-            <FiArrowLeft size={18} />
-          </Link>
-          <div className="flex items-center gap-2">
-            <FiHash className="text-primary-600" size={18} />
-            <h1 className="text-xl font-bold text-ink">{tag}</h1>
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <Link
+              to="/"
+              className="text-ink-muted hover:text-ink transition p-2 rounded-lg hover:bg-surface shrink-0"
+            >
+              <FiArrowLeft size={18} />
+            </Link>
+            <div className="flex items-center gap-2 min-w-0">
+              <FiHash className="text-primary-600 shrink-0" size={18} />
+              <h1 className="text-xl font-bold text-ink truncate">{tag}</h1>
+            </div>
           </div>
+
+          {/* 2.3 — this is the signal that feeds For You's "interest"
+              source (see backend services/forYouService.js), so
+              following a tag here has a real downstream effect on the
+              home feed, not just this page. */}
+          <button
+            onClick={handleToggleFollow}
+            disabled={!followLoaded || followBusy}
+            className={`shrink-0 flex items-center gap-1.5 px-4 py-1.5 rounded-xl text-sm font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed ${
+              isFollowingTag
+                ? "bg-surface border border-stroke text-ink-sub hover:border-red-300 hover:text-red-500"
+                : "bg-primary-600 text-white hover:bg-primary-800"
+            }`}
+          >
+            {isFollowingTag ? (
+              <>
+                <FiBellOff size={13} />
+                Following
+              </>
+            ) : (
+              <>
+                <FiBell size={13} />
+                Follow
+              </>
+            )}
+          </button>
         </div>
 
         {loading && (
@@ -115,7 +192,7 @@ const Hashtag = () => {
 
         {!loading && posts.length === 0 && (
           <div className="bg-card border border-stroke rounded-2xl p-10 text-center">
-            <p className="text-3xl mb-2">#ï¸⃣</p>
+            <p className="text-3xl mb-2">#ï¸⃣</p>
             <h2 className="text-lg font-semibold text-ink">No posts yet</h2>
             <p className="text-base text-ink-muted mt-1">
               Nobody's posted with #{tag} yet.
