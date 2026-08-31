@@ -1,23 +1,38 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
 import MainLayout from "../layouts/MainLayout";
 import UserCardSkeleton from "../components/UserCardSkeleton";
 import PostCard from "../components/PostCard";
 import PostSkeleton from "../components/PostSkeleton";
+import CommentSearchResultCard from "../components/CommentSearchResultCard";
+import MessageSearchResultCard from "../components/MessageSearchResultCard";
+import SearchFiltersModal from "../components/SearchFiltersModal";
+import SearchHistoryPanel from "../components/SearchHistoryPanel";
 import TrendingHashtagsWidget from "../components/TrendingHashtagsWidget";
 import api from "../services/api";
 import { useAuth } from "../context/useAuth";
 import { useSocket } from "../context/useSocket";
-import { FiSearch, FiHash } from "react-icons/fi";
+import { FiSearch, FiHash, FiSliders, FiStar } from "react-icons/fi";
 import { HiOutlineSparkles } from "react-icons/hi2";
 import defaultAvatar from "../assets/defaultAvatar";
 import { resizedImageUrl, IMAGE_SIZES } from "../utils/cloudinaryImage";
 
+const EMPTY_FILTERS = { from: "", startDate: "", endDate: "", hasMedia: null, minLikes: "" };
+
+// Any filter set beyond the empty defaults - used to (a) decide whether
+// a query-less search is still worth running, and (b) show the active
+// filter count badge on the filter button.
+const countActiveFilters = (f) =>
+  Object.entries(f).filter(([k, v]) => {
+    if (k === "hasMedia") return v !== null;
+    return String(v || "").trim().length > 0;
+  }).length;
+
 const Explore = () => {
   const { user: currentUser } = useAuth();
   const { onlineUsers } = useSocket();
-  const [activeTab, setActiveTab] = useState("users"); // "users" | "posts" | "trending"
+  const [activeTab, setActiveTab] = useState("users"); // "users" | "posts" | "comments" | "messages" | "trending"
   const [search, setSearch] = useState("");
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -27,7 +42,21 @@ const Explore = () => {
   const [followingId, setFollowingId] = useState(null);
   const observerTarget = useRef(null);
 
-  // Separate state for post-content search — keeps the two tabs from
+  // Filters - shared draft applies to posts/comments/messages tabs
+  // (users search has no filter surface). Kept in one object so
+  // Apply/Clear/save-search logic doesn't need per-tab duplication.
+  const [filters, setFilters] = useState(EMPTY_FILTERS);
+  const [showFiltersModal, setShowFiltersModal] = useState(false);
+  const activeFilterCount = countActiveFilters(filters);
+
+  // Search bar focus drives whether the history/saved panel shows -
+  // it only makes sense to show "past searches" when the box is
+  // focused and there's no query typed yet.
+  const [searchFocused, setSearchFocused] = useState(false);
+  const [history, setHistory] = useState([]);
+  const [savedSearches, setSavedSearches] = useState([]);
+
+  // Separate state for post-content search - keeps the two tabs from
   // stepping on each other's pagination/loading state when switching.
   const [posts, setPosts] = useState([]);
   const [postsLoading, setPostsLoading] = useState(false);
@@ -36,12 +65,28 @@ const Explore = () => {
   const [postsHasMore, setPostsHasMore] = useState(false);
   const postsObserverTarget = useRef(null);
 
-  // Trending — moved here from Home (see tab-architecture.html: For You
+  // Comment-content search - own state/cursor, same shape as posts.
+  const [comments, setComments] = useState([]);
+  const [commentsLoading, setCommentsLoading] = useState(false);
+  const [commentsIsLoadingMore, setCommentsIsLoadingMore] = useState(false);
+  const [commentsCursor, setCommentsCursor] = useState(null);
+  const [commentsHasMore, setCommentsHasMore] = useState(false);
+  const commentsObserverTarget = useRef(null);
+
+  // Message search - scoped server-side to the caller's own threads.
+  const [messages, setMessages] = useState([]);
+  const [messagesLoading, setMessagesLoading] = useState(false);
+  const [messagesIsLoadingMore, setMessagesIsLoadingMore] = useState(false);
+  const [messagesCursor, setMessagesCursor] = useState(null); // { afterTime, afterId } | null
+  const [messagesHasMore, setMessagesHasMore] = useState(false);
+  const messagesObserverTarget = useRef(null);
+
+  // Trending - moved here from Home (see tab-architecture.html: For You
   // absorbs Trending as a weighted source on Home, and the standalone
   // "what's big right now" surface belongs in Explore's discovery
   // context instead). Own state, own cursor shape (score+id, decays
   // between requests, so it also tracks delivered ids to hard-exclude
-  // re-served posts — same reasoning the old Home tab used).
+  // re-served posts - same reasoning the old Home tab used).
   const [trendingPosts, setTrendingPosts] = useState([]);
   const [trendingLoading, setTrendingLoading] = useState(false);
   const [trendingIsLoadingMore, setTrendingIsLoadingMore] = useState(false);
@@ -54,7 +99,7 @@ const Explore = () => {
     trendingPostsRef.current = trendingPosts;
   }, [trendingPosts]);
 
-  // A query starting with # is unambiguously a hashtag lookup — offer a
+  // A query starting with # is unambiguously a hashtag lookup - offer a
   // direct jump to that hashtag's dedicated page instead of (or in
   // addition to) a content-search match.
   const hashtagMatch = search.trim().match(/^#?([a-z0-9_]{2,})$/i);
@@ -62,6 +107,17 @@ const Explore = () => {
     activeTab === "posts" && hashtagMatch
       ? hashtagMatch[1].toLowerCase()
       : null;
+
+  // Turns the shared `filters` draft into query params for posts/
+  // comments/messages searches - same key names the backend's
+  // parseSearchFilters expects.
+  const filterParams = () => ({
+    ...(filters.from ? { from: filters.from } : {}),
+    ...(filters.startDate ? { startDate: filters.startDate } : {}),
+    ...(filters.endDate ? { endDate: filters.endDate } : {}),
+    ...(filters.hasMedia !== null ? { hasMedia: filters.hasMedia } : {}),
+    ...(filters.minLikes ? { minLikes: filters.minLikes } : {}),
+  });
 
   const fetchPosts = async (query, afterCursor, isFirstPage) => {
     try {
@@ -72,6 +128,7 @@ const Explore = () => {
         params: {
           q: query,
           limit: 10,
+          ...filterParams(),
           ...(afterCursor
             ? { afterScore: afterCursor.afterScore, afterId: afterCursor.afterId }
             : {}),
@@ -89,6 +146,66 @@ const Explore = () => {
     } finally {
       if (isFirstPage) setPostsLoading(false);
       else setPostsIsLoadingMore(false);
+    }
+  };
+
+  const fetchComments = async (query, afterCursor, isFirstPage) => {
+    try {
+      if (isFirstPage) setCommentsLoading(true);
+      else setCommentsIsLoadingMore(true);
+
+      const res = await api.get(`/comments/search`, {
+        params: {
+          q: query,
+          limit: 10,
+          ...filterParams(),
+          ...(afterCursor
+            ? { afterScore: afterCursor.afterScore, afterId: afterCursor.afterId }
+            : {}),
+        },
+      });
+
+      if (isFirstPage) setComments(res.data.comments);
+      else setComments((prev) => [...prev, ...res.data.comments]);
+
+      setCommentsHasMore(res.data.hasMore);
+      setCommentsCursor(res.data.nextCursor);
+    } catch (e) {
+      console.error(e);
+      if (!isFirstPage) toast.error("Couldn't load more comments. Try again.");
+    } finally {
+      if (isFirstPage) setCommentsLoading(false);
+      else setCommentsIsLoadingMore(false);
+    }
+  };
+
+  const fetchMessages = async (query, afterCursor, isFirstPage) => {
+    try {
+      if (isFirstPage) setMessagesLoading(true);
+      else setMessagesIsLoadingMore(true);
+
+      const res = await api.get(`/messages/search`, {
+        params: {
+          q: query,
+          limit: 15,
+          ...filterParams(),
+          ...(afterCursor
+            ? { afterTime: afterCursor.afterTime, afterId: afterCursor.afterId }
+            : {}),
+        },
+      });
+
+      if (isFirstPage) setMessages(res.data.messages);
+      else setMessages((prev) => [...prev, ...res.data.messages]);
+
+      setMessagesHasMore(res.data.hasMore);
+      setMessagesCursor(res.data.nextCursor);
+    } catch (e) {
+      console.error(e);
+      if (!isFirstPage) toast.error("Couldn't load more messages. Try again.");
+    } finally {
+      if (isFirstPage) setMessagesLoading(false);
+      else setMessagesIsLoadingMore(false);
     }
   };
 
@@ -127,7 +244,7 @@ const Explore = () => {
             ? {
                 afterScore: afterCursor.afterScore,
                 afterId: afterCursor.afterId,
-                // Hard-exclude posts already delivered — a post's score
+                // Hard-exclude posts already delivered - a post's score
                 // decays with age between requests, so without this a
                 // post can drop below the page-1 cursor and get
                 // re-served on page 2.
@@ -156,6 +273,50 @@ const Explore = () => {
     }
   };
 
+  // History/saved searches - loaded once per tab switch (not on every
+  // keystroke), scoped to the current tab so switching tabs shows the
+  // right list.
+  const loadHistoryAndSaved = useCallback(async (scope) => {
+    try {
+      const [historyRes, savedRes] = await Promise.all([
+        api.get("/search/history", { params: { scope } }),
+        api.get("/search/saved", { params: { scope } }),
+      ]);
+      setHistory(historyRes.data.history);
+      setSavedSearches(savedRes.data.savedSearches);
+    } catch (e) {
+      console.error(e);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!["posts", "comments", "messages"].includes(activeTab)) return;
+    loadHistoryAndSaved(activeTab);
+  }, [activeTab, loadHistoryAndSaved]);
+
+  // Debounced history logging - fires a bit after fetch, not on every
+  // keystroke, and only for searches that actually returned results
+  // worth remembering.
+  const logHistoryTimer = useRef(null);
+  const logHistory = (scope, query) => {
+    if (logHistoryTimer.current) window.clearTimeout(logHistoryTimer.current);
+    logHistoryTimer.current = window.setTimeout(() => {
+      api
+        .post("/search/history", {
+          scope,
+          query,
+          filters: {
+            from: filters.from || null,
+            startDate: filters.startDate || null,
+            endDate: filters.endDate || null,
+            hasMedia: filters.hasMedia,
+            minLikes: filters.minLikes ? parseInt(filters.minLikes, 10) : null,
+          },
+        })
+        .catch(() => {});
+    }, 1500);
+  };
+
   useEffect(() => {
     const trimmed = search.trim();
     if (trimmed.length > 0 && trimmed.length < 2) {
@@ -166,18 +327,40 @@ const Explore = () => {
       setPosts([]);
       setPostsHasMore(false);
       setPostsLoading(false);
+      setComments([]);
+      setCommentsHasMore(false);
+      setCommentsLoading(false);
+      setMessages([]);
+      setMessagesHasMore(false);
+      setMessagesLoading(false);
+      return;
+    }
+    // A query-less search is still valid on posts/comments/messages
+    // when filters are active ("just @sam's posts with media") - only
+    // users search requires an actual query string.
+    if (trimmed.length === 0 && activeFilterCount === 0 && activeTab !== "users") {
       return;
     }
     const delay = trimmed.length === 0 ? 0 : 400;
     const t = window.setTimeout(() => {
       if (activeTab === "users") fetchUsers(trimmed, 1);
-      else if (activeTab === "posts") fetchPosts(trimmed, null, true);
+      else if (activeTab === "posts") {
+        fetchPosts(trimmed, null, true);
+        logHistory("posts", trimmed);
+      } else if (activeTab === "comments") {
+        fetchComments(trimmed, null, true);
+        logHistory("comments", trimmed);
+      } else if (activeTab === "messages") {
+        fetchMessages(trimmed, null, true);
+        logHistory("messages", trimmed);
+      }
     }, delay);
     return () => window.clearTimeout(t);
-  }, [search, activeTab]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search, activeTab, filters]);
 
   // Trending ignores the search box entirely (global ranked surface,
-  // not a query) — load once on first visit to the tab, same
+  // not a query) - load once on first visit to the tab, same
   // load-once-then-reuse-state pattern the old Home tabs used.
   useEffect(() => {
     if (activeTab !== "trending" || trendingLoaded) return;
@@ -238,6 +421,64 @@ const Explore = () => {
   ]);
 
   useEffect(() => {
+    if (activeTab !== "comments") return;
+    const target = commentsObserverTarget.current;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (
+          entries[0].isIntersecting &&
+          commentsHasMore &&
+          !commentsIsLoadingMore &&
+          !commentsLoading
+        ) {
+          fetchComments(search.trim(), commentsCursor, false);
+        }
+      },
+      { threshold: 0.1 },
+    );
+    if (target) observer.observe(target);
+    return () => {
+      if (target) observer.unobserve(target);
+    };
+  }, [
+    activeTab,
+    commentsCursor,
+    commentsHasMore,
+    commentsIsLoadingMore,
+    commentsLoading,
+    search,
+  ]);
+
+  useEffect(() => {
+    if (activeTab !== "messages") return;
+    const target = messagesObserverTarget.current;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (
+          entries[0].isIntersecting &&
+          messagesHasMore &&
+          !messagesIsLoadingMore &&
+          !messagesLoading
+        ) {
+          fetchMessages(search.trim(), messagesCursor, false);
+        }
+      },
+      { threshold: 0.1 },
+    );
+    if (target) observer.observe(target);
+    return () => {
+      if (target) observer.unobserve(target);
+    };
+  }, [
+    activeTab,
+    messagesCursor,
+    messagesHasMore,
+    messagesIsLoadingMore,
+    messagesLoading,
+    search,
+  ]);
+
+  useEffect(() => {
     if (activeTab !== "trending") return;
     const target = trendingObserverTarget.current;
     const observer = new IntersectionObserver(
@@ -292,16 +533,95 @@ const Explore = () => {
     }
   };
 
+  const handleApplyFilters = (newFilters) => {
+    setFilters(newFilters);
+    setShowFiltersModal(false);
+  };
+
+  const handleSelectHistoryOrSaved = (entry) => {
+    setSearch(entry.query || "");
+    setFilters({
+      from: entry.filters?.from || "",
+      startDate: entry.filters?.startDate
+        ? new Date(entry.filters.startDate).toISOString().slice(0, 10)
+        : "",
+      endDate: entry.filters?.endDate
+        ? new Date(entry.filters.endDate).toISOString().slice(0, 10)
+        : "",
+      hasMedia: entry.filters?.hasMedia ?? null,
+      minLikes: entry.filters?.minLikes ? String(entry.filters.minLikes) : "",
+    });
+    setSearchFocused(false);
+  };
+
+  const handleDeleteHistoryEntry = async (id) => {
+    setHistory((prev) => prev.filter((h) => h._id !== id));
+    try {
+      await api.delete(`/search/history/${id}`);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleClearHistory = async () => {
+    setHistory([]);
+    try {
+      await api.delete("/search/history", { params: { scope: activeTab } });
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleDeleteSavedSearch = async (id) => {
+    setSavedSearches((prev) => prev.filter((s) => s._id !== id));
+    try {
+      await api.delete(`/search/saved/${id}`);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleSaveCurrentSearch = async () => {
+    const trimmed = search.trim();
+    if (!trimmed && activeFilterCount === 0) {
+      toast.error("Type a search or set a filter first.");
+      return;
+    }
+    try {
+      const res = await api.post("/search/saved", {
+        scope: activeTab,
+        query: trimmed,
+        label: trimmed || "",
+        filters: {
+          from: filters.from || null,
+          startDate: filters.startDate || null,
+          endDate: filters.endDate || null,
+          hasMedia: filters.hasMedia,
+          minLikes: filters.minLikes ? parseInt(filters.minLikes, 10) : null,
+        },
+      });
+      setSavedSearches((prev) => [res.data.savedSearch, ...prev]);
+      toast.success("Search saved");
+    } catch (e) {
+      console.error(e);
+      toast.error("Couldn't save search. Try again.");
+    }
+  };
+
+  const showFilterSurface = ["posts", "comments", "messages"].includes(activeTab);
+  const showHistoryPanel =
+    showFilterSurface && searchFocused && !search.trim() && activeFilterCount === 0;
+
   return (
     <MainLayout>
       <div className="space-y-4">
         <TrendingHashtagsWidget />
 
         {/* Tab switcher */}
-        <div className="bg-card border border-stroke rounded-2xl p-1 flex gap-1">
+        <div className="bg-card border border-stroke rounded-2xl p-1 flex gap-1 overflow-x-auto">
           <button
             onClick={() => setActiveTab("users")}
-            className={`flex-1 text-base font-semibold py-2 rounded-xl transition ${
+            className={`flex-1 text-base font-semibold py-2 rounded-xl transition whitespace-nowrap px-2 ${
               activeTab === "users"
                 ? "bg-primary-600 text-white"
                 : "text-ink-muted hover:text-ink"
@@ -311,7 +631,7 @@ const Explore = () => {
           </button>
           <button
             onClick={() => setActiveTab("posts")}
-            className={`flex-1 text-base font-semibold py-2 rounded-xl transition ${
+            className={`flex-1 text-base font-semibold py-2 rounded-xl transition whitespace-nowrap px-2 ${
               activeTab === "posts"
                 ? "bg-primary-600 text-white"
                 : "text-ink-muted hover:text-ink"
@@ -320,8 +640,28 @@ const Explore = () => {
             Posts
           </button>
           <button
+            onClick={() => setActiveTab("comments")}
+            className={`flex-1 text-base font-semibold py-2 rounded-xl transition whitespace-nowrap px-2 ${
+              activeTab === "comments"
+                ? "bg-primary-600 text-white"
+                : "text-ink-muted hover:text-ink"
+            }`}
+          >
+            Comments
+          </button>
+          <button
+            onClick={() => setActiveTab("messages")}
+            className={`flex-1 text-base font-semibold py-2 rounded-xl transition whitespace-nowrap px-2 ${
+              activeTab === "messages"
+                ? "bg-primary-600 text-white"
+                : "text-ink-muted hover:text-ink"
+            }`}
+          >
+            Messages
+          </button>
+          <button
             onClick={() => setActiveTab("trending")}
-            className={`flex-1 flex items-center justify-center gap-1 text-base font-semibold py-2 rounded-xl transition ${
+            className={`flex-1 flex items-center justify-center gap-1 text-base font-semibold py-2 rounded-xl transition whitespace-nowrap px-2 ${
               activeTab === "trending"
                 ? "bg-primary-600 text-white"
                 : "text-ink-muted hover:text-ink"
@@ -332,23 +672,79 @@ const Explore = () => {
           </button>
         </div>
 
-        {/* Search bar — Trending has no query, so the bar hides for it
+        {/* Search bar - Trending has no query, so the bar hides for it
             entirely rather than rendering a disabled input. */}
         {activeTab !== "trending" && (
-          <div className="bg-card border border-stroke rounded-2xl px-4 py-3 flex items-center gap-3">
-            <FiSearch className="text-ink-muted shrink-0" size={16} />
-            <input
-              type="text"
-              placeholder={
-                activeTab === "users"
-                  ? "Search users..."
-                  : "Search posts or #hashtag..."
-              }
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="flex-1 text-base text-ink placeholder:text-ink-muted outline-none bg-transparent"
-            />
+          <div className="relative">
+            <div className="bg-card border border-stroke rounded-2xl px-4 py-3 flex items-center gap-3">
+              <FiSearch className="text-ink-muted shrink-0" size={16} />
+              <input
+                type="text"
+                placeholder={
+                  activeTab === "users"
+                    ? "Search users..."
+                    : activeTab === "comments"
+                      ? "Search comments..."
+                      : activeTab === "messages"
+                        ? "Search your messages..."
+                        : "Search posts or #hashtag..."
+                }
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                onFocus={() => setSearchFocused(true)}
+                onBlur={() => window.setTimeout(() => setSearchFocused(false), 150)}
+                className="flex-1 text-base text-ink placeholder:text-ink-muted outline-none bg-transparent"
+              />
+              {showFilterSurface && (
+                <button
+                  onClick={() => setShowFiltersModal(true)}
+                  className={`relative shrink-0 p-1.5 rounded-lg transition ${
+                    activeFilterCount > 0
+                      ? "bg-primary-50 text-primary-600"
+                      : "text-ink-muted hover:text-ink"
+                  }`}
+                  aria-label="Search filters"
+                >
+                  <FiSliders size={16} />
+                  {activeFilterCount > 0 && (
+                    <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-primary-600 text-white text-[10px] font-bold flex items-center justify-center">
+                      {activeFilterCount}
+                    </span>
+                  )}
+                </button>
+              )}
+              {showFilterSurface && (search.trim() || activeFilterCount > 0) && (
+                <button
+                  onClick={handleSaveCurrentSearch}
+                  className="shrink-0 p-1.5 rounded-lg text-ink-muted hover:text-primary-600 transition"
+                  aria-label="Save this search"
+                >
+                  <FiStar size={16} />
+                </button>
+              )}
+            </div>
+
+            {showHistoryPanel && (
+              <div className="absolute left-0 right-0 top-full mt-2 z-10">
+                <SearchHistoryPanel
+                  history={history}
+                  savedSearches={savedSearches}
+                  onSelect={handleSelectHistoryOrSaved}
+                  onDeleteHistory={handleDeleteHistoryEntry}
+                  onClearHistory={handleClearHistory}
+                  onDeleteSaved={handleDeleteSavedSearch}
+                />
+              </div>
+            )}
           </div>
+        )}
+
+        {showFiltersModal && (
+          <SearchFiltersModal
+            initialFilters={filters}
+            onApply={handleApplyFilters}
+            onCancel={() => setShowFiltersModal(false)}
+          />
         )}
 
         {/* Hashtag shortcut */}
@@ -367,7 +763,6 @@ const Explore = () => {
 
         {activeTab === "users" && (
           <>
-            {/* Hint */}
             {!loading && !search.trim() && users.length > 0 && (
               <p className="text-sm text-ink-muted px-1">Suggested users</p>
             )}
@@ -384,7 +779,6 @@ const Explore = () => {
               </p>
             )}
 
-            {/* Skeletons */}
             {loading && (
               <>
                 <UserCardSkeleton />
@@ -393,7 +787,6 @@ const Explore = () => {
               </>
             )}
 
-            {/* User list */}
             {!loading &&
               users.map((user) => {
                 const isFollowing = user.followers.includes(currentUser._id);
@@ -430,10 +823,6 @@ const Explore = () => {
                         <p className="text-sm text-ink-muted truncate">
                           {user.bio || "No bio"}
                         </p>
-                        {/* 2.2 — surfaces the mutual-follow signal that
-                            drives the ranking, only when it's actually
-                            > 0 (a raw "0 mutual" line adds noise, not
-                            trust). */}
                         {!search.trim() && user.mutualFollowersCount > 0 && (
                           <p className="text-xs text-primary-600 truncate">
                             {user.mutualFollowersCount} mutual follower
@@ -482,13 +871,13 @@ const Explore = () => {
                 </p>
               )}
             {!postsLoading &&
-              search.trim().length >= 2 &&
+              (search.trim().length >= 2 || activeFilterCount > 0) &&
               posts.length === 0 && (
                 <p className="text-base text-ink-muted text-center py-10">
-                  No posts found for "{search}"
+                  No posts found{search.trim() ? ` for "${search}"` : " for these filters"}
                 </p>
               )}
-            {!postsLoading && search.trim().length === 0 && (
+            {!postsLoading && search.trim().length === 0 && activeFilterCount === 0 && (
               <p className="text-base text-ink-muted text-center py-10">
                 Search for posts by caption or #hashtag.
               </p>
@@ -536,6 +925,94 @@ const Explore = () => {
             {!postsLoading && postsHasMore && posts.length > 0 && (
               <div ref={postsObserverTarget} className="py-4 text-center">
                 {postsIsLoadingMore && (
+                  <p className="text-sm text-ink-muted">Loading more...</p>
+                )}
+              </div>
+            )}
+          </>
+        )}
+
+        {activeTab === "comments" && (
+          <>
+            {!commentsLoading &&
+              search.trim().length > 0 &&
+              search.trim().length < 2 && (
+                <p className="text-sm text-ink-muted text-center py-6">
+                  Type at least 2 characters to search.
+                </p>
+              )}
+            {!commentsLoading &&
+              (search.trim().length >= 2 || activeFilterCount > 0) &&
+              comments.length === 0 && (
+                <p className="text-base text-ink-muted text-center py-10">
+                  No comments found{search.trim() ? ` for "${search}"` : " for these filters"}
+                </p>
+              )}
+            {!commentsLoading && search.trim().length === 0 && activeFilterCount === 0 && (
+              <p className="text-base text-ink-muted text-center py-10">
+                Search comments across public posts.
+              </p>
+            )}
+
+            {commentsLoading && (
+              <>
+                <PostSkeleton />
+                <PostSkeleton />
+              </>
+            )}
+
+            {!commentsLoading &&
+              comments.map((comment) => (
+                <CommentSearchResultCard key={comment._id} comment={comment} />
+              ))}
+
+            {!commentsLoading && commentsHasMore && comments.length > 0 && (
+              <div ref={commentsObserverTarget} className="py-4 text-center">
+                {commentsIsLoadingMore && (
+                  <p className="text-sm text-ink-muted">Loading more...</p>
+                )}
+              </div>
+            )}
+          </>
+        )}
+
+        {activeTab === "messages" && (
+          <>
+            {!messagesLoading &&
+              search.trim().length > 0 &&
+              search.trim().length < 2 && (
+                <p className="text-sm text-ink-muted text-center py-6">
+                  Type at least 2 characters to search.
+                </p>
+              )}
+            {!messagesLoading &&
+              (search.trim().length >= 2 || activeFilterCount > 0) &&
+              messages.length === 0 && (
+                <p className="text-base text-ink-muted text-center py-10">
+                  No messages found{search.trim() ? ` for "${search}"` : " for these filters"}
+                </p>
+              )}
+            {!messagesLoading && search.trim().length === 0 && activeFilterCount === 0 && (
+              <p className="text-base text-ink-muted text-center py-10">
+                Search your own conversations.
+              </p>
+            )}
+
+            {messagesLoading && (
+              <>
+                <PostSkeleton />
+                <PostSkeleton />
+              </>
+            )}
+
+            {!messagesLoading &&
+              messages.map((message) => (
+                <MessageSearchResultCard key={message._id} message={message} />
+              ))}
+
+            {!messagesLoading && messagesHasMore && messages.length > 0 && (
+              <div ref={messagesObserverTarget} className="py-4 text-center">
+                {messagesIsLoadingMore && (
                   <p className="text-sm text-ink-muted">Loading more...</p>
                 )}
               </div>
@@ -617,4 +1094,3 @@ const Explore = () => {
 };
 
 export default Explore;
-
