@@ -1,8 +1,13 @@
 import { useState } from "react";
 import { FiAlertTriangle } from "react-icons/fi";
+import useBackButtonClose from "../hooks/useBackButtonClose";
 
 const DeletePostModal = ({ onConfirm, onCancel }) => {
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Mobile back button closes the modal; UI closes consume the pushed
+  // history entry so history stays balanced (see the hook).
+  useBackButtonClose(true, onCancel);
 
   const handleDelete = async () => {
     if (isDeleting) return;

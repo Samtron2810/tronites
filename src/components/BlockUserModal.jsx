@@ -1,8 +1,13 @@
 import { useState } from "react";
 import { FiSlash } from "react-icons/fi";
+import useBackButtonClose from "../hooks/useBackButtonClose";
 
 const BlockUserModal = ({ userName, isBlocked, onConfirm, onCancel }) => {
   const [submitting, setSubmitting] = useState(false);
+
+  // Mobile back button closes the modal; UI closes consume the pushed
+  // history entry so history stays balanced (see the hook).
+  useBackButtonClose(true, onCancel);
 
   const handleConfirm = async () => {
     if (submitting) return;

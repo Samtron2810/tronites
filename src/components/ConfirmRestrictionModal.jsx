@@ -7,6 +7,7 @@ import {
 } from "react-icons/fi";
 import defaultAvatar from "../assets/defaultAvatar";
 import { resizedImageUrl, IMAGE_SIZES } from "../utils/cloudinaryImage";
+import useBackButtonClose from "../hooks/useBackButtonClose";
 
 // Duration presets for suspensions. "custom" reveals a datetime-local
 // input; the chosen preset converts to a Date on submit.
@@ -44,6 +45,11 @@ const ConfirmRestrictionModal = ({
       new Date(Date.now() + 60 * 1000).toISOString().slice(0, 16),
     [],
   );
+
+  // Mobile back button closes the modal; UI closes consume the pushed
+  // history entry so history stays balanced (see the hook). Kept above
+  // the early return — hooks must run unconditionally.
+  useBackButtonClose(true, onCancel);
 
   if (!mode) return null;
   const isSuspend = mode === "suspend";

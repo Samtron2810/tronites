@@ -4,6 +4,7 @@ import { FiX } from "react-icons/fi";
 import useMentionAutocomplete from "../hooks/useMentionAutocomplete";
 import MentionSuggestions from "./MentionSuggestions";
 import QuotedPostPreview from "./QuotedPostPreview";
+import useBackButtonClose from "../hooks/useBackButtonClose";
 
 // Trimmed-down composer compared to CreatePostModal — no image/video
 // picker, no privacy selector. A quote is always as visible as the
@@ -16,6 +17,10 @@ const QuotePostModal = ({ post, closeModal, onSubmit }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const textareaRef = useRef(null);
   const mention = useMentionAutocomplete();
+
+  // Mobile back button closes the composer; UI closes consume the pushed
+  // history entry so history stays balanced (see the hook).
+  useBackButtonClose(true, closeModal);
 
   const handleTextChange = (e) => {
     setText(e.target.value);

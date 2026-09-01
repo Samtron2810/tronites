@@ -18,6 +18,7 @@ import { FaCheckDouble, FaChevronDown, FaPlay } from "react-icons/fa";
 import defaultAvatar from "../assets/defaultAvatar";
 import { resizedImageUrl, IMAGE_SIZES } from "../utils/cloudinaryImage";
 import { dayKey, formatDayLabel, formatMessageTime } from "../utils/chatDate";
+import useBackButtonClose from "../hooks/useBackButtonClose";
 
 // 63 -> "1:03", 7 -> "0:07" — used only for the static video-thumbnail's
 // duration badge; the full-screen viewer's native controls show timing
@@ -103,6 +104,9 @@ const ChatModal = ({
   // for this open thread (server-pushed, auto-expires — see Chat.jsx).
   otherUserTyping,
 }) => {
+  // Mobile back button closes the conversation modal; UI closes consume
+  // the pushed history entry so history stays balanced (see the hook).
+  useBackButtonClose(isOpen, onClose);
   const [now, setNow] = useState(() => Date.now());
   // Message currently being reported via ReportModal (null when closed).
   // Only other users' bubbles expose the flag trigger.

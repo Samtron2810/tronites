@@ -5,6 +5,7 @@ import api from "../services/api";
 import PostCard from "./PostCard";
 import TextWithLinks from "./TextWithLinks";
 import { dayKey, formatDayLabel, formatMessageTime } from "../utils/chatDate";
+import useBackButtonClose from "../hooks/useBackButtonClose";
 
 const REASON_LABELS = {
   spam: "Spam",
@@ -171,6 +172,10 @@ const ReportContextModal = ({ report, onClose, onResolved }) => {
   const [note, setNote] = useState("");
   const [confirmingRemove, setConfirmingRemove] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+
+  // Mobile back button closes the modal; UI closes consume the pushed
+  // history entry so history stays balanced (see the hook).
+  useBackButtonClose(true, onClose);
 
   useEffect(() => {
     let cancelled = false;

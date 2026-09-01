@@ -1,8 +1,13 @@
 import { useState } from "react";
 import { FiLogOut } from "react-icons/fi";
+import useBackButtonClose from "../hooks/useBackButtonClose";
 
 const LogoutModal = ({ onConfirm, onCancel }) => {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  // Mobile back button closes the modal; UI closes consume the pushed
+  // history entry so history stays balanced (see the hook).
+  useBackButtonClose(true, onCancel);
 
   const handleLogout = async () => {
     if (isLoggingOut) return;

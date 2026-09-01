@@ -12,6 +12,7 @@ import {
 import useMentionAutocomplete from "../hooks/useMentionAutocomplete";
 import MentionSuggestions from "./MentionSuggestions";
 import ConfirmDiscardModal from "./ConfirmDiscardModal";
+import useBackButtonClose from "../hooks/useBackButtonClose";
 import { validateVideoFile } from "../services/videoUpload";
 
 const MAX_IMAGES = 4;
@@ -44,6 +45,10 @@ const CreatePostModal = ({ closeModal, onSubmit, onSubmitVideo }) => {
   const textareaRef = useRef(null);
   const videoInputRef = useRef(null);
   const mention = useMentionAutocomplete();
+
+  // Mobile back button closes the composer; UI closes consume the pushed
+  // history entry so history stays balanced (see the hook).
+  useBackButtonClose(true, closeModal);
 
   const handleTextChange = (e) => {
     setText(e.target.value);

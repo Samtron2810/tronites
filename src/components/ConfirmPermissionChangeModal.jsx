@@ -3,6 +3,7 @@ import { FiAlertTriangle, FiShield } from "react-icons/fi";
 import defaultAvatar from "../assets/defaultAvatar";
 import { resizedImageUrl, IMAGE_SIZES } from "../utils/cloudinaryImage";
 import { PERMISSION_OPTIONS } from "../constants/permissions";
+import useBackButtonClose from "../hooks/useBackButtonClose";
 
 // Sibling of ConfirmRoleChangeModal (Phase 5): checkbox draft editor for
 // a moderator's explicit permission set. The draft lives here so the
@@ -16,6 +17,10 @@ const ConfirmPermissionChangeModal = ({
 }) => {
   const [draft, setDraft] = useState(() => new Set(initialPermissions || []));
   const [isUpdating, setIsUpdating] = useState(false);
+
+  // Mobile back button closes the modal; UI closes consume the pushed
+  // history entry so history stays balanced (see the hook).
+  useBackButtonClose(true, onCancel);
 
   const toggle = (value) => {
     setDraft((prev) => {

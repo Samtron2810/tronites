@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { FiFlag } from "react-icons/fi";
+import useBackButtonClose from "../hooks/useBackButtonClose";
 
 const REASONS = [
   { value: "spam", label: "Spam" },
@@ -20,6 +21,10 @@ const ReportModal = ({ targetLabel, onConfirm, onCancel }) => {
   const [reason, setReason] = useState("");
   const [details, setDetails] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  // Mobile back button closes the modal; UI closes consume the pushed
+  // history entry so history stays balanced (see the hook).
+  useBackButtonClose(true, onCancel);
 
   const handleConfirm = async () => {
     if (!reason || submitting) return;

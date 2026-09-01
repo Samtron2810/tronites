@@ -5,6 +5,7 @@ import { useAuth } from "../context/useAuth";
 import PostDetailModal from "./PostDetailModal";
 import DeletePostModal from "./DeletePostModal";
 import ReportModal from "./ReportModal";
+import useBackButtonClose from "../hooks/useBackButtonClose";
 
 // Opens an arbitrary post's own detail view by id, fetching it fresh
 // via GET /posts/:id rather than reusing whatever (possibly stale or
@@ -43,6 +44,14 @@ const PostByIdModal = ({
   const [isReposting, setIsReposting] = useState(false);
   const [isReacting, setIsReacting] = useState(false);
   const [commentCount, setCommentCount] = useState(0);
+  // Mobile back button closes the modal — but only while THIS component's
+  // own overlay is up (the load-error fallback card). When a post loads,
+  // the inner PostDetailModal owns the back-close entry; gating here keeps
+  // the two hooks from double-pushing a history entry for the same view.
+  useBackButtonClose(
+    isOpen && Boolean(loadError && !loading && !post),
+    onClose,
+  );
 
   const fetchPost = useCallback(async (id) => {
     setLoading(true);

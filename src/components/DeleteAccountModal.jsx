@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { FiAlertTriangle } from "react-icons/fi";
+import useBackButtonClose from "../hooks/useBackButtonClose";
 
 // Mirrors DeletePostModal's visual pattern (same red-warning treatment
 // for a destructive action) but adds a password field, since account
@@ -11,6 +12,10 @@ const DeleteAccountModal = ({ onConfirm, onCancel }) => {
   const [password, setPassword] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState("");
+
+  // Mobile back button closes the modal; UI closes consume the pushed
+  // history entry so history stays balanced (see the hook).
+  useBackButtonClose(true, onCancel);
 
   const handleDelete = async () => {
     if (isDeleting || !password) return;

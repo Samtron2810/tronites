@@ -2,6 +2,7 @@ import { useState } from "react";
 import { FiAlertTriangle } from "react-icons/fi";
 import defaultAvatar from "../assets/defaultAvatar";
 import { resizedImageUrl, IMAGE_SIZES } from "../utils/cloudinaryImage";
+import useBackButtonClose from "../hooks/useBackButtonClose";
 
 const ConfirmRoleChangeModal = ({
   targetUser,
@@ -10,6 +11,11 @@ const ConfirmRoleChangeModal = ({
   onCancel,
 }) => {
   const [isUpdating, setIsUpdating] = useState(false);
+
+  // Mobile back button closes the modal; UI closes consume the pushed
+  // history entry so history stays balanced (see the hook).
+  useBackButtonClose(true, onCancel);
+
   const isPromotionToAdmin = newRole === "admin";
 
   const handleConfirm = async () => {

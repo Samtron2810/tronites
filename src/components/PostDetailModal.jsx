@@ -27,6 +27,7 @@ import QuotedPostPreview from "./QuotedPostPreview";
 import ReactionPicker from "./ReactionPicker";
 import ReactionSummaryBar from "./ReactionSummaryBar";
 import { resizedImageUrl, IMAGE_SIZES } from "../utils/cloudinaryImage";
+import useBackButtonClose from "../hooks/useBackButtonClose";
 
 // Stacked-only layout at every breakpoint (confirmed — no desktop
 // side-by-side variant). Media on top, post text below it, action bar
@@ -131,6 +132,10 @@ const PostDetailModal = ({
   const longPressTimer = useRef(null);
   const longPressFired = useRef(false);
   const hoverIntentTimer = useRef(null);
+
+  // Mobile back button closes the modal; UI closes consume the pushed
+  // history entry so history stays balanced (see the hook).
+  useBackButtonClose(isOpen, onClose);
 
   const handleLikeTouchStart = () => {
     longPressFired.current = false;

@@ -8,6 +8,7 @@ import {
 } from "react-icons/fa";
 import defaultAvatar from "../assets/defaultAvatar";
 import { resizedImageUrl, IMAGE_SIZES } from "../utils/cloudinaryImage";
+import useBackButtonClose from "../hooks/useBackButtonClose";
 
 const ChatModal = ({
   isOpen,
@@ -28,6 +29,10 @@ const ChatModal = ({
   fileInputRef,
   scrollRef,
 }) => {
+  // Mobile back button closes the modal; UI closes consume the pushed
+  // history entry so history stays balanced (see the hook). Kept above
+  // the early return — hooks must run unconditionally.
+  useBackButtonClose(isOpen, onClose);
   if (!isOpen || !selectedChat) return null;
 
   const activeUser = selectedChat.otherUser;

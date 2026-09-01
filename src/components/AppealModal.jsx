@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { FiFileText, FiX } from "react-icons/fi";
 import api from "../services/api";
+import useBackButtonClose from "../hooks/useBackButtonClose";
 
 // 3.1 — restricted-account recourse. Rendered from Login.jsx's restricted
 // panel. The account has no session (a restricted user can't log in), so
@@ -13,6 +14,10 @@ const AppealModal = ({ identifier: initialIdentifier, onClose }) => {
   const [statement, setStatement] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState(null); // { message } | { error }
+
+  // Mobile back button closes the modal; UI closes consume the pushed
+  // history entry so history stays balanced (see the hook).
+  useBackButtonClose(true, onClose);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

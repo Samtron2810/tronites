@@ -69,7 +69,10 @@ const ReactionPicker = ({
     const rect = boundsRef?.current?.getBoundingClientRect();
     const minX = (rect ? rect.left : 0) + VIEWPORT_MARGIN;
     const maxX =
-      (rect ? rect.right : window.innerWidth) - PICKER_WIDTH - VIEWPORT_MARGIN;
+      (rect ? rect.right : window.innerWidth) -
+      PICKER_WIDTH -
+      VIEWPORT_MARGIN -
+      30; // 30px for the scrollbar, which is always present on desktop (even if not visible)
     const minY = (rect ? rect.top : 0) + VIEWPORT_MARGIN;
     const maxY =
       (rect ? rect.bottom : window.innerHeight) -

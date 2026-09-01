@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { FiDownload } from "react-icons/fi";
+import useBackButtonClose from "../hooks/useBackButtonClose";
 
 // Mirrors DeleteAccountModal's visual pattern (same overlay + centered
 // card + icon header) but uses neutral/primary styling since exporting
@@ -7,6 +8,10 @@ import { FiDownload } from "react-icons/fi";
 // but it's not a red-warning action either.
 const ExportDataModal = ({ onConfirm, onCancel }) => {
   const [isExporting, setIsExporting] = useState(false);
+
+  // Mobile back button closes the modal; UI closes consume the pushed
+  // history entry so history stays balanced (see the hook).
+  useBackButtonClose(true, onCancel);
 
   const handleExport = async () => {
     if (isExporting) return;

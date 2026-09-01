@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { FiSliders, FiX } from "react-icons/fi";
+import useBackButtonClose from "../hooks/useBackButtonClose";
 
 // Local editable draft of the applied filters — Cancel discards edits,
 // Apply commits them back to Explore.jsx in one shot rather than firing
@@ -8,6 +9,10 @@ const emptyFilters = { from: "", startDate: "", endDate: "", hasMedia: null, min
 
 const SearchFiltersModal = ({ initialFilters, onApply, onCancel }) => {
   const [draft, setDraft] = useState({ ...emptyFilters, ...initialFilters });
+
+  // Mobile back button closes the modal; UI closes consume the pushed
+  // history entry so history stays balanced (see the hook).
+  useBackButtonClose(true, onCancel);
 
   const activeCount = Object.entries(draft).filter(([k, v]) => {
     if (k === "hasMedia") return v !== null;

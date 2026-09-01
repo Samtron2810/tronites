@@ -1,6 +1,11 @@
 import { FiAlertTriangle } from "react-icons/fi";
+import useBackButtonClose from "../hooks/useBackButtonClose";
 
 const ConfirmDiscardModal = ({ onConfirm, onCancel }) => {
+  // Mobile back button closes the modal; UI closes consume the pushed
+  // history entry so history stays balanced (see the hook).
+  useBackButtonClose(true, onCancel);
+
   return (
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 px-4">
       <div className="bg-card rounded-2xl shadow-xl p-6 w-full max-w-sm">
