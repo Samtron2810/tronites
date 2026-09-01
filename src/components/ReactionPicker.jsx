@@ -10,7 +10,7 @@ export const REACTION_EMOJIS = ["❤️", "😂", "😮", "😢", "😡", "👍"
 const PICKER_WIDTH = 232; // approx rendered width (6 emojis + padding), for viewport clamping
 const PICKER_HEIGHT = 44;
 const VIEWPORT_MARGIN = 8;
-const POINT_GAP = 10; // px above the click/touch point, per design
+const POINT_GAP = 5; // px above the click/touch point, per design
 
 // Two positioning modes:
 // - Default (no `anchorPoint`): `absolute bottom-full`, positioned by the
@@ -21,7 +21,23 @@ const POINT_GAP = 10; // px above the click/touch point, per design
 //   point instead of above the whole bubble — used by ChatModal.jsx so
 //   the picker opens where you actually pressed, not always flush above
 //   a potentially tall message bubble/image/video.
-const ReactionPicker = ({ open, onSelect, onClose, align = "left", anchorPoint }) => {
+//
+// `boundsRef` (optional, only meaningful alongside `anchorPoint`): ref to
+// the scrollable/visible container the picker must stay inside — e.g. the
+// chat modal panel. Without it, clamping falls back to the full viewport,
+// which is wrong whenever that container is narrower than the viewport
+// (a centered desktop modal): a press near the panel's right edge is still
+// far from window's right edge, so the picker was never shifted and
+// overflowed past the modal onto the backdrop. With it, clamping keeps the
+// picker inside the panel's own rect instead.
+const ReactionPicker = ({
+  open,
+  onSelect,
+  onClose,
+  align = "left",
+  anchorPoint,
+  boundsRef,
+}) => {
   const ref = useRef(null);
   const [pos, setPos] = useState(null);
 
@@ -48,19 +64,33 @@ const ReactionPicker = ({ open, onSelect, onClose, align = "left", anchorPoint }
       setPos(null);
       return;
     }
+    // Clamp against the bounding container (chat modal panel) when given,
+    // falling back to the viewport otherwise.
+    const rect = boundsRef?.current?.getBoundingClientRect();
+    const minX = (rect ? rect.left : 0) + VIEWPORT_MARGIN;
+    const maxX =
+      (rect ? rect.right : window.innerWidth) - PICKER_WIDTH - VIEWPORT_MARGIN;
+    const minY = (rect ? rect.top : 0) + VIEWPORT_MARGIN;
+    const maxY =
+      (rect ? rect.bottom : window.innerHeight) -
+      PICKER_HEIGHT -
+      VIEWPORT_MARGIN;
+
     let left = anchorPoint.x - PICKER_WIDTH / 2;
-    left = Math.max(
-      VIEWPORT_MARGIN,
-      Math.min(left, window.innerWidth - PICKER_WIDTH - VIEWPORT_MARGIN),
-    );
+    left = Math.max(minX, Math.min(left, maxX));
+
     let top = anchorPoint.y - POINT_GAP - PICKER_HEIGHT;
-    // Not enough room above the point (near top of viewport/screen) —
-    // flip to just below the point instead of clipping.
-    if (top < VIEWPORT_MARGIN) {
+    // Not enough room above the point (near top of panel/viewport) — flip
+    // to just below the point instead of clipping.
+    if (top < minY) {
       top = anchorPoint.y + POINT_GAP;
     }
+    // Whichever branch ran, re-clamp against the bottom edge too — a flip
+    // near a short panel's bottom-right corner could otherwise still push
+    // past it.
+    top = Math.max(minY, Math.min(top, maxY));
     setPos({ left, top });
-  }, [open, anchorPoint]);
+  }, [open, anchorPoint, boundsRef]);
 
   if (!open) return null;
 
@@ -69,7 +99,9 @@ const ReactionPicker = ({ open, onSelect, onClose, align = "left", anchorPoint }
       <div
         ref={ref}
         role="menu"
-        style={pos ? { left: pos.left, top: pos.top } : { visibility: "hidden" }}
+        style={
+          pos ? { left: pos.left, top: pos.top } : { visibility: "hidden" }
+        }
         className="fixed flex items-center gap-0.5 bg-card border border-stroke rounded-full shadow-lg px-1.5 py-1 z-50 animate-reaction-pop"
       >
         {REACTION_EMOJIS.map((emoji, i) => (

@@ -1,7 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { useState } from "react";
 import { createPortal } from "react-dom";
-import logo from "../assets/tronite-logo.png";
 import { FaHome, FaCompass, FaComments } from "react-icons/fa";
 import { useAuth } from "../context/useAuth";
 import { useSocket } from "../context/useSocket";
@@ -37,7 +36,7 @@ const Navbar = () => {
   // unreadCount now lives in SocketContext, shared with the Chat page.
   // Chat calls refreshUnreadCount() itself right after marking a thread
   // read, so the badge no longer depends on a "messagesRead" socket
-  // event round-tripping back before it updates — that round trip was
+  // event round-tripping back before it updates â€” that round trip was
   // the source of the stale-badge-until-refresh bug, since Chat's own
   // socket didn't join the conversation room until after the read
   // request (and its resulting event) had already gone out.
@@ -63,7 +62,7 @@ const Navbar = () => {
       <div className="mx-auto flex max-w-5xl items-center justify-between  px-4 sm:px-6 h-14">
         <Link to="/" className="flex items-center gap-2 shrink-0">
           <img
-            src={logo}
+            src="/tronite-logo.png"
             alt="Tronites"
             className="h-10 w-auto object-contain"
           />

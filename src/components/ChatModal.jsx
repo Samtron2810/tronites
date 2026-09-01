@@ -1,5 +1,12 @@
 import { Fragment, useEffect, useRef, useState } from "react";
-import { FiArrowLeft, FiImage, FiVideo, FiCheck, FiMic, FiX } from "react-icons/fi";
+import {
+  FiArrowLeft,
+  FiImage,
+  FiVideo,
+  FiCheck,
+  FiMic,
+  FiX,
+} from "react-icons/fi";
 import ChatMediaViewer from "./ChatMediaViewer";
 import VoiceNotePlayer from "./VoiceNotePlayer";
 import ReportModal from "./ReportModal";
@@ -104,9 +111,14 @@ const ChatModal = ({
   // at a time, same convention as the options menu.
   const [reactionPickerFor, setReactionPickerFor] = useState(null);
   // Viewport coords {x, y} of the click/touch that opened the picker
-  // currently shown — the picker renders 10px above THIS point (see
+  // currently shown — the picker renders 5px above THIS point (see
   // ReactionPicker's anchorPoint prop), not flush above the bubble.
   const [reactionAnchorPoint, setReactionAnchorPoint] = useState(null);
+  // Bounding rect for the reaction picker's clamping — the modal panel
+  // itself, not the viewport, since the panel is a centered max-w-2xl box
+  // that's narrower than the screen on desktop. See ReactionPicker's
+  // boundsRef prop.
+  const panelRef = useRef(null);
   // Full-screen media viewer (ChatMediaViewer) — null when closed. Video
   // messages open it as { type: "video", video }, image messages as
   // { type: "image", images, index }, where index is the tapped grid cell
@@ -240,7 +252,10 @@ const ChatModal = ({
         onClick={onClose}
       />
 
-      <div className="relative bg-card rounded-2xl shadow-xl w-full max-w-2xl max-h-[88vh] overflow-hidden overflow-x-hidden flex flex-col border border-stroke">
+      <div
+        ref={panelRef}
+        className="relative bg-card rounded-2xl shadow-xl w-full max-w-2xl max-h-[88vh] overflow-hidden overflow-x-hidden flex flex-col border border-stroke"
+      >
         {/* Header */}
         <div className="flex items-center gap-3 px-4 py-3 border-b border-stroke">
           <button
@@ -568,6 +583,7 @@ const ChatModal = ({
                             open={reactionPickerFor === message._id}
                             align={isMine ? "right" : "left"}
                             anchorPoint={reactionAnchorPoint}
+                            boundsRef={panelRef}
                             onSelect={(emoji) => {
                               setReactionPickerFor(null);
                               handleReactMessage(message._id, emoji);
@@ -804,7 +820,10 @@ const ChatModal = ({
                     <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse shrink-0" />
                     <span className="text-base text-ink font-medium tabular-nums">
                       {Math.floor(recordingElapsed / 60)}:
-                      {String(Math.floor(recordingElapsed % 60)).padStart(2, "0")}
+                      {String(Math.floor(recordingElapsed % 60)).padStart(
+                        2,
+                        "0",
+                      )}
                     </span>
                     <span className="text-sm text-ink-muted">
                       / {Math.floor(maxVoiceDurationSeconds / 60)}:

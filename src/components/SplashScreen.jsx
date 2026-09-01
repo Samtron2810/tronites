@@ -1,10 +1,8 @@
-import logo from "../assets/tronite-logo.png";
-
 const SplashScreen = () => {
   return (
     <div className="fixed inset-0 z-9999 flex flex-col items-center justify-center bg-primary-900">
       <img
-        src={logo}
+        src="/tronite-logo.png"
         alt="Tronites"
         className="splash-logo h-16 w-auto object-contain"
       />
