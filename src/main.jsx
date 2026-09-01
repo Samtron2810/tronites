@@ -10,6 +10,10 @@ import "./index.css";
 import { AuthProvider } from "./context/AuthContext";
 import { SocketProvider } from "./context/SocketContext";
 import { ThemeProvider } from "./context/ThemeContext";
+import { registerServiceWorker } from "./services/pwaUpdate";
+
+registerServiceWorker();
+
 
 // Apply the saved theme before first paint to avoid a flash of the wrong
 // theme on reload. Reads the same localStorage key the ThemeProvider uses.

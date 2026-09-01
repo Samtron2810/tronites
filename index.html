@@ -3,7 +3,32 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/png" href="/tronite-logo.png" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+
+    <!-- 4.5 — PWA manifest + install metadata. Icons/manifest generated
+         by vite-plugin-pwa at build time (vite.config.js); this file
+         only needs the static tags a plain HTML page can't get from
+         the build plugin automatically. -->
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="theme-color" content="#04342c" />
+
+    <!-- iOS has no manifest support for install/standalone metadata —
+         these three tags are what makes "Add to Home Screen" launch
+         without Safari chrome and use the right icon/status bar style. -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Tronites" />
+    <link rel="apple-touch-icon" href="/pwa-192.png" />
+
+    <!-- Open Graph / Twitter — default preview for any Tronites link
+         shared without a specific post (roadmap 2.5 covers per-post
+         previews separately). -->
+    <meta property="og:title" content="Tronites" />
+    <meta property="og:description" content="Connect, post, and chat in real time." />
+    <meta property="og:image" content="/pwa-512.png" />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary" />
+
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link

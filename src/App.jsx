@@ -1,8 +1,12 @@
 import { lazy, Suspense } from "react";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useNavigate } from "react-router-dom";
+import { useEffect } from "react";
 import { useAuth } from "./context/useAuth";
 import Navbar from "./components/Navbar";
 import SplashScreen from "./components/SplashScreen";
+import InstallPrompt from "./components/InstallPrompt";
+import UpdateToast from "./components/UpdateToast";
+import { subscribeToPushNavigation } from "./services/pwaUpdate";
 
 // Home is kept as a static import — it's the landing page for every
 // logged-in user, so lazy-loading it would trade the current single
@@ -54,6 +58,15 @@ const RouteFallback = () => (
 
 const AppContent = () => {
   const { user, loading } = useAuth();
+  const navigate = useNavigate();
+
+  // Lets a tap on a push notification focus the already-open tab and
+  // route it to the right screen (e.g. straight to the post that was
+  // liked) instead of only being able to open a blank new tab — see
+  // sw.js's notificationclick handler, which posts this message.
+  useEffect(() => {
+    return subscribeToPushNavigation(navigate);
+  }, [navigate]);
 
   // Show splash screen on fresh app load while the auth check runs
   if (loading) {
@@ -246,6 +259,13 @@ const AppContent = () => {
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Suspense>
+
+      {user && user.username && (
+        <>
+          <InstallPrompt />
+          <UpdateToast />
+        </>
+      )}
     </>
   );
 };

@@ -8,6 +8,7 @@ import { useTheme } from "../context/useTheme";
 import DeleteAccountModal from "../components/DeleteAccountModal";
 import ExportDataModal from "../components/ExportDataModal";
 import AccountIdentitySection from "../components/AccountIdentitySection";
+import PushNotificationsSection from "../components/PushNotificationsSection";
 import { Link } from "react-router-dom";
 import {
   FiEye,
@@ -221,6 +222,8 @@ const Settings = () => {
           </Link>
         </div>
       </section>
+
+      <PushNotificationsSection />
 
       <section className="bg-card border border-stroke rounded-2xl p-5 mt-4">
         <h2 className="text-base font-semibold text-ink mb-1">Your data</h2>
