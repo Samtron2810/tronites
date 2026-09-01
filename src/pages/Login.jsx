@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { useAuth } from "../context/useAuth";
 import { FiUser, FiLock, FiEye, FiEyeOff } from "react-icons/fi";
+import AppealModal from "../components/AppealModal";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -14,6 +15,8 @@ const Login = () => {
   // panel so restricted users get a specific screen, not a vague error.
   const [errorCode, setErrorCode] = useState(null);
   const [formData, setFormData] = useState({ identifier: "", password: "" });
+  // 3.1 — appeal entry point, shown only alongside the restricted panel.
+  const [showAppealModal, setShowAppealModal] = useState(false);
 
   const handleChange = (e) =>
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -89,7 +92,21 @@ const Login = () => {
                   ? "This account has been permanently banned and can no longer sign in."
                   : "This account is temporarily suspended. You can sign in again once the suspension ends."}
               </p>
+              <button
+                type="button"
+                onClick={() => setShowAppealModal(true)}
+                className="mt-2 text-sm font-semibold text-red-600 hover:text-red-800 hover:underline transition"
+              >
+                Appeal this decision
+              </button>
             </div>
+          )}
+
+          {showAppealModal && (
+            <AppealModal
+              identifier={formData.identifier}
+              onClose={() => setShowAppealModal(false)}
+            />
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">

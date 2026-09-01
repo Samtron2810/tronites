@@ -6,7 +6,7 @@ import api from "../services/api";
 import ConfirmRestrictionModal from "../components/ConfirmRestrictionModal";
 import ReportContextModal from "../components/ReportContextModal";
 import { useAuth } from "../context/useAuth";
-import { FiExternalLink, FiCheck, FiX, FiInbox, FiAlertTriangle } from "react-icons/fi";
+import { FiExternalLink, FiCheck, FiX, FiInbox, FiAlertTriangle, FiFileText } from "react-icons/fi";
 
 const REASON_LABELS = {
   spam: "Spam",
@@ -349,13 +349,168 @@ const ReportCard = ({
   );
 };
 
+// 3.1 — Appeals queue card. Mirrors ReportCard's open/resolved shape but
+// the only decisions are grant (lift the restriction) or deny (leave it).
+const APPEAL_STATUS_TABS = [
+  { value: "open", label: "Open" },
+  { value: "granted", label: "Granted" },
+  { value: "denied", label: "Denied" },
+  { value: "all", label: "All" },
+];
+
+const AppealCard = ({ appeal, onResolve }) => {
+  const [resolving, setResolving] = useState(false);
+  const [note, setNote] = useState("");
+  const [showDecisionFor, setShowDecisionFor] = useState(null); // "granted" | "denied" | null
+
+  const person = appeal.user;
+
+  const submit = async (decision) => {
+    if (resolving) return;
+    setResolving(true);
+    try {
+      await onResolve(appeal._id, decision, note.trim());
+      setShowDecisionFor(null);
+      setNote("");
+    } finally {
+      setResolving(false);
+    }
+  };
+
+  return (
+    <div className="rounded-2xl p-4 border bg-card border-stroke">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-sm font-semibold px-2 py-0.5 rounded-full bg-primary-50 text-primary-700">
+              {appeal.restrictionType === "ban" ? "Ban appeal" : "Suspension appeal"}
+            </span>
+            {appeal.status !== "open" && (
+              <span
+                className={`text-sm font-semibold px-2 py-0.5 rounded-full ${
+                  appeal.status === "granted"
+                    ? "bg-green-50 text-green-600"
+                    : "bg-gray-100 text-gray-500"
+                }`}
+              >
+                {appeal.status}
+              </span>
+            )}
+          </div>
+
+          <p className="text-base text-ink mt-2">
+            <span className="font-medium">{person?.name || "Unknown user"}</span>
+            {person?.username && (
+              <span className="text-ink-muted"> @{person.username}</span>
+            )}
+          </p>
+
+          {appeal.restrictionReason && (
+            <p className="text-sm text-ink-muted mt-1 italic">
+              Restriction reason: "{appeal.restrictionReason}"
+            </p>
+          )}
+          {appeal.restrictionType === "suspension" && appeal.suspendedUntil && (
+            <p className="text-sm text-ink-muted mt-0.5">
+              Suspended until {new Date(appeal.suspendedUntil).toLocaleString()}
+            </p>
+          )}
+
+          <p className="text-base text-ink-muted mt-1.5 bg-surface rounded-lg px-3 py-2 whitespace-pre-wrap">
+            {appeal.statement}
+          </p>
+
+          {appeal.decisionNote && (
+            <p className="text-sm text-ink-muted mt-1.5">
+              Decision note: {appeal.decisionNote}
+            </p>
+          )}
+
+          <p className="text-sm text-ink-muted mt-2">
+            {new Date(appeal.createdAt).toLocaleString()}
+          </p>
+        </div>
+
+        {person?._id && (
+          <Link
+            to={`/profile/${person._id}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="shrink-0 flex items-center gap-1 text-sm font-medium text-primary-600 hover:text-primary-800 px-2.5 py-1.5 rounded-lg border border-stroke hover:bg-primary-50 transition"
+          >
+            Profile <FiExternalLink size={12} />
+          </Link>
+        )}
+      </div>
+
+      {appeal.status === "open" && (
+        <div className="mt-3 pt-3 border-t border-stroke">
+          {showDecisionFor ? (
+            <div className="space-y-2">
+              <textarea
+                value={note}
+                onChange={(e) => setNote(e.target.value.slice(0, 500))}
+                placeholder="Optional note (visible only to moderators)"
+                rows={2}
+                className="w-full rounded-xl border border-stroke px-3 py-2 text-base text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-primary-300 resize-none"
+              />
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setShowDecisionFor(null)}
+                  disabled={resolving}
+                  className="px-3 py-1.5 rounded-lg text-sm font-medium text-ink-sub border border-stroke hover:bg-surface transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => submit(showDecisionFor)}
+                  disabled={resolving}
+                  className={`px-3 py-1.5 rounded-lg text-sm font-semibold text-white transition disabled:opacity-60 ${
+                    showDecisionFor === "granted"
+                      ? "bg-green-600 hover:bg-green-700"
+                      : "bg-gray-400 hover:bg-gray-500"
+                  }`}
+                >
+                  {resolving ? "..." : `Confirm ${showDecisionFor === "granted" ? "grant" : "deny"}`}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex gap-2">
+              <button
+                onClick={() => setShowDecisionFor("granted")}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold text-white bg-green-600 hover:bg-green-700 transition"
+              >
+                <FiCheck size={13} /> Grant — restore access
+              </button>
+              <button
+                onClick={() => setShowDecisionFor("denied")}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold text-ink-sub border border-stroke hover:bg-surface transition"
+              >
+                <FiX size={13} /> Deny
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
 const ModerationQueue = () => {
   const { user } = useAuth();
+  const [queueTab, setQueueTab] = useState("reports"); // "reports" | "appeals"
   const [status, setStatus] = useState("open");
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+
+  const [appealStatus, setAppealStatus] = useState("open");
+  const [appeals, setAppeals] = useState([]);
+  const [appealsLoading, setAppealsLoading] = useState(true);
+  const [appealPage, setAppealPage] = useState(1);
+  const [appealTotalPages, setAppealTotalPages] = useState(1);
   // Report currently open in the in-queue context/preview modal.
   const [contextReport, setContextReport] = useState(null);
   // { report, mode } — user-report restriction shortcut modal (Phase 2).
@@ -384,6 +539,28 @@ const ModerationQueue = () => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch-on-mount/filter-change
     if (isModerator) fetchReports();
   }, [isModerator, fetchReports]);
+
+  const fetchAppeals = useCallback(async () => {
+    setAppealsLoading(true);
+    try {
+      const res = await api.getCached("/appeals", {
+        params: { status: appealStatus, page: appealPage, limit: 25 },
+        ttlMs: Infinity,
+      });
+      setAppeals(res.data.appeals);
+      setAppealTotalPages(res.data.totalPages);
+    } catch (e) {
+      console.error(e);
+      toast.error("Couldn't load appeals.");
+    } finally {
+      setAppealsLoading(false);
+    }
+  }, [appealStatus, appealPage]);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch-on-mount/filter-change
+    if (isModerator && queueTab === "appeals") fetchAppeals();
+  }, [isModerator, queueTab, fetchAppeals]);
 
   // Guard client-side too — the endpoints already 403 non-moderators,
   // this just avoids rendering a queue UI that would only ever error.
@@ -475,6 +652,18 @@ const ModerationQueue = () => {
     }
   };
 
+  const handleResolveAppeal = async (appealId, decision, note) => {
+    try {
+      await api.put(`/appeals/${appealId}/resolve`, { decision, note });
+      toast.success(decision === "granted" ? "Access restored." : "Appeal denied.");
+      setAppeals((prev) => prev.filter((a) => a._id !== appealId));
+      api.invalidateMany(["/appeals", "/admin/users", "/reports"]);
+    } catch (e) {
+      console.error(e);
+      toast.error(e.response?.data?.message || "Couldn't resolve appeal.");
+    }
+  };
+
   return (
     <MainLayout>
       {contextReport && (
@@ -501,72 +690,163 @@ const ModerationQueue = () => {
         />
       )}
       <h1 className="text-2xl font-bold text-ink mb-1">Moderation queue</h1>
-      <p className="text-base text-ink-muted mb-5">Reports from the community, newest last.</p>
+      <p className="text-base text-ink-muted mb-5">
+        {queueTab === "reports"
+          ? "Reports from the community, newest last."
+          : "Appeals from restricted accounts, oldest first."}
+      </p>
 
-      <div className="flex gap-1 mb-5 bg-card border border-stroke rounded-xl p-1 w-fit">
-        {STATUS_TABS.map((tab) => (
-          <button
-            key={tab.value}
-            onClick={() => {
-              setStatus(tab.value);
-              setPage(1);
-            }}
-            className={`px-3 py-1.5 rounded-lg text-base font-medium transition ${
-              status === tab.value
-                ? "bg-primary-100 text-primary-700"
-                : "text-ink-muted hover:text-ink"
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
+      <div className="flex gap-1 mb-4 bg-card border border-stroke rounded-xl p-1 w-fit">
+        <button
+          onClick={() => setQueueTab("reports")}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-base font-medium transition ${
+            queueTab === "reports"
+              ? "bg-primary-100 text-primary-700"
+              : "text-ink-muted hover:text-ink"
+          }`}
+        >
+          <FiInbox size={14} /> Reports
+        </button>
+        <button
+          onClick={() => setQueueTab("appeals")}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-base font-medium transition ${
+            queueTab === "appeals"
+              ? "bg-primary-100 text-primary-700"
+              : "text-ink-muted hover:text-ink"
+          }`}
+        >
+          <FiFileText size={14} /> Appeals
+        </button>
       </div>
 
-      {loading ? (
-        <p className="text-base text-ink-muted">Loading...</p>
-      ) : reports.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 text-center">
-          <FiInbox className="text-ink-muted mb-2" size={28} />
-          <p className="text-base text-ink-muted">No {status !== "all" ? status : ""} reports.</p>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {reports.map((r) => (
-            <ReportCard
-              key={r._id}
-              report={r}
-              onResolve={handleResolve}
-              viewerRole={user?.role}
-              onView={(report) => setContextReport(report)}
-              onRequestRestriction={(report, mode) =>
-                setPendingUserRestriction({ report, mode })
-              }
-              onWarn={handleWarn}
-            />
-          ))}
-        </div>
-      )}
+      {queueTab === "reports" ? (
+        <>
+          <div className="flex gap-1 mb-5 bg-card border border-stroke rounded-xl p-1 w-fit">
+            {STATUS_TABS.map((tab) => (
+              <button
+                key={tab.value}
+                onClick={() => {
+                  setStatus(tab.value);
+                  setPage(1);
+                }}
+                className={`px-3 py-1.5 rounded-lg text-base font-medium transition ${
+                  status === tab.value
+                    ? "bg-primary-100 text-primary-700"
+                    : "text-ink-muted hover:text-ink"
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
 
-      {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-3 mt-6">
-          <button
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
-            disabled={page <= 1}
-            className="px-3 py-1.5 rounded-lg text-base border border-stroke disabled:opacity-40 hover:bg-surface transition"
-          >
-            Previous
-          </button>
-          <span className="text-base text-ink-muted">
-            Page {page} of {totalPages}
-          </span>
-          <button
-            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-            disabled={page >= totalPages}
-            className="px-3 py-1.5 rounded-lg text-base border border-stroke disabled:opacity-40 hover:bg-surface transition"
-          >
-            Next
-          </button>
-        </div>
+          {loading ? (
+            <p className="text-base text-ink-muted">Loading...</p>
+          ) : reports.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <FiInbox className="text-ink-muted mb-2" size={28} />
+              <p className="text-base text-ink-muted">No {status !== "all" ? status : ""} reports.</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {reports.map((r) => (
+                <ReportCard
+                  key={r._id}
+                  report={r}
+                  onResolve={handleResolve}
+                  viewerRole={user?.role}
+                  onView={(report) => setContextReport(report)}
+                  onRequestRestriction={(report, mode) =>
+                    setPendingUserRestriction({ report, mode })
+                  }
+                  onWarn={handleWarn}
+                />
+              ))}
+            </div>
+          )}
+
+          {totalPages > 1 && (
+            <div className="flex items-center justify-center gap-3 mt-6">
+              <button
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page <= 1}
+                className="px-3 py-1.5 rounded-lg text-base border border-stroke disabled:opacity-40 hover:bg-surface transition"
+              >
+                Previous
+              </button>
+              <span className="text-base text-ink-muted">
+                Page {page} of {totalPages}
+              </span>
+              <button
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                disabled={page >= totalPages}
+                className="px-3 py-1.5 rounded-lg text-base border border-stroke disabled:opacity-40 hover:bg-surface transition"
+              >
+                Next
+              </button>
+            </div>
+          )}
+        </>
+      ) : (
+        <>
+          <div className="flex gap-1 mb-5 bg-card border border-stroke rounded-xl p-1 w-fit">
+            {APPEAL_STATUS_TABS.map((tab) => (
+              <button
+                key={tab.value}
+                onClick={() => {
+                  setAppealStatus(tab.value);
+                  setAppealPage(1);
+                }}
+                className={`px-3 py-1.5 rounded-lg text-base font-medium transition ${
+                  appealStatus === tab.value
+                    ? "bg-primary-100 text-primary-700"
+                    : "text-ink-muted hover:text-ink"
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          {appealsLoading ? (
+            <p className="text-base text-ink-muted">Loading...</p>
+          ) : appeals.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <FiFileText className="text-ink-muted mb-2" size={28} />
+              <p className="text-base text-ink-muted">
+                No {appealStatus !== "all" ? appealStatus : ""} appeals.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {appeals.map((a) => (
+                <AppealCard key={a._id} appeal={a} onResolve={handleResolveAppeal} />
+              ))}
+            </div>
+          )}
+
+          {appealTotalPages > 1 && (
+            <div className="flex items-center justify-center gap-3 mt-6">
+              <button
+                onClick={() => setAppealPage((p) => Math.max(1, p - 1))}
+                disabled={appealPage <= 1}
+                className="px-3 py-1.5 rounded-lg text-base border border-stroke disabled:opacity-40 hover:bg-surface transition"
+              >
+                Previous
+              </button>
+              <span className="text-base text-ink-muted">
+                Page {appealPage} of {appealTotalPages}
+              </span>
+              <button
+                onClick={() => setAppealPage((p) => Math.min(appealTotalPages, p + 1))}
+                disabled={appealPage >= appealTotalPages}
+                className="px-3 py-1.5 rounded-lg text-base border border-stroke disabled:opacity-40 hover:bg-surface transition"
+              >
+                Next
+              </button>
+            </div>
+          )}
+        </>
       )}
     </MainLayout>
   );
