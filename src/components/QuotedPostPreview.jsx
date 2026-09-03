@@ -29,7 +29,7 @@ const QuotedPostPreview = ({ post }) => {
 
   return (
     <div className="rounded-xl border border-stroke bg-surface p-3 hover:border-primary-200 transition">
-      <div className="flex items-center gap-2 mb-1.5">
+      <div className="flex items-start sm:items-center gap-2 mb-1.5">
         <img
           src={
             resizedImageUrl(post.user?.profilePic, IMAGE_SIZES.avatarSmall) ||
@@ -38,18 +38,20 @@ const QuotedPostPreview = ({ post }) => {
           alt="user"
           className="w-6 h-6 rounded-full object-cover shrink-0"
         />
-        <Link
-          to={`/profile/${post.user?._id}`}
-          onClick={(e) => e.stopPropagation()}
-          className="text-sm font-semibold text-ink hover:text-primary-600 transition truncate"
-        >
-          {post.user?.name}
-        </Link>
-        {post.user?.username && (
-          <span className="text-xs text-ink-muted truncate">
-            @{post.user.username}
-          </span>
-        )}
+        <div className="min-w-0 flex flex-col sm:flex-row sm:items-center gap-y-0.5 sm:gap-x-1.5">
+          <Link
+            to={`/profile/${post.user?._id}`}
+            onClick={(e) => e.stopPropagation()}
+            className="text-sm font-semibold text-ink hover:text-primary-600 transition truncate"
+          >
+            {post.user?.name}
+          </Link>
+          {post.user?.username && (
+            <span className="text-xs text-ink-muted truncate">
+              @{post.user.username}
+            </span>
+          )}
+        </div>
       </div>
 
       {post.text && (

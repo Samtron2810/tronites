@@ -771,7 +771,7 @@ const PostCard = ({
 
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3">
+          <div className="flex items-start sm:items-center gap-3">
             <img
               src={
                 resizedImageUrl(profilePic, IMAGE_SIZES.avatarSmall) ||
@@ -781,36 +781,33 @@ const PostCard = ({
               className="w-10 h-10 rounded-full object-cover ring-2 ring-primary-100"
             />
             <div>
-              <div className="flex items-center gap-1.5">
-                <Link
-                  to={`/profile/${userId}`}
-                  className="text-base font-semibold text-ink hover:text-primary-600 transition"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  {name}
-                </Link>
-                <VerifiedBadge verifications={verifications} size="sm" />
+              <div className="flex flex-col sm:flex-row sm:items-center gap-y-1 sm:gap-1.5">
+                {/* Name + verified badge + "You" tag - name and username share
+                    one line from sm up; on small screens the username drops to
+                    its own line below the name */}
+                <span className="flex items-center gap-1.5">
+                  <Link
+                    to={`/profile/${userId}`}
+                    className="text-base font-semibold text-ink hover:text-primary-600 transition"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {name}
+                  </Link>
+                  <VerifiedBadge verifications={verifications} size="sm" />
+                  {/* show "You" if isowned */}
+                  {isOwner && (
+                    <span
+                      className="flex items-center gap-1 text-[11px] font-medium text-primary-600 bg-primary-50 px-1.5 py-0.5 rounded-full"
+                      title="This is your post"
+                    >
+                      {" "}
+                      You{" "}
+                    </span>
+                  )}
+                </span>
+
                 {username && (
                   <span className="text-sm text-ink-muted">@{username}</span>
-                )}
-                {/* show "You" if isowned */}
-                {isOwner && (
-                  <span
-                    className="flex items-center gap-1 text-[11px] font-medium text-primary-600 bg-primary-50 px-1.5 py-0.5 rounded-full"
-                    title="This is your post"
-                  >
-                    {" "}
-                    You{" "}
-                  </span>
-                )}
-                {isQuotePost && (
-                  <span
-                    className="flex items-center gap-1 text-[11px] font-medium text-primary-600 bg-primary-50 px-1.5 py-0.5 rounded-full"
-                    title="This post quotes another post"
-                  >
-                    <FaQuoteRight size={9} />
-                    Quote
-                  </span>
                 )}
               </div>
               <p className="flex items-center gap-1 text-sm text-ink-muted">
@@ -906,6 +903,20 @@ const PostCard = ({
             )}
           </div>
         </div>
+
+        {/* Quote tag - brought out of the avatar image block; still
+            under the time/date, right before the quote writeup */}
+        {isQuotePost && (
+          <div className="ml-13 -mt-2.5 mb-4">
+            <span
+              className="flex items-center gap-1 text-[11px] font-medium text-primary-600 bg-primary-50 px-1.5 py-0.5 rounded-full w-fit"
+              title="This post quotes another post"
+            >
+              <FaQuoteRight size={9} />
+              Quote
+            </span>
+          </div>
+        )}
 
         {/* Text */}
         {isEditing ? (

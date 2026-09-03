@@ -262,132 +262,152 @@ const PostDetailModal = ({
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-stroke sticky top-0 bg-card z-10 sm:rounded-t-2xl">
-          <div className="flex items-center gap-3">
-            <img
-              src={resizedImageUrl(profilePic, IMAGE_SIZES.avatarSmall) || defaultAvatar}
-              alt="user"
-              className="w-10 h-10 rounded-full object-cover ring-2 ring-primary-100"
-            />
-            <div>
-              <div className="flex items-center gap-1.5">
-                <Link
-                  to={`/profile/${userId}`}
-                  className="text-base font-semibold text-ink hover:text-primary-600 transition"
-                >
-                  {name}
-                </Link>
-                <VerifiedBadge verifications={verifications} size="sm" />
-                {username && (
-                  <span className="text-sm text-ink-muted">@{username}</span>
-                )}
-                {quoteOf && (
-                  <span
-                    className="flex items-center gap-1 text-[11px] font-medium text-primary-600 bg-primary-50 px-1.5 py-0.5 rounded-full"
-                    title="This post quotes another post"
-                  >
-                    <FaQuoteRight size={9} />
-                    Quote
-                  </span>
-                )}
-              </div>
-              <p className="flex items-center gap-1 text-sm text-ink-muted">
-                {time}
-                {privacy === "followers" && (
-                  <FiUsers
-                    size={11}
-                    className="shrink-0"
-                    title="Visible to your followers"
-                    aria-label="Visible to your followers"
-                  />
-                )}
-                {privacy === "only-me" && (
-                  <FiLock
-                    size={11}
-                    className="shrink-0"
-                    title="Only visible to you"
-                    aria-label="Only visible to you"
-                  />
-                )}
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-1">
-            <div className="relative">
-              <button
-                ref={triggerRef}
-                onClick={() => setMenuOpen((o) => !o)}
-                className="text-ink-muted hover:text-ink transition p-1.5 rounded-lg hover:bg-surface"
-                title="Post options"
-                aria-label="Post options"
-              >
-                <FaEllipsisV size={14} />
-              </button>
-
-              {menuOpen && (
-                <div
-                  ref={menuRef}
-                  className="absolute right-0 mt-2 w-44 bg-card rounded-lg shadow-lg border border-stroke z-40 py-1"
-                >
-                  <button
-                    onClick={() => {
-                      setMenuOpen(false);
-                      onCopy();
-                    }}
-                    className="w-full flex items-center gap-3 px-4 py-2.5 text-base text-ink-sub hover:bg-surface transition"
-                  >
-                    <FaRegCopy size={13} />
-                    <span className="font-medium">Copy text</span>
-                  </button>
-
-                  {isOwner ? (
-                    <>
-                      {!editCooldownActive && (
-                        <button
-                          onClick={() => {
-                            setMenuOpen(false);
-                            onEdit();
-                          }}
-                          className="w-full flex items-center gap-3 px-4 py-2.5 text-base text-ink hover:bg-primary-50 transition"
-                        >
-                          <FaPen className="text-primary-600" size={13} />
-                          <span className="font-medium">Edit post</span>
-                        </button>
-                      )}
-                      <button
-                        onClick={() => {
-                          setMenuOpen(false);
-                          onDelete();
-                        }}
-                        className="w-full flex items-center gap-3 px-4 py-2.5 text-base text-red-600 hover:bg-red-50 transition"
+        <div className="px-5 py-4 border-b border-stroke sticky top-0 bg-card z-10 sm:rounded-t-2xl">
+          <div className="flex items-center justify-between">
+            <div className="flex items-start sm:items-center gap-3">
+              <img
+                src={resizedImageUrl(profilePic, IMAGE_SIZES.avatarSmall) || defaultAvatar}
+                alt="user"
+                className="w-10 h-10 rounded-full object-cover ring-2 ring-primary-100"
+              />
+              <div>
+                <div className="flex flex-col sm:flex-row sm:items-center gap-y-1 sm:gap-1.5">
+                  {/* Name + verified badge + "You" tag - name and username share
+                      one line from sm up; on small screens the username drops to
+                      its own line below the name */}
+                  <span className="flex items-center gap-1.5">
+                    <Link
+                      to={`/profile/${userId}`}
+                      className="text-base font-semibold text-ink hover:text-primary-600 transition"
+                    >
+                      {name}
+                    </Link>
+                    <VerifiedBadge verifications={verifications} size="sm" />
+                    {/* show "You" if isowned */}
+                    {isOwner && (
+                      <span
+                        className="flex items-center gap-1 text-[11px] font-medium text-primary-600 bg-primary-50 px-1.5 py-0.5 rounded-full"
+                        title="This is your post"
                       >
-                        <FaTrash size={13} />
-                        <span className="font-medium">Delete post</span>
-                      </button>
-                    </>
-                  ) : (
+                        {" "}
+                        You{" "}
+                      </span>
+                    )}
+                  </span>
+
+                  {username && (
+                    <span className="text-sm text-ink-muted">@{username}</span>
+                  )}
+                </div>
+                <p className="flex items-center gap-1 text-sm text-ink-muted">
+                  {time}
+                  {privacy === "followers" && (
+                    <FiUsers
+                      size={11}
+                      className="shrink-0"
+                      title="Visible to your followers"
+                      aria-label="Visible to your followers"
+                    />
+                  )}
+                  {privacy === "only-me" && (
+                    <FiLock
+                      size={11}
+                      className="shrink-0"
+                      title="Only visible to you"
+                      aria-label="Only visible to you"
+                    />
+                  )}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-1">
+              <div className="relative">
+                <button
+                  ref={triggerRef}
+                  onClick={() => setMenuOpen((o) => !o)}
+                  className="text-ink-muted hover:text-ink transition p-1.5 rounded-lg hover:bg-surface"
+                  title="Post options"
+                  aria-label="Post options"
+                >
+                  <FaEllipsisV size={14} />
+                </button>
+
+                {menuOpen && (
+                  <div
+                    ref={menuRef}
+                    className="absolute right-0 mt-2 w-44 bg-card rounded-lg shadow-lg border border-stroke z-40 py-1"
+                  >
                     <button
                       onClick={() => {
                         setMenuOpen(false);
-                        onReport();
+                        onCopy();
                       }}
                       className="w-full flex items-center gap-3 px-4 py-2.5 text-base text-ink-sub hover:bg-surface transition"
                     >
-                      <FiFlag className="text-amber-500" size={13} />
-                      <span className="font-medium">Report post</span>
+                      <FaRegCopy size={13} />
+                      <span className="font-medium">Copy text</span>
                     </button>
-                  )}
-                </div>
-              )}
+
+                    {isOwner ? (
+                      <>
+                        {!editCooldownActive && (
+                          <button
+                            onClick={() => {
+                              setMenuOpen(false);
+                              onEdit();
+                            }}
+                            className="w-full flex items-center gap-3 px-4 py-2.5 text-base text-ink hover:bg-primary-50 transition"
+                          >
+                            <FaPen className="text-primary-600" size={13} />
+                            <span className="font-medium">Edit post</span>
+                          </button>
+                        )}
+                        <button
+                          onClick={() => {
+                            setMenuOpen(false);
+                            onDelete();
+                          }}
+                          className="w-full flex items-center gap-3 px-4 py-2.5 text-base text-red-600 hover:bg-red-50 transition"
+                        >
+                          <FaTrash size={13} />
+                          <span className="font-medium">Delete post</span>
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        onClick={() => {
+                          setMenuOpen(false);
+                          onReport();
+                        }}
+                        className="w-full flex items-center gap-3 px-4 py-2.5 text-base text-ink-sub hover:bg-surface transition"
+                      >
+                        <FiFlag className="text-amber-500" size={13} />
+                        <span className="font-medium">Report post</span>
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+              <button
+                onClick={onClose}
+                aria-label="Close"
+                className="text-ink-muted hover:text-ink transition p-1.5 rounded-lg hover:bg-surface"
+              >
+                <FaTimes size={16} />
+              </button>
             </div>
-            <button
-              onClick={onClose}
-              aria-label="Close"
-              className="text-ink-muted hover:text-ink transition p-1.5 rounded-lg hover:bg-surface"
-            >
-              <FaTimes size={16} />
-            </button>
           </div>
+          {quoteOf && (
+            <div className="ml-13 mt-1.5">
+              <span
+                className="flex items-center gap-1 text-[11px] font-medium text-primary-600 bg-primary-50 px-1.5 py-0.5 rounded-full w-fit"
+                title="This post quotes another post"
+              >
+                <FaQuoteRight size={9} />
+                Quote
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Video */}
