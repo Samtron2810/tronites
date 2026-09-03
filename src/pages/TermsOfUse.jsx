@@ -242,11 +242,12 @@ const TermsOfUse = () => {
             impersonating Tronites staff will be permanently banned.
           </li>
           <li>
-            <strong>KYC data.</strong>{" "}
-            By applying for an Individual badge you agree to Tronites'
-            Privacy Policy §&nbsp;Identity Verification, including the use
-            of Dojah Technologies Ltd as a sub-processor. Consent is
-            required before any identity data is collected.
+            <strong>Verification data.</strong>{" "}
+            By applying for a verification badge you agree to Tronites'
+            Privacy Policy §&nbsp;Identity Verification. The information
+            you submit (legal name, date of birth, country, statement)
+            is used solely for reviewing your application and is never
+            shown publicly.
           </li>
         </ul>
       </Section>

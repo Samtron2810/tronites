@@ -119,57 +119,33 @@ const PrivacyPolicy = () => {
         </p>
       </Section>
 
-      <Section title="Identity verification (KYC)">
+      <Section title="Identity verification">
         <p>
-          If you apply for an Individual verification badge, Tronites will
-          initiate an identity check through{" "}
-          <a
-            href="https://dojah.io/privacy"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-primary-600 hover:underline"
-          >
-            Dojah Technologies Ltd
-          </a>{" "}
-          (RC 1580630), a licensed KYC sub-processor. Dojah will process
-          your NIN (National Identification Number) and a liveness photo
-          and verify them against NIMC and CBN records.
+          When you apply for a verification badge, Tronites collects the
+          following information for reviewer purposes only: your legal name,
+          date of birth, country of residence, professional category, a
+          written statement supporting your claim, and optional public
+          links (e.g. website, LinkedIn). This information is used solely
+          to assess and process your verification application.
         </p>
         <p className="mt-3">
-          <strong>What Tronites stores:</strong> We never store your NIN,
-          BVN, document scans, biometric images, or selfies. We receive
-          only a pass/fail result and an opaque Dojah reference ID which
-          we use solely to update the verification status of your
-          application. This is the minimum data necessary for the
-          purpose.
-        </p>
-        <p className="mt-3">
-          <strong>Sub-processor:</strong> Dojah Technologies Ltd acts as
-          a data processor on our behalf under a Data Processing Agreement
-          consistent with NDPR requirements. Their privacy policy governs
-          how they handle your biometric and identity data. Tronites has
-          no access to the raw data held by Dojah.
+          <strong>What Tronites stores:</strong> Verification application
+          data is retained for the duration of the review, and for up to
+          12 months after the application is resolved (whether approved or
+          denied), for audit purposes. No government-issued ID documents,
+          biometric data, or financial documents are collected or stored.
         </p>
         <p className="mt-3">
           <strong>Legal basis:</strong> Processing is carried out on the
-          basis of your explicit, freely given consent, collected via the
-          consent screen shown before the verification widget launches.
-          You may withdraw consent at any time by not completing the
-          process. Consent already given and data already processed by
-          Dojah is subject to Dojah's retention policy.
+          basis of your consent, given by voluntarily submitting a
+          verification application. You may withdraw your application at
+          any time before it is reviewed by contacting support.
         </p>
         <p className="mt-3">
-          <strong>Retention:</strong> We retain the reference ID and
-          badge-grant timestamp for as long as your account is active or
-          the badge is held, and for up to 12 months after badge
-          revocation for audit purposes. We do not retain raw identity
-          data — we never held it.
-        </p>
-        <p className="mt-3">
-          <strong>Note on VNIN:</strong> If using your NIN, you will need
-          a Virtual NIN (VNIN) generated from the NIMC app or by dialling
-          *346#. VNINs expire after 72 hours and are issued by NIMC, not
-          by Tronites or Dojah.
+          <strong>Reviewer access:</strong> Only Tronites staff with the
+          manage_verification permission can view application details.
+          Your legal name, date of birth, and statement are never shown
+          publicly and are not included in your public profile.
         </p>
       </Section>
 
