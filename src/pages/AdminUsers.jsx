@@ -6,11 +6,13 @@ import api from "../services/api";
 import ConfirmRoleChangeModal from "../components/ConfirmRoleChangeModal";
 import ConfirmPermissionChangeModal from "../components/ConfirmPermissionChangeModal";
 import ConfirmRestrictionModal from "../components/ConfirmRestrictionModal";
+import ConfirmVerificationModal from "../components/ConfirmVerificationModal";
+import VerifiedBadge from "../components/VerifiedBadge";
 import { useAuth } from "../context/useAuth";
 import defaultAvatar from "../assets/defaultAvatar";
 import { resizedImageUrl, IMAGE_SIZES } from "../utils/cloudinaryImage";
 import { PERMISSION_OPTIONS } from "../constants/permissions";
-import { FiSearch, FiShield, FiMoreVertical } from "react-icons/fi";
+import { FiSearch, FiShield, FiMoreVertical, FiAward } from "react-icons/fi";
 
 const ROLE_TABS = [
   { value: "", label: "All" },
@@ -34,6 +36,8 @@ const RoleRow = ({
   onRequestRoleChange,
   onRequestRestriction,
   onRequestPermissions,
+  onRequestGrantVerification,
+  onRequestRevokeVerification,
 }) => {
   const isSelf = target._id === currentUserId;
   const isSuspended =
@@ -83,8 +87,11 @@ const RoleRow = ({
           className="w-10 h-10 rounded-full object-cover ring-2 ring-primary-100 shrink-0"
         />
         <div className="min-w-0">
-          <p className="text-base font-semibold text-ink truncate">
-            {target.name}{" "}
+          <p className="text-base font-semibold text-ink truncate flex items-center gap-1.5">
+            {target.name}
+            {target.isVerified && (
+              <VerifiedBadge verifications={target.verifications} size="sm" />
+            )}
             {isSelf && (
               <span className="text-sm text-ink-muted font-normal">(you)</span>
             )}
@@ -154,7 +161,7 @@ const RoleRow = ({
           </button>
         )}
 
-        {canRestrict && (
+        {(canRestrict || viewerIsAdmin) && (
           <div className="relative" ref={menuRef}>
             <button
               onClick={() => setMenuOpen((o) => !o)}
@@ -166,43 +173,80 @@ const RoleRow = ({
             </button>
 
             {menuOpen && (
-              <div className="absolute right-0 mt-2 w-40 bg-card rounded-lg shadow-lg border border-stroke z-40 py-1">
-                {target.banned ? (
-                  <button
-                    onClick={() => {
-                      setMenuOpen(false);
-                      onRequestRestriction(target, "unrestrict");
-                    }}
-                    className="w-full flex items-center gap-2 px-4 py-2.5 text-base text-primary-700 hover:bg-surface transition"
-                  >
-                        <span className="font-medium">Restore access</span>
-                  </button>
-                ) : (
+              <div className="absolute right-0 mt-2 w-52 bg-card rounded-lg shadow-lg border border-stroke z-40 py-1">
+                {/* Phase 1 — verification badges (admin only). Grant is
+                    always offered; per-badge revoke only shows for
+                    types the user actually holds. */}
+                {viewerIsAdmin && (
                   <>
                     <button
                       onClick={() => {
                         setMenuOpen(false);
-                        onRequestRestriction(target, "suspend");
+                        onRequestGrantVerification(target);
                       }}
                       className="w-full flex items-center gap-2 px-4 py-2.5 text-base text-ink-sub hover:bg-surface transition"
                     >
-                      <span className="font-medium">
-                        {isSuspended ? "Adjust suspension…" : "Suspend…"}
-                      </span>
+                      <FiAward size={14} className="shrink-0" />
+                      <span className="font-medium">Grant badge…</span>
                     </button>
-                    {viewerIsAdmin && (
-                      <button
-                        onClick={() => {
-                          setMenuOpen(false);
-                          onRequestRestriction(target, "ban");
-                        }}
-                        className="w-full flex items-center gap-2 px-4 py-2.5 text-base text-red-600 hover:bg-red-50 transition"
-                      >
-                        <span className="font-medium">Ban permanently…</span>
-                      </button>
+                    {(target.verifications || [])
+                      .filter((v) => v.type !== "staff")
+                      .map((v) => (
+                        <button
+                          key={v.type}
+                          onClick={() => {
+                            setMenuOpen(false);
+                            onRequestRevokeVerification(target, v.type);
+                          }}
+                          className="w-full flex items-center gap-2 px-4 py-2.5 text-base text-red-600 hover:bg-red-50 transition"
+                        >
+                          <span className="font-medium">
+                            Revoke {v.type} badge…
+                          </span>
+                        </button>
+                      ))}
+                    {canRestrict && (
+                      <div className="my-1 border-t border-stroke" />
                     )}
                   </>
                 )}
+                {canRestrict &&
+                  (target.banned ? (
+                    <button
+                      onClick={() => {
+                        setMenuOpen(false);
+                        onRequestRestriction(target, "unrestrict");
+                      }}
+                      className="w-full flex items-center gap-2 px-4 py-2.5 text-base text-primary-700 hover:bg-surface transition"
+                    >
+                      <span className="font-medium">Restore access</span>
+                    </button>
+                  ) : (
+                    <>
+                      <button
+                        onClick={() => {
+                          setMenuOpen(false);
+                          onRequestRestriction(target, "suspend");
+                        }}
+                        className="w-full flex items-center gap-2 px-4 py-2.5 text-base text-ink-sub hover:bg-surface transition"
+                      >
+                        <span className="font-medium">
+                          {isSuspended ? "Adjust suspension…" : "Suspend…"}
+                        </span>
+                      </button>
+                      {viewerIsAdmin && (
+                        <button
+                          onClick={() => {
+                            setMenuOpen(false);
+                            onRequestRestriction(target, "ban");
+                          }}
+                          className="w-full flex items-center gap-2 px-4 py-2.5 text-base text-red-600 hover:bg-red-50 transition"
+                        >
+                          <span className="font-medium">Ban permanently…</span>
+                        </button>
+                      )}
+                    </>
+                  ))}
               </div>
             )}
           </div>
@@ -227,6 +271,9 @@ const AdminUsers = () => {
   const [pendingRestriction, setPendingRestriction] = useState(null);
   // Phase 5 — { user } for the permission editor modal.
   const [pendingPermissions, setPendingPermissions] = useState(null);
+  // Phase 1 — { user, mode: "grant" | "revoke", revokeType? } for the
+  // verification badge modal.
+  const [pendingVerification, setPendingVerification] = useState(null);
   // Phase 6 — bulk selection ("_id" strings), the bulk confirm modal,
   // and the user-list sort option ("Most reported").
   const [selectedIds, setSelectedIds] = useState(() => new Set());
@@ -345,6 +392,63 @@ const AdminUsers = () => {
     } catch (e) {
       console.error(e);
       toast.error(e.response?.data?.message || "Couldn't update role.");
+    }
+  };
+
+  // Phase 1 -- grant/revoke a verification badge. Row state folds in the
+  // server DTO's full verifications array (single source of truth) so
+  // the inline badge and the revoke-menu list stay in sync immediately.
+  const handleConfirmGrantVerification = async ({ type, entityName, expiresAt }) => {
+    if (!pendingVerification) return;
+    try {
+      const res = await api.post(
+        `/admin/users/${pendingVerification.user._id}/verification`,
+        { type, entityName, expiresAt },
+      );
+      setUsers((prev) =>
+        prev.map((u) =>
+          u._id === pendingVerification.user._id
+            ? {
+                ...u,
+                verifications: res.data.user.verifications,
+                isVerified: res.data.user.isVerified,
+              }
+            : u,
+        ),
+      );
+      api.invalidate("/admin/users");
+      toast.success(`${type} badge granted.`);
+      setPendingVerification(null);
+    } catch (e) {
+      console.error(e);
+      toast.error(e.response?.data?.message || "Couldn't grant badge.");
+    }
+  };
+
+  const handleConfirmRevokeVerification = async ({ type, reason }) => {
+    if (!pendingVerification) return;
+    try {
+      const res = await api.delete(
+        `/admin/users/${pendingVerification.user._id}/verification/${type}`,
+        { data: { reason } },
+      );
+      setUsers((prev) =>
+        prev.map((u) =>
+          u._id === pendingVerification.user._id
+            ? {
+                ...u,
+                verifications: res.data.user.verifications,
+                isVerified: res.data.user.isVerified,
+              }
+            : u,
+        ),
+      );
+      api.invalidate("/admin/users");
+      toast.success(`${type} badge revoked.`);
+      setPendingVerification(null);
+    } catch (e) {
+      console.error(e);
+      toast.error(e.response?.data?.message || "Couldn't revoke badge.");
     }
   };
 
@@ -480,6 +584,20 @@ const AdminUsers = () => {
         />
       )}
 
+      {pendingVerification && (
+        <ConfirmVerificationModal
+          mode={pendingVerification.mode}
+          targetUser={pendingVerification.user}
+          revokeType={pendingVerification.revokeType}
+          onConfirm={
+            pendingVerification.mode === "grant"
+              ? handleConfirmGrantVerification
+              : handleConfirmRevokeVerification
+          }
+          onCancel={() => setPendingVerification(null)}
+        />
+      )}
+
       {/* Phase 6 — bulk confirm. count>1 flips the shared modal into its
           pluralized mode; targetUser stays null because the summary line
           replaces the avatar block. */}
@@ -601,6 +719,12 @@ const AdminUsers = () => {
               }
               onRequestPermissions={(target) =>
                 setPendingPermissions({ user: target })
+              }
+              onRequestGrantVerification={(target) =>
+                setPendingVerification({ user: target, mode: "grant" })
+              }
+              onRequestRevokeVerification={(target, type) =>
+                setPendingVerification({ user: target, mode: "revoke", revokeType: type })
               }
               selected={selectedIds.has(u._id)}
               onToggleSelect={() => toggleSelected(u._id)}

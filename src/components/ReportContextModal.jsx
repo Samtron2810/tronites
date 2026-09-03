@@ -37,6 +37,7 @@ const toPostCardProps = (post) => ({
   name: post.user.name,
   username: post.user.username,
   profilePic: post.user.profilePic,
+  verifications: post.user.verifications,
   time: new Date(post.createdAt).toLocaleString(),
   text: post.text,
   images: post.images,

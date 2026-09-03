@@ -26,6 +26,7 @@ import CommentsPanel from "./CommentBox";
 import QuotedPostPreview from "./QuotedPostPreview";
 import ReactionPicker from "./ReactionPicker";
 import ReactionSummaryBar from "./ReactionSummaryBar";
+import VerifiedBadge from "./VerifiedBadge";
 import { resizedImageUrl, IMAGE_SIZES } from "../utils/cloudinaryImage";
 import useBackButtonClose from "../hooks/useBackButtonClose";
 
@@ -62,6 +63,7 @@ const PostDetailModal = ({
   name,
   username,
   profilePic,
+  verifications,
   time,
   postText,
   privacy,
@@ -275,6 +277,7 @@ const PostDetailModal = ({
                 >
                   {name}
                 </Link>
+                <VerifiedBadge verifications={verifications} size="sm" />
                 {username && (
                   <span className="text-sm text-ink-muted">@{username}</span>
                 )}

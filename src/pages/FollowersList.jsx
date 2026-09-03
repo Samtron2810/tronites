@@ -3,6 +3,7 @@ import { useParams, useSearchParams, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import MainLayout from "../layouts/MainLayout";
 import UserCardSkeleton from "../components/UserCardSkeleton";
+import VerifiedBadge from "../components/VerifiedBadge";
 import api from "../services/api";
 import defaultAvatar from "../assets/defaultAvatar";
 import { resizedImageUrl, IMAGE_SIZES } from "../utils/cloudinaryImage";
@@ -145,8 +146,9 @@ const FollowersList = () => {
                       className="w-11 h-11 rounded-full object-cover ring-2 ring-primary-100"
                     />
                     <div className="min-w-0">
-                      <h3 className="text-base font-semibold text-ink truncate">
+                      <h3 className="text-base font-semibold text-ink truncate flex items-center gap-1.5">
                         {user.name}
+                        <VerifiedBadge verifications={user.verifications} size="sm" />
                       </h3>
                       <p className="text-sm text-ink-muted truncate">
                         {user.bio || "No bio yet."}

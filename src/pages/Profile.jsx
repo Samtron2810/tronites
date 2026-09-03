@@ -3,6 +3,7 @@ import { useNavigate, useParams, Link } from "react-router-dom";
 import MainLayout from "../layouts/MainLayout";
 import toast from "react-hot-toast";
 import PostCard from "../components/PostCard";
+import VerifiedBadge from "../components/VerifiedBadge";
 import ProfileSkeleton from "../components/ProfileSkeleton";
 import api from "../services/api";
 import { useRefetchOnFocus } from "../hooks/useRefetchOnFocus";
@@ -432,7 +433,10 @@ const Profile = () => {
           </div>
 
           {/* Name + bio */}
-          <h1 className="text-2xl font-bold text-ink">{profile.name}</h1>
+          <h1 className="text-2xl font-bold text-ink flex items-center gap-2">
+            {profile.name}
+            <VerifiedBadge verifications={profile.verifications} size="lg" />
+          </h1>
           {profile.username && (
             <p className="text-base text-ink-muted -mt-0.5">
               @{profile.username}
@@ -527,6 +531,7 @@ const Profile = () => {
             name={post.user?.name || profile.name}
             username={post.user?.username || profile.username}
             profilePic={post.user?.profilePic || profile.profilePic}
+            verifications={post.user?.verifications || profile.verifications}
             time={new Date(post.createdAt).toLocaleString()}
             text={post.text}
             images={post.images}

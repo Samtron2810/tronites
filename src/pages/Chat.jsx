@@ -24,6 +24,7 @@ import sfx from "../assets/sfx.mp3";
 import defaultAvatar from "../assets/defaultAvatar";
 import { resizedImageUrl, IMAGE_SIZES } from "../utils/cloudinaryImage";
 import toast from "react-hot-toast";
+import VerifiedBadge from "../components/VerifiedBadge";
 
 const buildConversationId = (a, b) =>
   [a.toString(), b.toString()].sort().join("_");
@@ -1341,6 +1342,7 @@ const Chat = () => {
                         <div className="flex items-center justify-between gap-2">
                           <p className="text-base font-semibold text-ink truncate">
                             {conv.otherUser.name}
+                            <VerifiedBadge verifications={conv.otherUser.verifications} size="sm" className="ml-1" />
                             {conv.otherUser.username && (
                               <span className="ml-1 font-normal text-sm text-ink-muted">
                                 @{conv.otherUser.username}
@@ -1409,6 +1411,7 @@ const Chat = () => {
                     <div className="flex-1 min-w-0">
                       <p className="text-base font-semibold text-ink truncate">
                         {req.otherUser.name}
+                        <VerifiedBadge verifications={req.otherUser.verifications} size="sm" className="ml-1" />
                         {req.otherUser.username && (
                           <span className="ml-1 font-normal text-sm text-ink-muted">
                             @{req.otherUser.username}

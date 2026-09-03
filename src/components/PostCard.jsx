@@ -27,6 +27,7 @@ import QuotedPostPreview from "./QuotedPostPreview";
 import PostByIdModal from "./PostByIdModal";
 import { useSocket } from "../context/useSocket";
 import TextWithLinks from "./TextWithLinks";
+import VerifiedBadge from "./VerifiedBadge";
 import defaultAvatar from "../assets/defaultAvatar";
 import LazyImage from "./LazyImage";
 import PostDetailModal from "./PostDetailModal";
@@ -48,6 +49,11 @@ const PostCard = ({
   name,
   username,
   profilePic,
+  // Author's verification badges (post.user.verifications from the
+  // backend DTO) — passed through untouched, VerifiedBadge picks the
+  // highest-authority one to show inline. Undefined is fine (renders
+  // nothing).
+  verifications,
   time,
   privacy,
   text,
@@ -783,6 +789,7 @@ const PostCard = ({
                 >
                   {name}
                 </Link>
+                <VerifiedBadge verifications={verifications} size="sm" />
                 {username && (
                   <span className="text-sm text-ink-muted">@{username}</span>
                 )}

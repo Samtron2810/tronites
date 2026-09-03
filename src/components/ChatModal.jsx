@@ -19,6 +19,7 @@ import defaultAvatar from "../assets/defaultAvatar";
 import { resizedImageUrl, IMAGE_SIZES } from "../utils/cloudinaryImage";
 import { dayKey, formatDayLabel, formatMessageTime } from "../utils/chatDate";
 import useBackButtonClose from "../hooks/useBackButtonClose";
+import VerifiedBadge from "./VerifiedBadge";
 
 // 63 -> "1:03", 7 -> "0:07" — used only for the static video-thumbnail's
 // duration badge; the full-screen viewer's native controls show timing
@@ -287,6 +288,7 @@ const ChatModal = ({
           <div className="flex-1 min-w-0">
             <p className="text-base font-semibold text-ink truncate">
               {activeUser?.name}
+              <VerifiedBadge verifications={activeUser?.verifications} size="sm" className="ml-1" />
               {activeUser?.username && (
                 <span className="ml-1 font-normal text-sm text-ink-muted">
                   @{activeUser.username}
