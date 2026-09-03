@@ -12,7 +12,7 @@ import { useAuth } from "../context/useAuth";
 import defaultAvatar from "../assets/defaultAvatar";
 import { resizedImageUrl, IMAGE_SIZES } from "../utils/cloudinaryImage";
 import { PERMISSION_OPTIONS } from "../constants/permissions";
-import { FiSearch, FiShield, FiMoreVertical, FiAward } from "react-icons/fi";
+import { FiSearch, FiShield, FiMoreVertical, FiAward, FiChevronDown, FiCheck } from "react-icons/fi";
 
 const ROLE_TABS = [
   { value: "", label: "All" },
@@ -279,6 +279,30 @@ const AdminUsers = () => {
   const [selectedIds, setSelectedIds] = useState(() => new Set());
   const [pendingBulk, setPendingBulk] = useState(null); // { mode }
   const [sortBy, setSortBy] = useState("");
+
+  // Role filter (All/Users/Moderators/Admins) — collapsed from the old
+  // four-button tab group into one dropdown so it can sit beside the
+  // sort select instead of owning its own row of controls.
+  const [roleMenuOpen, setRoleMenuOpen] = useState(false);
+  const roleTriggerRef = useRef(null);
+  const roleMenuRef = useRef(null);
+
+  // Close the role dropdown on outside click (PostCard's pattern).
+  useEffect(() => {
+    if (!roleMenuOpen) return;
+    const handleClickOutside = (event) => {
+      if (
+        roleMenuRef.current &&
+        !roleMenuRef.current.contains(event.target) &&
+        roleTriggerRef.current &&
+        !roleTriggerRef.current.contains(event.target)
+      ) {
+        setRoleMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [roleMenuOpen]);
 
   const toggleSelected = (id) =>
     setSelectedIds((prev) => {
@@ -641,20 +665,49 @@ const AdminUsers = () => {
       </div>
 
       <div className="flex items-center justify-between gap-3 mb-5">
-        <div className="flex gap-1 bg-card border border-stroke rounded-xl p-1 w-fit">
-          {ROLE_TABS.map((tab) => (
-            <button
-              key={tab.value}
-              onClick={() => setRoleFilter(tab.value)}
-              className={`px-3 py-1.5 rounded-lg text-base font-medium transition ${
-                roleFilter === tab.value
-                  ? "bg-primary-100 text-primary-700"
-                  : "text-ink-muted hover:text-ink"
+        {/* Role filter — one dropdown beside the sort select instead of
+            the old four-button tab group. */}
+        <div className="relative">
+          <button
+            ref={roleTriggerRef}
+            onClick={() => setRoleMenuOpen(!roleMenuOpen)}
+            aria-haspopup="menu"
+            aria-expanded={roleMenuOpen}
+            className="bg-card border border-stroke rounded-xl px-3 py-2 text-base text-ink outline-none focus:border-primary-500 flex items-center gap-2"
+          >
+            {ROLE_TABS.find((tab) => tab.value === roleFilter)?.label || "All"}
+            <FiChevronDown
+              size={16}
+              className={`shrink-0 text-ink-muted transition-transform ${
+                roleMenuOpen ? "rotate-180" : ""
               }`}
+            />
+          </button>
+
+          {roleMenuOpen && (
+            <div
+              ref={roleMenuRef}
+              className="absolute left-0 top-full mt-1 w-44 bg-card rounded-xl shadow-lg border border-stroke z-40 py-1"
             >
-              {tab.label}
-            </button>
-          ))}
+              {ROLE_TABS.map((tab) => (
+                <button
+                  key={tab.value}
+                  onClick={() => {
+                    setRoleFilter(tab.value);
+                    setRoleMenuOpen(false);
+                  }}
+                  className={`w-full flex items-center justify-between gap-2 px-4 py-2 text-base transition ${
+                    roleFilter === tab.value
+                      ? "bg-primary-100 text-primary-700 font-medium"
+                      : "text-ink hover:bg-surface"
+                  }`}
+                >
+                  <span>{tab.label}</span>
+                  {roleFilter === tab.value && <FiCheck size={15} />}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Phase 6 — "most reported" surfaces accounts the community

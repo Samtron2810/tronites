@@ -15,12 +15,22 @@ import api from "../services/api";
 import { useRefetchOnFocus } from "../hooks/useRefetchOnFocus";
 import { useAuth } from "../context/useAuth";
 import { useSocket } from "../context/useSocket";
-import { FiSearch, FiHash, FiSliders, FiStar } from "react-icons/fi";
+import { FiSearch, FiHash, FiSliders, FiStar, FiChevronDown, FiCheck } from "react-icons/fi";
 import { HiOutlineSparkles } from "react-icons/hi2";
 import defaultAvatar from "../assets/defaultAvatar";
 import { resizedImageUrl, IMAGE_SIZES } from "../utils/cloudinaryImage";
 
 const EMPTY_FILTERS = { from: "", startDate: "", endDate: "", hasMedia: null, minLikes: "" };
+
+// The four searchable surfaces share one dropdown on the Explore header —
+// People is the default state — while Trending stays as its own tab button
+// beside it.
+const SEARCH_TYPE_OPTIONS = [
+  { value: "users", label: "People" },
+  { value: "posts", label: "Posts" },
+  { value: "comments", label: "Comments" },
+  { value: "messages", label: "Messages" },
+];
 
 // Any filter set beyond the empty defaults - used to (a) decide whether
 // a query-less search is still worth running, and (b) show the active
@@ -67,6 +77,44 @@ const Explore = () => {
       },
       { replace: true },
     );
+  };
+
+  // Which searchable surface the dropdown shows. Kept separate from
+  // activeTab so switching to Trending doesn't reset the label back to
+  // People — the label only ever holds one of the four
+  // SEARCH_TYPE_OPTIONS values (People is the default when the URL
+  // points at trending or nothing at all).
+  const [searchType, setSearchType] = useState(() => {
+    const urlTab = searchParams.get("tab");
+    return SEARCH_TYPE_OPTIONS.some((t) => t.value === urlTab)
+      ? urlTab
+      : "users";
+  });
+  const [searchDropdownOpen, setSearchDropdownOpen] = useState(false);
+  const searchTriggerRef = useRef(null);
+  const searchMenuRef = useRef(null);
+
+  // Close the search-type dropdown on outside click (UserMenu's pattern).
+  useEffect(() => {
+    if (!searchDropdownOpen) return;
+    const handleClickOutside = (event) => {
+      if (
+        searchMenuRef.current &&
+        !searchMenuRef.current.contains(event.target) &&
+        searchTriggerRef.current &&
+        !searchTriggerRef.current.contains(event.target)
+      ) {
+        setSearchDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [searchDropdownOpen]);
+
+  const handleSearchTypeChange = (value) => {
+    setSearchType(value);
+    setSearchDropdownOpen(false);
+    setActiveTab(value);
   };
 
   const [users, setUsers] = useState([]);
@@ -666,48 +714,54 @@ const Explore = () => {
       <div className="space-y-4">
         <TrendingHashtagsWidget />
 
-        {/* Tab switcher */}
-        <div className="bg-card border border-stroke rounded-2xl p-1 flex gap-1 overflow-x-auto">
-          <button
-            onClick={() => setActiveTab("users")}
-            className={`flex-1 text-base font-semibold py-2 rounded-xl transition whitespace-nowrap px-2 ${
-              activeTab === "users"
-                ? "bg-primary-600 text-white"
-                : "text-ink-muted hover:text-ink"
-            }`}
-          >
-            People
-          </button>
-          <button
-            onClick={() => setActiveTab("posts")}
-            className={`flex-1 text-base font-semibold py-2 rounded-xl transition whitespace-nowrap px-2 ${
-              activeTab === "posts"
-                ? "bg-primary-600 text-white"
-                : "text-ink-muted hover:text-ink"
-            }`}
-          >
-            Posts
-          </button>
-          <button
-            onClick={() => setActiveTab("comments")}
-            className={`flex-1 text-base font-semibold py-2 rounded-xl transition whitespace-nowrap px-2 ${
-              activeTab === "comments"
-                ? "bg-primary-600 text-white"
-                : "text-ink-muted hover:text-ink"
-            }`}
-          >
-            Comments
-          </button>
-          <button
-            onClick={() => setActiveTab("messages")}
-            className={`flex-1 text-base font-semibold py-2 rounded-xl transition whitespace-nowrap px-2 ${
-              activeTab === "messages"
-                ? "bg-primary-600 text-white"
-                : "text-ink-muted hover:text-ink"
-            }`}
-          >
-            Messages
-          </button>
+        {/* Search-type dropdown + Trending tab — the four searchable
+            surfaces live behind one dropdown (People is the default);
+            Trending stays as its own button beside it. */}
+        <div className="bg-card border border-stroke rounded-2xl p-1 flex gap-1">
+          <div className="relative flex-1">
+            <button
+              ref={searchTriggerRef}
+              onClick={() => setSearchDropdownOpen(!searchDropdownOpen)}
+              aria-haspopup="menu"
+              aria-expanded={searchDropdownOpen}
+              className={`w-full flex items-center justify-center gap-1.5 text-base font-semibold py-2 rounded-xl transition whitespace-nowrap px-2 ${
+                SEARCH_TYPE_OPTIONS.some((t) => t.value === activeTab)
+                  ? "bg-primary-600 text-white"
+                  : "text-ink-muted hover:text-ink"
+              }`}
+            >
+              {SEARCH_TYPE_OPTIONS.find((t) => t.value === searchType)?.label}
+              <FiChevronDown
+                size={15}
+                className={`shrink-0 transition-transform ${
+                  searchDropdownOpen ? "rotate-180" : ""
+                }`}
+              />
+            </button>
+
+            {searchDropdownOpen && (
+              <div
+                ref={searchMenuRef}
+                className="absolute left-0 right-0 top-full mt-1 bg-card rounded-xl shadow-lg border border-stroke z-40 py-1"
+              >
+                {SEARCH_TYPE_OPTIONS.map((option) => (
+                  <button
+                    key={option.value}
+                    onClick={() => handleSearchTypeChange(option.value)}
+                    className={`w-full flex items-center justify-between gap-2 px-4 py-2 text-base transition ${
+                      searchType === option.value
+                        ? "bg-primary-50 text-primary-700 font-semibold"
+                        : "text-ink hover:bg-surface"
+                    }`}
+                  >
+                    <span>{option.label}</span>
+                    {searchType === option.value && <FiCheck size={15} />}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
           <button
             onClick={() => setActiveTab("trending")}
             className={`flex-1 flex items-center justify-center gap-1 text-base font-semibold py-2 rounded-xl transition whitespace-nowrap px-2 ${
