@@ -208,7 +208,50 @@ const TermsOfUse = () => {
         </p>
       </Section>
 
-      <Section title="13. Contact us">
+      <Section title="13. Verification badges">
+        <p>
+          Tronites offers verification badges that confirm specific,
+          checkable claims about an account (e.g. "this is a real,
+          uniquely identified person"). Badges are governed as follows:
+        </p>
+        <ul className="list-disc pl-5 mt-3 space-y-2">
+          <li>
+            <strong>A badge is not a guarantee of current accuracy.</strong>{" "}
+            A badge means Tronites confirmed the stated claim at the time
+            of verification. Circumstances can change. Tronites is not
+            liable for actions taken in reliance on a badge.
+          </li>
+          <li>
+            <strong>Misrepresentation voids the badge.</strong>{" "}
+            Submitting false, stolen, or borrowed identity documents to
+            obtain a badge is a material breach of these Terms and may
+            result in permanent account termination and referral to
+            relevant authorities.
+          </li>
+          <li>
+            <strong>Badges are revocable.</strong>{" "}
+            Tronites may revoke any badge at any time — for example, if
+            evidence of fraud is found, if the underlying claim lapses
+            (e.g. a business deregisters), or following a serious
+            violation of these Terms.
+          </li>
+          <li>
+            <strong>Staff badge.</strong>{" "}
+            The Tronites Staff badge is granted only to active Tronites
+            employees and is revoked upon departure. Any account
+            impersonating Tronites staff will be permanently banned.
+          </li>
+          <li>
+            <strong>KYC data.</strong>{" "}
+            By applying for an Individual badge you agree to Tronites'
+            Privacy Policy §&nbsp;Identity Verification, including the use
+            of Dojah Technologies Ltd as a sub-processor. Consent is
+            required before any identity data is collected.
+          </li>
+        </ul>
+      </Section>
+
+      <Section title="14. Contact us">
         <p>
           Questions about these Terms can be sent to{" "}
           <a

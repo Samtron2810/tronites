@@ -5,6 +5,8 @@ import { useAuth } from "../context/useAuth";
 import { FiAward, FiClock, FiCheck, FiX } from "react-icons/fi";
 import { VERIFICATION_META } from "../constants/verification";
 import VerifiedBadge from "./VerifiedBadge";
+import KycConsentModal from "./KycConsentModal";
+import DojahKycWidget from "./DojahKycWidget";
 
 const APPLICABLE_TYPES = ["individual", "business", "government", "creator"];
 
@@ -24,6 +26,11 @@ const VerificationSection = () => {
   const [entityName, setEntityName] = useState("");
   const [statement, setStatement] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  // KYC widget state (Individual badge only)
+  const [pendingKycRequest, setPendingKycRequest] = useState(null); // the submitted request doc
+  const [showConsent, setShowConsent] = useState(false);
+  const [showWidget, setShowWidget] = useState(false);
 
   const heldTypes = new Set((user?.verifications || []).map((v) => v.type));
   const requiresEntity = ["business", "government"].includes(type);
@@ -63,7 +70,7 @@ const VerificationSection = () => {
     }
     setSubmitting(true);
     try {
-      await api.post("/verification-requests", {
+      const res = await api.post("/verification-requests", {
         type,
         entityName: entityName.trim(),
         statement: statement.trim(),
@@ -72,12 +79,46 @@ const VerificationSection = () => {
       setApplying(false);
       setStatement("");
       setEntityName("");
-      loadRequests();
+
+      // Individual badge → launch KYC widget flow right away.
+      if (type === "individual") {
+        setPendingKycRequest(res.data.request);
+        setShowConsent(true);
+      } else {
+        loadRequests();
+      }
     } catch (e) {
       toast.error(e.response?.data?.message || "Couldn't submit application.");
     } finally {
       setSubmitting(false);
     }
+  };
+
+  // Called when the user ticks consent and clicks "Continue".
+  // Records consent server-side (increments KYC attempt counter) BEFORE
+  // the widget launches — consent must be recorded even if widget closes.
+  const handleConsent = async () => {
+    await api.post("/verification-requests/kyc/initiate", {
+      requestId: pendingKycRequest._id,
+    });
+    setShowConsent(false);
+    setShowWidget(true);
+  };
+
+  const handleKycDone = (result) => {
+    setShowWidget(false);
+    setPendingKycRequest(null);
+    loadRequests();
+    if (!result.success && !result.manualReview) {
+      toast.error("Verification failed. Check your details and try again.");
+    }
+  };
+
+  const handleKycClose = () => {
+    setShowWidget(false);
+    setPendingKycRequest(null);
+    loadRequests();
+    toast("Verification cancelled.", { icon: "ℹ️" });
   };
 
   return (
@@ -232,6 +273,31 @@ const VerificationSection = () => {
             >
               {submitting ? "Submitting..." : "Submit application"}
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* KYC modals — Individual badge only */}
+      {showConsent && pendingKycRequest && (
+        <KycConsentModal
+          onConsent={handleConsent}
+          onCancel={() => {
+            setShowConsent(false);
+            setPendingKycRequest(null);
+            loadRequests();
+          }}
+        />
+      )}
+
+      {showWidget && pendingKycRequest && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 px-4">
+          <div className="bg-card rounded-2xl shadow-xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
+            <DojahKycWidget
+              verificationRequest={pendingKycRequest}
+              user={user}
+              onDone={handleKycDone}
+              onClose={handleKycClose}
+            />
           </div>
         </div>
       )}
