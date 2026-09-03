@@ -27,21 +27,20 @@ const ROLE_STYLES = {
   admin: "bg-red-50 text-red-600",
 };
 
-const RoleRow = ({
+// The ⋯ account-actions menu. Extracted from RoleRow because the tools
+// cluster renders twice — once in the md+ row, once in the small-screen
+// expanded block — and each mount needs its OWN open state and
+// outside-click ref; a shared one would let the display-hidden twin steal
+// the ref and break outside-click dismissal for the visible menu.
+const AccountActionsMenu = ({
   target,
-  currentUserId,
+  canRestrict,
+  isSuspended,
   viewerIsAdmin,
-  selected,
-  onToggleSelect,
-  onRequestRoleChange,
   onRequestRestriction,
-  onRequestPermissions,
   onRequestGrantVerification,
   onRequestRevokeVerification,
 }) => {
-  const isSelf = target._id === currentUserId;
-  const isSuspended =
-    !!target.suspendedUntil && new Date(target.suspendedUntil) > new Date();
   const menuRef = useRef(null);
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -57,6 +56,116 @@ const RoleRow = ({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [menuOpen]);
 
+  return (
+    <div className="relative" ref={menuRef}>
+      <button
+        onClick={() => setMenuOpen((o) => !o)}
+        className="p-1.5 rounded-lg text-ink-muted hover:text-ink hover:bg-surface transition"
+        title="Account actions"
+        aria-label="Account actions"
+      >
+        <FiMoreVertical size={15} />
+      </button>
+
+      {menuOpen && (
+        <div className="absolute right-0 mt-2 w-52 bg-card rounded-lg shadow-lg border border-stroke z-40 py-1">
+          {/* Phase 1 — verification badges (admin only). Grant is always
+              offered; per-badge revoke only shows for types the user
+              actually holds. */}
+          {viewerIsAdmin && (
+            <>
+              <button
+                onClick={() => {
+                  setMenuOpen(false);
+                  onRequestGrantVerification(target);
+                }}
+                className="w-full flex items-center gap-2 px-4 py-2.5 text-base text-ink-sub hover:bg-surface transition"
+              >
+                <FiAward size={14} className="shrink-0" />
+                <span className="font-medium">Grant badge…</span>
+              </button>
+              {(target.verifications || [])
+                .filter((v) => v.type !== "staff")
+                .map((v) => (
+                  <button
+                    key={v.type}
+                    onClick={() => {
+                      setMenuOpen(false);
+                      onRequestRevokeVerification(target, v.type);
+                    }}
+                    className="w-full flex items-center gap-2 px-4 py-2.5 text-base text-red-600 hover:bg-red-50 transition"
+                  >
+                    <span className="font-medium">
+                      Revoke {v.type} badge…
+                    </span>
+                  </button>
+                ))}
+              {canRestrict && (
+                <div className="my-1 border-t border-stroke" />
+              )}
+            </>
+          )}
+          {canRestrict &&
+            (target.banned ? (
+              <button
+                onClick={() => {
+                  setMenuOpen(false);
+                  onRequestRestriction(target, "unrestrict");
+                }}
+                className="w-full flex items-center gap-2 px-4 py-2.5 text-base text-primary-700 hover:bg-surface transition"
+              >
+                <span className="font-medium">Restore access</span>
+              </button>
+            ) : (
+              <>
+                <button
+                  onClick={() => {
+                    setMenuOpen(false);
+                    onRequestRestriction(target, "suspend");
+                  }}
+                  className="w-full flex items-center gap-2 px-4 py-2.5 text-base text-ink-sub hover:bg-surface transition"
+                >
+                  <span className="font-medium">
+                    {isSuspended ? "Adjust suspension…" : "Suspend…"}
+                  </span>
+                </button>
+                {viewerIsAdmin && (
+                  <button
+                    onClick={() => {
+                      setMenuOpen(false);
+                      onRequestRestriction(target, "ban");
+                    }}
+                    className="w-full flex items-center gap-2 px-4 py-2.5 text-base text-red-600 hover:bg-red-50 transition"
+                  >
+                    <span className="font-medium">Ban permanently…</span>
+                  </button>
+                )}
+              </>
+            ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+const RoleRow = ({
+  target,
+  currentUserId,
+  viewerIsAdmin,
+  selected,
+  expanded,
+  onToggleExpand,
+  onToggleSelect,
+  onRequestRoleChange,
+  onRequestRestriction,
+  onRequestPermissions,
+  onRequestGrantVerification,
+  onRequestRevokeVerification,
+}) => {
+  const isSelf = target._id === currentUserId;
+  const isSuspended =
+    !!target.suspendedUntil && new Date(target.suspendedUntil) > new Date();
+
   // Restriction targets: never yourself, never admins — mirrors the
   // backend guards so the menu simply doesn't offer impossible actions.
   const canRestrict = !isSelf && target.role !== "admin";
@@ -67,8 +176,94 @@ const RoleRow = ({
     onRequestRoleChange(target, newRole);
   };
 
+  // Role chip — visible on the collapsed small-screen row AND leading the
+  // md+ tools row, so it lives outside the cluster below.
+  const roleTag = (
+    <span
+      className={`text-sm font-semibold px-2 py-0.5 rounded-full ${ROLE_STYLES[target.role]}`}
+    >
+      {target.role}
+    </span>
+  );
+
+  // Status badges + role-change select + management controls. Rendered in
+  // the md+ row and (small screens only) inside the expanded block below
+  // the identity line. Both mounts exist at once but only one is ever
+  // visible per breakpoint; the ⋯ menu carries its own state via
+  // AccountActionsMenu so the hidden twin can't steal its ref.
+  const toolsCluster = (
+    <>
+      {target.banned && (
+        <span
+          className="text-sm font-semibold px-2 py-0.5 rounded-full bg-red-50 text-red-600"
+          title={target.restrictionReason || undefined}
+        >
+          banned
+        </span>
+      )}
+      {!target.banned && isSuspended && (
+        <span
+          className="text-sm font-semibold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700"
+          title={
+            `${target.restrictionReason || "No reason recorded"} — ends ` +
+            new Date(target.suspendedUntil).toLocaleString()
+          }
+        >
+          until {new Date(target.suspendedUntil).toLocaleDateString()}
+        </span>
+      )}
+      {/* Phase 4 — strike count. Count only comes through the admin
+          DTO; individual reasons stay between mods and the audit log. */}
+      {target.strikesCount > 0 && (
+        <span
+          className="text-sm font-semibold px-2 py-0.5 rounded-full bg-orange-50 text-orange-700"
+          title={`${target.strikesCount} formal warning${target.strikesCount === 1 ? "" : "s"} on record`}
+        >
+          {target.strikesCount} strike{target.strikesCount === 1 ? "" : "s"}
+        </span>
+      )}
+      <select
+        value={target.role}
+        onChange={handleChange}
+        className="text-sm border border-stroke rounded-lg px-2 py-1.5 text-ink bg-card outline-none focus:ring-2 focus:ring-primary-200 disabled:opacity-50"
+      >
+        <option value="user">user</option>
+        <option value="moderator">moderator</option>
+        <option value="admin">admin</option>
+      </select>
+
+      {/* Phase 5 — per-moderator capability editor (admin only). */}
+      {viewerIsAdmin && target.role === "moderator" && (
+        <button
+          onClick={() => onRequestPermissions(target)}
+          className="p-1.5 rounded-lg text-ink-muted hover:text-primary-600 hover:bg-primary-50 transition"
+          title={`Permissions: ${
+            target.permissions?.length
+              ? target.permissions.join(", ")
+              : "default set"
+          }`}
+          aria-label="Edit permissions"
+        >
+          <FiShield size={15} />
+        </button>
+      )}
+
+      {(canRestrict || viewerIsAdmin) && (
+        <AccountActionsMenu
+          target={target}
+          canRestrict={canRestrict}
+          isSuspended={isSuspended}
+          viewerIsAdmin={viewerIsAdmin}
+          onRequestRestriction={onRequestRestriction}
+          onRequestGrantVerification={onRequestGrantVerification}
+          onRequestRevokeVerification={onRequestRevokeVerification}
+        />
+      )}
+    </>
+  );
+
   return (
-    <div className="bg-card border border-stroke rounded-2xl p-4 flex items-center justify-between gap-4">
+    <div className="bg-card border border-stroke rounded-2xl p-4 flex flex-wrap items-center justify-between gap-4">
       <div className="flex items-center gap-3 min-w-0">
         {/* Phase 6 — bulk-selection checkbox. Hidden for self/admin rows
             since the bulk endpoints can never target those anyway. */}
@@ -100,158 +295,45 @@ const RoleRow = ({
         </div>
       </div>
 
-      <div className="flex items-center gap-2 shrink-0">
-        {target.banned && (
-          <span
-            className="text-sm font-semibold px-2 py-0.5 rounded-full bg-red-50 text-red-600"
-            title={target.restrictionReason || undefined}
-          >
-            banned
-          </span>
-        )}
-        {!target.banned && isSuspended && (
-          <span
-            className="text-sm font-semibold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700"
-            title={
-              `${target.restrictionReason || "No reason recorded"} — ends ` +
-              new Date(target.suspendedUntil).toLocaleString()
-            }
-          >
-            until {new Date(target.suspendedUntil).toLocaleDateString()}
-          </span>
-        )}
-        {/* Phase 4 — strike count. Count only comes through the admin
-            DTO; individual reasons stay between mods and the audit log. */}
-        {target.strikesCount > 0 && (
-          <span
-            className="text-sm font-semibold px-2 py-0.5 rounded-full bg-orange-50 text-orange-700"
-            title={`${target.strikesCount} formal warning${target.strikesCount === 1 ? "" : "s"} on record`}
-          >
-            {target.strikesCount} strike{target.strikesCount === 1 ? "" : "s"}
-          </span>
-        )}
-        <span
-          className={`text-sm font-semibold px-2 py-0.5 rounded-full ${ROLE_STYLES[target.role]}`}
+      {/* Small screens — role tag + expand/collapse chevron only. The
+          arrow toggles this row's expanded block below; the parent owns
+          expandedUserId, so opening another row closes this one. */}
+      <div className="md:hidden flex items-center gap-2 shrink-0">
+        {roleTag}
+        <button
+          onClick={onToggleExpand}
+          aria-expanded={expanded}
+          title={expanded ? "Collapse actions" : "Expand actions"}
+          aria-label={
+            expanded
+              ? `Hide actions for ${target.name}`
+              : `Show actions for ${target.name}`
+          }
+          className="p-1.5 rounded-lg text-ink-muted hover:text-ink hover:bg-surface transition"
         >
-          {target.role}
-        </span>
-        <select
-          value={target.role}
-          onChange={handleChange}
-          className="text-sm border border-stroke rounded-lg px-2 py-1.5 text-ink bg-card outline-none focus:ring-2 focus:ring-primary-200 disabled:opacity-50"
-        >
-          <option value="user">user</option>
-          <option value="moderator">moderator</option>
-          <option value="admin">admin</option>
-        </select>
-
-        {/* Phase 5 — per-moderator capability editor (admin only). */}
-        {viewerIsAdmin && target.role === "moderator" && (
-          <button
-            onClick={() => onRequestPermissions(target)}
-            className="p-1.5 rounded-lg text-ink-muted hover:text-primary-600 hover:bg-primary-50 transition"
-            title={`Permissions: ${
-              target.permissions?.length
-                ? target.permissions.join(", ")
-                : "default set"
-            }`}
-            aria-label="Edit permissions"
-          >
-            <FiShield size={15} />
-          </button>
-        )}
-
-        {(canRestrict || viewerIsAdmin) && (
-          <div className="relative" ref={menuRef}>
-            <button
-              onClick={() => setMenuOpen((o) => !o)}
-              className="p-1.5 rounded-lg text-ink-muted hover:text-ink hover:bg-surface transition"
-              title="Account actions"
-              aria-label="Account actions"
-            >
-              <FiMoreVertical size={15} />
-            </button>
-
-            {menuOpen && (
-              <div className="absolute right-0 mt-2 w-52 bg-card rounded-lg shadow-lg border border-stroke z-40 py-1">
-                {/* Phase 1 — verification badges (admin only). Grant is
-                    always offered; per-badge revoke only shows for
-                    types the user actually holds. */}
-                {viewerIsAdmin && (
-                  <>
-                    <button
-                      onClick={() => {
-                        setMenuOpen(false);
-                        onRequestGrantVerification(target);
-                      }}
-                      className="w-full flex items-center gap-2 px-4 py-2.5 text-base text-ink-sub hover:bg-surface transition"
-                    >
-                      <FiAward size={14} className="shrink-0" />
-                      <span className="font-medium">Grant badge…</span>
-                    </button>
-                    {(target.verifications || [])
-                      .filter((v) => v.type !== "staff")
-                      .map((v) => (
-                        <button
-                          key={v.type}
-                          onClick={() => {
-                            setMenuOpen(false);
-                            onRequestRevokeVerification(target, v.type);
-                          }}
-                          className="w-full flex items-center gap-2 px-4 py-2.5 text-base text-red-600 hover:bg-red-50 transition"
-                        >
-                          <span className="font-medium">
-                            Revoke {v.type} badge…
-                          </span>
-                        </button>
-                      ))}
-                    {canRestrict && (
-                      <div className="my-1 border-t border-stroke" />
-                    )}
-                  </>
-                )}
-                {canRestrict &&
-                  (target.banned ? (
-                    <button
-                      onClick={() => {
-                        setMenuOpen(false);
-                        onRequestRestriction(target, "unrestrict");
-                      }}
-                      className="w-full flex items-center gap-2 px-4 py-2.5 text-base text-primary-700 hover:bg-surface transition"
-                    >
-                      <span className="font-medium">Restore access</span>
-                    </button>
-                  ) : (
-                    <>
-                      <button
-                        onClick={() => {
-                          setMenuOpen(false);
-                          onRequestRestriction(target, "suspend");
-                        }}
-                        className="w-full flex items-center gap-2 px-4 py-2.5 text-base text-ink-sub hover:bg-surface transition"
-                      >
-                        <span className="font-medium">
-                          {isSuspended ? "Adjust suspension…" : "Suspend…"}
-                        </span>
-                      </button>
-                      {viewerIsAdmin && (
-                        <button
-                          onClick={() => {
-                            setMenuOpen(false);
-                            onRequestRestriction(target, "ban");
-                          }}
-                          className="w-full flex items-center gap-2 px-4 py-2.5 text-base text-red-600 hover:bg-red-50 transition"
-                        >
-                          <span className="font-medium">Ban permanently…</span>
-                        </button>
-                      )}
-                    </>
-                  ))}
-              </div>
-            )}
-          </div>
-        )}
+          <FiChevronDown
+            size={15}
+            className={`shrink-0 transition-transform ${expanded ? "rotate-180" : ""}`}
+          />
+        </button>
       </div>
+
+      {/* md+ — the full single-row layout, unchanged. */}
+      <div className="hidden md:flex items-center gap-2 shrink-0">
+        {roleTag}
+        {toolsCluster}
+      </div>
+
+      {/* Small screens — the tools the collapsed row hides (status badges,
+          role change, permissions, account actions), as a full-width line
+          under the identity, right-aligned to mirror the desktop row. Only
+          one row is open at a time: the parent owns expandedUserId, so
+          opening another row collapses this one. */}
+      {expanded && (
+        <div className="md:hidden basis-full flex flex-wrap items-center justify-end gap-2">
+          {toolsCluster}
+        </div>
+      )}
     </div>
   );
 };
@@ -279,6 +361,13 @@ const AdminUsers = () => {
   const [selectedIds, setSelectedIds] = useState(() => new Set());
   const [pendingBulk, setPendingBulk] = useState(null); // { mode }
   const [sortBy, setSortBy] = useState("");
+  // Which user row is expanded on small screens (its _id). An accordion —
+  // opening one row collapses the previous one, clicking the same arrow
+  // toggles it closed. Visual only; the arrow itself is hidden at md+
+  // where the full row is always shown.
+  const [expandedUserId, setExpandedUserId] = useState(null);
+  const toggleExpand = (id) =>
+    setExpandedUserId((prev) => (prev === id ? null : id));
 
   // Role filter (All/Users/Moderators/Admins) — collapsed from the old
   // four-button tab group into one dropdown so it can sit beside the
@@ -781,6 +870,8 @@ const AdminUsers = () => {
               }
               selected={selectedIds.has(u._id)}
               onToggleSelect={() => toggleSelected(u._id)}
+              expanded={expandedUserId === u._id}
+              onToggleExpand={() => toggleExpand(u._id)}
             />
           ))}
         </div>
