@@ -6,6 +6,7 @@
 // when the space in the chosen direction is tight.
 import defaultAvatar from "../assets/defaultAvatar";
 import { resizedImageUrl, IMAGE_SIZES } from "../utils/cloudinaryImage";
+import VerifiedBadge from "./VerifiedBadge";
 
 const MentionSuggestions = ({
   suggestions,
@@ -42,7 +43,10 @@ const MentionSuggestions = ({
             className="w-6 h-6 rounded-full object-cover shrink-0"
           />
           <div className="min-w-0">
-            <p className="text-sm font-semibold text-ink truncate">{u.name}</p>
+            <p className="text-sm font-semibold text-ink truncate flex items-center gap-1">
+              {u.name}
+              <VerifiedBadge verifications={u.verifications} size="sm" />
+            </p>
             <p className="text-sm text-ink-muted truncate">@{u.username}</p>
           </div>
         </button>

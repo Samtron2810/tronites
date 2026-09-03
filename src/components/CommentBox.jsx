@@ -11,6 +11,7 @@ import CommentOptionsMenu from "./CommentOptionsMenu";
 import TextWithLinks from "./TextWithLinks";
 import useMentionAutocomplete from "../hooks/useMentionAutocomplete";
 import MentionSuggestions from "./MentionSuggestions";
+import VerifiedBadge from "./VerifiedBadge";
 
 // Extracted from PostCard.jsx (was previously inline there) so the same
 // comment list/composer/reply implementation can mount in two places:
@@ -652,6 +653,7 @@ const CommentsPanel = ({
                 >
                   {c.user.name}
                 </Link>
+                <VerifiedBadge verifications={c.user.verifications} size="sm" />
                 {c.user.username && (
                   <span className="text-[11px] text-ink-muted">
                     @{c.user.username}
@@ -775,6 +777,7 @@ const CommentsPanel = ({
                           >
                             {r.user.name}
                           </Link>
+                          <VerifiedBadge verifications={r.user.verifications} size="sm" />
                           {r.user.username && (
                             <span className="text-[11px] text-ink-muted">
                               @{r.user.username}

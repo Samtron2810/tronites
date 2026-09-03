@@ -6,7 +6,9 @@ import api from "../services/api";
 import ConfirmRestrictionModal from "../components/ConfirmRestrictionModal";
 import ReportContextModal from "../components/ReportContextModal";
 import { useAuth } from "../context/useAuth";
-import { FiExternalLink, FiCheck, FiX, FiInbox, FiAlertTriangle, FiFileText } from "react-icons/fi";
+import { FiExternalLink, FiCheck, FiX, FiInbox, FiAlertTriangle, FiFileText, FiAward } from "react-icons/fi";
+import { VERIFICATION_META } from "../constants/verification";
+import VerifiedBadge from "../components/VerifiedBadge";
 
 const REASON_LABELS = {
   spam: "Spam",
@@ -351,6 +353,154 @@ const ReportCard = ({
 
 // 3.1 — Appeals queue card. Mirrors ReportCard's open/resolved shape but
 // the only decisions are grant (lift the restriction) or deny (leave it).
+const VERIFICATION_STATUS_TABS = [
+  { value: "pending", label: "Pending" },
+  { value: "approved", label: "Approved" },
+  { value: "denied", label: "Denied" },
+  { value: "all", label: "All" },
+];
+
+const VerificationRequestCard = ({ request, onResolve }) => {
+  const [resolving, setResolving] = useState(false);
+  const [note, setNote] = useState("");
+  const [showDecisionFor, setShowDecisionFor] = useState(null); // "approved" | "denied" | null
+
+  const person = request.user;
+  const meta = VERIFICATION_META[request.type];
+
+  const submit = async (decision) => {
+    if (resolving) return;
+    setResolving(true);
+    try {
+      await onResolve(request._id, decision, note.trim());
+      setShowDecisionFor(null);
+      setNote("");
+    } finally {
+      setResolving(false);
+    }
+  };
+
+  return (
+    <div className="rounded-2xl p-4 border bg-card border-stroke">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span
+              className="text-sm font-semibold px-2 py-0.5 rounded-full"
+              style={{ backgroundColor: `${meta?.color}1a`, color: meta?.color }}
+            >
+              {meta?.label || request.type}
+            </span>
+            {request.status !== "pending" && (
+              <span
+                className={`text-sm font-semibold px-2 py-0.5 rounded-full ${
+                  request.status === "approved"
+                    ? "bg-green-50 text-green-600"
+                    : "bg-gray-100 text-gray-500"
+                }`}
+              >
+                {request.status}
+              </span>
+            )}
+          </div>
+
+          <p className="text-base text-ink mt-2 flex items-center gap-1.5">
+            <span className="font-medium">{person?.name || "Unknown user"}</span>
+            {person?.verifications?.length > 0 && (
+              <VerifiedBadge verifications={person.verifications} size="sm" />
+            )}
+            {person?.username && (
+              <span className="text-ink-muted"> @{person.username}</span>
+            )}
+          </p>
+
+          {request.entityName && (
+            <p className="text-sm text-ink-muted mt-1 italic">
+              Claiming to represent: "{request.entityName}"
+            </p>
+          )}
+
+          <p className="text-base text-ink-muted mt-1.5 bg-surface rounded-lg px-3 py-2 whitespace-pre-wrap">
+            {request.statement}
+          </p>
+
+          {request.decisionNote && (
+            <p className="text-sm text-ink-muted mt-1.5">
+              Decision note: {request.decisionNote}
+            </p>
+          )}
+
+          <p className="text-sm text-ink-muted mt-2">
+            {new Date(request.createdAt).toLocaleString()}
+          </p>
+        </div>
+
+        {person?._id && (
+          <Link
+            to={`/profile/${person._id}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="shrink-0 flex items-center gap-1 text-sm font-medium text-primary-600 hover:text-primary-800 px-2.5 py-1.5 rounded-lg border border-stroke hover:bg-primary-50 transition"
+          >
+            Profile <FiExternalLink size={12} />
+          </Link>
+        )}
+      </div>
+
+      {request.status === "pending" && (
+        <div className="mt-3 pt-3 border-t border-stroke">
+          {showDecisionFor ? (
+            <div className="space-y-2">
+              <textarea
+                value={note}
+                onChange={(e) => setNote(e.target.value.slice(0, 500))}
+                placeholder="Optional note (shown to the applicant if denied)"
+                rows={2}
+                className="w-full rounded-xl border border-stroke px-3 py-2 text-base text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-primary-300 resize-none"
+              />
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setShowDecisionFor(null)}
+                  disabled={resolving}
+                  className="px-3 py-1.5 rounded-lg text-sm font-medium text-ink-sub border border-stroke hover:bg-surface transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => submit(showDecisionFor)}
+                  disabled={resolving}
+                  className={`px-3 py-1.5 rounded-lg text-sm font-semibold text-white transition disabled:opacity-60 ${
+                    showDecisionFor === "approved"
+                      ? "bg-green-600 hover:bg-green-700"
+                      : "bg-gray-400 hover:bg-gray-500"
+                  }`}
+                >
+                  {resolving ? "..." : `Confirm ${showDecisionFor === "approved" ? "approve" : "deny"}`}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex gap-2">
+              <button
+                onClick={() => setShowDecisionFor("approved")}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold text-white bg-green-600 hover:bg-green-700 transition"
+              >
+                <FiCheck size={13} /> Approve — grant badge
+              </button>
+              <button
+                onClick={() => setShowDecisionFor("denied")}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold text-ink-sub border border-stroke hover:bg-surface transition"
+              >
+                <FiX size={13} /> Deny
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
 const APPEAL_STATUS_TABS = [
   { value: "open", label: "Open" },
   { value: "granted", label: "Granted" },
@@ -499,7 +649,7 @@ const AppealCard = ({ appeal, onResolve }) => {
 
 const ModerationQueue = () => {
   const { user } = useAuth();
-  const [queueTab, setQueueTab] = useState("reports"); // "reports" | "appeals"
+  const [queueTab, setQueueTab] = useState("reports"); // "reports" | "appeals" | "verification"
   const [status, setStatus] = useState("open");
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -511,6 +661,12 @@ const ModerationQueue = () => {
   const [appealsLoading, setAppealsLoading] = useState(true);
   const [appealPage, setAppealPage] = useState(1);
   const [appealTotalPages, setAppealTotalPages] = useState(1);
+
+  const [verificationStatus, setVerificationStatus] = useState("pending");
+  const [verificationRequests, setVerificationRequests] = useState([]);
+  const [verificationsLoading, setVerificationsLoading] = useState(true);
+  const [verificationPage, setVerificationPage] = useState(1);
+  const [verificationTotalPages, setVerificationTotalPages] = useState(1);
   // Report currently open in the in-queue context/preview modal.
   const [contextReport, setContextReport] = useState(null);
   // { report, mode } — user-report restriction shortcut modal (Phase 2).
@@ -561,6 +717,28 @@ const ModerationQueue = () => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch-on-mount/filter-change
     if (isModerator && queueTab === "appeals") fetchAppeals();
   }, [isModerator, queueTab, fetchAppeals]);
+
+  const fetchVerificationRequests = useCallback(async () => {
+    setVerificationsLoading(true);
+    try {
+      const res = await api.getCached("/verification-requests", {
+        params: { status: verificationStatus, page: verificationPage, limit: 25 },
+        ttlMs: Infinity,
+      });
+      setVerificationRequests(res.data.requests);
+      setVerificationTotalPages(res.data.totalPages);
+    } catch (e) {
+      console.error(e);
+      toast.error("Couldn't load verification requests.");
+    } finally {
+      setVerificationsLoading(false);
+    }
+  }, [verificationStatus, verificationPage]);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch-on-mount/filter-change
+    if (isModerator && queueTab === "verification") fetchVerificationRequests();
+  }, [isModerator, queueTab, fetchVerificationRequests]);
 
   // Guard client-side too — the endpoints already 403 non-moderators,
   // this just avoids rendering a queue UI that would only ever error.
@@ -664,6 +842,24 @@ const ModerationQueue = () => {
     }
   };
 
+  const handleResolveVerification = async (requestId, decision, note) => {
+    try {
+      await api.put(`/verification-requests/${requestId}/resolve`, { decision, note });
+      toast.success(
+        decision === "approved"
+          ? "Approved — badge granted."
+          : "Application denied.",
+      );
+      setVerificationRequests((prev) =>
+        prev.filter((r) => r._id !== requestId),
+      );
+      api.invalidateMany(["/verification-requests", "/admin/users"]);
+    } catch (e) {
+      console.error(e);
+      toast.error(e.response?.data?.message || "Couldn't resolve request.");
+    }
+  };
+
   return (
     <MainLayout>
       {contextReport && (
@@ -693,7 +889,9 @@ const ModerationQueue = () => {
       <p className="text-base text-ink-muted mb-5">
         {queueTab === "reports"
           ? "Reports from the community, newest last."
-          : "Appeals from restricted accounts, oldest first."}
+          : queueTab === "appeals"
+          ? "Appeals from restricted accounts, oldest first."
+          : "Verification badge applications, oldest first."}
       </p>
 
       <div className="flex gap-1 mb-4 bg-card border border-stroke rounded-xl p-1 w-fit">
@@ -716,6 +914,16 @@ const ModerationQueue = () => {
           }`}
         >
           <FiFileText size={14} /> Appeals
+        </button>
+        <button
+          onClick={() => setQueueTab("verification")}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-base font-medium transition ${
+            queueTab === "verification"
+              ? "bg-primary-100 text-primary-700"
+              : "text-ink-muted hover:text-ink"
+          }`}
+        >
+          <FiAward size={14} /> Verification
         </button>
       </div>
 
@@ -840,6 +1048,75 @@ const ModerationQueue = () => {
               <button
                 onClick={() => setAppealPage((p) => Math.min(appealTotalPages, p + 1))}
                 disabled={appealPage >= appealTotalPages}
+                className="px-3 py-1.5 rounded-lg text-base border border-stroke disabled:opacity-40 hover:bg-surface transition"
+              >
+                Next
+              </button>
+            </div>
+          )}
+        </>
+      )}
+
+      {queueTab === "verification" && (
+        <>
+          {/* Status filter */}
+          <div className="flex gap-1 mb-5 bg-card border border-stroke rounded-xl p-1 w-fit">
+            {VERIFICATION_STATUS_TABS.map((t) => (
+              <button
+                key={t.value}
+                onClick={() => {
+                  setVerificationStatus(t.value);
+                  setVerificationPage(1);
+                }}
+                className={`px-3 py-1.5 rounded-lg text-base font-medium transition ${
+                  verificationStatus === t.value
+                    ? "bg-primary-100 text-primary-700"
+                    : "text-ink-muted hover:text-ink"
+                }`}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+
+          {verificationsLoading ? (
+            <div className="space-y-3">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="h-28 rounded-2xl bg-surface animate-pulse" />
+              ))}
+            </div>
+          ) : verificationRequests.length === 0 ? (
+            <div className="flex flex-col items-center gap-2 py-16 text-ink-muted">
+              <FiAward size={32} />
+              <p className="text-base">No {verificationStatus} requests.</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {verificationRequests.map((r) => (
+                <VerificationRequestCard
+                  key={r._id}
+                  request={r}
+                  onResolve={handleResolveVerification}
+                />
+              ))}
+            </div>
+          )}
+
+          {verificationTotalPages > 1 && (
+            <div className="flex items-center justify-center gap-3 mt-6">
+              <button
+                onClick={() => setVerificationPage((p) => Math.max(1, p - 1))}
+                disabled={verificationPage <= 1}
+                className="px-3 py-1.5 rounded-lg text-base border border-stroke disabled:opacity-40 hover:bg-surface transition"
+              >
+                Previous
+              </button>
+              <span className="text-base text-ink-muted">
+                Page {verificationPage} of {verificationTotalPages}
+              </span>
+              <button
+                onClick={() => setVerificationPage((p) => Math.min(verificationTotalPages, p + 1))}
+                disabled={verificationPage >= verificationTotalPages}
                 className="px-3 py-1.5 rounded-lg text-base border border-stroke disabled:opacity-40 hover:bg-surface transition"
               >
                 Next

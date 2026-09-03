@@ -4,6 +4,7 @@ import toast from "react-hot-toast";
 import MainLayout from "../layouts/MainLayout";
 import UserCardSkeleton from "../components/UserCardSkeleton";
 import PostCard from "../components/PostCard";
+import VerifiedBadge from "../components/VerifiedBadge";
 import PostSkeleton from "../components/PostSkeleton";
 import CommentSearchResultCard from "../components/CommentSearchResultCard";
 import MessageSearchResultCard from "../components/MessageSearchResultCard";
@@ -860,8 +861,9 @@ const Explore = () => {
                         />
                       </div>
                       <div className="min-w-0">
-                        <p className="text-base font-semibold text-ink truncate">
+                        <p className="text-base font-semibold text-ink truncate flex items-center gap-1">
                           {user.name}
+                          <VerifiedBadge verifications={user.verifications} size="sm" />
                         </p>
                         {user.username && (
                           <p className="text-sm text-primary-600 truncate">
