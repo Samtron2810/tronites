@@ -15,12 +15,25 @@ import api from "../services/api";
 import { useRefetchOnFocus } from "../hooks/useRefetchOnFocus";
 import { useAuth } from "../context/useAuth";
 import { useSocket } from "../context/useSocket";
-import { FiSearch, FiHash, FiSliders, FiStar, FiChevronDown, FiCheck } from "react-icons/fi";
+import {
+  FiSearch,
+  FiHash,
+  FiSliders,
+  FiStar,
+  FiChevronDown,
+  FiCheck,
+} from "react-icons/fi";
 import { HiOutlineSparkles } from "react-icons/hi2";
 import defaultAvatar from "../assets/defaultAvatar";
 import { resizedImageUrl, IMAGE_SIZES } from "../utils/cloudinaryImage";
 
-const EMPTY_FILTERS = { from: "", startDate: "", endDate: "", hasMedia: null, minLikes: "" };
+const EMPTY_FILTERS = {
+  from: "",
+  startDate: "",
+  endDate: "",
+  hasMedia: null,
+  minLikes: "",
+};
 
 // The four searchable surfaces share one dropdown on the Explore header —
 // People is the default state — while Trending stays as its own tab button
@@ -202,10 +215,18 @@ const Explore = () => {
     ...(filters.minLikes ? { minLikes: filters.minLikes } : {}),
   });
 
-  const fetchPosts = async (query, afterCursor, isFirstPage) => {
+  // silent=true skips the skeleton — used by useRefetchOnFocus below so a
+  // cache-TTL revalidation / window-focus refetch doesn't blank an
+  // already-loaded list back to skeleton (same pattern as Home.jsx).
+  const fetchPosts = async (
+    query,
+    afterCursor,
+    isFirstPage,
+    { silent = false } = {},
+  ) => {
     try {
-      if (isFirstPage) setPostsLoading(true);
-      else setPostsIsLoadingMore(true);
+      if (isFirstPage && !silent) setPostsLoading(true);
+      else if (!isFirstPage) setPostsIsLoadingMore(true);
 
       const params = {
         q: query,
@@ -216,7 +237,11 @@ const Explore = () => {
           : {}),
       };
       const res = isFirstPage
-        ? await api.getCached("/posts/search", { params, ttlMs: 60_000, revalidate: true })
+        ? await api.getCached("/posts/search", {
+            params,
+            ttlMs: 60_000,
+            revalidate: true,
+          })
         : await api.get("/posts/search", { params });
 
       if (isFirstPage) setPosts(res.data.posts);
@@ -228,8 +253,8 @@ const Explore = () => {
       console.error(e);
       if (!isFirstPage) toast.error("Couldn't load more posts. Try again.");
     } finally {
-      if (isFirstPage) setPostsLoading(false);
-      else setPostsIsLoadingMore(false);
+      if (isFirstPage && !silent) setPostsLoading(false);
+      else if (!isFirstPage) setPostsIsLoadingMore(false);
     }
   };
 
@@ -244,7 +269,10 @@ const Explore = () => {
           limit: 10,
           ...filterParams(),
           ...(afterCursor
-            ? { afterScore: afterCursor.afterScore, afterId: afterCursor.afterId }
+            ? {
+                afterScore: afterCursor.afterScore,
+                afterId: afterCursor.afterId,
+              }
             : {}),
         },
       });
@@ -293,15 +321,20 @@ const Explore = () => {
     }
   };
 
-  const fetchUsers = async (query, pageNum = 1) => {
+  // silent=true skips the skeleton — see fetchPosts above.
+  const fetchUsers = async (query, pageNum = 1, { silent = false } = {}) => {
     try {
-      if (pageNum === 1) setLoading(true);
-      else setIsLoadingMore(true);
+      if (pageNum === 1 && !silent) setLoading(true);
+      else if (pageNum !== 1) setIsLoadingMore(true);
 
       const params = { q: query, page: pageNum, limit: 10 };
       const res =
         pageNum === 1
-          ? await api.getCached("/users/search", { params, ttlMs: 60_000, revalidate: true })
+          ? await api.getCached("/users/search", {
+              params,
+              ttlMs: 60_000,
+              revalidate: true,
+            })
           : await api.get("/users/search", { params });
 
       if (pageNum === 1) setUsers(res.data.users);
@@ -313,15 +346,20 @@ const Explore = () => {
       console.error(e);
       if (pageNum > 1) toast.error("Couldn't load more users. Try again.");
     } finally {
-      if (pageNum === 1) setLoading(false);
-      else setIsLoadingMore(false);
+      if (pageNum === 1 && !silent) setLoading(false);
+      else if (pageNum !== 1) setIsLoadingMore(false);
     }
   };
 
-  const fetchTrending = async (afterCursor, isFirstPage) => {
+  // silent=true skips the skeleton — see fetchPosts above.
+  const fetchTrending = async (
+    afterCursor,
+    isFirstPage,
+    { silent = false } = {},
+  ) => {
     try {
-      if (isFirstPage) setTrendingLoading(true);
-      else setTrendingIsLoadingMore(true);
+      if (isFirstPage && !silent) setTrendingLoading(true);
+      else if (!isFirstPage) setTrendingIsLoadingMore(true);
 
       const params = {
         limit: 10,
@@ -338,14 +376,21 @@ const Explore = () => {
           : {}),
       };
       const res = isFirstPage
-        ? await api.getCached("/posts/trending", { params, ttlMs: 60_000, revalidate: true })
+        ? await api.getCached("/posts/trending", {
+            params,
+            ttlMs: 60_000,
+            revalidate: true,
+          })
         : await api.get("/posts/trending", { params });
 
       if (isFirstPage) setTrendingPosts(res.data.posts);
       else {
         setTrendingPosts((prev) => {
           const existingIds = new Set(prev.map((p) => p._id));
-          return [...prev, ...res.data.posts.filter((p) => !existingIds.has(p._id))];
+          return [
+            ...prev,
+            ...res.data.posts.filter((p) => !existingIds.has(p._id)),
+          ];
         });
       }
       setTrendingHasMore(res.data.hasMore);
@@ -355,8 +400,8 @@ const Explore = () => {
       console.error(e);
       if (!isFirstPage) toast.error("Couldn't load more posts. Try again.");
     } finally {
-      if (isFirstPage) setTrendingLoading(false);
-      else setTrendingIsLoadingMore(false);
+      if (isFirstPage && !silent) setTrendingLoading(false);
+      else if (!isFirstPage) setTrendingIsLoadingMore(false);
     }
   };
 
@@ -425,7 +470,11 @@ const Explore = () => {
     // A query-less search is still valid on posts/comments/messages
     // when filters are active ("just @sam's posts with media") - only
     // users search requires an actual query string.
-    if (trimmed.length === 0 && activeFilterCount === 0 && activeTab !== "users") {
+    if (
+      trimmed.length === 0 &&
+      activeFilterCount === 0 &&
+      activeTab !== "users"
+    ) {
       return;
     }
     const delay = trimmed.length === 0 ? 0 : 400;
@@ -598,9 +647,11 @@ const Explore = () => {
   // and refreshes behind the scenes; only wired for the three cached
   // tabs (users/posts/trending).
   useRefetchOnFocus(() => {
-    if (activeTab === "users") fetchUsers(search.trim(), 1);
-    else if (activeTab === "posts") fetchPosts(search.trim(), null, true);
-    else if (activeTab === "trending") fetchTrending(null, true);
+    if (activeTab === "users") fetchUsers(search.trim(), 1, { silent: true });
+    else if (activeTab === "posts")
+      fetchPosts(search.trim(), null, true, { silent: true });
+    else if (activeTab === "trending")
+      fetchTrending(null, true, { silent: true });
   });
 
   const handleFollow = async (userId) => {
@@ -705,9 +756,14 @@ const Explore = () => {
     }
   };
 
-  const showFilterSurface = ["posts", "comments", "messages"].includes(activeTab);
+  const showFilterSurface = ["posts", "comments", "messages"].includes(
+    activeTab,
+  );
   const showHistoryPanel =
-    showFilterSurface && searchFocused && !search.trim() && activeFilterCount === 0;
+    showFilterSurface &&
+    searchFocused &&
+    !search.trim() &&
+    activeFilterCount === 0;
 
   return (
     <MainLayout>
@@ -795,7 +851,9 @@ const Explore = () => {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 onFocus={() => setSearchFocused(true)}
-                onBlur={() => window.setTimeout(() => setSearchFocused(false), 150)}
+                onBlur={() =>
+                  window.setTimeout(() => setSearchFocused(false), 150)
+                }
                 className="flex-1 text-base text-ink placeholder:text-ink-muted outline-none bg-transparent"
               />
               {showFilterSurface && (
@@ -816,15 +874,16 @@ const Explore = () => {
                   )}
                 </button>
               )}
-              {showFilterSurface && (search.trim() || activeFilterCount > 0) && (
-                <button
-                  onClick={handleSaveCurrentSearch}
-                  className="shrink-0 p-1.5 rounded-lg text-ink-muted hover:text-primary-600 transition"
-                  aria-label="Save this search"
-                >
-                  <FiStar size={16} />
-                </button>
-              )}
+              {showFilterSurface &&
+                (search.trim() || activeFilterCount > 0) && (
+                  <button
+                    onClick={handleSaveCurrentSearch}
+                    className="shrink-0 p-1.5 rounded-lg text-ink-muted hover:text-primary-600 transition"
+                    aria-label="Save this search"
+                  >
+                    <FiStar size={16} />
+                  </button>
+                )}
             </div>
 
             {showHistoryPanel && (
@@ -905,7 +964,12 @@ const Explore = () => {
                     >
                       <div className="relative shrink-0">
                         <img
-                          src={resizedImageUrl(user.profilePic, IMAGE_SIZES.avatarSmall) || defaultAvatar}
+                          src={
+                            resizedImageUrl(
+                              user.profilePic,
+                              IMAGE_SIZES.avatarSmall,
+                            ) || defaultAvatar
+                          }
                           alt={user.name}
                           className="w-11 h-11 rounded-full object-cover ring-2 ring-primary-100"
                         />
@@ -917,7 +981,10 @@ const Explore = () => {
                       <div className="min-w-0">
                         <p className="text-base font-semibold text-ink truncate flex items-center gap-1">
                           {user.name}
-                          <VerifiedBadge verifications={user.verifications} size="sm" />
+                          <VerifiedBadge
+                            verifications={user.verifications}
+                            size="sm"
+                          />
                         </p>
                         {user.username && (
                           <p className="text-sm text-primary-600 truncate">
@@ -978,14 +1045,17 @@ const Explore = () => {
               (search.trim().length >= 2 || activeFilterCount > 0) &&
               posts.length === 0 && (
                 <p className="text-base text-ink-muted text-center py-10">
-                  No posts found{search.trim() ? ` for "${search}"` : " for these filters"}
+                  No posts found
+                  {search.trim() ? ` for "${search}"` : " for these filters"}
                 </p>
               )}
-            {!postsLoading && search.trim().length === 0 && activeFilterCount === 0 && (
-              <p className="text-base text-ink-muted text-center py-10">
-                Search for posts by caption or #hashtag.
-              </p>
-            )}
+            {!postsLoading &&
+              search.trim().length === 0 &&
+              activeFilterCount === 0 && (
+                <p className="text-base text-ink-muted text-center py-10">
+                  Search for posts by caption or #hashtag.
+                </p>
+              )}
 
             {postsLoading && (
               <>
@@ -1050,14 +1120,17 @@ const Explore = () => {
               (search.trim().length >= 2 || activeFilterCount > 0) &&
               comments.length === 0 && (
                 <p className="text-base text-ink-muted text-center py-10">
-                  No comments found{search.trim() ? ` for "${search}"` : " for these filters"}
+                  No comments found
+                  {search.trim() ? ` for "${search}"` : " for these filters"}
                 </p>
               )}
-            {!commentsLoading && search.trim().length === 0 && activeFilterCount === 0 && (
-              <p className="text-base text-ink-muted text-center py-10">
-                Search comments across public posts.
-              </p>
-            )}
+            {!commentsLoading &&
+              search.trim().length === 0 &&
+              activeFilterCount === 0 && (
+                <p className="text-base text-ink-muted text-center py-10">
+                  Search comments across public posts.
+                </p>
+              )}
 
             {commentsLoading && (
               <>
@@ -1094,14 +1167,17 @@ const Explore = () => {
               (search.trim().length >= 2 || activeFilterCount > 0) &&
               messages.length === 0 && (
                 <p className="text-base text-ink-muted text-center py-10">
-                  No messages found{search.trim() ? ` for "${search}"` : " for these filters"}
+                  No messages found
+                  {search.trim() ? ` for "${search}"` : " for these filters"}
                 </p>
               )}
-            {!messagesLoading && search.trim().length === 0 && activeFilterCount === 0 && (
-              <p className="text-base text-ink-muted text-center py-10">
-                Search your own conversations.
-              </p>
-            )}
+            {!messagesLoading &&
+              search.trim().length === 0 &&
+              activeFilterCount === 0 && (
+                <p className="text-base text-ink-muted text-center py-10">
+                  Search your own conversations.
+                </p>
+              )}
 
             {messagesLoading && (
               <>

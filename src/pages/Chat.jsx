@@ -157,9 +157,14 @@ const Chat = () => {
     };
   }, [selectedChat]);
 
-  const fetchConversations = async () => {
+  // fetchConversations — the `silent` flag controls whether this shows
+  // the skeleton or not, matching the pattern used in Home.jsx's
+  // fetchPosts. silent=true is used by useRefetchOnFocus so a cache-TTL
+  // revalidation or window-focus refetch doesn't blank an already-loaded
+  // conversation list back to ChatSkeleton.
+  const fetchConversations = async ({ silent = false } = {}) => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       const res = await api.getCached("/messages/conversations", {
         params: { page: 1, limit: 20 },
         ttlMs: 30_000,
@@ -191,7 +196,7 @@ const Chat = () => {
     } catch (e) {
       console.error(e);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
@@ -213,15 +218,19 @@ const Chat = () => {
     }
   };
 
-  const fetchRequests = async () => {
+  // silent=true skips the skeleton — see fetchConversations above.
+  const fetchRequests = async ({ silent = false } = {}) => {
     try {
-      setRequestsLoading(true);
-      const res = await api.getCached("/messages/requests", { ttlMs: 30_000, revalidate: true });
+      if (!silent) setRequestsLoading(true);
+      const res = await api.getCached("/messages/requests", {
+        ttlMs: 30_000,
+        revalidate: true,
+      });
       setRequests(res.data.requests);
     } catch (e) {
       console.error(e);
     } finally {
-      setRequestsLoading(false);
+      if (!silent) setRequestsLoading(false);
     }
   };
 
@@ -1005,8 +1014,8 @@ const Chat = () => {
   }, []);
 
   useRefetchOnFocus(() => {
-    fetchConversations();
-    fetchRequests();
+    fetchConversations({ silent: true });
+    fetchRequests({ silent: true });
   });
 
   useEffect(() => {
@@ -1342,7 +1351,11 @@ const Chat = () => {
                         <div className="flex items-center justify-between gap-2">
                           <p className="text-base font-semibold text-ink truncate">
                             {conv.otherUser.name}
-                            <VerifiedBadge verifications={conv.otherUser.verifications} size="sm" className="ml-1" />
+                            <VerifiedBadge
+                              verifications={conv.otherUser.verifications}
+                              size="sm"
+                              className="ml-1"
+                            />
                             {conv.otherUser.username && (
                               <span className="ml-1 font-normal text-sm text-ink-muted">
                                 @{conv.otherUser.username}
@@ -1411,7 +1424,11 @@ const Chat = () => {
                     <div className="flex-1 min-w-0">
                       <p className="text-base font-semibold text-ink truncate">
                         {req.otherUser.name}
-                        <VerifiedBadge verifications={req.otherUser.verifications} size="sm" className="ml-1" />
+                        <VerifiedBadge
+                          verifications={req.otherUser.verifications}
+                          size="sm"
+                          className="ml-1"
+                        />
                         {req.otherUser.username && (
                           <span className="ml-1 font-normal text-sm text-ink-muted">
                             @{req.otherUser.username}
