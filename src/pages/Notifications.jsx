@@ -6,7 +6,7 @@ import NotificationSkeleton from "../components/NotificationSkeleton";
 import api from "../services/api";
 import { useRefetchOnFocus } from "../hooks/useRefetchOnFocus";
 import { useSocket } from "../context/useSocket";
-import { FaHeart, FaRegComment, FaUserPlus, FaAt, FaReply, FaBell, FaShieldAlt, FaExclamationTriangle, FaRetweet, FaQuoteRight, FaRegSmile } from "react-icons/fa";
+import { FaHeart, FaRegComment, FaUserPlus, FaAt, FaReply, FaBell, FaShieldAlt, FaExclamationTriangle, FaRetweet, FaQuoteRight, FaRegSmile, FaAward, FaTimesCircle, FaClock } from "react-icons/fa";
 import defaultAvatar from "../assets/defaultAvatar";
 import { resizedImageUrl, IMAGE_SIZES } from "../utils/cloudinaryImage";
 import VerifiedBadge from "../components/VerifiedBadge";
@@ -31,6 +31,11 @@ const typeConfig = {
   // shield avatar, reason text from n.message. The warned user must not
   // see WHICH moderator issued the warning.
   moderator_warning: { icon: FaExclamationTriangle, color: "text-amber-500", label: "" },
+  // Phase 5 — verification lifecycle. All three render like moderator_warning:
+  // system avatar, no sender link, full message from n.message.
+  verification_approved: { icon: FaAward, color: "text-primary-600", label: "" },
+  verification_denied:   { icon: FaTimesCircle, color: "text-red-500",  label: "" },
+  verification_expired:  { icon: FaClock,       color: "text-amber-500", label: "" },
 };
 
 // Router target a notification row navigates to when clicked — the
@@ -241,18 +246,26 @@ const Notifications = () => {
                 className={`flex items-center gap-3 px-5 py-4 transition ${
                   row.read
                     ? ""
-                    : row.type === "moderator_warning"
+                    : ["moderator_warning", "verification_denied", "verification_expired"].includes(row.type)
                       ? "bg-amber-50"
-                      : "bg-primary-50"
+                      : row.type === "verification_approved"
+                        ? "bg-primary-50"
+                        : "bg-primary-50"
                 } ${target ? "cursor-pointer" : ""}`}
               >
-                {row.type === "moderator_warning" ? (
-                  // Phase 4 — no sender identity: a shield avatar instead
-                  // of the issuing moderator's profile pic/link, so the
-                  // warned user learns the reason but not who sent it.
-                  <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center ring-2 ring-amber-200 shrink-0">
-                    <FaShieldAlt className="text-amber-600" size={16} />
-                  </div>
+                {["moderator_warning", "verification_approved", "verification_denied", "verification_expired"].includes(row.type) ? (
+                  // System notifications — no sender identity. Icon and
+                  // colour come from typeConfig for the specific type.
+                  (() => {
+                    const cfg = typeConfig[row.type];
+                    const Icon = cfg?.icon || FaShieldAlt;
+                    const isApproved = row.type === "verification_approved";
+                    return (
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ring-2 shrink-0 ${isApproved ? "bg-primary-100 ring-primary-200" : "bg-amber-100 ring-amber-200"}`}>
+                        <Icon className={isApproved ? "text-primary-600" : "text-amber-600"} size={16} />
+                      </div>
+                    );
+                  })()
                 ) : row.actors.length > 1 ? (
                   // Grouped row — stacked avatars for the actors shown,
                   // no single profile link (there's no one destination
@@ -281,18 +294,32 @@ const Notifications = () => {
                     />
                   </Link>
                 )}
-                {row.type === "moderator_warning" ? (
+                {["moderator_warning", "verification_approved", "verification_denied", "verification_expired"].includes(row.type) ? (
+                  // System notification — render message from n.message directly.
                   <div className="flex-1 min-w-0">
-                    <p className="text-base text-ink">
-                      <span className="font-semibold">Moderation team</span>{" "}
-                      <span className="text-ink-sub">
-                        sent you a formal warning
-                      </span>
-                    </p>
-                    {row.message && (
-                      <p className="text-base text-ink-sub mt-1">
-                        "{row.message}"
-                      </p>
+                    {row.type === "moderator_warning" ? (
+                      <>
+                        <p className="text-base text-ink">
+                          <span className="font-semibold">Moderation team</span>{" "}
+                          <span className="text-ink-sub">sent you a formal warning</span>
+                        </p>
+                        {row.message && (
+                          <p className="text-base text-ink-sub mt-1">"{row.message}"</p>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        <p className="text-base text-ink">
+                          <span className="font-semibold">
+                            {row.type === "verification_approved" && "Verification approved"}
+                            {row.type === "verification_denied" && "Verification not approved"}
+                            {row.type === "verification_expired" && "Badge expired"}
+                          </span>
+                        </p>
+                        {row.message && (
+                          <p className="text-sm text-ink-sub mt-0.5">{row.message}</p>
+                        )}
+                      </>
                     )}
                     <p className="text-sm text-ink-muted mt-0.5">
                       {new Date(row.createdAt).toLocaleString()}

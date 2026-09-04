@@ -59,7 +59,7 @@ const TYPE_DESCRIPTIONS = {
   government:
     "Confirms this is an official government body, agency, or public institution.",
   creator:
-    "Confirms notable creators and public figures who already hold an Individual badge.",
+    "For notable creators with an established audience. Requires an active Individual badge.",
 };
 
 const ACCOUNT_MIN_AGE_DAYS = 30;
@@ -695,7 +695,14 @@ const VerificationSection = () => {
                   entityName={v.entityName}
                   size="sm"
                 />
-                {m.label}
+                <span>
+                  {m.label}
+                  {v.expiresAt && (
+                    <span className="text-[11px] text-ink-muted ml-1">
+                      · expires {new Date(v.expiresAt).toLocaleDateString()}
+                    </span>
+                  )}
+                </span>
               </span>
             );
           })}
