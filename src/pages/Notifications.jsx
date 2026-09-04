@@ -9,6 +9,7 @@ import { useSocket } from "../context/useSocket";
 import { FaHeart, FaRegComment, FaUserPlus, FaAt, FaReply, FaBell, FaShieldAlt, FaExclamationTriangle, FaRetweet, FaQuoteRight, FaRegSmile } from "react-icons/fa";
 import defaultAvatar from "../assets/defaultAvatar";
 import { resizedImageUrl, IMAGE_SIZES } from "../utils/cloudinaryImage";
+import VerifiedBadge from "../components/VerifiedBadge";
 
 const typeConfig = {
   like:    { icon: FaHeart, color: "text-red-500", label: "liked your post" },
@@ -87,6 +88,8 @@ const actorsLine = (row, label) => {
     return <span className="text-ink-sub">{label}</span>;
   }
 
+  const primaryVerifications = row.actors[0]?.verifications;
+
   const displayNames =
     names.length === 1
       ? names[0]
@@ -100,6 +103,13 @@ const actorsLine = (row, label) => {
   return (
     <>
       <span className="font-semibold">{displayNames}</span>
+      {primaryVerifications?.length > 0 && (
+        <VerifiedBadge
+          verifications={primaryVerifications}
+          size="sm"
+          className="ml-0.5"
+        />
+      )}
       {suffix && <span className="font-semibold">{suffix}</span>}{" "}
       <span className="text-ink-sub">{label}</span>
     </>
@@ -300,6 +310,13 @@ const Notifications = () => {
                           >
                             {primaryActor?.name || "Someone"}
                           </Link>
+                          {primaryActor?.verifications?.length > 0 && (
+                            <VerifiedBadge
+                              verifications={primaryActor.verifications}
+                              size="sm"
+                              className="ml-0.5"
+                            />
+                          )}
                           {primaryActor?.username && (
                             <span className="text-ink-muted text-sm"> @{primaryActor.username}</span>
                           )}{" "}

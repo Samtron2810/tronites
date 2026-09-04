@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import defaultAvatar from "../assets/defaultAvatar";
 import TextWithLinks from "./TextWithLinks";
 import { resizedImageUrl, IMAGE_SIZES } from "../utils/cloudinaryImage";
+import VerifiedBadge from "./VerifiedBadge";
 
 // Compact preview of the ORIGINAL post embedded inside a quote — used
 // inside QuotePostModal (before posting) and inside a quote's own
@@ -46,6 +47,13 @@ const QuotedPostPreview = ({ post }) => {
           >
             {post.user?.name}
           </Link>
+          {post.user?.verifications?.length > 0 && (
+            <VerifiedBadge
+              verifications={post.user.verifications}
+              size="sm"
+              className="ml-0.5"
+            />
+          )}
           {post.user?.username && (
             <span className="text-xs text-ink-muted truncate">
               @{post.user.username}
