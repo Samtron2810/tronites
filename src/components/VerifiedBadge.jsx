@@ -65,17 +65,31 @@ const VerifiedBadge = ({
 
   return (
     <>
-      <button
-        type="button"
+      {/* span+role="button", not a real <button> — this badge is routinely
+          nested inside other clickable rows/buttons (conversation list
+          items, post headers), and a <button> can't legally contain a
+          <button> per HTML spec (triggers React hydration warnings and
+          unpredictable click targeting). Keyboard/AT semantics preserved
+          via role + tabIndex + onKeyDown. */}
+      <span
+        role="button"
+        tabIndex={0}
         onClick={(e) => {
           e.stopPropagation();
           setSheetOpen(true);
         }}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            e.stopPropagation();
+            setSheetOpen(true);
+          }
+        }}
         aria-label={meta.ariaLabel}
-        className={`inline-flex items-center align-middle ${className}`}
+        className={`inline-flex items-center align-middle cursor-pointer ${className}`}
       >
         <SealShape color={meta.color} size={px} />
-      </button>
+      </span>
 
       {sheetOpen && (
         <div

@@ -28,7 +28,8 @@ const ConfirmVerificationModal = ({
 
   useBackButtonClose(true, onCancel);
 
-  const requiresEntity = mode === "grant" && ["business", "government"].includes(type);
+  const requiresEntity =
+    mode === "grant" && ["business", "government"].includes(type);
   const meta = VERIFICATION_META[mode === "grant" ? type : revokeType];
 
   const handleConfirm = async () => {
@@ -37,7 +38,11 @@ const ConfirmVerificationModal = ({
     setIsSubmitting(true);
     try {
       if (mode === "grant") {
-        await onConfirm({ type, entityName: entityName.trim(), expiresAt: null });
+        await onConfirm({
+          type,
+          entityName: entityName.trim(),
+          expiresAt: null,
+        });
       } else {
         await onConfirm({ type: revokeType, reason: reason.trim() });
       }
@@ -51,7 +56,7 @@ const ConfirmVerificationModal = ({
   // picker scrollable on short mobile screens instead of clipping the
   // confirm/cancel buttons past them.
   return createPortal(
-    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[70] px-4">
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-70 px-4">
       <div className="bg-card rounded-2xl shadow-xl p-6 w-full max-w-md max-h-[85vh] overflow-y-auto">
         <div className="flex items-center gap-3 mb-3">
           <div
@@ -74,7 +79,10 @@ const ConfirmVerificationModal = ({
 
         <div className="flex items-center gap-3 mb-4">
           <img
-            src={resizedImageUrl(targetUser.profilePic, IMAGE_SIZES.avatarSmall) || defaultAvatar}
+            src={
+              resizedImageUrl(targetUser.profilePic, IMAGE_SIZES.avatarSmall) ||
+              defaultAvatar
+            }
             alt={targetUser.name}
             className="w-10 h-10 rounded-full object-cover ring-2 ring-primary-100 shrink-0"
           />
@@ -133,14 +141,17 @@ const ConfirmVerificationModal = ({
                   className="w-full border border-stroke rounded-xl px-3 py-2.5 text-base text-ink outline-none focus:ring-2 focus:ring-primary-200 bg-card"
                 />
                 <p className="text-sm text-ink-muted mt-1">
-                  Shown on the badge detail sheet — this is the whole point
-                  of the claim.
+                  Shown on the badge detail sheet — this is the whole point of
+                  the claim.
                 </p>
               </div>
             )}
 
             <p className="text-sm text-ink-muted leading-relaxed flex items-start gap-1.5">
-              <FiAlertTriangle className="text-amber-500 mt-0.5 shrink-0" size={12} />
+              <FiAlertTriangle
+                className="text-amber-500 mt-0.5 shrink-0"
+                size={12}
+              />
               {type === "individual"
                 ? "Never charge for this badge — the moment identity is purchasable, it stops proving identity."
                 : "Confirm evidence has actually been checked before granting."}

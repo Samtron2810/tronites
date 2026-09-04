@@ -36,7 +36,7 @@ const ConfirmRoleChangeModal = ({
   // on mobile and the shimmer during DevTools responsive resizes
   // (Navbar's LogoutModal already uses this same pattern).
   return createPortal(
-    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[70] px-4">
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-70 px-4">
       <div className="bg-card rounded-2xl shadow-xl p-6 w-full max-w-sm max-h-[85vh] overflow-y-auto">
         <div className="flex items-center gap-3 mb-3">
           <div
@@ -56,7 +56,10 @@ const ConfirmRoleChangeModal = ({
 
         <div className="flex items-center gap-3 mb-3">
           <img
-            src={resizedImageUrl(targetUser.profilePic, IMAGE_SIZES.avatarSmall) || defaultAvatar}
+            src={
+              resizedImageUrl(targetUser.profilePic, IMAGE_SIZES.avatarSmall) ||
+              defaultAvatar
+            }
             alt={targetUser.name}
             className="w-10 h-10 rounded-full object-cover ring-2 ring-primary-100 shrink-0"
           />

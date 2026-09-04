@@ -1,7 +1,3 @@
-// Silences workbox's verbose "Router is responding to..." console logs
-// in dev builds; production builds already have logging stripped.
-self.__WB_DISABLE_DEV_LOGS = true;
-
 import { precacheAndRoute, cleanupOutdatedCaches } from "workbox-precaching";
 import { registerRoute, NavigationRoute } from "workbox-routing";
 import { NetworkFirst, CacheFirst } from "workbox-strategies";

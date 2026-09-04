@@ -51,7 +51,7 @@ const ConfirmPermissionChangeModal = ({
   // list scrollable on short mobile screens instead of clipping the
   // confirm/cancel buttons past them.
   return createPortal(
-    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[70] px-4">
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-70 px-4">
       <div className="bg-card rounded-2xl shadow-xl p-6 w-full max-w-md max-h-[85vh] overflow-y-auto">
         <div className="flex items-center gap-3 mb-3">
           <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 bg-primary-50">
@@ -69,7 +69,10 @@ const ConfirmPermissionChangeModal = ({
 
         <div className="flex items-center gap-3 mb-4">
           <img
-            src={resizedImageUrl(targetUser.profilePic, IMAGE_SIZES.avatarSmall) || defaultAvatar}
+            src={
+              resizedImageUrl(targetUser.profilePic, IMAGE_SIZES.avatarSmall) ||
+              defaultAvatar
+            }
             alt={targetUser.name}
             className="w-10 h-10 rounded-full object-cover ring-2 ring-primary-100 shrink-0"
           />
@@ -111,10 +114,13 @@ const ConfirmPermissionChangeModal = ({
         </div>
 
         <p className="text-sm text-ink-muted leading-relaxed flex items-start gap-1.5">
-          <FiAlertTriangle className="text-amber-500 mt-0.5 shrink-0" size={12} />
-          Saving replaces the whole set. An empty selection means this
-          moderator keeps working under the default set — tick nothing you
-          don't mean to grant.
+          <FiAlertTriangle
+            className="text-amber-500 mt-0.5 shrink-0"
+            size={12}
+          />
+          Saving replaces the whole set. An empty selection means this moderator
+          keeps working under the default set — tick nothing you don't mean to
+          grant.
         </p>
 
         <div className="flex gap-3 mt-5">

@@ -12,7 +12,14 @@ import { useAuth } from "../context/useAuth";
 import defaultAvatar from "../assets/defaultAvatar";
 import { resizedImageUrl, IMAGE_SIZES } from "../utils/cloudinaryImage";
 import { PERMISSION_OPTIONS } from "../constants/permissions";
-import { FiSearch, FiShield, FiMoreVertical, FiAward, FiChevronDown, FiCheck } from "react-icons/fi";
+import {
+  FiSearch,
+  FiShield,
+  FiMoreVertical,
+  FiAward,
+  FiChevronDown,
+  FiCheck,
+} from "react-icons/fi";
 
 const ROLE_TABS = [
   { value: "", label: "All" },
@@ -85,7 +92,7 @@ const AccountActionsMenu = ({
           row's left edge and widen the page, which is what made every fixed
           overlay on it look shifted/overflowing. */}
       {menuOpen && (
-        <div className="absolute right-0 mt-2 w-52 max-w-[calc(100vw_-_2.5rem)] bg-card rounded-lg shadow-lg border border-stroke z-40 py-1">
+        <div className="absolute right-0 mt-2 w-52 max-w-[calc(100vw-2.5rem)] bg-card rounded-lg shadow-lg border border-stroke z-40 py-1">
           {/* Phase 1 — verification badges (admin only). Grant is always
               offered; per-badge revoke only shows for types the user
               actually holds. */}
@@ -112,14 +119,10 @@ const AccountActionsMenu = ({
                     }}
                     className="w-full flex items-center gap-2 px-4 py-2.5 text-base text-red-600 hover:bg-red-50 transition"
                   >
-                    <span className="font-medium">
-                      Revoke {v.type} badge…
-                    </span>
+                    <span className="font-medium">Revoke {v.type} badge…</span>
                   </button>
                 ))}
-              {canRestrict && (
-                <div className="my-1 border-t border-stroke" />
-              )}
+              {canRestrict && <div className="my-1 border-t border-stroke" />}
             </>
           )}
           {canRestrict &&
@@ -294,7 +297,10 @@ const RoleRow = ({
           />
         )}
         <img
-          src={resizedImageUrl(target.profilePic, IMAGE_SIZES.avatarSmall) || defaultAvatar}
+          src={
+            resizedImageUrl(target.profilePic, IMAGE_SIZES.avatarSmall) ||
+            defaultAvatar
+          }
           alt={target.name}
           className="w-10 h-10 rounded-full object-cover ring-2 ring-primary-100 shrink-0"
         />
@@ -434,36 +440,39 @@ const AdminUsers = () => {
 
   const isAdmin = user && user.role === "admin";
 
-  const fetchUsers = useCallback(async (query, role, pageNum = 1, sort = "") => {
-    try {
-      if (pageNum === 1) setLoading(true);
-      else setIsLoadingMore(true);
+  const fetchUsers = useCallback(
+    async (query, role, pageNum = 1, sort = "") => {
+      try {
+        if (pageNum === 1) setLoading(true);
+        else setIsLoadingMore(true);
 
-      const params = {
-        q: query,
-        role: role || undefined,
-        page: pageNum,
-        limit: 20,
-        sort: sort || undefined,
-      };
-      const res =
-        pageNum === 1
-          ? await api.getCached("/admin/users", { params, ttlMs: Infinity })
-          : await api.get("/admin/users", { params });
+        const params = {
+          q: query,
+          role: role || undefined,
+          page: pageNum,
+          limit: 20,
+          sort: sort || undefined,
+        };
+        const res =
+          pageNum === 1
+            ? await api.getCached("/admin/users", { params, ttlMs: Infinity })
+            : await api.get("/admin/users", { params });
 
-      if (pageNum === 1) setUsers(res.data.users);
-      else setUsers((prev) => [...prev, ...res.data.users]);
+        if (pageNum === 1) setUsers(res.data.users);
+        else setUsers((prev) => [...prev, ...res.data.users]);
 
-      setHasMore(res.data.hasMore);
-      setPage(pageNum);
-    } catch (e) {
-      console.error(e);
-      toast.error("Couldn't load users.");
-    } finally {
-      if (pageNum === 1) setLoading(false);
-      else setIsLoadingMore(false);
-    }
-  }, []);
+        setHasMore(res.data.hasMore);
+        setPage(pageNum);
+      } catch (e) {
+        console.error(e);
+        toast.error("Couldn't load users.");
+      } finally {
+        if (pageNum === 1) setLoading(false);
+        else setIsLoadingMore(false);
+      }
+    },
+    [],
+  );
 
   useEffect(() => {
     if (!isAdmin) return;
@@ -541,7 +550,11 @@ const AdminUsers = () => {
   // Phase 1 -- grant/revoke a verification badge. Row state folds in the
   // server DTO's full verifications array (single source of truth) so
   // the inline badge and the revoke-menu list stay in sync immediately.
-  const handleConfirmGrantVerification = async ({ type, entityName, expiresAt }) => {
+  const handleConfirmGrantVerification = async ({
+    type,
+    entityName,
+    expiresAt,
+  }) => {
     if (!pendingVerification) return;
     try {
       const res = await api.post(
@@ -638,7 +651,8 @@ const AdminUsers = () => {
     const endpoint =
       mode === "suspend" ? "suspend" : mode === "ban" ? "ban" : "unrestrict";
     try {
-      const res = await api.put(`/admin/users/${target._id}/${endpoint}`,
+      const res = await api.put(
+        `/admin/users/${target._id}/${endpoint}`,
         mode === "suspend"
           ? { until: until.toISOString(), reason }
           : mode === "ban"
@@ -806,7 +820,7 @@ const AdminUsers = () => {
           {roleMenuOpen && (
             <div
               ref={roleMenuRef}
-              className="absolute left-0 top-full mt-1 w-44 max-w-[calc(100vw_-_2.5rem)] bg-card rounded-xl shadow-lg border border-stroke z-40 py-1"
+              className="absolute left-0 top-full mt-1 w-44 max-w-[calc(100vw-2.5rem)] bg-card rounded-xl shadow-lg border border-stroke z-40 py-1"
             >
               {ROLE_TABS.map((tab) => (
                 <button
@@ -896,7 +910,11 @@ const AdminUsers = () => {
                 setPendingVerification({ user: target, mode: "grant" })
               }
               onRequestRevokeVerification={(target, type) =>
-                setPendingVerification({ user: target, mode: "revoke", revokeType: type })
+                setPendingVerification({
+                  user: target,
+                  mode: "revoke",
+                  revokeType: type,
+                })
               }
               selected={selectedIds.has(u._id)}
               onToggleSelect={() => toggleSelected(u._id)}

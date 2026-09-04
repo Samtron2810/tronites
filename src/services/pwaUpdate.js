@@ -13,7 +13,11 @@ export const registerServiceWorker = () => {
 
   window.addEventListener("load", async () => {
     try {
-      const registration = await navigator.serviceWorker.register("/sw.js", {
+      // devOptions.type is forced to 'module' in vite.config.js (sw.js
+      // uses ES imports), so registration type is 'module' in both envs.
+      const swUrl = import.meta.env.DEV ? "/dev-sw.js?dev-sw" : "/sw.js";
+
+      const registration = await navigator.serviceWorker.register(swUrl, {
         type: "module",
       });
 

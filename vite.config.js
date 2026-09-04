@@ -47,8 +47,11 @@ export default defineConfig({
       devOptions: {
         // Enabled so `npm run dev` also registers a SW — makes the
         // install-prompt/push flow testable without a full build.
+        // type: 'module' is required (not the plugin's 'classic' default)
+        // because src/sw.js uses ES `import` statements.
         enabled: true,
         type: 'module',
+        navigateFallback: 'index.html',
       },
     }),
   ],
