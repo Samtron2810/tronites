@@ -8,6 +8,7 @@ import ProfileSkeleton from "../components/ProfileSkeleton";
 import api from "../services/api";
 import { useRefetchOnFocus } from "../hooks/useRefetchOnFocus";
 import compressImage from "../utils/compressImage";
+import { uploadToCloudinary } from "../services/cloudinary";
 import { useAuth } from "../context/useAuth";
 import { useSocket } from "../context/useSocket";
 import {
@@ -223,19 +224,37 @@ const Profile = () => {
         quality: 0.8,
         skipBelowBytes: 150 * 1024,
       });
-      const formData = new FormData();
-      formData.append("image", compressed);
-      const res = await api.put("/users/profile-picture", formData);
+      // Signed browser upload (same flow as post images): ask the backend
+      // for a signature, upload the bytes straight to Cloudinary, then hand
+      // the finished URL to the backend as JSON. Image bytes never travel
+      // through the axios instance, so its 15s timeout only guards tiny
+      // JSON calls — a slow Cloudinary upload can't get the request killed
+      // mid-flight like the old queued multipart flow.
+      const sigRes = await api.post("/users/profile-picture/signature");
+      const uploaded = await uploadToCloudinary({
+        file: compressed,
+        signatureData: sigRes.data,
+      });
+      const res = await api.put("/users/profile-picture", {
+        url: uploaded.secure_url,
+      });
       setProfile((prev) => ({ ...prev, profilePic: res.data.profilePic }));
       updateUser({ profilePic: res.data.profilePic });
       toast.success("Profile picture updated!");
     } catch (e) {
       console.error(e);
+      // Prefer the server's message (backend or Cloudinary) so the real
+      // cause is visible; fall back to the raw error, then the generic text.
       toast.error(
-        e?.response?.data?.message || "Failed to update profile picture.",
+        e?.response?.data?.message ||
+          e?.message ||
+          "Failed to update profile picture.",
       );
     } finally {
       setUploading(false);
+      // Reset so picking the SAME file again re-fires onChange instead of
+      // silently doing nothing after a success or failure.
+      e.target.value = "";
     }
   };
 
