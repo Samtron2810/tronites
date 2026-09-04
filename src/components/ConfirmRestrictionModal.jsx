@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { createPortal } from "react-dom";
 import {
   FiAlertTriangle,
   FiClock,
@@ -96,8 +97,11 @@ const ConfirmRestrictionModal = ({
   const canSubmit =
     !isSubmitting && (!isSuspend || duration !== "custom" || !!customUntil);
 
-  return (
-    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-60 px-4">
+  // Portaled to document.body (see ConfirmRoleChangeModal) and lifted to
+  // z-[70] so the bulk/single restriction confirm always stacks above the
+  // sticky blurred navbar regardless of where it's opened from.
+  return createPortal(
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[70] px-4">
       <div className="bg-card rounded-2xl shadow-xl p-6 w-full max-w-sm max-h-[85vh] overflow-y-auto">
         <div className="flex items-center gap-3 mb-3">
           <div
@@ -253,7 +257,8 @@ const ConfirmRestrictionModal = ({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 };
 

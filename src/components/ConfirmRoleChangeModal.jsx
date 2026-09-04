@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { FiAlertTriangle } from "react-icons/fi";
 import defaultAvatar from "../assets/defaultAvatar";
 import { resizedImageUrl, IMAGE_SIZES } from "../utils/cloudinaryImage";
@@ -28,9 +29,15 @@ const ConfirmRoleChangeModal = ({
     }
   };
 
-  return (
-    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 px-4">
-      <div className="bg-card rounded-2xl shadow-xl p-6 w-full max-w-sm">
+  // Portaled to document.body so the overlay is positioned and stacked
+  // against the real viewport. Rendered inline, it shared the root stacking
+  // context with the sticky z-50 blurred navbar and sat deep inside the
+  // page tree — the combination behind the mis-centered/overflowing modal
+  // on mobile and the shimmer during DevTools responsive resizes
+  // (Navbar's LogoutModal already uses this same pattern).
+  return createPortal(
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[70] px-4">
+      <div className="bg-card rounded-2xl shadow-xl p-6 w-full max-w-sm max-h-[85vh] overflow-y-auto">
         <div className="flex items-center gap-3 mb-3">
           <div
             className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
@@ -97,7 +104,8 @@ const ConfirmRoleChangeModal = ({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 };
 

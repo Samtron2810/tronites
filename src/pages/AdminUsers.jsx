@@ -56,6 +56,19 @@ const AccountActionsMenu = ({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [menuOpen]);
 
+  // Close the menu when the viewport crosses the md breakpoint. The tools
+  // cluster renders twice (md+ row and the small-screen expanded block),
+  // each mount with its OWN open state — when a DevTools responsive drag,
+  // device rotation, or foldable flip changes which twin is visible, a
+  // menu left open on the now-hidden twin would otherwise swap to the
+  // other mount's closed state mid-gesture (the "glitching dropdown").
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 768px)");
+    const handleBreakpoint = () => setMenuOpen(false);
+    mq.addEventListener("change", handleBreakpoint);
+    return () => mq.removeEventListener("change", handleBreakpoint);
+  }, []);
+
   return (
     <div className="relative" ref={menuRef}>
       <button
@@ -67,8 +80,12 @@ const AccountActionsMenu = ({
         <FiMoreVertical size={15} />
       </button>
 
+      {/* max-w clamp keeps the menu inside the viewport on narrow
+          screens — right-0 with a fixed w-52 could otherwise spill past the
+          row's left edge and widen the page, which is what made every fixed
+          overlay on it look shifted/overflowing. */}
       {menuOpen && (
-        <div className="absolute right-0 mt-2 w-52 bg-card rounded-lg shadow-lg border border-stroke z-40 py-1">
+        <div className="absolute right-0 mt-2 w-52 max-w-[calc(100vw_-_2.5rem)] bg-card rounded-lg shadow-lg border border-stroke z-40 py-1">
           {/* Phase 1 — verification badges (admin only). Grant is always
               offered; per-badge revoke only shows for types the user
               actually holds. */}
@@ -368,6 +385,19 @@ const AdminUsers = () => {
   const [expandedUserId, setExpandedUserId] = useState(null);
   const toggleExpand = (id) =>
     setExpandedUserId((prev) => (prev === id ? null : id));
+
+  // Collapse the small-screen accordion when the viewport grows past the
+  // md breakpoint — the expanded block is md:hidden, so a stale
+  // expandedUserId would silently re-open a row on the next shrink
+  // (DevTools responsive drag, foldable flip, rotation).
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 768px)");
+    const handleBreakpoint = (e) => {
+      if (e.matches) setExpandedUserId(null);
+    };
+    mq.addEventListener("change", handleBreakpoint);
+    return () => mq.removeEventListener("change", handleBreakpoint);
+  }, []);
 
   // Role filter (All/Users/Moderators/Admins) — collapsed from the old
   // four-button tab group into one dropdown so it can sit beside the
@@ -776,7 +806,7 @@ const AdminUsers = () => {
           {roleMenuOpen && (
             <div
               ref={roleMenuRef}
-              className="absolute left-0 top-full mt-1 w-44 bg-card rounded-xl shadow-lg border border-stroke z-40 py-1"
+              className="absolute left-0 top-full mt-1 w-44 max-w-[calc(100vw_-_2.5rem)] bg-card rounded-xl shadow-lg border border-stroke z-40 py-1"
             >
               {ROLE_TABS.map((tab) => (
                 <button

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { FiAlertTriangle, FiShield } from "react-icons/fi";
 import defaultAvatar from "../assets/defaultAvatar";
 import { resizedImageUrl, IMAGE_SIZES } from "../utils/cloudinaryImage";
@@ -44,9 +45,14 @@ const ConfirmPermissionChangeModal = ({
     }
   };
 
-  return (
-    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 px-4">
-      <div className="bg-card rounded-2xl shadow-xl p-6 w-full max-w-md">
+  // Portaled to document.body (see ConfirmRoleChangeModal) so the overlay
+  // centers on the real viewport instead of competing with the sticky
+  // blurred navbar's stacking context; the max-h cap keeps the permission
+  // list scrollable on short mobile screens instead of clipping the
+  // confirm/cancel buttons past them.
+  return createPortal(
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[70] px-4">
+      <div className="bg-card rounded-2xl shadow-xl p-6 w-full max-w-md max-h-[85vh] overflow-y-auto">
         <div className="flex items-center gap-3 mb-3">
           <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 bg-primary-50">
             <FiShield className="text-primary-600" size={16} />
@@ -128,7 +134,8 @@ const ConfirmPermissionChangeModal = ({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 };
 
