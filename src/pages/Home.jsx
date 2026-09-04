@@ -52,15 +52,22 @@ const Home = () => {
 
   const current = feeds[tab];
 
+  // fetchPosts — the `silent` flag controls whether a first-page fetch
+  // shows the skeleton or not.
+  //   silent=false (default): shows skeleton — used on initial tab open.
+  //   silent=true: leaves existing posts visible and revalidates behind
+  //     the scenes — used by useRefetchOnFocus and explicit invalidation
+  //     after creating a post (getCached revalidate:true already returns
+  //     stale data instantly, so the skeleton would flash for no reason).
   const fetchPosts = useCallback(
-    async (targetTab, afterCursor, isFirstPage) => {
+    async (targetTab, afterCursor, isFirstPage, { silent = false } = {}) => {
       // Drop concurrent fetches (see fetchInFlightRef above); the first
       // call still completes and resets the ref in `finally`.
       if (fetchInFlightRef.current) return;
       fetchInFlightRef.current = true;
       try {
-        if (isFirstPage) setLoading(true);
-        else setIsLoadingMore(true);
+        if (isFirstPage && !silent) setLoading(true);
+        else if (!isFirstPage) setIsLoadingMore(true);
 
         const params =
           targetTab === "forYou"
@@ -125,8 +132,8 @@ const Home = () => {
         console.error(e);
         if (!isFirstPage) toast.error("Couldn't load more posts. Try again.");
       } finally {
-        if (isFirstPage) setLoading(false);
-        else setIsLoadingMore(false);
+        if (isFirstPage && !silent) setLoading(false);
+        else if (!isFirstPage) setIsLoadingMore(false);
         fetchInFlightRef.current = false;
       }
     },
@@ -137,15 +144,16 @@ const Home = () => {
   // what's already in state instead of re-fetching from scratch.
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch-on-tab-open; setState happens inside the async fetchPosts fn, not synchronously in this effect body
-    if (!feeds[tab].loaded) fetchPosts(tab, null, true);
+    if (!feeds[tab].loaded) fetchPosts(tab, null, true, { silent: false });
     else setLoading(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab]);
 
   // Tier-2 revalidate-on-focus — re-runs the CURRENT tab's first-page
-  // fetch. getCached's revalidate:true paints the cached list instantly
-  // and refreshes it silently behind the scenes.
-  useRefetchOnFocus(() => fetchPosts(tab, null, true));
+  // fetch SILENTLY: getCached revalidate:true already serves stale data
+  // instantly, so we must not set loading=true here or the existing
+  // posts flash away and the skeleton appears for no reason.
+  useRefetchOnFocus(() => fetchPosts(tab, null, true, { silent: true }));
 
   useEffect(() => {
     const target = observerTarget.current;
@@ -208,7 +216,9 @@ const Home = () => {
         <CreatePost
           fetchPosts={() => {
             api.invalidateMany(["/posts/for-you", "/posts/feed", "/posts/hashtag/"]);
-            fetchPosts("following", null, true);
+            // Silent revalidate — we just created a post so the feed will
+            // update, but we don't want to flash the skeleton.
+            fetchPosts("following", null, true, { silent: true });
           }}
         />
 
@@ -329,4 +339,3 @@ const Home = () => {
 };
 
 export default Home;
-

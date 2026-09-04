@@ -32,6 +32,32 @@ registerRoute(
   ),
 );
 
+// --- Auth: NetworkFirst -----------------------------------------------
+// Caches the /auth/me response so an offline reopen can confirm the
+// user is (was) logged in without hitting the network. Without this,
+// AuthContext.getMe() fails with a network error, user is set to null,
+// and the app redirects to /login even though the session cookies are
+// still valid and will work again once the network returns.
+// NetworkFirst: always tries the network first (1.5s timeout to avoid
+// blocking cold starts on a slow connection), falls back to the last
+// cached response — the cached payload is stale by definition but only
+// used to keep the UI authenticated while offline; the React-side
+// AuthContext does a fresh validation whenever connectivity returns.
+registerRoute(
+  ({ url, request }) =>
+    request.method === "GET" && url.pathname === "/api/auth/me",
+  new NetworkFirst({
+    cacheName: "tronites-auth-cache",
+    networkTimeoutSeconds: 4,
+    plugins: [
+      new CacheableResponsePlugin({ statuses: [200] }),
+      // Keep only the most recent /me response; 7-day max so a stale
+      // entry doesn't linger after a genuine logout on another device.
+      new ExpirationPlugin({ maxEntries: 1, maxAgeSeconds: 60 * 60 * 24 * 7 }),
+    ],
+  }),
+);
+
 // --- Feed: NetworkFirst -----------------------------------------------
 // Fresh posts win when online; falls back to the last cached page when
 // offline or the network is slow (4s timeout keeps the UI from hanging
