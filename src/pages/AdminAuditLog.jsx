@@ -21,6 +21,12 @@ const ACTION_OPTIONS = [
   { value: "user_warned", label: "Warnings" },
   { value: "user_permissions_changed", label: "Permission changes" },
   { value: "report_resolved", label: "Reports resolved" },
+  { value: "appeal_granted", label: "Appeals granted" },
+  { value: "appeal_denied", label: "Appeals denied" },
+  { value: "verification_request_approved", label: "Verification approved" },
+  { value: "verification_request_denied", label: "Verification denied" },
+  { value: "user_verification_granted", label: "Badge granted (admin)" },
+  { value: "user_verification_revoked", label: "Badge revoked (admin)" },
 ];
 
 const TARGET_OPTIONS = [
@@ -43,6 +49,12 @@ const ACTION_STYLES = {
   user_role_changed: "bg-primary-100 text-primary-700",
   user_warned: "bg-orange-100 text-orange-700",
   report_resolved: "bg-blue-100 text-blue-600",
+  appeal_granted: "bg-green-100 text-green-700",
+  appeal_denied: "bg-gray-100 text-gray-500",
+  verification_request_approved: "bg-emerald-100 text-emerald-700",
+  verification_request_denied: "bg-gray-100 text-gray-500",
+  user_verification_granted: "bg-emerald-100 text-emerald-700",
+  user_verification_revoked: "bg-red-100 text-red-600",
 };
 
 const shortId = (id) => String(id || "").slice(-6);
@@ -68,6 +80,27 @@ const formatWhen = (iso) => {
 const formatUntil = (value) =>
   value ? new Date(value).toLocaleString() : null;
 
+// Strip IPv4-mapped IPv6 prefix (::ffff:) that Express adds when
+// trust proxy returns the real IP, and normalise loopback aliases.
+const cleanIp = (ip) => {
+  if (!ip) return "—";
+  if (ip === "::1" || ip === "::ffff:127.0.0.1") return "localhost";
+  const v4mapped = ip.match(/^::ffff:(\d+\.\d+\.\d+\.\d+)$/);
+  if (v4mapped) return v4mapped[1];
+  return ip;
+};
+
+// VERIFICATION_TYPE_LABELS — maps the internal type key to the badge
+// name shown in the queue; duplicated from constants/verification.js
+// to keep this file self-contained (avoids a cross-page import).
+const BADGE_LABELS = {
+  individual: "Individual",
+  business: "Business",
+  government: "Government",
+  creator: "Creator",
+  staff: "Staff",
+};
+
 // Human-readable rendering of the action-specific payload.
 const DetailCell = ({ log }) => {
   const d = log.detail || {};
@@ -75,7 +108,7 @@ const DetailCell = ({ log }) => {
     case "user_suspended":
       return (
         <span>
-          {d.reason ? `“${d.reason}â€` : "No reason recorded"}
+          {d.reason ? <>“{d.reason}”</> : "No reason recorded"}
           {formatUntil(d.suspendedUntil) && (
             <>
               {" — until "}
@@ -85,7 +118,7 @@ const DetailCell = ({ log }) => {
         </span>
       );
     case "user_banned":
-      return <span>{d.reason ? `“${d.reason}â€` : "No reason recorded"}</span>;
+      return <span>{d.reason ? <>“{d.reason}”</> : "No reason recorded"}</span>;
     case "user_unrestricted":
       return (
         <span>
@@ -98,13 +131,16 @@ const DetailCell = ({ log }) => {
     case "user_role_changed":
       return (
         <span>
-          New role: <span className="font-medium">{d.toRole}</span>
+          {d.fromRole && (
+            <><span className="text-ink-muted">{d.fromRole}</span>{" → "}</>
+          )}
+          <span className="font-medium">{d.toRole}</span>
         </span>
       );
     case "user_warned":
       return (
         <span>
-          {d.reason ? `“${d.reason}â€` : "No reason recorded"}
+          {d.reason ? <>“{d.reason}”</> : "No reason recorded"}
           {d.strikeCount
             ? ` — ${d.strikeCount} strike${d.strikeCount === 1 ? "" : "s"} total`
             : ""}
@@ -113,27 +149,84 @@ const DetailCell = ({ log }) => {
     case "user_permissions_changed":
       return (
         <span>
-          Now:{" "}
           <span className="font-medium">
             {d.permissions?.length ? d.permissions.join(", ") : "(default set)"}
           </span>
-          {" · was: "}
-          {d.previousPermissions?.length
-            ? d.previousPermissions.join(", ")
-            : "(default set)"}
+          {d.previousPermissions !== undefined && (
+            <span className="text-ink-muted">
+              {" · was: "}
+              {d.previousPermissions?.length ? d.previousPermissions.join(", ") : "(default set)"}
+            </span>
+          )}
         </span>
       );
     case "report_resolved":
       return (
         <span>
           <span className="font-medium">{d.status}</span>
-          {" · "}
-          {d.note ? `“${d.note}â€` : "no note"}
+          {d.note ? <>{" · "}“{d.note}”</> : " · no note"}
           {log.target?.snapshot?.removeContent && " · content removed"}
         </span>
       );
+    case "appeal_granted":
+    case "appeal_denied": {
+      const granted = log.action === "appeal_granted";
+      return (
+        <span>
+          <span className={`font-medium ${granted ? "text-green-700" : "text-gray-500"}`}>
+            {granted ? "Granted" : "Denied"}
+          </span>
+          {d.restrictionType && (
+            <span className="text-ink-muted"> · {d.restrictionType} appeal</span>
+          )}
+          {d.note ? <>{" · "}“{d.note}”</> : ""}
+        </span>
+      );
+    }
+    case "verification_request_approved":
+    case "verification_request_denied": {
+      const approved = log.action === "verification_request_approved";
+      return (
+        <span>
+          <span className={`font-medium ${approved ? "text-emerald-700" : "text-gray-500"}`}>
+            {approved ? "Approved" : "Denied"}
+          </span>
+          {d.verificationType && (
+            <span className="text-ink-muted">
+              {" · "}{BADGE_LABELS[d.verificationType] || d.verificationType} badge
+            </span>
+          )}
+          {d.note ? <>{" · "}“{d.note}”</> : ""}
+        </span>
+      );
+    }
+    case "user_verification_granted":
+    case "user_verification_revoked": {
+      const granted = log.action === "user_verification_granted";
+      return (
+        <span>
+          <span className={`font-medium ${granted ? "text-emerald-700" : "text-red-600"}`}>
+            {granted ? "Badge granted" : "Badge revoked"}
+          </span>
+          {d.verificationType && (
+            <span className="text-ink-muted">
+              {" · "}{BADGE_LABELS[d.verificationType] || d.verificationType}
+            </span>
+          )}
+        </span>
+      );
+    }
     default:
-      return <code className="text-sm">{JSON.stringify(d)}</code>;
+      // Fallback: render key=value pairs instead of raw JSON blob
+      if (Object.keys(d).length === 0) return <span className="text-ink-muted">—</span>;
+      return (
+        <span className="text-sm text-ink-muted">
+          {Object.entries(d)
+            .filter(([, v]) => v !== null && v !== "" && v !== undefined)
+            .map(([k, v]) => `${k}: ${typeof v === "object" ? JSON.stringify(v) : v}`)
+            .join(" · ") || "—"}
+        </span>
+      );
   }
 };
 
@@ -343,7 +436,7 @@ const AdminAuditLog = () => {
                       <DetailCell log={log} />
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap text-sm text-ink-muted font-mono">
-                      {log.ip || "—"}
+                      {log.ip ? cleanIp(log.ip) : "—"}
                     </td>
                   </tr>
                 ))}

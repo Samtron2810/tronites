@@ -673,6 +673,21 @@ const ModerationQueue = () => {
   const [pendingUserRestriction, setPendingUserRestriction] = useState(null);
 
   const isModerator = user && ["moderator", "admin"].includes(user.role);
+  const isAdmin = user?.role === "admin";
+
+  // Mirror requirePermission.js resolution order on the client so tab
+  // visibility matches what the server will actually allow.
+  const DEFAULT_MOD_PERMS = ["manage_reports", "manage_users", "manage_content"];
+  const effectivePerms = isAdmin
+    ? ["manage_reports", "manage_users", "manage_content", "manage_verification", "view_audit_log", "manage_roles"]
+    : user?.permissions?.length
+      ? user.permissions
+      : user?.role === "moderator"
+        ? DEFAULT_MOD_PERMS
+        : [];
+
+  const canManageReports = effectivePerms.includes("manage_reports");
+  const canManageVerification = effectivePerms.includes("manage_verification");
 
   const fetchReports = useCallback(async () => {
     setLoading(true);
@@ -737,8 +752,17 @@ const ModerationQueue = () => {
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch-on-mount/filter-change
-    if (isModerator && queueTab === "verification") fetchVerificationRequests();
-  }, [isModerator, queueTab, fetchVerificationRequests]);
+    if (isModerator && canManageVerification && queueTab === "verification") fetchVerificationRequests();
+  }, [isModerator, canManageVerification, queueTab, fetchVerificationRequests]);
+
+  // If the tab was somehow left on "verification" but the user no longer
+  // has the permission (e.g. permission revoked, page refreshed), reset
+  // to "reports" so they don't see a stale/broken view.
+  useEffect(() => {
+    if (queueTab === "verification" && !canManageVerification) {
+      setQueueTab("reports");
+    }
+  }, [canManageVerification, queueTab]);
 
   // Guard client-side too — the endpoints already 403 non-moderators,
   // this just avoids rendering a queue UI that would only ever error.
@@ -915,16 +939,20 @@ const ModerationQueue = () => {
         >
           <FiFileText size={14} /> Appeals
         </button>
-        <button
-          onClick={() => setQueueTab("verification")}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-base font-medium transition ${
-            queueTab === "verification"
-              ? "bg-primary-100 text-primary-700"
-              : "text-ink-muted hover:text-ink"
-          }`}
-        >
-          <FiAward size={14} /> Verification
-        </button>
+        {/* Only show Verification tab when the user actually has the permission.
+            Admins always see it; moderators only when manage_verification is granted. */}
+        {canManageVerification && (
+          <button
+            onClick={() => setQueueTab("verification")}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-base font-medium transition ${
+              queueTab === "verification"
+                ? "bg-primary-100 text-primary-700"
+                : "text-ink-muted hover:text-ink"
+            }`}
+          >
+            <FiAward size={14} /> Verification
+          </button>
+        )}
       </div>
 
       {queueTab === "reports" ? (
