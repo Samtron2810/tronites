@@ -286,15 +286,19 @@ const ChatModal = ({
             />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-base font-semibold text-ink truncate">
-              {activeUser?.name}
-              <VerifiedBadge verifications={activeUser?.verifications} size="sm" className="ml-1" />
+            <div className="flex items-center gap-1 min-w-0">
+              <span className="flex items-center gap-1 min-w-0">
+                <span className="text-base font-semibold text-ink truncate">
+                  {activeUser?.name}
+                </span>
+                <VerifiedBadge verifications={activeUser?.verifications} size="sm" className="shrink-0" />
+              </span>
               {activeUser?.username && (
-                <span className="ml-1 font-normal text-sm text-ink-muted">
+                <span className="font-normal text-sm text-ink-muted truncate">
                   @{activeUser.username}
                 </span>
               )}
-            </p>
+            </div>
             <p
               className={`text-sm transition-colors ${
                 otherUserTyping

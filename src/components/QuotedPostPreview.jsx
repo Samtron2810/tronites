@@ -39,21 +39,23 @@ const QuotedPostPreview = ({ post }) => {
           alt="user"
           className="w-6 h-6 rounded-full object-cover shrink-0"
         />
-        <div className="min-w-0 flex flex-col sm:flex-row sm:items-center gap-y-0.5 sm:gap-x-1.5">
-          <Link
-            to={`/profile/${post.user?._id}`}
-            onClick={(e) => e.stopPropagation()}
-            className="text-sm font-semibold text-ink hover:text-primary-600 transition truncate"
-          >
-            {post.user?.name}
-          </Link>
-          {post.user?.verifications?.length > 0 && (
-            <VerifiedBadge
-              verifications={post.user.verifications}
-              size="sm"
-              className="ml-0.5"
-            />
-          )}
+        <div className="min-w-0 flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+          <span className="flex items-center gap-1 min-w-0">
+            <Link
+              to={`/profile/${post.user?._id}`}
+              onClick={(e) => e.stopPropagation()}
+              className="text-sm font-semibold text-ink hover:text-primary-600 transition truncate"
+            >
+              {post.user?.name}
+            </Link>
+            {post.user?.verifications?.length > 0 && (
+              <VerifiedBadge
+                verifications={post.user.verifications}
+                size="sm"
+                className="shrink-0"
+              />
+            )}
+          </span>
           {post.user?.username && (
             <span className="text-xs text-ink-muted truncate">
               @{post.user.username}
