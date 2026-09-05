@@ -178,6 +178,31 @@ const AccountIdentitySection = () => {
     }
   };
 
+  // ── Bio ───────────────────────────────────────────────────────────
+  const [editingBio, setEditingBio] = useState(false);
+  const [bioText, setBioText] = useState(user?.bio || "");
+  const [savingBio, setSavingBio] = useState(false);
+
+  const startEditBio = () => {
+    setBioText(user?.bio || "");
+    setEditingBio(true);
+  };
+
+  const handleSaveBio = async () => {
+    if (savingBio) return;
+    setSavingBio(true);
+    try {
+      const res = await api.put("/users/bio", { bio: bioText.trim() });
+      updateUser({ bio: res.data.bio });
+      toast.success("Bio updated.");
+      setEditingBio(false);
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Couldn't update bio. Try again.");
+    } finally {
+      setSavingBio(false);
+    }
+  };
+
   const usernameStatusIcon = {
     idle: null,
     unchanged: null,
@@ -321,6 +346,60 @@ const AccountIdentitySection = () => {
               <button
                 onClick={() => setEditingUsername(false)}
                 disabled={savingUsername}
+                className="px-3.5 py-1.5 rounded-lg border border-stroke text-ink-muted text-sm font-medium hover:bg-surface transition"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+      </FieldRow>
+      <FieldRow
+        label="Bio"
+        helperText="A short description shown on your profile. Max 150 characters."
+      >
+        {!editingBio ? (
+          <div className="flex items-start justify-between gap-3">
+            <span className="text-base text-ink leading-snug">
+              {user?.bio?.trim() || (
+                <span className="text-ink-muted italic">No bio yet.</span>
+              )}
+            </span>
+            <button
+              onClick={startEditBio}
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-primary-600 hover:text-primary-800 transition shrink-0"
+            >
+              <FiEdit2 size={12} />
+              Edit
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            <div className="relative">
+              <textarea
+                value={bioText}
+                onChange={(e) => setBioText(e.target.value)}
+                placeholder="Write something about yourself…"
+                maxLength={150}
+                rows={3}
+                autoFocus
+                className="w-full px-3 py-2 rounded-xl border border-stroke bg-surface text-ink text-base outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100 transition resize-none"
+              />
+              <span className="absolute bottom-2 right-3 text-[11px] text-ink-muted pointer-events-none">
+                {bioText.length}/150
+              </span>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={handleSaveBio}
+                disabled={savingBio}
+                className="px-3.5 py-1.5 rounded-lg bg-primary-600 hover:bg-primary-800 disabled:opacity-50 text-white text-sm font-medium transition"
+              >
+                {savingBio ? "Saving..." : "Save"}
+              </button>
+              <button
+                onClick={() => setEditingBio(false)}
+                disabled={savingBio}
                 className="px-3.5 py-1.5 rounded-lg border border-stroke text-ink-muted text-sm font-medium hover:bg-surface transition"
               >
                 Cancel

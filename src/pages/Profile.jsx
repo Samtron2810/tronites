@@ -12,7 +12,6 @@ import { uploadToCloudinary } from "../services/cloudinary";
 import { useAuth } from "../context/useAuth";
 import { useSocket } from "../context/useSocket";
 import {
-  FiEdit2,
   FiMessageCircle,
   FiCamera,
   FiMoreVertical,
@@ -41,10 +40,7 @@ const Profile = () => {
   const [isLoadingMorePosts, setIsLoadingMorePosts] = useState(false);
   const [isFollowing, setIsFollowing] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [editingBio, setEditingBio] = useState(false);
-  const [bioText, setBioText] = useState("");
   const [isFollowingLoading, setIsFollowingLoading] = useState(false);
-  const [isSavingBio, setIsSavingBio] = useState(false);
   const [iBlockedThem, setIBlockedThem] = useState(false);
   const [theyBlockedMe, setTheyBlockedMe] = useState(false);
   const [showOptionsMenu, setShowOptionsMenu] = useState(false);
@@ -258,24 +254,7 @@ const Profile = () => {
     }
   };
 
-  const handleBioSave = async () => {
-    if (bioText.trim() === (profile.bio || "")) {
-      setEditingBio(false);
-      return;
-    }
-    if (isSavingBio) return;
-    setIsSavingBio(true);
-    try {
-      const res = await api.put("/users/bio", { bio: bioText });
-      setProfile((prev) => ({ ...prev, bio: res.data.bio }));
-      setEditingBio(false);
-    } catch (e) {
-      console.error(e);
-      toast.error("Couldn't save bio. Try again.");
-    } finally {
-      setIsSavingBio(false);
-    }
-  };
+
 
   if (!currentUser) return <ProfileSkeleton />;
   if (!profile) return <ProfileSkeleton />;
@@ -462,47 +441,8 @@ const Profile = () => {
             </p>
           )}
 
-          {editingBio ? (
-            <div className="flex items-center gap-2 mt-2">
-              <input
-                value={bioText}
-                onChange={(e) => setBioText(e.target.value)}
-                maxLength={150}
-                placeholder="Write your bio..."
-                className="flex-1 border border-stroke rounded-xl px-3 py-2 text-base text-ink outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100 transition"
-              />
-              <button
-                onClick={handleBioSave}
-                disabled={isSavingBio}
-                className="px-3 py-2 rounded-xl text-base font-semibold text-white bg-primary-600 hover:bg-primary-800 disabled:opacity-50 transition"
-              >
-                {isSavingBio ? "..." : "Save"}
-              </button>
-              <button
-                onClick={() => setEditingBio(false)}
-                className="text-base text-ink-muted hover:text-ink transition"
-              >
-                Cancel
-              </button>
-            </div>
-          ) : (
-            <div className="flex items-center gap-2 mt-1">
-              <p className="text-base text-ink-sub">
-                {profile.bio || "No bio yet."}
-              </p>
-              {isOwnProfile && (
-                <button
-                  onClick={() => {
-                    setBioText(profile.bio || "");
-                    setEditingBio(true);
-                  }}
-                  className="text-ink-muted hover:text-primary-600 transition"
-                  title="Edit bio"
-                >
-                  <FiEdit2 size={13} />
-                </button>
-              )}
-            </div>
+          {profile.bio && (
+            <p className="text-base text-ink-sub mt-1">{profile.bio}</p>
           )}
 
           {/* Stats */}
