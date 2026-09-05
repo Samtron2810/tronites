@@ -21,6 +21,11 @@ import VerifiedBadge from "./VerifiedBadge";
 
 const APPLICABLE_TYPES = ["individual", "business", "government", "creator"];
 
+// Types that require a prerequisite badge before applying
+const PREREQUISITES = {
+  creator: "individual",
+};
+
 const CATEGORIES = [
   "Content Creator",
   "Journalist / Media",
@@ -124,46 +129,61 @@ const StepEligibility = ({ checks, allMet, onProceed }) => (
 );
 
 // ── Step: Badge type picker ───────────────────────────────────────────
-const StepType = ({ availableTypes, selectedType, onSelect, onNext, feeInfo }) => (
+// disabledTypes: map of type → reason string (shown as tooltip/subtext)
+const StepType = ({ selectableTypes, disabledTypes, selectedType, onSelect, onNext, feeInfo }) => (
   <div className="space-y-4">
     <div>
       <h3 className="text-base font-semibold text-ink mb-0.5">Choose a badge type</h3>
       <p className="text-sm text-ink-muted">Each badge confirms a specific claim.</p>
     </div>
     <div className="space-y-2">
-      {availableTypes.map((t) => {
+      {APPLICABLE_TYPES.map((t) => {
         const m = VERIFICATION_META[t];
-        const selected = selectedType === t;
         const fee = feeInfo[t];
+        const isSelectable = selectableTypes.includes(t);
+        const disabledReason = disabledTypes[t];
+        const isDisabled = !isSelectable;
+        const selected = selectedType === t && isSelectable;
+
         return (
           <button
             key={t}
             type="button"
-            onClick={() => onSelect(t)}
+            onClick={() => isSelectable && onSelect(t)}
+            disabled={isDisabled}
             className={`w-full flex items-center gap-3 rounded-xl border px-4 py-3 text-left transition-all ${
-              selected ? "border-primary-500 bg-primary-50" : "border-stroke hover:bg-surface"
+              isDisabled
+                ? "border-stroke bg-surface opacity-60 cursor-not-allowed"
+                : selected
+                ? "border-primary-500 bg-primary-50"
+                : "border-stroke hover:bg-surface cursor-pointer"
             }`}
           >
             <span
               className="w-3 h-3 rounded-full shrink-0 ring-2 ring-white"
               style={{
-                backgroundColor: m.color,
+                backgroundColor: isDisabled ? "#ccc" : m.color,
                 boxShadow: selected ? `0 0 0 2px ${m.color}40` : "none",
               }}
             />
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
-                <p className={`text-sm font-semibold ${selected ? "text-primary-700" : "text-ink"}`}>
+                <p className={`text-sm font-semibold ${selected ? "text-primary-700" : isDisabled ? "text-ink-muted" : "text-ink"}`}>
                   {m.label}
                 </p>
-                {fee?.requiresPayment && (
+                {fee?.requiresPayment && !isDisabled && (
                   <span className="text-[11px] font-semibold text-amber-700 bg-amber-100 rounded-full px-2 py-0.5">
                     ₦{fee.feeNgn?.toLocaleString()}
                   </span>
                 )}
+                {isDisabled && (
+                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-ink-muted bg-surface border border-stroke rounded-full px-2 py-0.5">
+                    <FiLock size={9} /> Locked
+                  </span>
+                )}
               </div>
               <p className="text-[12px] text-ink-muted leading-snug mt-0.5">
-                {TYPE_DESCRIPTIONS[t]}
+                {disabledReason || TYPE_DESCRIPTIONS[t]}
               </p>
             </div>
             {selected && <FiCheck size={15} className="text-primary-600 shrink-0" />}
@@ -173,7 +193,7 @@ const StepType = ({ availableTypes, selectedType, onSelect, onNext, feeInfo }) =
     </div>
     <button
       onClick={onNext}
-      disabled={!selectedType}
+      disabled={!selectedType || !selectableTypes.includes(selectedType)}
       className="w-full py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-sm font-semibold text-white disabled:opacity-50 disabled:cursor-not-allowed transition flex items-center justify-center gap-1.5"
     >
       Continue <FiChevronRight size={16} />
@@ -515,13 +535,44 @@ const VerificationSection = () => {
   });
 
   const { checks, allMet } = useEligibility(user);
+
+  // Derived sets — computed once and passed down
   const heldTypes = new Set((user?.verifications || []).map((v) => v.type));
   const pendingTypes = new Set(
     requests.filter((r) => r.status === "pending").map((r) => r.type),
   );
-  const availableTypes = APPLICABLE_TYPES.filter(
-    (t) => !heldTypes.has(t) && !pendingTypes.has(t),
+
+  // ANY pending request locks the whole new-application flow
+  const hasPendingAny = pendingTypes.size > 0;
+
+  // Compute per-type disabled reasons (types not yet held and not pending but blocked by a rule)
+  // selectableTypes: types the user can actually pick and apply for right now
+  // disabledTypes: map of type → reason string shown in the picker
+  const { selectableTypes, disabledTypes } = APPLICABLE_TYPES.reduce(
+    (acc, t) => {
+      // Already held — never shown in picker (filtered out of display entirely)
+      if (heldTypes.has(t)) return acc;
+      // Already pending — shown as locked (pending another review)
+      if (pendingTypes.has(t)) {
+        acc.disabledTypes[t] = "Under review — locked until resolved.";
+        return acc;
+      }
+      // Check prerequisites
+      const prereq = PREREQUISITES[t];
+      if (prereq && !heldTypes.has(prereq)) {
+        const prereqMeta = VERIFICATION_META[prereq];
+        acc.disabledTypes[t] = `Requires an active ${prereqMeta?.label ?? prereq} badge first.`;
+        return acc;
+      }
+      // Selectable
+      acc.selectableTypes.push(t);
+      return acc;
+    },
+    { selectableTypes: [], disabledTypes: {} },
   );
+
+  // All non-held types shown in the picker (selectable + locked-with-reason)
+  const pickerTypes = APPLICABLE_TYPES.filter((t) => !heldTypes.has(t));
 
   const loadRequests = useCallback(async () => {
     setLoadingRequests(true);
@@ -613,9 +664,6 @@ const VerificationSection = () => {
       }
       // Redirect to Paystack checkout. Paystack will redirect back to
       // ?paystack_ref=<reference> which the useEffect above catches.
-      const returnUrl = `${window.location.origin}${window.location.pathname}?paystack_ref=${res.data.reference}`;
-      // Paystack inline doesn't support external redirect on mobile PWA well;
-      // use a full page redirect via authorization_url appended with callback.
       window.location.href = res.data.authorizationUrl;
     } catch (e) {
       toast.error(e.response?.data?.message || "Could not start payment.");
@@ -749,10 +797,23 @@ const VerificationSection = () => {
         </div>
       )}
 
-      {/* Flow */}
+      {/* ── Idle: apply entry point or pending lock notice ── */}
       {view === "idle" && (
         <>
-          {availableTypes.length > 0 ? (
+          {hasPendingAny ? (
+            // Lock the entire new-application flow while any request is pending
+            <div className="flex items-start gap-2.5 rounded-xl border border-amber-200 bg-amber-50 px-3 py-3">
+              <FiClock size={15} className="text-amber-600 shrink-0 mt-0.5" />
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-amber-800">Application under review</p>
+                <p className="text-[12px] text-amber-700 mt-0.5">
+                  You have a pending request being reviewed. New applications are locked until it's
+                  resolved.
+                </p>
+              </div>
+            </div>
+          ) : pickerTypes.length > 0 ? (
+            // There are types to show (some selectable, some locked-with-reason)
             <button
               onClick={() => setView("eligibility")}
               className="text-sm font-semibold text-primary-600 hover:text-primary-700 flex items-center gap-1"
@@ -760,6 +821,7 @@ const VerificationSection = () => {
               Apply for a badge <FiChevronRight size={14} />
             </button>
           ) : (
+            // All applicable types already held and no pending
             requests.length === 0 &&
             (user?.verifications || []).length === 0 && (
               <p className="text-sm text-ink-muted">No badge types available to apply for.</p>
@@ -774,7 +836,8 @@ const VerificationSection = () => {
 
       {view === "step-type" && (
         <StepType
-          availableTypes={availableTypes}
+          selectableTypes={selectableTypes}
+          disabledTypes={disabledTypes}
           selectedType={selectedType}
           onSelect={setSelectedType}
           onNext={handleTypeNext}
