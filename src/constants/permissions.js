@@ -1,4 +1,4 @@
-// Phase 5 — the five granular permissions, in display order. Shared
+// Phase 5 — the granular permissions, in display order. Shared
 // between AdminUsers.jsx (which used to own this list) and
 // ConfirmPermissionChangeModal.jsx; lives in its own constants file
 // because react-refresh requires component files to export components
@@ -23,6 +23,11 @@ export const PERMISSION_OPTIONS = [
     value: "view_audit_log",
     label: "View audit log",
     hint: "Read the moderation audit trail",
+  },
+  {
+    value: "manage_verification",
+    label: "Manage verification",
+    hint: "Review, approve, and deny verification badge applications",
   },
   {
     value: "manage_roles",

@@ -995,7 +995,7 @@ const ModerationQueue = () => {
             </div>
           )}
         </>
-      ) : (
+      ) : queueTab === "appeals" ? (
         <>
           <div className="flex gap-1 mb-5 bg-card border border-stroke rounded-xl p-1 w-fit">
             {APPEAL_STATUS_TABS.map((tab) => (
@@ -1055,11 +1055,8 @@ const ModerationQueue = () => {
             </div>
           )}
         </>
-      )}
-
-      {queueTab === "verification" && (
+      ) : (
         <>
-          {/* Status filter */}
           <div className="flex gap-1 mb-5 bg-card border border-stroke rounded-xl p-1 w-fit">
             {VERIFICATION_STATUS_TABS.map((t) => (
               <button
