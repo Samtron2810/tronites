@@ -7,14 +7,39 @@
  * channels survive; only formats without alpha (e.g. JPEG) are
  * re-encoded as JPEG. Forcing everything to JPEG previously flattened
  * transparent PNGs onto a black background.
+ *
+ * Formats the browser canvas pipeline can't decode (HEIC/HEIF from
+ * iPhone, files with an empty or unrecognised MIME type) are passed
+ * through unchanged. FileReader / Image / canvas all fail on these
+ * silently or via onerror — Cloudinary handles them server-side fine.
  */
 const TRANSPARENT_FORMATS = new Set(["image/png", "image/webp"]);
+
+// Types the FileReader → canvas pipeline can reliably decode in every
+// browser. Anything outside this set is passed through as-is.
+const CANVAS_DECODABLE = new Set([
+  "image/jpeg",
+  "image/jpg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+  "image/avif",
+  "image/bmp",
+]);
 
 const compressImage = (
   file,
   { maxWidth = 1920, quality = 0.7, skipBelowBytes = 500 * 1024 } = {},
 ) => {
   return new Promise((resolve, reject) => {
+    // Pass through formats the canvas pipeline can't decode (e.g. HEIC/HEIF
+    // from iPhone cameras, files with an empty or unknown MIME type).
+    // Cloudinary accepts these natively — no need to transcode client-side.
+    if (!file.type || !CANVAS_DECODABLE.has(file.type)) {
+      resolve(file);
+      return;
+    }
+
     // If file is small enough, skip compression
     if (file.size < skipBelowBytes) {
       resolve(file);
