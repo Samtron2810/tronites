@@ -49,7 +49,7 @@ const FieldRow = ({
   );
 };
 
-const AccountIdentitySection = () => {
+const AccountIdentitySection = ({ embedded = false }) => {
   const { user, updateUser } = useAuth();
 
   // ── Name ──────────────────────────────────────────────────────────
@@ -221,8 +221,12 @@ const AccountIdentitySection = () => {
     invalid: "3-20 chars: lowercase letters, numbers, underscores only",
   }[status];
 
+  const outerClass = embedded
+    ? "divide-y divide-stroke px-5"
+    : "bg-card border border-stroke rounded-2xl p-5 divide-y divide-stroke";
+
   return (
-    <section className="bg-card border border-stroke rounded-2xl p-5 divide-y divide-stroke">
+    <section className={outerClass}>
       <FieldRow
         label="Name"
         helperText="Shown on your profile and posts. Can be changed once every 3 days."

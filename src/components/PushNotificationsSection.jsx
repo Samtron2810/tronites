@@ -47,7 +47,7 @@ const Toggle = ({ checked, onChange, disabled }) => (
   </button>
 );
 
-const PushNotificationsSection = () => {
+const PushNotificationsSection = ({ embedded = false }) => {
   const supported = isPushSupported();
   const [permission, setPermission] = useState(getPushPermission());
   const [subscribed, setSubscribed] = useState(false);
@@ -111,40 +111,50 @@ const PushNotificationsSection = () => {
   };
 
   if (!supported) {
+    const cls = embedded ? "p-5" : "bg-card border border-stroke rounded-2xl p-5 mt-4";
     return (
-      <section className="bg-card border border-stroke rounded-2xl p-5 mt-4">
-        <h2 className="text-base font-semibold text-ink mb-1">
-          Push notifications
-        </h2>
+      <div className={cls}>
+        {!embedded && <h2 className="text-base font-semibold text-ink mb-1">Push notifications</h2>}
         <p className="text-sm text-ink-muted">
           Not supported in this browser. Try Chrome, Edge, or Safari 16.4+.
         </p>
-      </section>
+      </div>
     );
   }
 
+  const outerClass = embedded ? "overflow-hidden" : "bg-card border border-stroke rounded-2xl mt-4 overflow-hidden";
+  const headerPad = embedded ? "px-5 pt-5 pb-4" : "px-5 pt-5 pb-4";
+
   return (
-    <section className="bg-card border border-stroke rounded-2xl mt-4 overflow-hidden">
+    <div className={outerClass}>
       <div className="flex items-center justify-between gap-3 px-5 pt-5 pb-4">
-        <div className="flex items-center gap-3 min-w-0">
-          <div className="w-9 h-9 rounded-xl bg-primary-600/10 flex items-center justify-center shrink-0">
-            {subscribed ? (
-              <FiBell className="text-primary-600" size={16} />
-            ) : (
-              <FiBellOff className="text-ink-muted" size={16} />
-            )}
+        {!embedded ? (
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-9 h-9 rounded-xl bg-primary-600/10 flex items-center justify-center shrink-0">
+              {subscribed ? (
+                <FiBell className="text-primary-600" size={16} />
+              ) : (
+                <FiBellOff className="text-ink-muted" size={16} />
+              )}
+            </div>
+            <div className="min-w-0">
+              <h2 className="text-base font-semibold text-ink">
+                Push notifications
+              </h2>
+              <p className="text-sm text-ink-muted">
+                {permission === "denied"
+                  ? "Blocked — enable in browser settings"
+                  : "Get notified even when Tronites is closed"}
+              </p>
+            </div>
           </div>
-          <div className="min-w-0">
-            <h2 className="text-base font-semibold text-ink">
-              Push notifications
-            </h2>
-            <p className="text-sm text-ink-muted">
-              {permission === "denied"
-                ? "Blocked — enable in browser settings"
-                : "Get notified even when Tronites is closed"}
-            </p>
-          </div>
-        </div>
+        ) : (
+          <p className="text-sm text-ink-muted">
+            {permission === "denied"
+              ? "Blocked — enable in browser settings"
+              : subscribed ? "Push notifications are on" : "Push notifications are off"}
+          </p>
+        )}
         {checking ? (
           <FiLoader className="animate-spin text-ink-muted shrink-0" size={16} />
         ) : (
@@ -175,7 +185,7 @@ const PushNotificationsSection = () => {
           ))}
         </div>
       )}
-    </section>
+    </div>
   );
 };
 

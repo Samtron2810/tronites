@@ -510,7 +510,7 @@ const StepStatement = ({ form, onChange, onSubmit, onBack, submitting }) => {
 };
 
 // ── Main component ────────────────────────────────────────────────────
-const VerificationSection = () => {
+const VerificationSection = ({ embedded = false }) => {
   const { user } = useAuth();
   const [requests, setRequests] = useState([]);
   const [loadingRequests, setLoadingRequests] = useState(true);
@@ -714,17 +714,24 @@ const VerificationSection = () => {
     setView(fee?.requiresPayment ? "step-payment" : "step-type");
   };
 
+  const outerClass = embedded ? "p-5" : "bg-card border border-stroke rounded-2xl p-5 mt-4";
+  const Outer = embedded ? "div" : "section";
+
   return (
-    <section className="bg-card border border-stroke rounded-2xl p-5 mt-4">
-      <div className="flex items-center gap-2.5 mb-1">
-        <div className="w-8 h-8 rounded-xl bg-primary-50 flex items-center justify-center shrink-0">
-          <FiAward size={15} className="text-primary-600" />
-        </div>
-        <h2 className="text-base font-semibold text-ink">Verification</h2>
-      </div>
-      <p className="text-sm text-ink-muted mb-4">
-        Each badge confirms one specific claim about your account — never generic importance.
-      </p>
+    <Outer className={outerClass}>
+      {!embedded && (
+        <>
+          <div className="flex items-center gap-2.5 mb-1">
+            <div className="w-8 h-8 rounded-xl bg-primary-50 flex items-center justify-center shrink-0">
+              <FiAward size={15} className="text-primary-600" />
+            </div>
+            <h2 className="text-base font-semibold text-ink">Verification</h2>
+          </div>
+          <p className="text-sm text-ink-muted mb-4">
+            Each badge confirms one specific claim about your account — never generic importance.
+          </p>
+        </>
+      )}
 
       {/* Held badges */}
       {(user?.verifications || []).length > 0 && (
@@ -884,7 +891,7 @@ const VerificationSection = () => {
           Cancel application
         </button>
       )}
-    </section>
+    </Outer>
   );
 };
 
