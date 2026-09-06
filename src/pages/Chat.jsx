@@ -8,6 +8,7 @@ import {
   uploadVideoMessageToCloudinary,
   validateVideoFile,
 } from "../services/videoUpload";
+import { uploadToCloudinary } from "../services/cloudinary";
 import {
   VoiceRecorder,
   uploadVoiceMessageToCloudinary,
@@ -531,31 +532,36 @@ const Chat = () => {
 
     setIsSending(true);
     try {
-      const formData = new FormData();
-      if (messageText.trim()) formData.append("text", messageText.trim());
-      for (const preview of imagePreviews) {
-        const blob = await (await fetch(preview)).blob();
-        // Compress before upload — chat images can be full-resolution
-        // camera photos (multi-MB) which are expensive to store and slow
-        // to send. Wrap in a File so compressImage has a name/size/type
-        // to work with.
-        const file = new File([blob], "chat-image", {
-          type: blob.type || "image/jpeg",
-        });
-        const compressed = await compressImage(file, {
-          maxWidth: 1280,
-          quality: 0.7,
-          skipBelowBytes: 300 * 1024,
-        });
-        formData.append("images", compressed);
+      let imageUrls = [];
+
+      if (imagePreviews.length > 0) {
+        // 1. Get a single signature for all images in this batch.
+        const sigRes = await api.post("/messages/signature/image");
+        const signatureData = sigRes.data;
+
+        // 2. Compress locally, then upload each directly to Cloudinary.
+        imageUrls = await Promise.all(
+          imagePreviews.map(async (preview) => {
+            const blob = await (await fetch(preview)).blob();
+            const file = new File([blob], "chat-image", {
+              type: blob.type || "image/jpeg",
+            });
+            const compressed = await compressImage(file, {
+              maxWidth: 1280,
+              quality: 0.7,
+              skipBelowBytes: 300 * 1024,
+            });
+            const result = await uploadToCloudinary({ file: compressed, signatureData });
+            return result.secure_url;
+          }),
+        );
       }
-      const res = await api.post(
-        `/messages/${selectedChat.otherUser._id}`,
-        formData,
-        {
-          headers: { "Content-Type": "multipart/form-data" },
-        },
-      );
+
+      // 3. Create the message with URLs — pure JSON, no multipart.
+      const res = await api.post(`/messages/${selectedChat.otherUser._id}`, {
+        text: messageText.trim() || undefined,
+        images: imageUrls,
+      });
       setMessages((prev) => insertMessageSorted(prev, res.data));
       setMessageText("");
       setImagePreviews([]);
