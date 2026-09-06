@@ -554,7 +554,7 @@ const Chat = () => {
               skipBelowBytes: 300 * 1024,
             });
             const result = await uploadToCloudinary({ file: compressed, signatureData });
-            return result.secure_url;
+            return { url: result.secure_url, publicId: result.public_id };
           }),
         );
       }

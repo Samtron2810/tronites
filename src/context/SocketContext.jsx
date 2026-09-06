@@ -13,7 +13,7 @@ export const SocketProvider = ({ children }) => {
   const [socket, setSocket] = useState(null);
   const [onlineUsers, setOnlineUsers] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
-  const { user, logout } = useAuth();
+  const { user, logout, getMe } = useAuth();
 
   // Single source of truth for the navbar badge. Both the Navbar (on
   // mount / on socket events) and the Chat page (right after it marks
@@ -21,19 +21,12 @@ export const SocketProvider = ({ children }) => {
   // that's what caused the badge to only update after a full reload:
   // Chat had no way to tell Navbar's local state to refresh.
   //
-  // Note: sums unread across the first 50 conversations only. A user
-  // with more active threads than that would need a dedicated
-  // unread-count endpoint for a fully accurate badge.
+  // Uses a dedicated endpoint that counts ALL unread messages across
+  // every conversation — not capped to the first 50.
   const refreshUnreadCount = useCallback(async () => {
     try {
-      const res = await api.get("/messages/conversations", {
-        params: { page: 1, limit: 50 },
-      });
-      const total = res.data.conversations.reduce(
-        (sum, c) => sum + (c.unreadCount || 0),
-        0,
-      );
-      setUnreadCount(total);
+      const res = await api.get("/messages/unread-count");
+      setUnreadCount(res.data.total ?? 0);
     } catch {
       // leave the last known count in place on failure
     }
@@ -128,6 +121,14 @@ export const SocketProvider = ({ children }) => {
       };
       newSocket.on("accountRestricted", onAccountRestricted);
 
+      // Admin changed this user's role or permissions — re-fetch the
+      // session so the UI reflects the new access level immediately,
+      // without waiting for the 15-minute JWT expiry.
+      const onPermissionsChanged = () => {
+        getMe({ silent: true });
+      };
+      newSocket.on("permissionsChanged", onPermissionsChanged);
+
       // Prime the badge on connect/login.
       // eslint-disable-next-line react-hooks/set-state-in-effect -- setState happens inside the async fn, not synchronously here
       refreshUnreadCount();
@@ -154,6 +155,7 @@ export const SocketProvider = ({ children }) => {
         newSocket.off("messageDeleted", onUnreadRefreshNeeded);
         newSocket.off("messagesRead", onUnreadRefreshNeeded);
         newSocket.off("accountRestricted", onAccountRestricted);
+        newSocket.off("permissionsChanged", onPermissionsChanged);
         safeDisconnect();
         setSocket(null);
         setOnlineUsers([]);

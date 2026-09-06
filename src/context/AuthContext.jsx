@@ -143,6 +143,21 @@ export const AuthProvider = ({ children }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // api.js dispatches this custom event when /auth/refresh returns 403
+  // (account banned/suspended mid-session). Clear cached state so the
+  // UI lands on the login screen instead of limping in a broken
+  // half-authenticated state.
+  useEffect(() => {
+    const handleForceLogout = () => {
+      api.clearCache();
+      setAndCacheUser(null);
+    };
+    window.addEventListener("auth:forceLogout", handleForceLogout);
+    return () => {
+      window.removeEventListener("auth:forceLogout", handleForceLogout);
+    };
+  }, [setAndCacheUser]);
+
   return (
     <AuthContext.Provider
       value={{

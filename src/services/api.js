@@ -78,6 +78,14 @@ api.interceptors.response.use(
       await refreshInFlight;
       return api(config);
     } catch (refreshError) {
+      // A 403 from /auth/refresh means the account is banned/suspended
+      // (not just an expired token). The cached user in state would keep
+      // the UI in a broken half-authenticated limbo — force a clean logout
+      // via a custom event so AuthContext can clear state without a
+      // circular import between api.js and AuthContext.
+      if (refreshError?.response?.status === 403) {
+        window.dispatchEvent(new CustomEvent("auth:forceLogout"));
+      }
       return Promise.reject(refreshError);
     }
   },

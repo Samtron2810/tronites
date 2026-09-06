@@ -29,8 +29,11 @@ const CreatePost = ({ fetchPosts }) => {
         const uploaded = await Promise.all(
           compressed.map((file) => uploadToCloudinary({ file, signatureData })),
         );
-        const urls = uploaded.map((r) => r.secure_url);
-        await api.post("/posts", { text, images: urls, privacy });
+        const imagePayload = uploaded.map((r) => ({
+          url: r.secure_url,
+          publicId: r.public_id,
+        }));
+        await api.post("/posts", { text, images: imagePayload, privacy });
         toast.success("Post created!", { id: toastId });
       } else {
         // Text-only post.
