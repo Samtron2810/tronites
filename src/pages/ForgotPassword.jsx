@@ -31,8 +31,8 @@ const ForgotPassword = () => {
       // the email itself, and not a security control on its own. It just
       // lets ResetPassword know which pending challenge to show without
       // putting an email address in the URL. Same pattern as Register.jsx.
-      sessionStorage.setItem("otpChallengeId", res.data.challengeId);
-      sessionStorage.setItem("otpEmail", res.data.email);
+      sessionStorage.setItem("otp:reset:challengeId", res.data.challengeId);
+      sessionStorage.setItem("otp:reset:email", res.data.email);
 
       navigate("/reset-password", {
         state: { challengeId: res.data.challengeId, email: res.data.email },

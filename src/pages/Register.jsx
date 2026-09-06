@@ -49,10 +49,10 @@ const Register = () => {
       // regardless of what's carried here. Router state avoids the URL
       // entirely; sessionStorage is only a fallback so a page refresh
       // (which clears router state) doesn't strand the user.
-      sessionStorage.setItem("otpChallengeId", res.challengeId);
-      sessionStorage.setItem("otpEmail", res.email);
+      sessionStorage.setItem("otp:register:challengeId", res.challengeId);
+      sessionStorage.setItem("otp:register:email", res.email);
       navigate("/verify-otp", {
-        state: { challengeId: res.challengeId, email: res.email },
+        state: { challengeId: res.challengeId, email: res.email, duplicate: res._duplicate },
       });
     } catch (error) {
       toast.error(error.response?.data?.message || "Registration failed");

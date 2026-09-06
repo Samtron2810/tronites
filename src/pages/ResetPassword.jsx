@@ -24,11 +24,11 @@ const ResetPassword = () => {
   const [challengeId] = useState(
     () =>
       location.state?.challengeId ||
-      sessionStorage.getItem("otpChallengeId") ||
+      sessionStorage.getItem("otp:reset:challengeId") ||
       "",
   );
   const [email] = useState(
-    () => location.state?.email || sessionStorage.getItem("otpEmail") || "",
+    () => location.state?.email || sessionStorage.getItem("otp:reset:email") || "",
   );
   const [otp, setOtp] = useState("");
   const [password, setPassword] = useState("");
@@ -74,8 +74,8 @@ const ResetPassword = () => {
         newPassword: password,
       });
 
-      sessionStorage.removeItem("otpChallengeId");
-      sessionStorage.removeItem("otpEmail");
+      sessionStorage.removeItem("otp:reset:challengeId");
+      sessionStorage.removeItem("otp:reset:email");
 
       toast.success("Password reset successful. Please sign in.");
       navigate("/login");
@@ -146,9 +146,11 @@ const ResetPassword = () => {
           <div className="bg-card border border-stroke rounded-2xl p-6 shadow-sm space-y-4">
             <input
               type="text"
+              inputMode="numeric"
+              pattern="\d*"
               placeholder="Enter 6-digit OTP"
               value={otp}
-              onChange={(e) => setOtp(e.target.value)}
+              onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
               maxLength={6}
               className="w-full px-4 py-3 rounded-xl border border-stroke bg-surface text-ink text-base tracking-widest text-center placeholder:tracking-normal placeholder:text-ink-muted outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100 transition"
             />

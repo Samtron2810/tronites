@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import api from "../services/api";
 import { useAuth } from "../context/useAuth";
@@ -8,29 +8,33 @@ import { FiMail, FiRefreshCw } from "react-icons/fi";
 const VerifyOtp = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { getMe } = useAuth();
+  const { getMe, user, loading: authLoading } = useAuth();
 
   // Router state is the primary source (never touches the URL); session
   // storage is only a fallback so a page refresh — which clears router
-  // state — doesn't strand someone mid-flow. Neither one is a security
-  // control: the challengeId is just a UI handle for "which pending
-  // challenge is this page showing". Every real check (rate limits,
-  // attempt limits, expiry, hashed comparison) happens server-side
-  // regardless of what's held here or how it got here.
+  // state — doesn't strand someone mid-flow. Namespaced keys prevent
+  // collision with the reset-password flow which uses its own keys.
   const [challengeId] = useState(
-    () => location.state?.challengeId || sessionStorage.getItem("otpChallengeId") || "",
+    () => location.state?.challengeId || sessionStorage.getItem("otp:register:challengeId") || "",
   );
   const [email] = useState(
-    () => location.state?.email || sessionStorage.getItem("otpEmail") || "",
+    () => location.state?.email || sessionStorage.getItem("otp:register:email") || "",
   );
+  // _duplicate flag from the server (via router state): the email was
+  // already registered. No real OTP was sent; show a helpful sign-in hint.
+  const [isDuplicate] = useState(() => !!location.state?.duplicate);
   const [otp, setOtp] = useState("");
   const [loading, setLoading] = useState(false);
   const [resendLoading, setResendLoading] = useState(false);
 
+  // Bug 7 fix: redirect already-logged-in users away (matches guard on
+  // Login, Register, ForgotPassword, ResetPassword).
+  useEffect(() => {
+    if (!authLoading && user) navigate("/", { replace: true });
+  }, [authLoading, user, navigate]);
+
   // If there's nothing to verify (cold URL open, old bookmark, stale
-  // tab), there's no point showing this page — send them back to start
-  // a real flow. This is purely for a sane UX; it changes nothing about
-  // what the server will accept.
+  // tab), send them back to start a real flow.
   useEffect(() => {
     if (!challengeId) {
       toast.error("Please start by creating an account or logging in.");
@@ -44,8 +48,8 @@ const VerifyOtp = () => {
     setLoading(true);
     try {
       await api.post("/auth/verify-otp", { challengeId, otp });
-      sessionStorage.removeItem("otpChallengeId");
-      sessionStorage.removeItem("otpEmail");
+      sessionStorage.removeItem("otp:register:challengeId");
+      sessionStorage.removeItem("otp:register:email");
       await getMe();
       toast.success("Verified. Welcome!");
       navigate("/choose-username");
@@ -83,12 +87,31 @@ const VerifyOtp = () => {
           <p className="text-ink font-semibold text-base mt-0.5 break-all">{email}</p>
         </div>
 
+        {isDuplicate && (
+          <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+            <p className="text-sm font-semibold text-amber-700 mb-0.5">This email is already registered</p>
+            <p className="text-sm text-amber-600 leading-relaxed">
+              No code was sent. You can{" "}
+              <Link to="/login" className="font-semibold underline hover:text-amber-800">
+                sign in
+              </Link>{" "}
+              or{" "}
+              <Link to="/forgot-password" className="font-semibold underline hover:text-amber-800">
+                reset your password
+              </Link>{" "}
+              instead.
+            </p>
+          </div>
+        )}
+
         <div className="bg-card border border-stroke rounded-2xl p-6 shadow-sm space-y-4">
           <input
             type="text"
+            inputMode="numeric"
+            pattern="\d*"
             placeholder="Enter 6-digit OTP"
             value={otp}
-            onChange={(e) => setOtp(e.target.value)}
+            onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
             maxLength={6}
             className="w-full px-4 py-3 rounded-xl border border-stroke bg-surface text-ink text-base tracking-widest text-center placeholder:tracking-normal placeholder:text-ink-muted outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100 transition"
           />

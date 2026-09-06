@@ -33,7 +33,8 @@ const Login = () => {
     try {
       await login(formData);
       toast.success("Welcome back!");
-      setTimeout(() => navigate("/"), 800);
+      // Navigation is handled by the useEffect watching `user` state —
+      // no need for a separate setTimeout navigate here.
     } catch (error) {
       setErrorCode(error.response?.data?.code || null);
       toast.error(error.response?.data?.message || "Login failed");

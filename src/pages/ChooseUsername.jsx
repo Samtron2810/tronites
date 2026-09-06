@@ -9,7 +9,13 @@ const USERNAME_RE = /^[a-z0-9_]{3,20}$/;
 
 const ChooseUsername = () => {
   const navigate = useNavigate();
-  const { updateUser, logout } = useAuth();
+  const { updateUser, logout, user } = useAuth();
+
+  // If the user already has a username they should use Settings to change
+  // it, not this onboarding page (which skips the cooldown warning UX).
+  useEffect(() => {
+    if (user?.username) navigate("/", { replace: true });
+  }, [user, navigate]);
 
   const [username, setUsername] = useState("");
   const [status, setStatus] = useState("idle"); // idle | checking | available | taken | invalid
