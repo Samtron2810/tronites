@@ -36,9 +36,21 @@ import {
 // The content panel uses max-height + opacity transition so it animates
 // smoothly without needing JS-measured heights.
 
-const AccordionItem = ({ id, open, onToggle, icon: Icon, iconColor = "text-primary-600", title, subtitle, children, danger = false }) => {
+const AccordionItem = ({
+  id,
+  open,
+  onToggle,
+  icon: Icon,
+  iconColor = "text-primary-600",
+  title,
+  subtitle,
+  children,
+  danger = false,
+}) => {
   return (
-    <div className={`bg-card border rounded-2xl overflow-hidden transition-all duration-200 ${danger ? "border-red-200" : "border-stroke"}`}>
+    <div
+      className={`bg-card border rounded-2xl overflow-hidden transition-all duration-200 ${danger ? "border-red-200" : "border-stroke"}`}
+    >
       {/* Trigger */}
       <button
         type="button"
@@ -47,13 +59,21 @@ const AccordionItem = ({ id, open, onToggle, icon: Icon, iconColor = "text-prima
           open ? "bg-surface" : "hover:bg-surface"
         }`}
       >
-        <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${danger ? "bg-red-50" : "bg-primary-50"}`}>
+        <div
+          className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${danger ? "bg-red-50" : "bg-primary-50"}`}
+        >
           <Icon size={15} className={danger ? "text-red-500" : iconColor} />
         </div>
         <div className="flex-1 min-w-0">
-          <p className={`text-sm font-semibold leading-tight ${danger ? "text-red-600" : "text-ink"}`}>{title}</p>
+          <p
+            className={`text-sm font-semibold leading-tight ${danger ? "text-red-600" : "text-ink"}`}
+          >
+            {title}
+          </p>
           {subtitle && (
-            <p className="text-[12px] text-ink-muted mt-0.5 leading-snug truncate">{subtitle}</p>
+            <p className="text-[12px] text-ink-muted mt-0.5 leading-snug truncate">
+              {subtitle}
+            </p>
           )}
         </div>
         <FiChevronDown
@@ -65,10 +85,14 @@ const AccordionItem = ({ id, open, onToggle, icon: Icon, iconColor = "text-prima
       {/* Content panel */}
       <div
         className={`transition-all duration-200 ease-in-out ${
-          open ? "max-h-[9999px] opacity-100" : "max-h-0 opacity-0 pointer-events-none"
+          open
+            ? "max-h-2499.75 opacity-100"
+            : "max-h-0 opacity-0 pointer-events-none"
         } overflow-hidden`}
       >
-        <div className={`border-t ${danger ? "border-red-100" : "border-stroke"}`}>
+        <div
+          className={`border-t ${danger ? "border-red-100" : "border-stroke"}`}
+        >
           {children}
         </div>
       </div>
@@ -125,11 +149,18 @@ const Settings = () => {
   const [showExportModal, setShowExportModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
-  if (user?.presenceVisibility && user.presenceVisibility !== state.syncedFrom) {
-    setState({ visibility: user.presenceVisibility, syncedFrom: user.presenceVisibility });
+  if (
+    user?.presenceVisibility &&
+    user.presenceVisibility !== state.syncedFrom
+  ) {
+    setState({
+      visibility: user.presenceVisibility,
+      syncedFrom: user.presenceVisibility,
+    });
   }
   const visibility = state.visibility;
-  const setVisibility = (value) => setState((prev) => ({ ...prev, visibility: value }));
+  const setVisibility = (value) =>
+    setState((prev) => ({ ...prev, visibility: value }));
 
   const handleChangeVisibility = async (value) => {
     if (value === visibility || saving) return;
@@ -137,7 +168,9 @@ const Settings = () => {
     setVisibility(value);
     setSaving(true);
     try {
-      const res = await api.put("/users/presence-visibility", { presenceVisibility: value });
+      const res = await api.put("/users/presence-visibility", {
+        presenceVisibility: value,
+      });
       updateUser?.({ presenceVisibility: res.data.presenceVisibility });
       toast.success("Online status setting updated.");
     } catch (e) {
@@ -154,7 +187,9 @@ const Settings = () => {
     setExporting(true);
     try {
       const res = await api.get("/users/me/export");
-      const blob = new Blob([JSON.stringify(res.data, null, 2)], { type: "application/json" });
+      const blob = new Blob([JSON.stringify(res.data, null, 2)], {
+        type: "application/json",
+      });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
@@ -182,9 +217,13 @@ const Settings = () => {
   };
 
   // Derived subtitles shown on collapsed trigger rows
-  const visibilityLabel = VISIBILITY_OPTIONS.find((o) => o.value === visibility)?.label ?? "—";
+  const visibilityLabel =
+    VISIBILITY_OPTIONS.find((o) => o.value === visibility)?.label ?? "—";
   const themeLabel = theme === "dark" ? "Dark mode" : "Light mode";
-  const identitySubtitle = [user?.name, user?.username ? `@${user.username}` : null]
+  const identitySubtitle = [
+    user?.name,
+    user?.username ? `@${user.username}` : null,
+  ]
     .filter(Boolean)
     .join(" · ");
 
@@ -196,7 +235,6 @@ const Settings = () => {
       </p>
 
       <div className="space-y-2">
-
         {/* ── 1. Public profile ─────────────────────────────── */}
         <AccordionItem
           id="identity"
@@ -206,7 +244,7 @@ const Settings = () => {
           title="Edit public info"
           subtitle={identitySubtitle || "Name, username, bio"}
         >
-          <div className="p-0">
+          <div className="py-4">
             <AccountIdentitySection embedded />
           </div>
         </AccordionItem>
@@ -220,7 +258,7 @@ const Settings = () => {
           title="Verification"
           subtitle={
             (user?.verifications || []).length > 0
-              ? `${(user.verifications).length} badge${(user.verifications).length > 1 ? "s" : ""} active`
+              ? `${user.verifications.length} badge${user.verifications.length > 1 ? "s" : ""} active`
               : "Apply for a verified badge"
           }
         >
@@ -251,15 +289,26 @@ const Settings = () => {
                   onClick={() => handleChangeVisibility(opt.value)}
                   disabled={saving}
                   className={`w-full flex items-start gap-3 px-4 py-3 rounded-xl border text-left transition disabled:opacity-60 ${
-                    selected ? "border-primary-400 bg-primary-50" : "border-stroke hover:bg-surface"
+                    selected
+                      ? "border-primary-400 bg-primary-50"
+                      : "border-stroke hover:bg-surface"
                   }`}
                 >
-                  <Icon size={16} className={`mt-0.5 shrink-0 ${selected ? "text-primary-600" : "text-ink-muted"}`} />
+                  <Icon
+                    size={16}
+                    className={`mt-0.5 shrink-0 ${selected ? "text-primary-600" : "text-ink-muted"}`}
+                  />
                   <span className="flex-1">
-                    <span className="block text-sm font-medium text-ink">{opt.label}</span>
-                    <span className="block text-[12px] text-ink-muted mt-0.5">{opt.description}</span>
+                    <span className="block text-sm font-medium text-ink">
+                      {opt.label}
+                    </span>
+                    <span className="block text-[12px] text-ink-muted mt-0.5">
+                      {opt.description}
+                    </span>
                   </span>
-                  <span className={`mt-0.5 w-4 h-4 rounded-full border-2 shrink-0 ${selected ? "border-primary-500 bg-primary-500" : "border-stroke"}`} />
+                  <span
+                    className={`mt-0.5 w-4 h-4 rounded-full border-2 shrink-0 ${selected ? "border-primary-500 bg-primary-500" : "border-stroke"}`}
+                  />
                 </button>
               );
             })}
@@ -291,14 +340,17 @@ const Settings = () => {
         >
           <div className="p-5">
             <p className="text-sm text-ink-muted mb-4">
-              Choose between light and dark mode. Your choice is saved on this device.
+              Choose between light and dark mode. Your choice is saved on this
+              device.
             </p>
             <button
               onClick={toggleTheme}
               className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-stroke text-sm font-medium text-ink hover:bg-surface transition"
             >
               {theme === "dark" ? <FiSun size={15} /> : <FiMoon size={15} />}
-              {theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+              {theme === "dark"
+                ? "Switch to light mode"
+                : "Switch to dark mode"}
             </button>
           </div>
         </AccordionItem>
@@ -335,8 +387,8 @@ const Settings = () => {
         >
           <div className="p-5">
             <p className="text-sm text-ink-muted mb-4">
-              Download a copy of everything tied to your account — posts, comments, likes,
-              bookmarks, follows, messages, and more.
+              Download a copy of everything tied to your account — posts,
+              comments, likes, bookmarks, follows, messages, and more.
             </p>
             <button
               onClick={() => setShowExportModal(true)}
@@ -397,8 +449,8 @@ const Settings = () => {
         >
           <div className="p-5">
             <p className="text-sm text-ink-muted mb-4">
-              Permanently deletes your account and everything in it. This can't be
-              undone after the 30-day grace period.
+              Permanently deletes your account and everything in it. This can't
+              be undone after the 30-day grace period.
             </p>
             <button
               onClick={() => setShowDeleteModal(true)}
@@ -409,7 +461,6 @@ const Settings = () => {
             </button>
           </div>
         </AccordionItem>
-
       </div>
 
       {showExportModal && (
