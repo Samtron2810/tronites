@@ -23,9 +23,7 @@ const CreatePost = ({ fetchPosts }) => {
       if (images.length) {
         // Images: get a signed upload request, upload each image directly
         // to Cloudinary, then create the post with the returned URLs.
-        const sigRes = await api.post("/posts/signature/image", {
-          count: images.length,
-        });
+        const sigRes = await api.post("/posts/signature/image");
         const signatureData = sigRes.data;
         const compressed = await Promise.all(images.map(compressImage));
         const uploaded = await Promise.all(
@@ -96,7 +94,7 @@ const CreatePost = ({ fetchPosts }) => {
       if (video.durationSeconds > MAX_VIDEO_DURATION_SECONDS) {
         toast.success(
           `Video posted — trimmed to the first ${MAX_VIDEO_DURATION_SECONDS}s`,
-          { id: toastId, icon: "âœ‚ï¸", duration: 4000 },
+          { id: toastId, icon: "✂️", duration: 4000 },
         );
       } else {
         toast.success("Video posted!", { id: toastId });

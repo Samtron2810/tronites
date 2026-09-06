@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import toast from "react-hot-toast";
 import api from "../services/api";
 import { useAuth } from "../context/useAuth";
+import { useSocket } from "../context/useSocket";
 import PostDetailModal from "./PostDetailModal";
 import DeletePostModal from "./DeletePostModal";
 import ReportModal from "./ReportModal";
@@ -30,6 +31,7 @@ const PostByIdModal = ({
   highlightParentId,
 }) => {
   const { user: currentUser } = useAuth();
+  const { socket } = useSocket();
   const [post, setPost] = useState(null);
   const [loading, setLoading] = useState(false);
   // Set when the fetch fails (404 for a deleted/hidden post, network
@@ -94,6 +96,19 @@ const PostByIdModal = ({
     // eslint-disable-next-line react-hooks/set-state-in-effect -- documented data-fetch-on-mount pattern; no sync setState in the effect body itself
     if (isOpen && postId) fetchPost(postId);
   }, [isOpen, postId, fetchPost]);
+
+  // Join the post's socket room while this modal is open so the
+  // CommentsPanel inside PostDetailModal receives real-time newComment/
+  // commentDeleted/commentLikeUpdate events. PostCard does this for cards
+  // in the feed, but PostByIdModal (used by PostView and quote click-throughs)
+  // has no PostCard parent, so it must join the room itself.
+  useEffect(() => {
+    if (!socket || !isOpen || !postId) return;
+    socket.emit("joinPost", postId);
+    return () => {
+      socket.emit("leavePost", postId);
+    };
+  }, [socket, isOpen, postId]);
 
   if (!isOpen) return null;
 

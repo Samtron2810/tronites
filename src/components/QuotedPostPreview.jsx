@@ -26,7 +26,14 @@ const QuotedPostPreview = ({ post }) => {
   }
 
   const media = post.images || [];
-  const thumb = media[0];
+  // Show up to 4 images in a grid; any overflow is indicated by "+N" on
+  // the last visible cell — mirrors the PostCard multi-image grid shape
+  // so the preview is a faithful miniature of the original.
+  const visibleMedia = media.slice(0, 4);
+  const overflowCount = media.length - 4;
+  const hasVideo = Boolean(post.video?.thumbnailUrl || post.video?.status);
+  const videoProcessing = post.video?.status === "processing";
+  const videoFailed = post.video?.status === "failed";
 
   return (
     <div className="rounded-xl border border-stroke bg-surface p-3 hover:border-primary-200 transition">
@@ -70,23 +77,75 @@ const QuotedPostPreview = ({ post }) => {
         </p>
       )}
 
-      {thumb && (
-        <div className="mt-2 rounded-lg overflow-hidden bg-card">
-          <img
-            src={resizedImageUrl(thumb, IMAGE_SIZES.feedImage)}
-            alt="quoted post media"
-            className="w-full max-h-56 object-cover"
-          />
+      {/* Multi-image grid — 1 image: full width; 2-4: equal 2-up or 2×2 rows.
+          Overflow count badge sits over the last visible cell. */}
+      {visibleMedia.length > 0 && (
+        <div
+          className={`mt-2 rounded-lg overflow-hidden bg-card ${
+            visibleMedia.length === 1
+              ? ""
+              : visibleMedia.length === 2
+                ? "grid grid-cols-2 gap-0.5"
+                : "grid grid-cols-2 grid-rows-2 gap-0.5"
+          }`}
+          style={{ maxHeight: "10rem" }}
+        >
+          {visibleMedia.map((img, i) => {
+            const isLast = i === visibleMedia.length - 1;
+            const showOverlay = isLast && overflowCount > 0;
+            return (
+              <div key={i} className="relative overflow-hidden bg-surface">
+                <img
+                  src={resizedImageUrl(img, IMAGE_SIZES.feedImage)}
+                  alt={`quoted post image ${i + 1}`}
+                  className="w-full h-full object-cover"
+                  style={{ maxHeight: visibleMedia.length === 1 ? "10rem" : "5rem" }}
+                />
+                {showOverlay && (
+                  <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                    <span className="text-white text-sm font-bold">
+                      +{overflowCount}
+                    </span>
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
 
-      {!thumb && post.video?.thumbnailUrl && (
-        <div className="mt-2 rounded-lg overflow-hidden bg-black">
-          <img
-            src={post.video.thumbnailUrl}
-            alt="quoted post video thumbnail"
-            className="w-full max-h-56 object-cover"
-          />
+      {/* Video — show thumbnail when ready, spinner when processing, label when failed */}
+      {visibleMedia.length === 0 && hasVideo && (
+        <div className="mt-2 rounded-lg overflow-hidden bg-black relative" style={{ maxHeight: "10rem" }}>
+          {post.video?.thumbnailUrl && !videoProcessing && !videoFailed && (
+            <>
+              <img
+                src={post.video.thumbnailUrl}
+                alt="quoted post video thumbnail"
+                className="w-full object-cover"
+                style={{ maxHeight: "10rem" }}
+              />
+              {/* Play icon overlay so it reads as video not a photo */}
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <div className="w-9 h-9 rounded-full bg-black/50 flex items-center justify-center">
+                  <svg viewBox="0 0 24 24" fill="white" className="w-4 h-4 ml-0.5">
+                    <path d="M8 5v14l11-7z" />
+                  </svg>
+                </div>
+              </div>
+            </>
+          )}
+          {videoProcessing && (
+            <div className="flex items-center justify-center gap-2 text-white text-xs py-6">
+              <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              Processing video…
+            </div>
+          )}
+          {videoFailed && (
+            <div className="flex items-center justify-center text-white/60 text-xs py-6">
+              Video unavailable
+            </div>
+          )}
         </div>
       )}
     </div>

@@ -28,6 +28,7 @@ import ReactionPicker from "./ReactionPicker";
 import ReactionSummaryBar from "./ReactionSummaryBar";
 import VerifiedBadge from "./VerifiedBadge";
 import { resizedImageUrl, IMAGE_SIZES } from "../utils/cloudinaryImage";
+import { useSocket } from "../context/useSocket";
 import useBackButtonClose from "../hooks/useBackButtonClose";
 
 // Stacked-only layout at every breakpoint (confirmed — no desktop
@@ -134,6 +135,23 @@ const PostDetailModal = ({
   const longPressTimer = useRef(null);
   const longPressFired = useRef(false);
   const hoverIntentTimer = useRef(null);
+  const { socket } = useSocket();
+
+  // Ensure this modal is always in the post's socket room so CommentsPanel
+  // receives real-time newComment/commentDeleted/commentLikeUpdate events.
+  // When opened from PostCard the room is already joined (PostCard emits
+  // joinPost on mount) — socket.io silently ignores duplicate joins, so
+  // this is idempotent and safe. When opened from PostByIdModal or any
+  // future context that doesn't have a PostCard parent, this effect is what
+  // keeps real-time comments working.
+  useEffect(() => {
+    if (!socket || !isOpen || !postId) return;
+    socket.emit("joinPost", postId);
+    // No leavePost here — the PostCard parent (if present) owns the room
+    // lifetime. If there's no PostCard parent, PostByIdModal emits leavePost
+    // in its own cleanup. Emitting an extra leavePost here when PostCard is
+    // the parent would boot the card's own subscription early.
+  }, [socket, isOpen, postId]);
 
   // Mobile back button closes the modal; UI closes consume the pushed
   // history entry so history stays balanced (see the hook).

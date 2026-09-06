@@ -127,8 +127,18 @@ const CommentsPanel = ({
     if (isCommentSending || !commentText.trim()) return;
     setIsCommentSending(true);
     try {
-      await api.post(`/comments/${postId}`, { text: commentText });
+      const res = await api.post(`/comments/${postId}`, { text: commentText });
       setCommentText("");
+      // Optimistically add the new comment and increment the count so the
+      // author sees their own comment immediately — the subsequent socket
+      // event's dedup guard (prev.some(c => c._id === data.comment._id))
+      // prevents a double-add if the event also arrives normally.
+      if (res.data?._id) {
+        setComments((prev) =>
+          prev.some((c) => c._id === res.data._id) ? prev : [res.data, ...prev],
+        );
+        setCommentCount((prev) => prev + 1);
+      }
       api.invalidate(`/comments/${postId}`);
     } catch (e) {
       console.error(e);

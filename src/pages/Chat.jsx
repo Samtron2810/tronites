@@ -187,11 +187,13 @@ const Chat = () => {
         const profileRes = await api.get(`/users/profile/${urlUserId}`);
         const otherUser = profileRes.data.user;
         if (otherUser) {
-          setSelectedChat({
-            otherUser,
-            conversationId: buildConversationId(user._id, otherUser._id),
-          });
-          setMessages([]);
+          // Use loadConversation so existing message history is fetched
+          // from the server. The conversation may exist on a page beyond
+          // page 1 (not in the cached list) — calling setSelectedChat
+          // directly would open an empty thread even when prior messages
+          // exist. loadConversation fetches the thread, sets requestInfo,
+          // and refreshes the conversations list from the server.
+          loadConversation(otherUser);
         }
       }
     } catch (e) {
@@ -564,7 +566,11 @@ const Chat = () => {
       });
       setMessages((prev) => insertMessageSorted(prev, res.data));
       setMessageText("");
-      setImagePreviews([]);
+      // Revoke object URLs before clearing to free browser memory.
+      setImagePreviews((prev) => {
+        prev.forEach((url) => URL.revokeObjectURL(url));
+        return [];
+      });
       if (fileInputRef.current) fileInputRef.current.value = "";
       updateConversationPreview(res.data, false);
       api.invalidate("/messages/conversations");
@@ -791,23 +797,21 @@ const Chat = () => {
     const remaining = 4 - imagePreviews.length;
     const toAdd = files.slice(0, remaining);
     if (toAdd.length === 0) return;
-    const readers = toAdd.map(
-      (file) =>
-        new Promise((resolve) => {
-          const reader = new FileReader();
-          reader.onloadend = () => resolve(reader.result);
-          reader.readAsDataURL(file);
-        }),
-    );
-    Promise.all(readers).then((results) => {
-      setImagePreviews((prev) => [...prev, ...results].slice(0, 4));
-    });
+    // Use object URLs instead of base64 (readAsDataURL) — much lighter on
+    // memory (no 33% size inflation) and revocable. The send path already
+    // calls fetch(preview).blob() which works on both data: and blob: URLs.
+    const objectUrls = toAdd.map((file) => URL.createObjectURL(file));
+    setImagePreviews((prev) => [...prev, ...objectUrls].slice(0, 4));
     // Reset input so re-selecting the same file(s) re-triggers onChange.
     e.target.value = "";
   };
 
   const handleRemoveImage = (index) => {
-    setImagePreviews((prev) => prev.filter((_, i) => i !== index));
+    setImagePreviews((prev) => {
+      // Revoke the object URL being removed to free browser memory.
+      URL.revokeObjectURL(prev[index]);
+      return prev.filter((_, i) => i !== index);
+    });
   };
 
   // Double-tap / reaction-bar select on a message bubble. Same set/

@@ -130,7 +130,11 @@ const Notifications = () => {
   const { socket } = useSocket();
   const navigate = useNavigate();
 
-  const fetchFirstPage = async () => {
+  // silent=true: revalidates in the background without showing the skeleton
+  // (same pattern as Home.jsx/Chat.jsx). Used by useRefetchOnFocus so
+  // switching back to this tab doesn't flash the skeleton over existing content.
+  const fetchFirstPage = async ({ silent = false } = {}) => {
+    if (!silent) setLoading(true);
     try {
       const res = await api.getCached("/notifications", {
         params: { page: 1, limit: 20 },
@@ -148,7 +152,7 @@ const Notifications = () => {
     } catch (e) {
       console.error(e);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
@@ -157,7 +161,7 @@ const Notifications = () => {
     fetchFirstPage();
   }, []);
 
-  useRefetchOnFocus(fetchFirstPage);
+  useRefetchOnFocus(() => fetchFirstPage({ silent: true }));
 
   const loadMore = async () => {
     if (loadingMore || !hasMore) return;

@@ -658,13 +658,16 @@ const ModerationQueue = () => {
 
   const [appealStatus, setAppealStatus] = useState("open");
   const [appeals, setAppeals] = useState([]);
-  const [appealsLoading, setAppealsLoading] = useState(true);
+  // Start false — appeals are only fetched when the "Appeals" tab is opened,
+  // so initialising to true would show a perpetual spinner on first mount.
+  const [appealsLoading, setAppealsLoading] = useState(false);
   const [appealPage, setAppealPage] = useState(1);
   const [appealTotalPages, setAppealTotalPages] = useState(1);
 
   const [verificationStatus, setVerificationStatus] = useState("pending");
   const [verificationRequests, setVerificationRequests] = useState([]);
-  const [verificationsLoading, setVerificationsLoading] = useState(true);
+  // Same reasoning as appealsLoading — only fetched on tab open.
+  const [verificationsLoading, setVerificationsLoading] = useState(false);
   const [verificationPage, setVerificationPage] = useState(1);
   const [verificationTotalPages, setVerificationTotalPages] = useState(1);
   // Report currently open in the in-queue context/preview modal.

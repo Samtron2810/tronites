@@ -571,8 +571,13 @@ const VerificationSection = ({ embedded = false }) => {
     { selectableTypes: [], disabledTypes: {} },
   );
 
-  // All non-held types shown in the picker (selectable + locked-with-reason)
-  const pickerTypes = APPLICABLE_TYPES.filter((t) => !heldTypes.has(t));
+  // All non-held, non-pending types shown in the picker (selectable + locked-with-reason).
+  // Explicitly excluding pending types here as a defence-in-depth measure: even if
+  // hasPendingAny is somehow evaluated incorrectly (e.g. a future backend status string
+  // change), a pending type can never appear as a selectable option in the picker.
+  const pickerTypes = APPLICABLE_TYPES.filter(
+    (t) => !heldTypes.has(t) && !pendingTypes.has(t),
+  );
 
   const loadRequests = useCallback(async () => {
     setLoadingRequests(true);

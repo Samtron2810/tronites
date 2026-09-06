@@ -997,18 +997,18 @@ const PostCard = ({
         )}
 
         {/* Video */}
-        {!isQuotePost && postVideo?.status === "processing" && (
+        {postVideo?.status === "processing" && (
           <div className="mt-4 rounded-xl overflow-hidden bg-surface aspect-video flex flex-col items-center justify-center gap-2 text-ink-muted">
             <div className="h-6 w-6 border-2 border-primary-600 border-t-transparent rounded-full animate-spin" />
             <span className="text-sm">Processing video...</span>
           </div>
         )}
-        {!isQuotePost && postVideo?.status === "failed" && (
+        {postVideo?.status === "failed" && (
           <div className="mt-4 rounded-xl overflow-hidden bg-surface aspect-video flex flex-col items-center justify-center gap-1 text-ink-muted">
             <span className="text-sm">Video processing failed.</span>
           </div>
         )}
-        {!isQuotePost && postVideo?.status === "ready" && postVideo.url && (
+        {postVideo?.status === "ready" && postVideo.url && (
           <div className="mt-4 relative rounded-xl overflow-hidden bg-black">
             <video
               ref={videoRef}
@@ -1053,7 +1053,7 @@ const PostCard = ({
             neutral cell background. Clicking a cell opens the detail
             modal seeked to that image's index; the modal itself keeps
             its own carousel/arrows/dots untouched. */}
-        {!isQuotePost && media.length === 1 && (
+        {media.length === 1 && (
           <div
             className="mt-4 relative rounded-xl overflow-hidden bg-surface cursor-pointer"
             onClick={() => openDetail(0)}
@@ -1067,7 +1067,7 @@ const PostCard = ({
           </div>
         )}
 
-        {!isQuotePost && media.length > 1 && (
+        {media.length > 1 && (
           <div
             className={`mt-4 grid gap-0.5 rounded-xl overflow-hidden h-80 ${
               media.length === 2 ? "grid-cols-2" : "grid-cols-2 grid-rows-2"
