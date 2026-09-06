@@ -57,6 +57,7 @@ api.interceptors.response.use(
       response?.status !== 401 ||
       !config ||
       config._retry ||
+      config.skipAuthRefresh ||
       AUTH_ENDPOINTS.some((p) => config.url?.startsWith(p))
     ) {
       return Promise.reject(error);

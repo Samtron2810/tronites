@@ -95,10 +95,17 @@ export const AuthProvider = ({ children }) => {
   //   • Has cache → silent (leaves the cached user in place on failure
   //                 unless the server explicitly returns 401)
   const getMe = useCallback(
-    async ({ silent = false } = {}) => {
+    async ({ silent = false, skipRefresh = false } = {}) => {
       if (!silent) setLoading(true);
       try {
-        const res = await api.get("/auth/me");
+        const res = await api.get("/auth/me", {
+          // On a genuine cold start (no cached user) a 401 here is the
+          // server just telling us "not logged in" — nothing to refresh.
+          // Setting skipAuthRefresh stops the response interceptor from
+          // also firing a pointless POST /auth/refresh (and logging its
+          // own 401) for a visitor who never had a session.
+          skipAuthRefresh: skipRefresh,
+        });
         setAndCacheUser(res.data);
       } catch (err) {
         if (isAuthError(err)) {
@@ -127,8 +134,11 @@ export const AuthProvider = ({ children }) => {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- setState is inside the async getMe fn, not synchronously in this effect body
       getMe({ silent: true });
     } else {
-      // No snapshot at all — must block until we know auth status.
-      getMe({ silent: false });
+      // No snapshot at all — must block until we know auth status. There
+      // is nothing to refresh here: without a cached session this is a
+      // genuine cold start, so don't let the interceptor attempt (and log)
+      // a refresh on the expected 401.
+      getMe({ silent: false, skipRefresh: true });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

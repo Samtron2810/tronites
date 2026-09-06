@@ -37,27 +37,60 @@ const wasRecentlyDismissed = () => {
   }
 };
 
+// ── Module-scope install-event capture ─────────────────────────────
+// Chrome fires a single beforeinstallprompt per page load, as soon as
+// the service worker + manifest pass the installability check — often
+// while the visitor is still at the login screen. If the listener only
+// exists inside a mounted hook (which runs after login), that one chance
+// is lost for the whole session and the banner can never appear. Capture
+// it here at module scope instead — this file is statically imported by
+// App.jsx, so this runs at first bundle evaluation, well before login.
+// The hook below just subscribes to this store.
+let promptEvent = null;
+let isAppInstalled = isInStandaloneMode();
+const listeners = new Set();
+
+const notify = () => listeners.forEach((listener) => listener());
+
+const subscribeToInstallPrompt = (listener) => {
+  listeners.add(listener);
+  return () => listeners.delete(listener);
+};
+
+window.addEventListener("beforeinstallprompt", (event) => {
+  // preventDefault() suppresses the browser's native banner so this app
+  // decides when to ask — prompt() is invoked later by promptInstall().
+  event.preventDefault();
+  promptEvent = event;
+  notify();
+});
+
+window.addEventListener("appinstalled", () => {
+  promptEvent = null;
+  isAppInstalled = true;
+  notify();
+});
+
+const clearDeferredPrompt = () => {
+  promptEvent = null;
+  notify();
+};
+
 export const useInstallPrompt = () => {
-  const [deferredPrompt, setDeferredPrompt] = useState(null);
+  const [deferredPrompt, setDeferredPrompt] = useState(promptEvent);
   const [visitCount] = useState(() => bumpVisitCount());
-  const [installed, setInstalled] = useState(isInStandaloneMode());
+  const [installed, setInstalled] = useState(isAppInstalled);
 
   useEffect(() => {
-    const onBeforeInstallPrompt = (event) => {
-      event.preventDefault();
-      setDeferredPrompt(event);
+    // Mirror module-scope install events (new beforeinstallprompt,
+    // appinstalled) into React state so this hook re-renders when they
+    // arrive — the listener was registered at module scope so the
+    // one-shot beforeinstallprompt isn't missed before login.
+    const sync = () => {
+      setDeferredPrompt(promptEvent);
+      setInstalled(isAppInstalled);
     };
-    const onAppInstalled = () => {
-      setInstalled(true);
-      setDeferredPrompt(null);
-    };
-
-    window.addEventListener("beforeinstallprompt", onBeforeInstallPrompt);
-    window.addEventListener("appinstalled", onAppInstalled);
-    return () => {
-      window.removeEventListener("beforeinstallprompt", onBeforeInstallPrompt);
-      window.removeEventListener("appinstalled", onAppInstalled);
-    };
+    return subscribeToInstallPrompt(sync);
   }, []);
 
   // Android/desktop Chrome: a real native prompt is available.
@@ -81,7 +114,7 @@ export const useInstallPrompt = () => {
     if (!deferredPrompt) return null;
     deferredPrompt.prompt();
     const choice = await deferredPrompt.userChoice;
-    setDeferredPrompt(null);
+    clearDeferredPrompt();
     return choice;
   }, [deferredPrompt]);
 
@@ -91,7 +124,7 @@ export const useInstallPrompt = () => {
     } catch {
       // ignore — worst case the prompt reappears sooner than intended
     }
-    setDeferredPrompt(null);
+    clearDeferredPrompt();
   }, []);
 
   return {
