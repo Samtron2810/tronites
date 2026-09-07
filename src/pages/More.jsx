@@ -9,53 +9,68 @@ import {
   FaRegBookmark,
   FaChevronRight,
   FaArrowLeft,
+  FaLock,
 } from "react-icons/fa";
+import { useAuth } from "../context/useAuth";
 
-const TILES = [
-  {
-    icon: FaRegBookmark,
-    label: "Saved posts",
-    description: "Posts you've bookmarked.",
-    href: "/bookmarks",
-    disabled: false,
-  },
-  {
-    icon: FaQuestionCircle,
-    label: "Help & Support",
-    description: "FAQs, guides, and how to reach us.",
-    href: "/help",
-    disabled: false,
-  },
-  {
-    icon: FaShieldAlt,
-    label: "Privacy Policy",
-    description: "What we collect and how it's used.",
-    href: "/privacy",
-    disabled: false,
-  },
-  {
-    icon: FaFileContract,
-    label: "Terms of Use",
-    description: "The rules for using Tronites.",
-    href: "/terms",
-    disabled: false,
-  },
-  {
-    icon: FaChartBar,
-    label: "Dashboard",
-    description: "Post analytics and reach insights.",
-    disabled: true,
-  },
-  {
-    icon: FaBullhorn,
-    label: "Ads",
-    description: "Promote posts and manage campaigns.",
-    disabled: true,
-  },
-];
+// Returns true if the user holds an active (non-expired) creator badge.
+const isCreator = (user) =>
+  Array.isArray(user?.verifications) &&
+  user.verifications.some(
+    (v) =>
+      v.type === "creator" &&
+      (!v.expiresAt || new Date(v.expiresAt) > new Date()),
+  );
 
 const More = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const creator = isCreator(user);
+
+  const TILES = [
+    {
+      icon: FaRegBookmark,
+      label: "Saved posts",
+      description: "Posts you've bookmarked.",
+      href: "/bookmarks",
+    },
+    {
+      icon: FaQuestionCircle,
+      label: "Help & Support",
+      description: "FAQs, guides, and how to reach us.",
+      href: "/help",
+    },
+    {
+      icon: FaShieldAlt,
+      label: "Privacy Policy",
+      description: "What we collect and how it's used.",
+      href: "/privacy",
+    },
+    {
+      icon: FaFileContract,
+      label: "Terms of Use",
+      description: "The rules for using Tronites.",
+      href: "/terms",
+    },
+    // Dashboard: live for verified creators, locked for everyone else.
+    {
+      icon: FaChartBar,
+      label: "Dashboard",
+      description: creator
+        ? "Post analytics and reach insights."
+        : "Available to verified creators.",
+      href: creator ? "/dashboard" : null,
+      creatorOnly: true,
+      locked: !creator,
+    },
+    {
+      icon: FaBullhorn,
+      label: "Ads",
+      description: "Promote posts and manage campaigns.",
+      href: null,
+      comingSoon: true,
+    },
+  ];
 
   const handleBack = () => {
     if (window.history.length > 1) {
@@ -83,11 +98,13 @@ const More = () => {
       <div className="bg-card border border-stroke rounded-2xl divide-y divide-stroke overflow-hidden">
         {TILES.map((tile) => {
           const Icon = tile.icon;
+          const isDisabled = tile.comingSoon || tile.locked;
+
           const content = (
             <div className="flex items-center gap-4 px-5 py-4">
               <div
                 className={`flex items-center justify-center w-10 h-10 rounded-xl shrink-0 ${
-                  tile.disabled
+                  isDisabled
                     ? "bg-surface text-ink-muted"
                     : "bg-primary-50 text-primary-600"
                 }`}
@@ -96,14 +113,31 @@ const More = () => {
               </div>
               <div className="flex-1 min-w-0">
                 <p
-                  className={`text-base font-semibold ${
-                    tile.disabled ? "text-ink-muted" : "text-ink"
+                  className={`text-base font-semibold flex items-center gap-2 ${
+                    isDisabled ? "text-ink-muted" : "text-ink"
                   }`}
                 >
                   {tile.label}
-                  {tile.disabled && (
-                    <span className="ml-2 text-[10px] font-medium uppercase tracking-wide text-ink-muted bg-surface px-1.5 py-0.5 rounded">
+                  {tile.comingSoon && (
+                    <span className="text-[10px] font-medium uppercase tracking-wide text-ink-muted bg-surface px-1.5 py-0.5 rounded">
                       Coming soon
+                    </span>
+                  )}
+                  {tile.locked && (
+                    <span
+                      className="text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded flex items-center gap-1"
+                      style={{ backgroundColor: "#9B59D015", color: "#9B59D0" }}
+                    >
+                      <FaLock size={8} />
+                      Creators only
+                    </span>
+                  )}
+                  {tile.creatorOnly && creator && (
+                    <span
+                      className="text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded"
+                      style={{ backgroundColor: "#9B59D015", color: "#9B59D0" }}
+                    >
+                      ✦ Creator
                     </span>
                   )}
                 </p>
@@ -111,17 +145,24 @@ const More = () => {
                   {tile.description}
                 </p>
               </div>
-              {!tile.disabled && (
+              {!isDisabled && (
                 <FaChevronRight size={12} className="text-ink-muted shrink-0" />
               )}
             </div>
           );
 
-          return tile.disabled ? (
-            <div key={tile.label} className="cursor-not-allowed opacity-60">
-              {content}
-            </div>
-          ) : (
+          if (isDisabled) {
+            return (
+              <div
+                key={tile.label}
+                className={tile.comingSoon ? "cursor-not-allowed opacity-60" : "cursor-default"}
+              >
+                {content}
+              </div>
+            );
+          }
+
+          return (
             <Link
               key={tile.label}
               to={tile.href}

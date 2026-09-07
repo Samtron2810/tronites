@@ -38,6 +38,7 @@ const ModerationQueue = lazy(() => import("./pages/ModerationQueue"));
 const AdminUsers = lazy(() => import("./pages/AdminUsers"));
 const AdminAuditLog = lazy(() => import("./pages/AdminAuditLog"));
 const More = lazy(() => import("./pages/More"));
+const CreatorDashboard = lazy(() => import("./pages/CreatorDashboard"));
 const HelpSupport = lazy(() => import("./pages/HelpSupport"));
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 const TermsOfUse = lazy(() => import("./pages/TermsOfUse"));
@@ -242,6 +243,15 @@ const AppContent = () => {
             element={
               <ProtectedRoute>
                 <More />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <CreatorDashboard />
               </ProtectedRoute>
             }
           />
