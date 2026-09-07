@@ -49,6 +49,19 @@ const Profile = () => {
   const [isMuted, setIsMuted] = useState(false);
   const postsObserverTarget = useRef(null);
 
+  // Latest known id of the logged-in user, kept in a ref so fetchProfile
+  // can stay stable across updateUser() calls. updateUser() changes
+  // currentUser's object identity on EVERY call (e.g. right after a
+  // profile-pic upload), which would otherwise rebuild fetchProfile and
+  // re-fire the mount effect, triggering a stale cached refetch that can
+  // clobber the freshly-updated profile state. Reading the id via a ref
+  // (updated after every render) keeps the callback's identity keyed
+  // only on the viewed profile's `id`.
+  const viewerIdRef = useRef(currentUser?._id);
+  useEffect(() => {
+    viewerIdRef.current = currentUser?._id;
+  });
+
   const fetchProfile = useCallback(async () => {
     try {
       const res = await api.getCached(`/users/profile/${id}`, {
@@ -62,7 +75,7 @@ const Profile = () => {
       setPostsPage(1);
       setPostsHasMore(res.data.hasMore);
       setIsFollowing(res.data.isFollowing);
-      if (currentUser?._id !== id) {
+      if (viewerIdRef.current !== id) {
         const [blockRes, muteRes] = await Promise.all([
           api.getCached(`/users/${id}/block-status`, { ttlMs: 30_000, revalidate: true }),
           api.getCached(`/users/${id}/mute-status`, { ttlMs: 30_000, revalidate: true }),
@@ -74,7 +87,7 @@ const Profile = () => {
     } catch (e) {
       console.error(e);
     }
-  }, [id, currentUser]);
+  }, [id]);
 
   const fetchMorePosts = useCallback(async () => {
     if (isLoadingMorePosts || !postsHasMore) return;
@@ -234,6 +247,13 @@ const Profile = () => {
       const res = await api.put("/users/profile-picture", {
         url: uploaded.secure_url,
       });
+      // Drop the cached /users/profile/{id} payload now, before the
+      // updateUser-triggered refetch runs. Without this, fetchProfile's
+      // getCached({ revalidate: true }) returns the STALE snapshot (30s
+      // TTL) and clobbers the fresh pic we're about to set — the profile
+      // header would only catch up after a hard refresh, even though the
+      // navbar (which reads shared AuthContext state) already has it.
+      api.invalidate(`/users/profile/${id}`);
       setProfile((prev) => ({ ...prev, profilePic: res.data.profilePic }));
       updateUser({ profilePic: res.data.profilePic });
       toast.success("Profile picture updated!");
