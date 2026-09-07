@@ -8,12 +8,14 @@ import {
   FiGlobe,
   FiUsers,
   FiLock,
+  FiClock,
 } from "react-icons/fi";
 import useMentionAutocomplete from "../hooks/useMentionAutocomplete";
 import MentionSuggestions from "./MentionSuggestions";
 import ConfirmDiscardModal from "./ConfirmDiscardModal";
 import useBackButtonClose from "../hooks/useBackButtonClose";
 import { validateVideoFile } from "../services/videoUpload";
+import { useAuth } from "../context/useAuth";
 
 const MAX_IMAGES = 4;
 
@@ -26,11 +28,21 @@ const PRIVACY_OPTIONS = [
   { value: "only-me", label: "Only me", icon: FiLock },
 ];
 
+const isCreator = (user) =>
+  Array.isArray(user?.verifications) &&
+  user.verifications.some(
+    (v) => v.type === "creator" && (!v.expiresAt || new Date(v.expiresAt) > new Date()),
+  );
+
 const CreatePostModal = ({ closeModal, onSubmit, onSubmitVideo }) => {
+  const { user } = useAuth();
+  const creator = isCreator(user);
   const [text, setText] = useState("");
   const [privacy, setPrivacy] = useState("public");
   const [images, setImages] = useState([]); // File[]
   const [previews, setPreviews] = useState([]); // objectURL[]
+  const [scheduledFor, setScheduledFor] = useState("");
+  const [showScheduler, setShowScheduler] = useState(false);
   // Video is only validated (format/size) + previewed locally here — no
   // local decode/duration probe. The browser's <video> support doesn't
   // match what Cloudinary can actually accept (HEVC MOV, AVI/MKV with
@@ -155,13 +167,14 @@ const CreatePostModal = ({ closeModal, onSubmit, onSubmitVideo }) => {
       return toast.error("Post cannot be empty");
     }
 
-    // Both paths now close the modal immediately and hand off to the
-    // parent, which runs the upload in the background and reports
-    // progress/result via toast — matches the image post UX.
+    if (scheduledFor && new Date(scheduledFor) <= new Date()) {
+      return toast.error("Scheduled time must be in the future.");
+    }
+
     if (videoFile) {
       onSubmitVideo({ text, videoFile, privacy });
     } else {
-      onSubmit({ text, images, privacy });
+      onSubmit({ text, images, privacy, scheduledFor: scheduledFor || null });
     }
     closeModal();
   };
@@ -362,6 +375,25 @@ const CreatePostModal = ({ closeModal, onSubmit, onSubmitVideo }) => {
               disabled={Boolean(videoFile) || images.length > 0}
               className="hidden"
             />
+
+            {/* Schedule toggle — creator badge holders only */}
+            {creator && (
+              <button
+                type="button"
+                onClick={() => setShowScheduler((s) => !s)}
+                title="Schedule post"
+                className={`flex items-center gap-1.5 text-base font-medium transition ${
+                  showScheduler || scheduledFor
+                    ? "text-primary-600"
+                    : "text-ink-muted hover:text-primary-600"
+                }`}
+              >
+                <FiClock size={16} />
+                {scheduledFor && (
+                  <span className="text-xs font-semibold hidden sm:inline">Scheduled</span>
+                )}
+              </button>
+            )}
           </div>
 
           <button
@@ -369,9 +401,36 @@ const CreatePostModal = ({ closeModal, onSubmit, onSubmitVideo }) => {
             disabled={!text.trim() && images.length === 0 && !videoFile}
             className="px-5 py-2 rounded-xl text-base font-semibold text-white bg-primary-600 hover:bg-primary-800 disabled:opacity-50 disabled:cursor-not-allowed transition shadow-sm"
           >
-            {videoFile ? "Post video" : "Post"}
+            {scheduledFor ? "Schedule" : videoFile ? "Post video" : "Post"}
           </button>
         </div>
+
+        {/* Schedule picker — creator only, shown below toolbar when toggled */}
+        {creator && showScheduler && (
+          <div className="px-5 pb-4 flex items-center gap-3 border-t border-stroke pt-3">
+            <FiClock size={14} className="text-primary-600 shrink-0" />
+            <div className="flex-1">
+              <label className="text-xs font-semibold text-ink-muted block mb-1">
+                Publish at
+              </label>
+              <input
+                type="datetime-local"
+                value={scheduledFor}
+                min={new Date(Date.now() + 60_000).toISOString().slice(0, 16)}
+                onChange={(e) => setScheduledFor(e.target.value)}
+                className="w-full text-sm bg-surface border border-stroke rounded-xl px-3 py-2 text-ink focus:outline-none focus:border-primary-600 transition"
+              />
+            </div>
+            {scheduledFor && (
+              <button
+                onClick={() => setScheduledFor("")}
+                className="text-xs text-ink-muted hover:text-red-500 transition"
+              >
+                Clear
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       {showDiscardConfirm && (

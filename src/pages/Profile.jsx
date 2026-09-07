@@ -445,6 +445,15 @@ const Profile = () => {
             <p className="text-base text-ink-sub mt-1">{profile.bio}</p>
           )}
 
+          {/* Open to collabs chip — visible to everyone on creator profiles */}
+          {profile.openToCollabs && (
+            <div className="inline-flex items-center gap-1.5 mt-2 px-2.5 py-1 rounded-full text-xs font-semibold"
+              style={{ backgroundColor: "#9B59D015", color: "#9B59D0", border: "1px solid #9B59D030" }}>
+              <span>✦</span>
+              <span>Open to collabs</span>
+            </div>
+          )}
+
           {/* Stats */}
           <div className="flex gap-5 mt-4 text-base">
             <span className="text-ink font-semibold">
@@ -468,6 +477,44 @@ const Profile = () => {
           </div>
         </div>
       </div>
+
+      {/* Pinned post — shown at top of profile for creator badge holders */}
+      {profile.pinnedPost && (() => {
+        const pinned = posts.find(p => p._id === profile.pinnedPost) ||
+          (posts[0]?._id === profile.pinnedPost ? posts[0] : null);
+        if (!pinned) return null;
+        return (
+          <div className="mt-4">
+            <div className="flex items-center gap-1.5 mb-1.5 px-1">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" className="text-ink-muted">
+                <path d="M16 4v8l2 2v2h-6v6l-1 1-1-1v-6H4v-2l2-2V4h10z"/>
+              </svg>
+              <span className="text-xs font-semibold text-ink-muted uppercase tracking-wide">Pinned</span>
+            </div>
+            <PostCard
+              key={`pinned-${pinned._id}`}
+              postId={pinned._id}
+              userId={pinned.user?._id || profile._id}
+              name={pinned.user?.name || profile.name}
+              username={pinned.user?.username || profile.username}
+              profilePic={pinned.user?.profilePic || profile.profilePic}
+              verifications={pinned.user?.verifications || profile.verifications}
+              time={new Date(pinned.createdAt).toLocaleString()}
+              text={pinned.text}
+              images={pinned.images}
+              video={pinned.video}
+              likes={pinned.likesCount}
+              commentsCount={pinned.commentsCount}
+              reposts={pinned.repostsCount}
+              isLiked={pinned.isLiked}
+              isBookmarked={pinned.isBookmarked}
+              isReposted={pinned.isReposted}
+              reactionSummary={pinned.reactionSummary}
+              myReaction={pinned.myReaction}
+            />
+          </div>
+        );
+      })()}
 
       {/* Posts */}
       <div className="mt-4 space-y-4">

@@ -39,6 +39,7 @@ const AdminUsers = lazy(() => import("./pages/AdminUsers"));
 const AdminAuditLog = lazy(() => import("./pages/AdminAuditLog"));
 const More = lazy(() => import("./pages/More"));
 const CreatorDashboard = lazy(() => import("./pages/CreatorDashboard"));
+const ScheduledPosts = lazy(() => import("./pages/ScheduledPosts"));
 const HelpSupport = lazy(() => import("./pages/HelpSupport"));
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 const TermsOfUse = lazy(() => import("./pages/TermsOfUse"));
@@ -252,6 +253,15 @@ const AppContent = () => {
             element={
               <ProtectedRoute>
                 <CreatorDashboard />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/scheduled-posts"
+            element={
+              <ProtectedRoute>
+                <ScheduledPosts />
               </ProtectedRoute>
             }
           />

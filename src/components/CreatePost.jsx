@@ -17,12 +17,12 @@ const CreatePost = ({ fetchPosts }) => {
   // immediately and this runs the actual upload in the background so the
   // user isn't left staring at a loading spinner. Toasts surface
   // progress/completion.
-  const handleSubmit = async ({ text, images, privacy }) => {
-    const toastId = toast.loading("Posting…");
+  const handleSubmit = async ({ text, images, privacy, scheduledFor }) => {
+    const isScheduled = !!scheduledFor;
+    const toastId = toast.loading(isScheduled ? "Scheduling…" : "Posting…");
     try {
+      let postRes;
       if (images.length) {
-        // Images: get a signed upload request, upload each image directly
-        // to Cloudinary, then create the post with the returned URLs.
         const sigRes = await api.post("/posts/signature/image");
         const signatureData = sigRes.data;
         const compressed = await Promise.all(images.map(compressImage));
@@ -33,11 +33,16 @@ const CreatePost = ({ fetchPosts }) => {
           url: r.secure_url,
           publicId: r.public_id,
         }));
-        await api.post("/posts", { text, images: imagePayload, privacy });
-        toast.success("Post created!", { id: toastId });
+        postRes = await api.post("/posts", { text, images: imagePayload, privacy });
       } else {
-        // Text-only post.
-        await api.post("/posts", { text, privacy });
+        postRes = await api.post("/posts", { text, privacy });
+      }
+
+      // If a scheduled time was picked, immediately schedule the new post
+      if (isScheduled && postRes?.data?.post?._id) {
+        await api.put(`/posts/${postRes.data.post._id}/schedule`, { scheduledFor });
+        toast.success("Post scheduled!", { id: toastId });
+      } else {
         toast.success("Post created!", { id: toastId });
       }
 

@@ -529,7 +529,147 @@ const CreatorDashboard = () => {
           </div>
         );
       })()}
+
+      {/* ── Best time to post (AI-style recommendation) ── */}
+      <BestTimeCard />
+
+      {/* ── Top fans ── */}
+      <TopFansCard />
+
+      {/* ── Hashtag performance ── */}
+      <HashtagPerformanceCard days={days} />
+
     </MainLayout>
+  );
+};
+
+// ─── Sub-cards fetched independently ────────────────────────────────────────
+
+const BestTimeCard = () => {
+  const [data, setData] = React.useState(null);
+  const [loading, setLoading] = React.useState(true);
+  useEffect(() => {
+    api.get("/analytics/best-time-to-post")
+      .then((r) => setData(r.data))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) return (
+    <div className="h-20 bg-card border border-stroke rounded-2xl animate-pulse mb-4" />
+  );
+  if (!data?.recommendation) return null;
+
+  return (
+    <div className="bg-card border border-stroke rounded-2xl p-4 mb-4">
+      <div className="flex items-center gap-2 mb-2">
+        <FaClock size={13} className="text-indigo-500" />
+        <span className="text-sm font-semibold text-ink">Best time to post</span>
+      </div>
+      <p className="text-2xl font-bold text-ink">{data.recommendation.label}</p>
+      <p className="text-xs text-ink-muted mt-1">{data.reason}</p>
+      <p className="text-xs font-medium text-primary-600 mt-1">
+        Avg {fmt(data.recommendation.avgEngagement)} engagements when you post at this hour
+      </p>
+    </div>
+  );
+};
+
+const TopFansCard = () => {
+  const [fans, setFans] = React.useState([]);
+  const [loading, setLoading] = React.useState(true);
+  useEffect(() => {
+    api.get("/analytics/top-fans?limit=5")
+      .then((r) => setFans(r.data.fans || []))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) return (
+    <div className="h-40 bg-card border border-stroke rounded-2xl animate-pulse mb-4" />
+  );
+  if (!fans.length) return null;
+
+  return (
+    <div className="bg-card border border-stroke rounded-2xl p-4 mb-4">
+      <div className="flex items-center gap-2 mb-3">
+        <FaUsers size={13} className="text-primary-600" />
+        <span className="text-sm font-semibold text-ink">Top fans this month</span>
+      </div>
+      <div className="space-y-2">
+        {fans.map(({ user: u, score }, i) => (
+          <Link
+            key={u._id}
+            to={`/profile/${u._id}`}
+            className="flex items-center gap-3 hover:bg-surface rounded-xl px-2 py-1.5 transition"
+          >
+            <span className="text-xs font-bold text-ink-muted w-4">{i + 1}</span>
+            <img
+              src={resizedImageUrl(u.profilePic, IMAGE_SIZES.avatarSmall) || defaultAvatar}
+              alt={u.name}
+              className="w-8 h-8 rounded-full object-cover border border-stroke shrink-0"
+            />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-ink truncate">{u.name}</p>
+              <p className="text-xs text-ink-muted">@{u.username}</p>
+            </div>
+            <span className="text-xs font-bold text-primary-600">{fmt(score)} pts</span>
+          </Link>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+const HashtagPerformanceCard = ({ days }) => {
+  const [tags, setTags] = React.useState([]);
+  const [loading, setLoading] = React.useState(true);
+  useEffect(() => {
+    api.get(`/analytics/hashtag-performance?days=${days}`)
+      .then((r) => setTags(r.data.hashtags || []))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [days]);
+
+  if (loading) return (
+    <div className="h-32 bg-card border border-stroke rounded-2xl animate-pulse mb-4" />
+  );
+  if (!tags.length) return null;
+
+  const maxEng = Math.max(...tags.map((t) => t.avgEngagement), 1);
+
+  return (
+    <div className="bg-card border border-stroke rounded-2xl p-4 mb-4">
+      <div className="flex items-center gap-2 mb-3">
+        <span className="text-sm" style={{ color: "#0f6e56" }}>#</span>
+        <span className="text-sm font-semibold text-ink">Hashtag performance</span>
+        <span className="ml-auto text-xs text-ink-muted">{days}d · avg engagement</span>
+      </div>
+      <div className="space-y-2">
+        {tags.slice(0, 8).map((t) => (
+          <div key={t.tag} className="flex items-center gap-2">
+            <span className="text-xs font-medium text-primary-600 w-24 truncate shrink-0">
+              #{t.tag}
+            </span>
+            <div className="flex-1 h-1.5 bg-surface rounded-full overflow-hidden">
+              <div
+                className="h-full rounded-full bg-primary-600 transition-all duration-500"
+                style={{ width: `${(t.avgEngagement / maxEng) * 100}%` }}
+              />
+            </div>
+            <span className="text-xs font-bold text-ink w-8 text-right shrink-0">
+              {fmt(t.avgEngagement)}
+            </span>
+            <span className="text-[10px] text-ink-muted w-10 text-right shrink-0">
+              ×{t.uses}
+            </span>
+          </div>
+        ))}
+      </div>
+      <p className="text-[10px] text-ink-muted mt-2">
+        Avg engagements per post · × = times used in window
+      </p>
+    </div>
   );
 };
 
