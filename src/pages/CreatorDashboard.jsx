@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   FaArrowLeft,
@@ -17,8 +17,24 @@ import {
 import MainLayout from "../layouts/MainLayout";
 import { useAuth } from "../context/useAuth";
 import api from "../services/api";
+import { useRefetchOnFocus } from "../hooks/useRefetchOnFocus";
 import defaultAvatar from "../assets/defaultAvatar";
 import { resizedImageUrl, IMAGE_SIZES } from "../utils/cloudinaryImage";
+
+// ─── TTLs (ms) — mirrors backend Redis TTLs so local cache expires at
+// roughly the same cadence as the server-side cache. Stale-while-revalidate
+// via getCached(revalidate:true) means the UI never blocks on a refetch. ───
+
+const TTL = {
+  overview: 5 * 60 * 1000,   // 5 min
+  engagement: 3 * 60 * 1000, // 3 min
+  topPosts: 3 * 60 * 1000,   // 3 min
+  cadence: 3 * 60 * 1000,    // 3 min
+  milestone: 5 * 60 * 1000,  // 5 min
+  topFans: 10 * 60 * 1000,   // 10 min
+  hashtag: 3 * 60 * 1000,    // 3 min
+  bestTime: 10 * 60 * 1000,  // 10 min
+};
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -65,10 +81,7 @@ const Sparkline = ({ data = [], color = "#0f6e56", height = 36 }) => {
           <stop offset="100%" stopColor={color} stopOpacity="0" />
         </linearGradient>
       </defs>
-      <polygon
-        points={area}
-        fill={`url(#sg-${color.replace("#", "")})`}
-      />
+      <polygon points={area} fill={`url(#sg-${color.replace("#", "")})`} />
       <polyline
         points={pts}
         fill="none"
@@ -98,9 +111,7 @@ const BarChart = ({ data = [], labelKey, valueKey = "count", color = "#0f6e56" }
             }}
           />
           {labelKey && (
-            <span className="text-[9px] text-ink-muted leading-none">
-              {d[labelKey]}
-            </span>
+            <span className="text-[9px] text-ink-muted leading-none">{d[labelKey]}</span>
           )}
         </div>
       ))}
@@ -173,74 +184,79 @@ const CreatorDashboard = () => {
   const [engLoading, setEngLoading] = useState(false);
   const [topLoading, setTopLoading] = useState(false);
 
-  // Initial load — overview, milestone, cadence
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const [ov, ms, cd] = await Promise.all([
-          api.get("/analytics/overview"),
-          api.get("/analytics/follower-milestone"),
-          api.get(`/analytics/posting-cadence?days=${days}`),
-        ]);
-        if (!cancelled) {
-          setOverview(ov.data);
-          setMilestone(ms.data);
-          setCadence(cd.data);
-        }
-      } catch {
-        // silently — UI shows — placeholders
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => { cancelled = true; };
+  // Initial load — overview + milestone (slow-changing, 5 min TTL)
+  const fetchStatic = useCallback(async ({ silent = false } = {}) => {
+    if (!silent) setLoading(true);
+    try {
+      const [ov, ms] = await Promise.all([
+        api.getCached("/analytics/overview", { ttlMs: TTL.overview, revalidate: silent }),
+        api.getCached("/analytics/follower-milestone", { ttlMs: TTL.milestone, revalidate: silent }),
+      ]);
+      setOverview(ov.data);
+      setMilestone(ms.data);
+    } catch {
+      // UI shows — placeholders
+    } finally {
+      if (!silent) setLoading(false);
+    }
   }, []);
 
-  // Re-fetch engagement series + cadence when days changes
-  useEffect(() => {
-    let cancelled = false;
-    setEngLoading(true);
-    (async () => {
-      try {
-        const [eng, cd] = await Promise.all([
-          api.get(`/analytics/engagement?days=${days}`),
-          api.get(`/analytics/posting-cadence?days=${days}`),
-        ]);
-        if (!cancelled) {
-          setEngagement(eng.data);
-          setCadence(cd.data);
-        }
-      } catch {
-        //
-      } finally {
-        if (!cancelled) setEngLoading(false);
-      }
-    })();
-    return () => { cancelled = true; };
+  // Engagement + cadence — keyed by `days`
+  const fetchEngagement = useCallback(async ({ silent = false } = {}) => {
+    if (!silent) setEngLoading(true);
+    try {
+      const [eng, cd] = await Promise.all([
+        api.getCached("/analytics/engagement", { params: { days }, ttlMs: TTL.engagement, revalidate: silent }),
+        api.getCached("/analytics/posting-cadence", { params: { days }, ttlMs: TTL.cadence, revalidate: silent }),
+      ]);
+      setEngagement(eng.data);
+      setCadence(cd.data);
+    } catch {
+      //
+    } finally {
+      if (!silent) setEngLoading(false);
+    }
   }, [days]);
 
-  // Re-fetch top posts when metric changes
-  useEffect(() => {
-    let cancelled = false;
-    setTopLoading(true);
-    (async () => {
-      try {
-        const res = await api.get(`/analytics/top-posts?limit=5&metric=${metric}`);
-        if (!cancelled) setTopPosts(res.data.posts || []);
-      } catch {
-        //
-      } finally {
-        if (!cancelled) setTopLoading(false);
-      }
-    })();
-    return () => { cancelled = true; };
+  // Top posts — keyed by `metric`
+  const fetchTopPosts = useCallback(async ({ silent = false } = {}) => {
+    if (!silent) setTopLoading(true);
+    try {
+      const res = await api.getCached("/analytics/top-posts", {
+        params: { limit: 5, metric },
+        ttlMs: TTL.topPosts,
+        revalidate: silent,
+      });
+      setTopPosts(res.data.posts || []);
+    } catch {
+      //
+    } finally {
+      if (!silent) setTopLoading(false);
+    }
   }, [metric]);
 
-  const milestoneProgress = milestone
-    ? pct(milestone.count, milestone.nextMilestone)
-    : 0;
+  // Mount fetches
+  useEffect(() => {
+    fetchStatic();
+  }, [fetchStatic]);
 
+  useEffect(() => {
+    fetchEngagement();
+  }, [fetchEngagement]);
+
+  useEffect(() => {
+    fetchTopPosts();
+  }, [fetchTopPosts]);
+
+  // Refetch silently on tab focus / visibility — stale-while-revalidate
+  // means the UI stays populated while the background fetch runs.
+  useRefetchOnFocus(() => {
+    fetchStatic({ silent: true });
+    fetchEngagement({ silent: true });
+    fetchTopPosts({ silent: true });
+  });
+
+  const milestoneProgress = milestone ? pct(milestone.count, milestone.nextMilestone) : 0;
   const metricIcon = { likes: FaHeart, comments: FaComment, reposts: FaRetweet, bookmarks: FaBookmark };
 
   const postSnippet = (post) => {
@@ -317,57 +333,12 @@ const CreatorDashboard = () => {
 
       {/* ── Stat cards ── */}
       <div className="grid grid-cols-2 gap-3 mb-4">
-        <StatCard
-          icon={FaFileAlt}
-          label="Total posts"
-          value={overview?.totals?.posts}
-          delta={overview?.last30d?.posts}
-          loading={loading}
-          color="#0f6e56"
-        />
-        <StatCard
-          icon={FaUsers}
-          label="Followers"
-          value={overview?.totals?.followers}
-          delta={overview?.last30d?.followers}
-          sparkData={engagement?.followers}
-          loading={loading}
-          color="#6366f1"
-        />
-        <StatCard
-          icon={FaHeart}
-          label="Total likes"
-          value={overview?.totals?.likes}
-          delta={overview?.last30d?.likes}
-          sparkData={engagement?.likes}
-          loading={loading}
-          color="#ef4444"
-        />
-        <StatCard
-          icon={FaComment}
-          label="Total comments"
-          value={overview?.totals?.comments}
-          delta={overview?.last30d?.comments}
-          sparkData={engagement?.comments}
-          loading={loading}
-          color="#f59e0b"
-        />
-        <StatCard
-          icon={FaRetweet}
-          label="Total reposts"
-          value={overview?.totals?.reposts}
-          delta={overview?.last30d?.reposts}
-          sparkData={engagement?.reposts}
-          loading={loading}
-          color="#0f6e56"
-        />
-        <StatCard
-          icon={FaBookmark}
-          label="Saves"
-          value={overview?.totals?.bookmarks}
-          loading={loading}
-          color="#8b5cf6"
-        />
+        <StatCard icon={FaFileAlt} label="Total posts" value={overview?.totals?.posts} delta={overview?.last30d?.posts} loading={loading} color="#0f6e56" />
+        <StatCard icon={FaUsers} label="Followers" value={overview?.totals?.followers} delta={overview?.last30d?.followers} sparkData={engagement?.followers} loading={loading} color="#6366f1" />
+        <StatCard icon={FaHeart} label="Total likes" value={overview?.totals?.likes} delta={overview?.last30d?.likes} sparkData={engagement?.likes} loading={loading} color="#ef4444" />
+        <StatCard icon={FaComment} label="Total comments" value={overview?.totals?.comments} delta={overview?.last30d?.comments} sparkData={engagement?.comments} loading={loading} color="#f59e0b" />
+        <StatCard icon={FaRetweet} label="Total reposts" value={overview?.totals?.reposts} delta={overview?.last30d?.reposts} sparkData={engagement?.reposts} loading={loading} color="#0f6e56" />
+        <StatCard icon={FaBookmark} label="Saves" value={overview?.totals?.bookmarks} loading={loading} color="#8b5cf6" />
       </div>
 
       {/* ── Engagement chart ── */}
@@ -448,20 +419,13 @@ const CreatorDashboard = () => {
                 to={`/post/${post._id}`}
                 className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-surface transition group"
               >
-                <span className="text-xs font-bold text-ink-muted w-4 shrink-0">
-                  {i + 1}
-                </span>
+                <span className="text-xs font-bold text-ink-muted w-4 shrink-0">{i + 1}</span>
                 <p className="text-sm text-ink flex-1 min-w-0 truncate group-hover:text-primary-600 transition">
                   {postSnippet(post)}
                 </p>
                 <div className="flex items-center gap-1 shrink-0">
-                  {React.createElement(metricIcon[metric], {
-                    size: 10,
-                    className: "text-ink-muted",
-                  })}
-                  <span className="text-xs font-bold text-ink">
-                    {fmt(postMetricValue(post))}
-                  </span>
+                  {React.createElement(metricIcon[metric], { size: 10, className: "text-ink-muted" })}
+                  <span className="text-xs font-bold text-ink">{fmt(postMetricValue(post))}</span>
                 </div>
               </Link>
             ))}
@@ -518,9 +482,7 @@ const CreatorDashboard = () => {
                 {bestHour?.count > 0 && (
                   <>
                     {" "}around{" "}
-                    <span className="font-semibold text-ink">
-                      {bestHour.hour}:00 UTC
-                    </span>
+                    <span className="font-semibold text-ink">{bestHour.hour}:00 UTC</span>
                   </>
                 )}
                 . Keep it consistent — audiences follow patterns.
@@ -530,15 +492,10 @@ const CreatorDashboard = () => {
         );
       })()}
 
-      {/* ── Best time to post (AI-style recommendation) ── */}
+      {/* ── Sub-cards (each manages its own cache slice) ── */}
       <BestTimeCard />
-
-      {/* ── Top fans ── */}
       <TopFansCard />
-
-      {/* ── Hashtag performance ── */}
       <HashtagPerformanceCard days={days} />
-
     </MainLayout>
   );
 };
@@ -548,16 +505,26 @@ const CreatorDashboard = () => {
 const BestTimeCard = () => {
   const [data, setData] = React.useState(null);
   const [loading, setLoading] = React.useState(true);
-  useEffect(() => {
-    api.get("/analytics/best-time-to-post")
-      .then((r) => setData(r.data))
-      .catch(() => {})
-      .finally(() => setLoading(false));
+
+  const fetch = useCallback(async ({ silent = false } = {}) => {
+    if (!silent) setLoading(true);
+    try {
+      const r = await api.getCached("/analytics/best-time-to-post", {
+        ttlMs: TTL.bestTime,
+        revalidate: silent,
+      });
+      setData(r.data);
+    } catch {
+      //
+    } finally {
+      if (!silent) setLoading(false);
+    }
   }, []);
 
-  if (loading) return (
-    <div className="h-20 bg-card border border-stroke rounded-2xl animate-pulse mb-4" />
-  );
+  useEffect(() => { fetch(); }, [fetch]);
+  useRefetchOnFocus(() => fetch({ silent: true }));
+
+  if (loading) return <div className="h-20 bg-card border border-stroke rounded-2xl animate-pulse mb-4" />;
   if (!data?.recommendation) return null;
 
   return (
@@ -578,16 +545,27 @@ const BestTimeCard = () => {
 const TopFansCard = () => {
   const [fans, setFans] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
-  useEffect(() => {
-    api.get("/analytics/top-fans?limit=5")
-      .then((r) => setFans(r.data.fans || []))
-      .catch(() => {})
-      .finally(() => setLoading(false));
+
+  const fetch = useCallback(async ({ silent = false } = {}) => {
+    if (!silent) setLoading(true);
+    try {
+      const r = await api.getCached("/analytics/top-fans", {
+        params: { limit: 5 },
+        ttlMs: TTL.topFans,
+        revalidate: silent,
+      });
+      setFans(r.data.fans || []);
+    } catch {
+      //
+    } finally {
+      if (!silent) setLoading(false);
+    }
   }, []);
 
-  if (loading) return (
-    <div className="h-40 bg-card border border-stroke rounded-2xl animate-pulse mb-4" />
-  );
+  useEffect(() => { fetch(); }, [fetch]);
+  useRefetchOnFocus(() => fetch({ silent: true }));
+
+  if (loading) return <div className="h-40 bg-card border border-stroke rounded-2xl animate-pulse mb-4" />;
   if (!fans.length) return null;
 
   return (
@@ -624,16 +602,27 @@ const TopFansCard = () => {
 const HashtagPerformanceCard = ({ days }) => {
   const [tags, setTags] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
-  useEffect(() => {
-    api.get(`/analytics/hashtag-performance?days=${days}`)
-      .then((r) => setTags(r.data.hashtags || []))
-      .catch(() => {})
-      .finally(() => setLoading(false));
+
+  const fetch = useCallback(async ({ silent = false } = {}) => {
+    if (!silent) setLoading(true);
+    try {
+      const r = await api.getCached("/analytics/hashtag-performance", {
+        params: { days },
+        ttlMs: TTL.hashtag,
+        revalidate: silent,
+      });
+      setTags(r.data.hashtags || []);
+    } catch {
+      //
+    } finally {
+      if (!silent) setLoading(false);
+    }
   }, [days]);
 
-  if (loading) return (
-    <div className="h-32 bg-card border border-stroke rounded-2xl animate-pulse mb-4" />
-  );
+  useEffect(() => { fetch(); }, [fetch]);
+  useRefetchOnFocus(() => fetch({ silent: true }));
+
+  if (loading) return <div className="h-32 bg-card border border-stroke rounded-2xl animate-pulse mb-4" />;
   if (!tags.length) return null;
 
   const maxEng = Math.max(...tags.map((t) => t.avgEngagement), 1);

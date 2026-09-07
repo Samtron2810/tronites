@@ -1,7 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import MainLayout from "../layouts/MainLayout";
 import api from "../services/api";
+import { useRefetchOnFocus } from "../hooks/useRefetchOnFocus";
 import toast from "react-hot-toast";
 import {
   FaArrowLeft,
@@ -12,6 +13,12 @@ import {
   FaImage,
   FaVideo,
 } from "react-icons/fa";
+
+// Short TTL — scheduled posts are mutable (user can publish/delete them),
+// so we keep the local cache very fresh (20 s) and always revalidate on
+// focus so the list reflects any action taken in another tab or device.
+const SCHEDULED_TTL_MS = 20_000;
+const CACHE_PREFIX = "/posts/scheduled";
 
 const formatScheduledTime = (iso) => {
   const d = new Date(iso);
@@ -40,17 +47,32 @@ const ScheduledPosts = () => {
   const [cancelling, setCancelling] = useState(null);
   const [publishing, setPublishing] = useState(null);
 
-  useEffect(() => {
-    api.get("/posts/scheduled")
-      .then((r) => setPosts(r.data.posts || []))
-      .catch(() => toast.error("Couldn't load scheduled posts."))
-      .finally(() => setLoading(false));
+  const fetchPosts = useCallback(async ({ silent = false } = {}) => {
+    if (!silent) setLoading(true);
+    try {
+      const r = await api.getCached(CACHE_PREFIX, {
+        ttlMs: SCHEDULED_TTL_MS,
+        revalidate: silent,
+      });
+      setPosts(r.data.posts || []);
+    } catch {
+      if (!silent) toast.error("Couldn't load scheduled posts.");
+    } finally {
+      if (!silent) setLoading(false);
+    }
   }, []);
+
+  useEffect(() => { fetchPosts(); }, [fetchPosts]);
+
+  // Revalidate on focus — catches publishes/deletes from other tabs/devices
+  useRefetchOnFocus(() => fetchPosts({ silent: true }));
 
   const handlePublishNow = async (postId) => {
     setPublishing(postId);
     try {
       await api.delete(`/posts/${postId}/schedule`);
+      // Invalidate local cache so next mount gets fresh data
+      api.invalidate(CACHE_PREFIX);
       setPosts((prev) => prev.filter((p) => p._id !== postId));
       toast.success("Post published!");
     } catch {
@@ -64,6 +86,7 @@ const ScheduledPosts = () => {
     setCancelling(postId);
     try {
       await api.delete(`/posts/${postId}`);
+      api.invalidate(CACHE_PREFIX);
       setPosts((prev) => prev.filter((p) => p._id !== postId));
       toast.success("Scheduled post deleted.");
     } catch {
