@@ -59,8 +59,15 @@ const RouteFallback = () => (
 );
 
 const AppContent = () => {
-  const { user, loading } = useAuth();
+  const { user, loading, registerNavigateToLogin } = useAuth();
   const navigate = useNavigate();
+
+  // Give AuthContext a handle to useNavigate so logout() and force-logout
+  // can push to /login imperatively instead of relying on ProtectedRoute's
+  // declarative redirect, which races against the unmounting component tree.
+  useEffect(() => {
+    registerNavigateToLogin((path) => navigate(path, { replace: true }));
+  }, [navigate, registerNavigateToLogin]);
 
   // Lets a tap on a push notification focus the already-open tab and
   // route it to the right screen (e.g. straight to the post that was

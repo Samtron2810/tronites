@@ -3,6 +3,14 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import api from "../services/api";
 import { AuthContext } from "./authContextObject";
 
+// Unique key per-browser that links the localStorage snapshot to the
+// cookie session. Stored as a plain string; regenerated on every login
+// so a leftover cache entry from a previous account is never trusted.
+const SESSION_TAG_KEY = "tronites_session_tag";
+
+const generateSessionTag = () =>
+  Math.random().toString(36).slice(2) + Date.now().toString(36);
+
 // Key used to persist the last-known user snapshot in localStorage.
 // This is NOT a security credential — cookies handle auth. It is only
 // used so the UI can render the correct shell (avatar, username, etc.)
@@ -15,7 +23,18 @@ const USER_CACHE_KEY = "tronites_user_cache";
 const readCachedUser = () => {
   try {
     const raw = localStorage.getItem(USER_CACHE_KEY);
-    return raw ? JSON.parse(raw) : null;
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    // Validate that the cache belongs to the current cookie session.
+    // If the session tag is missing or mismatched (e.g. the user logged
+    // into a different account on this browser), discard the snapshot so
+    // we never render the wrong account's data on reopen.
+    const storedTag = localStorage.getItem(SESSION_TAG_KEY);
+    if (!storedTag || parsed.__sessionTag !== storedTag) {
+      localStorage.removeItem(USER_CACHE_KEY);
+      return null;
+    }
+    return parsed;
   } catch {
     return null;
   }
@@ -24,9 +43,14 @@ const readCachedUser = () => {
 const writeCachedUser = (user) => {
   try {
     if (user) {
-      localStorage.setItem(USER_CACHE_KEY, JSON.stringify(user));
+      // Attach the current session tag to the snapshot so readCachedUser
+      // can detect a stale entry from a previous account on reopen.
+      const tag = localStorage.getItem(SESSION_TAG_KEY) || generateSessionTag();
+      localStorage.setItem(SESSION_TAG_KEY, tag);
+      localStorage.setItem(USER_CACHE_KEY, JSON.stringify({ ...user, __sessionTag: tag }));
     } else {
       localStorage.removeItem(USER_CACHE_KEY);
+      localStorage.removeItem(SESSION_TAG_KEY);
     }
   } catch {
     // quota exceeded or private-browsing restriction — silently ignore
@@ -56,6 +80,14 @@ export const AuthProvider = ({ children }) => {
   // at least once so we don't keep re-running it on every render.
   const validatedRef = useRef(false);
 
+  // Callback registered by AppContent (which has useNavigate) so
+  // AuthContext can push to /login after logout or force-logout without
+  // importing useNavigate itself (requires being inside a Router).
+  const navigateToLoginRef = useRef(null);
+  const registerNavigateToLogin = useCallback((fn) => {
+    navigateToLoginRef.current = fn;
+  }, []);
+
   const setAndCacheUser = useCallback((u) => {
     setUser(u);
     writeCachedUser(u);
@@ -67,17 +99,28 @@ export const AuthProvider = ({ children }) => {
     return res.data;
   };
 
-  // LOGIN
+  // LOGIN — generate a fresh session tag before caching so any snapshot
+  // from a previously logged-in account is invalidated on next reopen.
   const login = async (userData) => {
+    // Clear stale cache + old session tag first so a failed/partial login
+    // never leaves a mismatched tag in place.
+    localStorage.removeItem(USER_CACHE_KEY);
+    localStorage.removeItem(SESSION_TAG_KEY);
+    const newTag = generateSessionTag();
+    localStorage.setItem(SESSION_TAG_KEY, newTag);
+    api.clearCache();
     const res = await api.post("/auth/login", userData);
     setAndCacheUser(res.data);
   };
 
-  // LOGOUT — clears both the in-memory state AND the persisted snapshot
+  // LOGOUT — clears both the in-memory state AND the persisted snapshot,
+  // then explicitly navigates to /login so the UI never ends up on a
+  // blank shell waiting for ProtectedRoute to declaratively redirect.
   const logout = async () => {
     await api.post("/auth/logout");
     api.clearCache();
     setAndCacheUser(null);
+    navigateToLoginRef.current?.("/login");
   };
 
   // UPDATE USER (profile pic sync, etc.)
@@ -151,6 +194,7 @@ export const AuthProvider = ({ children }) => {
     const handleForceLogout = () => {
       api.clearCache();
       setAndCacheUser(null);
+      navigateToLoginRef.current?.("/login");
     };
     window.addEventListener("auth:forceLogout", handleForceLogout);
     return () => {
@@ -168,6 +212,7 @@ export const AuthProvider = ({ children }) => {
         login,
         logout,
         updateUser,
+        registerNavigateToLogin,
       }}
     >
       {children}

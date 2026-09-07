@@ -12,7 +12,7 @@ import {
   FaArrowLeft,
   FaLock,
   FaCalendarAlt,
-  FaThumbTack,
+  FaThumbtack,
   FaHandshake,
 } from "react-icons/fa";
 import { useAuth } from "../context/useAuth";
@@ -37,7 +37,8 @@ const More = () => {
   // Load scheduled post count badge for creators
   useEffect(() => {
     if (!creator) return;
-    api.get("/posts/scheduled")
+    api
+      .get("/posts/scheduled")
       .then((r) => setScheduledCount(r.data.posts?.length || 0))
       .catch(() => {});
   }, [creator]);
@@ -48,7 +49,9 @@ const More = () => {
       const next = !user?.openToCollabs;
       await api.put("/users/collab-status", { openToCollabs: next });
       updateUser({ openToCollabs: next });
-      toast.success(next ? "Collab status enabled!" : "Collab status disabled.");
+      toast.success(
+        next ? "Collab status enabled!" : "Collab status disabled.",
+      );
     } catch {
       toast.error("Failed to update collab status.");
     } finally {
@@ -107,7 +110,7 @@ const More = () => {
     // Pinned post handled separately via PostCard on profile;
     // this tile deep-links to own profile so the creator can pick one.
     {
-      icon: FaThumbTack,
+      icon: FaThumbtack,
       label: "Pin a post",
       description: "Pin your best post to the top of your profile.",
       href: `/profile/${user?._id}`,
@@ -147,15 +150,23 @@ const More = () => {
               </span>
             )}
           </p>
-          <p className="text-sm text-ink-muted mt-0.5 truncate">{tile.description}</p>
+          <p className="text-sm text-ink-muted mt-0.5 truncate">
+            {tile.description}
+          </p>
         </div>
-        {!isDisabled && <FaChevronRight size={12} className="text-ink-muted shrink-0" />}
+        {!isDisabled && (
+          <FaChevronRight size={12} className="text-ink-muted shrink-0" />
+        )}
       </div>
     );
 
     if (isDisabled) {
       return (
-        <div className={tile.comingSoon ? "cursor-not-allowed opacity-60" : "cursor-default"}>
+        <div
+          className={
+            tile.comingSoon ? "cursor-not-allowed opacity-60" : "cursor-default"
+          }
+        >
           {content}
         </div>
       );
@@ -171,7 +182,9 @@ const More = () => {
   return (
     <MainLayout>
       <button
-        onClick={() => (window.history.length > 1 ? navigate(-1) : navigate("/"))}
+        onClick={() =>
+          window.history.length > 1 ? navigate(-1) : navigate("/")
+        }
         className="inline-flex items-center gap-1.5 text-base font-medium text-ink-muted hover:text-ink mb-4 transition"
       >
         <FaArrowLeft size={13} />
@@ -200,7 +213,9 @@ const More = () => {
                 <FaHandshake size={16} />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-base font-semibold text-ink">Open to collabs</p>
+                <p className="text-base font-semibold text-ink">
+                  Open to collabs
+                </p>
                 <p className="text-sm text-ink-muted mt-0.5">
                   {user?.openToCollabs
                     ? "Visible on your profile — brands can see you're available."
@@ -248,7 +263,9 @@ const More = () => {
                   Creators only
                 </span>
               </p>
-              <p className="text-sm text-ink-muted mt-0.5">Available to verified creators.</p>
+              <p className="text-sm text-ink-muted mt-0.5">
+                Available to verified creators.
+              </p>
             </div>
           </div>
         )}
