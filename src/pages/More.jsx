@@ -105,7 +105,7 @@ const More = () => {
     {
       icon: FaThumbtack,
       label: "Pin a post",
-      description: "Pin your best post to the top of your profile.",
+      description: "Head to your profile, open a post's ⋯ menu, then pin it to the top.",
       href: `/profile/${user?._id}`,
     },
   ];

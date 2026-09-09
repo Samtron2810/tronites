@@ -34,6 +34,12 @@ const Profile = () => {
 
   const [profile, setProfile] = useState(null);
   const [posts, setPosts] = useState([]);
+  // The fully-hydrated pinned post object from getUserProfile — kept
+  // separate from `posts` so an OLD pinned post still renders in the
+  // banner at the top even after it has fallen off page 1. Null when no
+  // pin is active. `profile.pinnedPost` below is ONLY the post _id (user
+  // DTO) and is what PostCard compares against for the menu label.
+  const [pinnedPost, setPinnedPostState] = useState(null);
   const [totalPosts, setTotalPosts] = useState(0);
   const [postsPage, setPostsPage] = useState(1);
   const [postsHasMore, setPostsHasMore] = useState(true);
@@ -71,6 +77,13 @@ const Profile = () => {
       });
       setProfile(res.data.user);
       setPosts(res.data.posts);
+      setPinnedPostState(
+        res.data.pinnedPost ??
+          // Pre-hydration fallback: if the backend hasn't shipped the
+          // top-level pinnedPost object yet, locate the id in page 1.
+          res.data.posts?.find((p) => p._id === res.data.user?.pinnedPost) ??
+          null,
+      );
       setTotalPosts(res.data.totalPosts);
       setPostsPage(1);
       setPostsHasMore(res.data.hasMore);
@@ -203,6 +216,36 @@ const Profile = () => {
     }
   };
 
+// Called by PostCard after a successful pin/unpin with the new pinned
+  // post id (or null when unpinned). Optimistic local update — the banner
+  // moves in/out of place instantly without a refetch, and the client's
+  // profile cache is dropped so the next fetch reconciles. (The backend's
+  // setPinnedPost also invalidates its own profile cache server-side.)
+  const handleTogglePin = (nextPinnedPostId) => {
+    setProfile((prev) => ({ ...prev, pinnedPost: nextPinnedPostId || null }));
+    setPinnedPostState((prev) => {
+      if (!nextPinnedPostId) return null;
+      if (prev?._id === nextPinnedPostId) return prev;
+      // Pinned from the regular timeline — reuse that card's data for the
+      // banner instead of waiting for a refetch.
+      return posts.find((p) => p._id === nextPinnedPostId) || prev;
+    });
+    api.invalidate(`/users/profile/${id}`);
+  };
+
+  // Local cleanup after a post is deleted — shared by the timeline cards
+  // AND the pinned banner card (so deleting from the banner keeps the
+  // page consistent). Also clears the pin when the deleted post was the
+  // pinned one; the backend's deletePost does the same server-side, this
+  // just avoids a stale rendered page before the next refetch.
+  const removePostLocally = (deletedId) => {
+    setPosts((prev) => prev.filter((p) => p._id !== deletedId));
+    setTotalPosts((prev) => Math.max(prev - 1, 0));
+    setPinnedPostState((prev) => (prev?._id === deletedId ? null : prev));
+    setProfile((prev) =>
+      prev.pinnedPost === deletedId ? { ...prev, pinnedPost: null } : prev,
+    );
+  };
   const handleReportSubmit = async ({ reason, details }) => {
     try {
       await api.post("/reports", {
@@ -499,42 +542,54 @@ const Profile = () => {
       </div>
 
       {/* Pinned post — shown at top of profile for creator badge holders */}
-      {profile.pinnedPost && (() => {
-        const pinned = posts.find(p => p._id === profile.pinnedPost) ||
-          (posts[0]?._id === profile.pinnedPost ? posts[0] : null);
-        if (!pinned) return null;
-        return (
-          <div className="mt-4">
-            <div className="flex items-center gap-1.5 mb-1.5 px-1">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" className="text-ink-muted">
-                <path d="M16 4v8l2 2v2h-6v6l-1 1-1-1v-6H4v-2l2-2V4h10z"/>
-              </svg>
-              <span className="text-xs font-semibold text-ink-muted uppercase tracking-wide">Pinned</span>
-            </div>
-            <PostCard
-              key={`pinned-${pinned._id}`}
-              postId={pinned._id}
-              userId={pinned.user?._id || profile._id}
-              name={pinned.user?.name || profile.name}
-              username={pinned.user?.username || profile.username}
-              profilePic={pinned.user?.profilePic || profile.profilePic}
-              verifications={pinned.user?.verifications || profile.verifications}
-              time={new Date(pinned.createdAt).toLocaleString()}
-              text={pinned.text}
-              images={pinned.images}
-              video={pinned.video}
-              likes={pinned.likesCount}
-              commentsCount={pinned.commentsCount}
-              reposts={pinned.repostsCount}
-              isLiked={pinned.isLiked}
-              isBookmarked={pinned.isBookmarked}
-              isReposted={pinned.isReposted}
-              reactionSummary={pinned.reactionSummary}
-              myReaction={pinned.myReaction}
-            />
+      {pinnedPost && (
+        <div className="mt-4">
+          <div className="flex items-center gap-1.5 mb-1.5 px-1">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" className="text-ink-muted">
+              <path d="M16 4v8l2 2v2h-6v6l-1 1-1-1v-6H4v-2l2-2V4h10z"/>
+            </svg>
+            <span className="text-xs font-semibold text-ink-muted uppercase tracking-wide">Pinned</span>
           </div>
-        );
-      })()}
+          <PostCard
+            key={`pinned-${pinnedPost._id}`}
+            postId={pinnedPost._id}
+            // The hydrated pinned-post object's `user` is a bare ObjectId
+            // (getUserProfile doesn't populate authors on profile-timeline
+            // posts) — fall back to the profile fields exactly like the
+            // timeline cards below.
+            userId={pinnedPost.user?._id || profile._id}
+            name={pinnedPost.user?.name || profile.name}
+            username={pinnedPost.user?.username || profile.username}
+            profilePic={pinnedPost.user?.profilePic || profile.profilePic}
+            verifications={pinnedPost.user?.verifications || profile.verifications}
+            time={new Date(pinnedPost.createdAt).toLocaleString()}
+            text={pinnedPost.text}
+            images={pinnedPost.images}
+            video={pinnedPost.video}
+            likes={pinnedPost.likesCount}
+            commentsCount={pinnedPost.commentsCount}
+            reposts={pinnedPost.repostsCount}
+            isLiked={pinnedPost.isLiked}
+            isBookmarked={pinnedPost.isBookmarked}
+            isReposted={pinnedPost.isReposted}
+            reactionSummary={pinnedPost.reactionSummary}
+            myReaction={pinnedPost.myReaction}
+            repostedBy={pinnedPost.repostedBy}
+            isQuotePost={pinnedPost.isQuotePost}
+            quoteOf={pinnedPost.quoteOf}
+            edited={pinnedPost.edited}
+            editedAt={pinnedPost.editedAt}
+            privacy={pinnedPost.privacy}
+            onDelete={removePostLocally}
+            // Pin controls. The banner's card shows "Unpin post" (this IS
+            // the pinned post); regular timeline cards get the same props
+            // so the current pin relabels correctly everywhere.
+            isOwnProfile={isOwnProfile}
+            pinnedPostId={pinnedPost._id}
+            onTogglePin={handleTogglePin}
+          />
+        </div>
+      )}
 
       {/* Posts */}
       <div className="mt-4 space-y-4">
@@ -579,10 +634,13 @@ const Profile = () => {
             edited={post.edited}
             privacy={post.privacy}
             editedAt={post.editedAt}
-            onDelete={(id) => {
-              setPosts((prev) => prev.filter((p) => p._id !== id));
-              setTotalPosts((prev) => Math.max(prev - 1, 0));
-            }}
+            onDelete={removePostLocally}
+            // Pin controls — rendered only on the owner's own profile for
+            // their own posts while holding an active creator badge
+            // (PostCard-side gate). `profile.pinnedPost` is the id.
+            isOwnProfile={isOwnProfile}
+            pinnedPostId={profile.pinnedPost ?? null}
+            onTogglePin={handleTogglePin}
           />
         ))}
         {postsHasMore && posts.length > 0 && (

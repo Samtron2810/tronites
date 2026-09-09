@@ -13,6 +13,7 @@ import {
   FaVolumeMute,
   FaRegCopy,
   FaRetweet,
+  FaThumbtack,
   FaQuoteRight,
 } from "react-icons/fa";
 import { FiFlag, FiUsers, FiLock } from "react-icons/fi";
@@ -20,6 +21,7 @@ import { HiOutlineSparkles } from "react-icons/hi2";
 import toast from "react-hot-toast";
 import api from "../services/api";
 import { useAuth } from "../context/useAuth";
+import { isCreator } from "../utils/creator";
 import DeletePostModal from "./DeletePostModal";
 import ReportModal from "./ReportModal";
 import QuotePostModal from "./QuotePostModal";
@@ -97,6 +99,19 @@ const PostCard = ({
   // paint doesn't wait an extra round trip before it even starts
   // fetching. False (default) for every other post.
   priority = false,
+  // True only when this card is rendered on the viewer's OWN profile page
+  // (Profile.jsx passes isOwnProfile) — gates the "Pin/Unpin post" menu
+  // item, which only makes sense there, not on the Home feed where isOwner
+  // can also be true for the viewer's own posts.
+  isOwnProfile = false,
+  // The post currently pinned on this profile (the user DTO's
+  // profile.pinnedPost id). Drives the menu label: the matching post shows
+  // "Unpin post", everything else shows "Pin post". Undefined elsewhere.
+  pinnedPostId = undefined,
+  // Called after a successful pin/unpin with the NEW pinned post id (or
+  // null when unpinned) so the profile page can update its local state
+  // without a refetch. Undefined on non-profile surfaces.
+  onTogglePin = undefined,
 }) => {
   const { user: currentUser } = useAuth();
   const isOwner = currentUser?._id === userId;
@@ -188,6 +203,9 @@ const PostCard = ({
   const [reportTarget, setReportTarget] = useState(null); // null | { type: "post" }
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
+  // Guards the Pin/Unpin API call against double-taps — same pattern as
+  // the isLiking/isReposting guards on the other action handlers.
+  const [isPinToggling, setIsPinToggling] = useState(false);
   const triggerRef = useRef(null);
   // Separate small dropdown for the repost button (Repost vs Quote) —
   // distinct from the "..." options menu above, since it's opened by a
@@ -422,6 +440,33 @@ const PostCard = ({
   const handleEditCancel = () => {
     setEditText(postText);
     setIsEditing(false);
+  };
+
+  // Pin / unpin this post on the creator's profile. Only offered on the
+  // owner's own profile (isOwnProfile) for their OWN posts (isOwner —
+  // mirrors the backend's ownership check) while holding an active creator
+  // badge (isCreator — mirrors requireCreator). The server is the real
+  // gate (PUT /users/pinned-post re-checks ownership + creator badge);
+  // these client checks only avoid surfacing a guaranteed-403 action in
+  // the menu, and on failure we surface the server's own message.
+  const handleTogglePin = async () => {
+    if (isPinToggling) return;
+    setIsPinToggling(true);
+    try {
+      const next = postId === pinnedPostId ? null : postId;
+      await api.put("/users/pinned-post", { postId: next });
+      if (onTogglePin) onTogglePin(next);
+      toast.success(
+        next ? "Pinned to the top of your profile!" : "Post unpinned.",
+      );
+    } catch (e) {
+      console.error(e);
+      toast.error(
+        e.response?.data?.message || "Couldn't update pinned post. Try again.",
+      );
+    } finally {
+      setIsPinToggling(false);
+    }
   };
 
   const handleCopyPost = async () => {
@@ -861,6 +906,20 @@ const PostCard = ({
 
                 {isOwner ? (
                   <>
+                    {isOwnProfile && isCreator(currentUser) && (
+                      <button
+                        onClick={() => {
+                          setMenuOpen(false);
+                          handleTogglePin();
+                        }}
+                        className="w-full flex items-center gap-3 px-4 py-2.5 text-base text-ink hover:bg-primary-50 transition"
+                      >
+                        <FaThumbtack className="text-primary-600" size={13} />
+                        <span className="font-medium">
+                          {postId === pinnedPostId ? "Unpin post" : "Pin post"}
+                        </span>
+                      </button>
+                    )}
                     {/* "Edit post" is hidden entirely during the 1-hour
                         cooldown, computed client-side, rather than shown
                         and left to fail on submit. */}
@@ -1069,7 +1128,7 @@ const PostCard = ({
 
         {media.length > 1 && (
           <div
-            className={`mt-4 grid gap-0.5 rounded-xl overflow-hidden h-80 ${
+            className={`mt-4 grid gap-0.5 rounded-xl overflow-hidden h-50 ${
               media.length === 2 ? "grid-cols-2" : "grid-cols-2 grid-rows-2"
             }`}
           >
