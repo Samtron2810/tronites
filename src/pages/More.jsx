@@ -18,14 +18,7 @@ import {
 import { useAuth } from "../context/useAuth";
 import api from "../services/api";
 import toast from "react-hot-toast";
-
-const isCreator = (user) =>
-  Array.isArray(user?.verifications) &&
-  user.verifications.some(
-    (v) =>
-      v.type === "creator" &&
-      (!v.expiresAt || new Date(v.expiresAt) > new Date()),
-  );
+import { isCreator } from "../utils/creator";
 
 const More = () => {
   const navigate = useNavigate();

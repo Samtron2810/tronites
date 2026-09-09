@@ -222,7 +222,7 @@ const AppContent = () => {
           <Route
             path="/moderation"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute requireRole={["moderator", "admin"]}>
                 <ModerationQueue />
               </ProtectedRoute>
             }
@@ -231,7 +231,7 @@ const AppContent = () => {
           <Route
             path="/admin/users"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute requireRole={["admin"]}>
                 <AdminUsers />
               </ProtectedRoute>
             }
@@ -240,7 +240,7 @@ const AppContent = () => {
           <Route
             path="/admin/audit-log"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute requireRole={["moderator", "admin"]} requirePermission="view_audit_log">
                 <AdminAuditLog />
               </ProtectedRoute>
             }
@@ -258,7 +258,7 @@ const AppContent = () => {
           <Route
             path="/dashboard"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute requireCreator>
                 <CreatorDashboard />
               </ProtectedRoute>
             }
@@ -267,7 +267,7 @@ const AppContent = () => {
           <Route
             path="/scheduled-posts"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute requireCreator>
                 <ScheduledPosts />
               </ProtectedRoute>
             }

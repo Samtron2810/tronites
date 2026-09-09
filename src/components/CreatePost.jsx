@@ -38,9 +38,14 @@ const CreatePost = ({ fetchPosts }) => {
         postRes = await api.post("/posts", { text, privacy });
       }
 
-      // If a scheduled time was picked, immediately schedule the new post
+      // If a scheduled time was picked, immediately schedule the new post.
+      // Note: datetime-local yields "2026-09-10T14:30" (no timezone offset),
+      // but the backend scheduledPostSchema expects full ISO 8601 — convert
+      // so the picked local time becomes a correct UTC instant.
       if (isScheduled && postRes?.data?.post?._id) {
-        await api.put(`/posts/${postRes.data.post._id}/schedule`, { scheduledFor });
+        await api.put(`/posts/${postRes.data.post._id}/schedule`, {
+          scheduledFor: new Date(scheduledFor).toISOString(),
+        });
         toast.success("Post scheduled!", { id: toastId });
       } else {
         toast.success("Post created!", { id: toastId });

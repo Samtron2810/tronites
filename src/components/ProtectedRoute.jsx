@@ -1,8 +1,15 @@
 import { Navigate } from "react-router-dom";
 
 import { useAuth } from "../context/useAuth";
+import { isCreator } from "../utils/creator";
 
-const ProtectedRoute = ({ children, allowIncompleteOnboarding = false }) => {
+const ProtectedRoute = ({
+  children,
+  allowIncompleteOnboarding = false,
+  requireCreator = false,
+  requireRole,
+  requirePermission,
+}) => {
   const { user, loading } = useAuth();
 
   // Wait for auth check — AppContent already shows the SplashScreen
@@ -33,6 +40,37 @@ const ProtectedRoute = ({ children, allowIncompleteOnboarding = false }) => {
     return <Navigate to="/choose-username" />;
   }
 
+  // Creator-only pages (dashboard, scheduled posts, etc.) - mirror the
+  // backend chain protect → requireCreator. The server is the real gate; this
+  // just avoids mounting a page whose every request would 403.
+
+  if (requireCreator && !isCreator(user)) {
+    return <Navigate to="/more" replace />;
+  }
+
+  // Role-gated staff pages (moderation queue, admin tools) - mirrors the backend
+  // requireModerator/requireAdmin - redirect so we don't mount a page whose
+  // every request would 403 (same reasoning as the creator guard above).
+
+
+  if (requireRole && !requireRole.includes(user.role)) {
+    return <Navigate to="/" replace />;
+  }
+
+  // Permission-gated pages (audit log) - mirrors requirePermission.js resolution:
+  // admin role → implicit wildcard; everyone else needs the named permission in
+  // their explicit permissions array — same check as AdminAuditLog's canView.
+
+
+
+
+  if (
+    requirePermission &&
+    user.role !== "admin" &&
+    !(user.permissions || []).includes(requirePermission)
+  ) {
+    return <Navigate to="/" replace />;
+  }
   return children;
 };
 
