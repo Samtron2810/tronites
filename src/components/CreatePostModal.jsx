@@ -172,7 +172,7 @@ const CreatePostModal = ({ closeModal, onSubmit, onSubmitVideo }) => {
     }
 
     if (videoFile) {
-      onSubmitVideo({ text, videoFile, privacy });
+      onSubmitVideo({ text, videoFile, privacy, scheduledFor: scheduledFor || null });
     } else {
       onSubmit({ text, images, privacy, scheduledFor: scheduledFor || null });
     }

@@ -17,10 +17,19 @@ const CreatePost = ({ fetchPosts }) => {
   // immediately and this runs the actual upload in the background so the
   // user isn't left staring at a loading spinner. Toasts surface
   // progress/completion.
+  //
+  // scheduledFor is passed directly in the POST /posts body so the backend
+  // creates the post in a hidden state from the start — no two-step approach.
   const handleSubmit = async ({ text, images, privacy, scheduledFor }) => {
     const isScheduled = !!scheduledFor;
     const toastId = toast.loading(isScheduled ? "Scheduling…" : "Posting…");
     try {
+      // datetime-local yields "2026-09-10T14:30" (no timezone offset) —
+      // convert to full ISO 8601 so the backend gets a correct UTC instant.
+      const scheduledForISO = isScheduled
+        ? new Date(scheduledFor).toISOString()
+        : undefined;
+
       let postRes;
       if (images.length) {
         const sigRes = await api.post("/posts/signature/image");
@@ -33,26 +42,29 @@ const CreatePost = ({ fetchPosts }) => {
           url: r.secure_url,
           publicId: r.public_id,
         }));
-        postRes = await api.post("/posts", { text, images: imagePayload, privacy });
+        postRes = await api.post("/posts", {
+          text,
+          images: imagePayload,
+          privacy,
+          ...(scheduledForISO ? { scheduledFor: scheduledForISO } : {}),
+        });
       } else {
-        postRes = await api.post("/posts", { text, privacy });
+        postRes = await api.post("/posts", {
+          text,
+          privacy,
+          ...(scheduledForISO ? { scheduledFor: scheduledForISO } : {}),
+        });
       }
 
-      // If a scheduled time was picked, immediately schedule the new post.
-      // Note: datetime-local yields "2026-09-10T14:30" (no timezone offset),
-      // but the backend scheduledPostSchema expects full ISO 8601 — convert
-      // so the picked local time becomes a correct UTC instant.
-      if (isScheduled && postRes?.data?.post?._id) {
-        await api.put(`/posts/${postRes.data.post._id}/schedule`, {
-          scheduledFor: new Date(scheduledFor).toISOString(),
-        });
+      if (isScheduled) {
         toast.success("Post scheduled!", { id: toastId });
+        // Don't call fetchPosts — the post is hidden from the feed until
+        // the cron publishes it. The Scheduled Posts page will show it.
       } else {
         toast.success("Post created!", { id: toastId });
+        api.invalidate("/posts/search");
+        fetchPosts();
       }
-
-      api.invalidate("/posts/search");
-      fetchPosts();
     } catch (error) {
       if (error.code === "ECONNABORTED") {
         toast.error(
@@ -84,7 +96,8 @@ const CreatePost = ({ fetchPosts }) => {
   // modal has already closed by the time this runs; upload + eager
   // transform (server-side trim to 30s) happen here with toast progress,
   // so the user is free to browse/post again while it finishes.
-  const handleSubmitVideo = async ({ text, videoFile, privacy }) => {
+  const handleSubmitVideo = async ({ text, videoFile, privacy, scheduledFor }) => {
+    const isScheduled = !!scheduledFor;
     const toastId = toast.loading("Uploading video… 0%");
     try {
       const video = await uploadVideoToCloudinary({
@@ -97,23 +110,36 @@ const CreatePost = ({ fetchPosts }) => {
         },
       });
 
-      await api.post("/posts/video", { text, video, privacy });
+      const scheduledForISO = isScheduled
+        ? new Date(scheduledFor).toISOString()
+        : undefined;
 
-      // durationSeconds is the SOURCE video's duration (Cloudinary's
-      // top-level `duration` field, read before the eager transform)
-      // — not the trimmed clip's. Comparing it against the cap is how
-      // we know, after the fact, whether the eager transform actually
-      // cut anything.
-      if (video.durationSeconds > MAX_VIDEO_DURATION_SECONDS) {
+      await api.post("/posts/video", {
+        text,
+        video,
+        privacy,
+        ...(scheduledForISO ? { scheduledFor: scheduledForISO } : {}),
+      });
+
+      if (isScheduled) {
+        toast.success("Video scheduled!", { id: toastId });
+      } else if (video.durationSeconds > MAX_VIDEO_DURATION_SECONDS) {
+        // durationSeconds is the SOURCE video's duration (Cloudinary's
+        // top-level `duration` field, read before the eager transform)
+        // — not the trimmed clip's. Comparing it against the cap is how
+        // we know, after the fact, whether the eager transform actually
+        // cut anything.
         toast.success(
           `Video posted — trimmed to the first ${MAX_VIDEO_DURATION_SECONDS}s`,
           { id: toastId, icon: "✂️", duration: 4000 },
         );
+        api.invalidate("/posts/search");
+        fetchPosts();
       } else {
         toast.success("Video posted!", { id: toastId });
+        api.invalidate("/posts/search");
+        fetchPosts();
       }
-      api.invalidate("/posts/search");
-      fetchPosts();
     } catch (error) {
       toast.error(
         error?.response?.data?.message ||

@@ -194,8 +194,20 @@ const Home = () => {
       );
     };
     socket.on("newPost", handleNewPost);
-    return () => socket.off("newPost", handleNewPost);
-  }, [socket]);
+
+    // When the cron job publishes one of the current user's scheduled
+    // posts, refresh the following feed so the newly-published post
+    // appears without a manual reload.
+    const handleScheduledPublished = () => {
+      fetchPosts({ silent: true });
+    };
+    socket.on("scheduledPostPublished", handleScheduledPublished);
+
+    return () => {
+      socket.off("newPost", handleNewPost);
+      socket.off("scheduledPostPublished", handleScheduledPublished);
+    };
+  }, [socket, fetchPosts]);
 
   const removePost = (id) => {
     setFeeds((prev) => ({
