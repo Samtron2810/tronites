@@ -788,11 +788,11 @@ const ModerationQueue = () => {
   // Phase 2 — suspend/ban/unrestrict straight from a user report card.
   // Updates the card's targetOwner from the server DTO so chips flip
   // without a refetch. Returns success so the modal closes only on win.
-  // Phase 4 — issue a formal warning from the queue: send the strike,
-  // prompt toward suspension when the threshold is crossed (reusing the
-  // Phase 2 restriction modal so the moderator is one "Cancel" away from
-  // doing nothing), then resolve the underlying report as actioned so
-  // the queue stays accurate.
+  // Phase 4 — issue a formal warning from the queue: send the strike, then
+  // resolve the underlying report as actioned so the queue stays accurate.
+  // Auto-escalation is fully server-side now (warnUser suspends at 3
+  // strikes / bans at 5 and returns autoRestriction), so the client only
+  // relays what happened instead of prompting a manual suspension.
   const handleWarn = async (report, reason) => {
     try {
       const res = await api.post(
@@ -804,12 +804,25 @@ const ModerationQueue = () => {
           res.data.strikeCount === 1 ? "" : "s"
         } on record.`,
       );
-      if (res.data.strikeThresholdReached) {
-        toast(`${res.data.strikeCount} strikes reached — review a suspension.`, {
-          icon: "âš ï¸",
+      if (res.data.autoRestriction === "banned") {
+        toast(`${res.data.strikeCount} strikes — account automatically banned.`, {
+          icon: "⛔",
           duration: 6000,
         });
-        setPendingUserRestriction({ report, mode: "suspend" });
+      } else if (res.data.autoRestriction === "suspended") {
+        toast(
+          `${res.data.strikeCount} strikes — account automatically suspended for 7 days.`,
+          { icon: "⏸", duration: 6000 },
+        );
+      }
+      if (res.data.user) {
+        // Reflect the auto-applied restriction on the card's owner chip
+        // (mirrors handleConfirmUserRestriction's local update).
+        setReports((prev) =>
+          prev.map((r) =>
+            r._id === report._id ? { ...r, targetOwner: res.data.user } : r,
+          ),
+        );
       }
       await handleResolve(report._id, "actioned", `Warning issued: ${reason}`);
       return { ok: true };

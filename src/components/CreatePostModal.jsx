@@ -16,6 +16,7 @@ import ConfirmDiscardModal from "./ConfirmDiscardModal";
 import useBackButtonClose from "../hooks/useBackButtonClose";
 import { validateVideoFile } from "../services/videoUpload";
 import { useAuth } from "../context/useAuth";
+import { getCharLimit, canSchedule } from "../utils/tierLimits";
 
 const MAX_IMAGES = 4;
 
@@ -28,16 +29,13 @@ const PRIVACY_OPTIONS = [
   { value: "only-me", label: "Only me", icon: FiLock },
 ];
 
-const isCreator = (user) =>
-  Array.isArray(user?.verifications) &&
-  user.verifications.some(
-    (v) => v.type === "creator" && (!v.expiresAt || new Date(v.expiresAt) > new Date()),
-  );
-
 const CreatePostModal = ({ closeModal, onSubmit, onSubmitVideo }) => {
   const { user } = useAuth();
-  const creator = isCreator(user);
   const [text, setText] = useState("");
+  // Verified tiers can schedule; char limit is tier-based (mirrors backend).
+  const canUserSchedule = canSchedule(user);
+  const charLimit = getCharLimit(user);
+  const nearLimit = charLimit - text.length <= 20;
   const [privacy, setPrivacy] = useState("public");
   const [images, setImages] = useState([]); // File[]
   const [previews, setPreviews] = useState([]); // objectURL[]
@@ -203,7 +201,7 @@ const CreatePostModal = ({ closeModal, onSubmit, onSubmitVideo }) => {
               value={text}
               onChange={handleTextChange}
               onBlur={mention.closeSuggestions}
-              maxLength={280}
+              maxLength={charLimit}
               rows={4}
               placeholder="What's happening?"
               className="w-full border border-stroke rounded-xl p-4 text-base text-ink placeholder:text-ink-muted outline-none resize-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100 transition"
@@ -226,9 +224,9 @@ const CreatePostModal = ({ closeModal, onSubmit, onSubmitVideo }) => {
           </div>
           <div className="flex justify-end">
             <span
-              className={`text-sm ${text.length >= 260 ? "text-red-400" : "text-ink-muted"}`}
+              className={`text-sm ${nearLimit ? "text-red-400" : "text-ink-muted"}`}
             >
-              {text.length}/280
+              {text.length}/{charLimit}
             </span>
           </div>
 
@@ -376,8 +374,8 @@ const CreatePostModal = ({ closeModal, onSubmit, onSubmitVideo }) => {
               className="hidden"
             />
 
-            {/* Schedule toggle — creator badge holders only */}
-            {creator && (
+            {/* Schedule toggle — verified tiers only (tier-based feature) */}
+            {canUserSchedule && (
               <button
                 type="button"
                 onClick={() => setShowScheduler((s) => !s)}
@@ -405,8 +403,8 @@ const CreatePostModal = ({ closeModal, onSubmit, onSubmitVideo }) => {
           </button>
         </div>
 
-        {/* Schedule picker — creator only, shown below toolbar when toggled */}
-        {creator && showScheduler && (
+        {/* Schedule picker — verified tiers, shown below toolbar when toggled */}
+        {canUserSchedule && showScheduler && (
           <div className="px-5 pb-4 flex items-center gap-3 border-t border-stroke pt-3">
             <FiClock size={14} className="text-primary-600 shrink-0" />
             <div className="flex-1">

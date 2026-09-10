@@ -5,6 +5,8 @@ import useMentionAutocomplete from "../hooks/useMentionAutocomplete";
 import MentionSuggestions from "./MentionSuggestions";
 import QuotedPostPreview from "./QuotedPostPreview";
 import useBackButtonClose from "../hooks/useBackButtonClose";
+import { useAuth } from "../context/useAuth";
+import { getCharLimit } from "../utils/tierLimits";
 
 // Trimmed-down composer compared to CreatePostModal — no image/video
 // picker, no privacy selector. A quote is always as visible as the
@@ -13,6 +15,11 @@ import useBackButtonClose from "../hooks/useBackButtonClose";
 // there's no meaningful privacy choice to offer here — every quote is
 // public by construction.
 const QuotePostModal = ({ post, closeModal, onSubmit }) => {
+  const { user } = useAuth();
+  // Quotes are authored posts — the quoter's own tier limit applies
+  // (enforced server-side in createQuotePost as well).
+  const charLimit = getCharLimit(user);
+  const nearLimit = charLimit - text.length <= 20;
   const [text, setText] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const textareaRef = useRef(null);
@@ -73,7 +80,7 @@ const QuotePostModal = ({ post, closeModal, onSubmit }) => {
               value={text}
               onChange={handleTextChange}
               onBlur={mention.closeSuggestions}
-              maxLength={280}
+              maxLength={charLimit}
               rows={3}
               autoFocus
               placeholder="Add a comment..."
@@ -90,9 +97,9 @@ const QuotePostModal = ({ post, closeModal, onSubmit }) => {
           </div>
           <div className="flex justify-end">
             <span
-              className={`text-sm ${text.length >= 260 ? "text-red-400" : "text-ink-muted"}`}
+              className={`text-sm ${nearLimit ? "text-red-400" : "text-ink-muted"}`}
             >
-              {text.length}/280
+              {text.length}/{charLimit}
             </span>
           </div>
 
