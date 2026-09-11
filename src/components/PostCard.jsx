@@ -16,7 +16,7 @@ import {
   FaThumbtack,
   FaQuoteRight,
 } from "react-icons/fa";
-import { FiFlag, FiUsers, FiLock } from "react-icons/fi";
+import { FiFlag, FiUsers, FiLock, FiZap } from "react-icons/fi";
 import { HiOutlineSparkles } from "react-icons/hi2";
 import toast from "react-hot-toast";
 import api from "../services/api";
@@ -95,6 +95,13 @@ const PostCard = ({
   // entirely (undefined) on Following/Explore/profile renders, and
   // "followed" renders no badge since that needs no explanation.
   forYouSource,
+  // True when this post was paid-promoted (business tier) and injected into
+  // the feed by the backend. Renders a "Sponsored" badge below the author
+  // line so viewers know it's a paid placement.
+  isPromoted = false,
+  // Non-null when the owner has a pending/failed Paystack session for this
+  // post — passed into PromotePostModal so it can show the cancel-pending UI.
+  promotionReference = null,
   // True only for the very first post rendered on initial page load
   // (e.g. index 0 of the Home feed) -- skips the lazy-load observer
   // entirely so the one image that's already in the viewport on first
@@ -721,6 +728,7 @@ const PostCard = ({
         <PromotePostModal
           postId={postId}
           postText={postText}
+          promotionReference={promotionReference}
           onClose={() => setShowPromoteModal(false)}
         />
       )}
@@ -838,6 +846,16 @@ const PostCard = ({
               {forYouSource === "fof" && "From someone you might know"}
               {forYouSource === "trending" && "Trending right now"}
               {forYouSource === "exploration" && "New voice worth a look"}
+            </span>
+          </div>
+        )}
+
+        {/* Sponsored badge — shown for paid-promoted posts injected into feed */}
+        {isPromoted && (
+          <div className="flex items-center gap-1.5 mb-3 -mt-1">
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary-50 border border-primary-100 text-[10.5px] font-semibold text-primary-600 tracking-wide">
+              <FiZap size={9} />
+              Sponsored
             </span>
           </div>
         )}

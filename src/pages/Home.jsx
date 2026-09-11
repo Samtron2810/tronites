@@ -295,6 +295,8 @@ const Home = () => {
               editedAt={post.editedAt}
               onDelete={removePost}
               forYouSource={tab === "forYou" ? post.forYouSource : undefined}
+              isPromoted={post.isPromoted === true}
+              promotionReference={post.promotionReference ?? null}
               priority={index === 0}
             />
           ))}
