@@ -1,23 +1,31 @@
 import { useState, useEffect } from "react";
-import { FiX, FiZap, FiExternalLink, FiLoader, FiAlertTriangle, FiTrash2 } from "react-icons/fi";
+import {
+  FiX,
+  FiZap,
+  FiExternalLink,
+  FiLoader,
+  FiAlertTriangle,
+  FiTrash2,
+  FiRefreshCw,
+} from "react-icons/fi";
 import api from "../services/api";
 import toast from "react-hot-toast";
 
 // `promotionReference` — non-null when the post has a pending (unpaid or
-// failed) Paystack session. The user must cancel it before they can start a
-// fresh one. Passed from PostCard via the post object.
+// failed) Paystack session. The user can RESUME (re-attempt verify) if they
+// already paid but lost connection, or CANCEL to start fresh.
 const PromotePostModal = ({ postId, postText, promotionReference, onClose }) => {
   const [fees, setFees] = useState(null);
   const [loading, setLoading] = useState(true);
   const [initiating, setInitiating] = useState(false);
   const [cancelling, setCancelling] = useState(false);
+  const [resuming, setResuming] = useState(false);
   // Track pending state locally so cancel clears it without a parent refetch.
   const [hasPending, setHasPending] = useState(Boolean(promotionReference));
+  const [pendingRef, setPendingRef] = useState(promotionReference || null);
 
   useEffect(() => {
     if (hasPending) {
-      // Deferred so state isn't set synchronously in the effect body
-      // (react-hooks/set-state-in-effect).
       void Promise.resolve().then(() => setLoading(false));
       return;
     }
@@ -28,14 +36,36 @@ const PromotePostModal = ({ postId, postText, promotionReference, onClose }) => 
       .finally(() => setLoading(false));
   }, [hasPending]);
 
+  // Resume: call verify with the existing reference — if the payment went
+  // through, this activates the promotion. If not, it returns a 402 and
+  // the user can cancel to start fresh.
+  const handleResume = async () => {
+    if (resuming || !pendingRef) return;
+    setResuming(true);
+    try {
+      await api.get(`/posts/promote/verify/${pendingRef}`);
+      toast.success("Post promoted! It will now surface to more people.", {
+        duration: 5000,
+      });
+      onClose();
+    } catch (e) {
+      const msg =
+        e.response?.data?.message ||
+        "Payment not verified. If you haven't paid yet, cancel below and try again.";
+      toast.error(msg, { duration: 6000 });
+    } finally {
+      setResuming(false);
+    }
+  };
+
   const handleCancelPending = async () => {
     if (cancelling) return;
     setCancelling(true);
     try {
       await api.delete(`/posts/promote/cancel/${postId}`);
       setHasPending(false);
+      setPendingRef(null);
       setLoading(true);
-      // Re-fetch fees now that the pending is cleared.
       api
         .get("/posts/promote/fees")
         .then((r) => setFees(r.data))
@@ -56,7 +86,6 @@ const PromotePostModal = ({ postId, postText, promotionReference, onClose }) => 
     setInitiating(true);
     try {
       const res = await api.post("/posts/promote/initiate", { postId });
-      // Redirect to Paystack checkout — tab stays same so we return here.
       window.location.href = res.data.authorizationUrl;
     } catch (e) {
       toast.error(
@@ -101,19 +130,19 @@ const PromotePostModal = ({ postId, postText, promotionReference, onClose }) => 
             </div>
           )}
 
-          {/* Pending payment state — user needs to cancel before retrying */}
+          {/* Pending payment state */}
           {hasPending ? (
             <div className="rounded-xl border border-yellow-200 bg-yellow-50 px-4 py-3 space-y-2">
               <div className="flex items-start gap-2">
                 <FiAlertTriangle size={14} className="text-yellow-600 mt-0.5 shrink-0" />
                 <p className="text-sm text-yellow-800 font-medium leading-snug">
-                  A payment for this post is pending.
+                  A payment for this post is pending verification.
                 </p>
               </div>
               <p className="text-xs text-yellow-700 leading-relaxed">
-                If your payment didn't go through, cancel it below to start a fresh one.
-                If you completed payment, please wait a moment — promotions activate
-                automatically after verification.
+                If you already paid, tap <strong>Resume</strong> to complete
+                activation. If the payment failed or you changed your mind,
+                tap <strong>Cancel pending</strong> to start fresh.
               </p>
             </div>
           ) : (
@@ -138,8 +167,8 @@ const PromotePostModal = ({ postId, postText, promotionReference, onClose }) => 
           )}
 
           {/* Price — only show when not pending */}
-          {!hasPending && (
-            loading ? (
+          {!hasPending &&
+            (loading ? (
               <div className="flex items-center gap-2 text-ink-muted text-sm">
                 <FiLoader size={14} className="animate-spin" />
                 Loading price...
@@ -153,8 +182,7 @@ const PromotePostModal = ({ postId, postText, promotionReference, onClose }) => 
                   ₦{fees.amountNgn?.toLocaleString()}
                 </span>
               </div>
-            ) : null
-          )}
+            ) : null)}
 
           {!hasPending && (
             <p className="text-[11px] text-ink-muted">
@@ -169,15 +197,9 @@ const PromotePostModal = ({ postId, postText, promotionReference, onClose }) => 
           {hasPending ? (
             <>
               <button
-                onClick={onClose}
-                className="flex-1 py-2.5 rounded-xl border border-stroke text-sm font-semibold text-ink-sub hover:bg-surface transition"
-              >
-                Close
-              </button>
-              <button
                 onClick={handleCancelPending}
-                disabled={cancelling}
-                className="flex-1 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white text-sm font-semibold transition disabled:opacity-50 flex items-center justify-center gap-2"
+                disabled={cancelling || resuming}
+                className="flex-1 py-2.5 rounded-xl border border-red-200 text-red-600 text-sm font-semibold hover:bg-red-50 transition disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 {cancelling ? (
                   <>
@@ -188,6 +210,23 @@ const PromotePostModal = ({ postId, postText, promotionReference, onClose }) => 
                   <>
                     <FiTrash2 size={13} />
                     Cancel pending
+                  </>
+                )}
+              </button>
+              <button
+                onClick={handleResume}
+                disabled={resuming || cancelling}
+                className="flex-1 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold transition disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {resuming ? (
+                  <>
+                    <FiLoader size={13} className="animate-spin" />
+                    Verifying…
+                  </>
+                ) : (
+                  <>
+                    <FiRefreshCw size={13} />
+                    Resume
                   </>
                 )}
               </button>

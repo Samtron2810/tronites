@@ -46,6 +46,7 @@ const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 const TermsOfUse = lazy(() => import("./pages/TermsOfUse"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const PaystackReturnHandler = lazy(() => import("./components/PaystackReturnHandler"));
+const MyPromotions = lazy(() => import("./pages/MyPromotions"));
 
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -280,6 +281,15 @@ const AppContent = () => {
             element={
               <ProtectedRoute>
                 <PaystackReturnHandler />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/my-promotions"
+            element={
+              <ProtectedRoute>
+                <MyPromotions />
               </ProtectedRoute>
             }
           />

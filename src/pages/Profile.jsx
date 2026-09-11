@@ -52,6 +52,7 @@ const Profile = () => {
   const [showReportModal, setShowReportModal] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const postsObserverTarget = useRef(null);
+  const loadPausedUntilRef = useRef(0);
 
   // Latest known id of the logged-in user, kept in a ref so fetchProfile
   // can stay stable across updateUser() calls. updateUser() changes
@@ -116,6 +117,7 @@ const Profile = () => {
     } catch (e) {
       console.error(e);
       toast.error("Couldn't load more posts. Try again.");
+      loadPausedUntilRef.current = Date.now() + 5_000;
     } finally {
       setIsLoadingMorePosts(false);
     }
@@ -136,7 +138,12 @@ const Profile = () => {
     const target = postsObserverTarget.current;
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && postsHasMore && !isLoadingMorePosts)
+        if (
+          entries[0].isIntersecting &&
+          postsHasMore &&
+          !isLoadingMorePosts &&
+          Date.now() > loadPausedUntilRef.current
+        )
           fetchMorePosts();
       },
       { threshold: 0.1 },

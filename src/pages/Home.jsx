@@ -40,6 +40,10 @@ const Home = () => {
   // A ref flips synchronously, so the second call is dropped before it
   // can fire a request.
   const fetchInFlightRef = useRef(false);
+  // After a load-more failure we pause the observer for 5 s so the toast
+  // can't fire in a tight loop on slow / no network. Stores a timestamp
+  // (Date.now() + 5000) while paused; 0 means not paused.
+  const loadPausedUntilRef = useRef(0);
   // Latest posts per tab, kept in a ref so the stable fetchPosts callback
   // (empty deps) can read the current list for the For You excludeIds
   // param without closing over a stale `feeds`. Synced via an effect —
@@ -130,7 +134,12 @@ const Home = () => {
         });
       } catch (e) {
         console.error(e);
-        if (!isFirstPage) toast.error("Couldn't load more posts. Try again.");
+        if (!isFirstPage) {
+          // Only toast once per error burst; the observer is paused below
+          // so it won't fire again until the cooldown expires.
+          toast.error("Couldn't load more posts. Try again.");
+          loadPausedUntilRef.current = Date.now() + 5_000;
+        }
       } finally {
         if (isFirstPage && !silent) setLoading(false);
         else if (!isFirstPage) setIsLoadingMore(false);
@@ -163,7 +172,8 @@ const Home = () => {
           entries[0].isIntersecting &&
           current.hasMore &&
           !isLoadingMore &&
-          !loading
+          !loading &&
+          Date.now() > loadPausedUntilRef.current
         )
           fetchPosts(tab, current.cursor, false);
       },

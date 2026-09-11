@@ -137,6 +137,7 @@ const Explore = () => {
   const [hasMore, setHasMore] = useState(false);
   const [followingId, setFollowingId] = useState(null);
   const observerTarget = useRef(null);
+  const loadPausedUntilRef = useRef(0);
 
   // Filters - shared draft applies to posts/comments/messages tabs
   // (users search has no filter surface). Kept in one object so
@@ -251,7 +252,10 @@ const Explore = () => {
       setPostsCursor(res.data.nextCursor);
     } catch (e) {
       console.error(e);
-      if (!isFirstPage) toast.error("Couldn't load more posts. Try again.");
+      if (!isFirstPage) {
+        toast.error("Couldn't load more posts. Try again.");
+        loadPausedUntilRef.current = Date.now() + 5_000;
+      }
     } finally {
       if (isFirstPage && !silent) setPostsLoading(false);
       else if (!isFirstPage) setPostsIsLoadingMore(false);
@@ -284,7 +288,10 @@ const Explore = () => {
       setCommentsCursor(res.data.nextCursor);
     } catch (e) {
       console.error(e);
-      if (!isFirstPage) toast.error("Couldn't load more comments. Try again.");
+      if (!isFirstPage) {
+        toast.error("Couldn't load more comments. Try again.");
+        loadPausedUntilRef.current = Date.now() + 5_000;
+      }
     } finally {
       if (isFirstPage) setCommentsLoading(false);
       else setCommentsIsLoadingMore(false);
@@ -314,7 +321,10 @@ const Explore = () => {
       setMessagesCursor(res.data.nextCursor);
     } catch (e) {
       console.error(e);
-      if (!isFirstPage) toast.error("Couldn't load more messages. Try again.");
+      if (!isFirstPage) {
+        toast.error("Couldn't load more messages. Try again.");
+        loadPausedUntilRef.current = Date.now() + 5_000;
+      }
     } finally {
       if (isFirstPage) setMessagesLoading(false);
       else setMessagesIsLoadingMore(false);
@@ -344,7 +354,10 @@ const Explore = () => {
       setPage(pageNum);
     } catch (e) {
       console.error(e);
-      if (pageNum > 1) toast.error("Couldn't load more users. Try again.");
+      if (pageNum > 1) {
+        toast.error("Couldn't load more users. Try again.");
+        loadPausedUntilRef.current = Date.now() + 5_000;
+      }
     } finally {
       if (pageNum === 1 && !silent) setLoading(false);
       else if (pageNum !== 1) setIsLoadingMore(false);
@@ -398,7 +411,10 @@ const Explore = () => {
       setTrendingLoaded(true);
     } catch (e) {
       console.error(e);
-      if (!isFirstPage) toast.error("Couldn't load more posts. Try again.");
+      if (!isFirstPage) {
+        toast.error("Couldn't load more posts. Try again.");
+        loadPausedUntilRef.current = Date.now() + 5_000;
+      }
     } finally {
       if (isFirstPage && !silent) setTrendingLoading(false);
       else if (!isFirstPage) setTrendingIsLoadingMore(false);
@@ -515,7 +531,8 @@ const Explore = () => {
           entries[0].isIntersecting &&
           hasMore &&
           !isLoadingMore &&
-          !loading
+          !loading &&
+          Date.now() > loadPausedUntilRef.current
         ) {
           fetchUsers(search.trim(), page + 1);
         }
@@ -537,7 +554,8 @@ const Explore = () => {
           entries[0].isIntersecting &&
           postsHasMore &&
           !postsIsLoadingMore &&
-          !postsLoading
+          !postsLoading &&
+          Date.now() > loadPausedUntilRef.current
         ) {
           fetchPosts(search.trim(), postsCursor, false);
         }
@@ -567,7 +585,8 @@ const Explore = () => {
           entries[0].isIntersecting &&
           commentsHasMore &&
           !commentsIsLoadingMore &&
-          !commentsLoading
+          !commentsLoading &&
+          Date.now() > loadPausedUntilRef.current
         ) {
           fetchComments(search.trim(), commentsCursor, false);
         }
@@ -597,7 +616,8 @@ const Explore = () => {
           entries[0].isIntersecting &&
           messagesHasMore &&
           !messagesIsLoadingMore &&
-          !messagesLoading
+          !messagesLoading &&
+          Date.now() > loadPausedUntilRef.current
         ) {
           fetchMessages(search.trim(), messagesCursor, false);
         }
@@ -627,7 +647,8 @@ const Explore = () => {
           entries[0].isIntersecting &&
           trendingHasMore &&
           !trendingIsLoadingMore &&
-          !trendingLoading
+          !trendingLoading &&
+          Date.now() > loadPausedUntilRef.current
         ) {
           fetchTrending(trendingCursor, false);
         }

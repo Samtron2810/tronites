@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import MainLayout from "../layouts/MainLayout";
@@ -127,6 +127,7 @@ const Notifications = () => {
   const [loadingMore, setLoadingMore] = useState(false);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
+  const loadPausedUntilRef = useRef(0);
   const { socket } = useSocket();
   const navigate = useNavigate();
 
@@ -164,7 +165,7 @@ const Notifications = () => {
   useRefetchOnFocus(() => fetchFirstPage({ silent: true }));
 
   const loadMore = async () => {
-    if (loadingMore || !hasMore) return;
+    if (loadingMore || !hasMore || Date.now() <= loadPausedUntilRef.current) return;
     setLoadingMore(true);
     try {
       const res = await api.get("/notifications", { params: { page: page + 1, limit: 20 } });
@@ -174,6 +175,7 @@ const Notifications = () => {
     } catch (e) {
       console.error(e);
       toast.error("Couldn't load more notifications. Try again.");
+      loadPausedUntilRef.current = Date.now() + 5_000;
     } finally { setLoadingMore(false); }
   };
 

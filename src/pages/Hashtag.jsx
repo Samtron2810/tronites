@@ -15,6 +15,7 @@ const Hashtag = () => {
   const [hasMore, setHasMore] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const observerTarget = useRef(null);
+  const loadPausedUntilRef = useRef(0);
 
   // 2.3 — follow hashtags. Loaded independently of the post list (a
   // separate, cheap GET) so a slow post-page fetch never blocks the
@@ -37,7 +38,10 @@ const Hashtag = () => {
       setCursor(res.data.nextCursor);
     } catch (e) {
       console.error(e);
-      if (!isFirstPage) toast.error("Couldn't load more posts. Try again.");
+      if (!isFirstPage) {
+        toast.error("Couldn't load more posts. Try again.");
+        loadPausedUntilRef.current = Date.now() + 5_000;
+      }
     } finally {
       if (isFirstPage) setLoading(false);
       else setIsLoadingMore(false);
@@ -98,7 +102,13 @@ const Hashtag = () => {
     const target = observerTarget.current;
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && hasMore && !isLoadingMore && !loading)
+        if (
+          entries[0].isIntersecting &&
+          hasMore &&
+          !isLoadingMore &&
+          !loading &&
+          Date.now() > loadPausedUntilRef.current
+        )
           fetchPosts(cursor, false);
       },
       { threshold: 0.1 },

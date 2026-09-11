@@ -20,7 +20,7 @@ import { useAuth } from "../context/useAuth";
 import api from "../services/api";
 import toast from "react-hot-toast";
 import { isCreator } from "../utils/creator";
-import { canSchedule, isVerified } from "../utils/tierLimits";
+import { canSchedule, isVerified, canPromote } from "../utils/tierLimits";
 
 // Menu tile used throughout the More page — declared at module scope so it
 // isn't re-created on each render (react-hooks/static-components).
@@ -91,6 +91,7 @@ const More = () => {
   const { user, updateUser } = useAuth();
   const creator = isCreator(user);
   const canUserSchedule = canSchedule(user); // any verified tier
+  const canUserPromote = canPromote(user);   // business tier only
   const [collabLoading, setCollabLoading] = useState(false);
   const [scheduledCount, setScheduledCount] = useState(null);
 
@@ -150,13 +151,20 @@ const More = () => {
       description: "The rules for using Tronites.",
       href: "/terms",
     },
-    {
-      icon: FaBullhorn,
-      label: "Ads",
-      description: "Promote posts and manage campaigns.",
-      href: null,
-      comingSoon: true,
-    },
+    canUserPromote
+      ? {
+          icon: FaBullhorn,
+          label: "My Promotions",
+          description: "View and manage your promoted posts.",
+          href: "/my-promotions",
+        }
+      : {
+          icon: FaBullhorn,
+          label: "Ads",
+          description: "Promote posts and manage campaigns.",
+          href: null,
+          comingSoon: true,
+        },
   ];
 
   // Creator-only tiles (analytics dashboard + collabs)

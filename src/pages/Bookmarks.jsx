@@ -15,6 +15,7 @@ const Bookmarks = () => {
   const [hasMore, setHasMore] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const observerTarget = useRef(null);
+  const loadPausedUntilRef = useRef(0);
 
   const fetchBookmarks = async (pageNum = 1) => {
     try {
@@ -33,7 +34,10 @@ const Bookmarks = () => {
       setPage(pageNum);
     } catch (e) {
       console.error(e);
-      if (pageNum > 1) toast.error("Couldn't load more posts. Try again.");
+      if (pageNum > 1) {
+        toast.error("Couldn't load more posts. Try again.");
+        loadPausedUntilRef.current = Date.now() + 5_000;
+      }
     } finally {
       if (pageNum === 1) setLoading(false);
       else setIsLoadingMore(false);
@@ -49,7 +53,13 @@ const Bookmarks = () => {
     const target = observerTarget.current;
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && hasMore && !isLoadingMore && !loading)
+        if (
+          entries[0].isIntersecting &&
+          hasMore &&
+          !isLoadingMore &&
+          !loading &&
+          Date.now() > loadPausedUntilRef.current
+        )
           fetchBookmarks(page + 1);
       },
       { threshold: 0.1 },
