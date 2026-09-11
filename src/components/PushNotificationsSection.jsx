@@ -123,7 +123,6 @@ const PushNotificationsSection = ({ embedded = false }) => {
   }
 
   const outerClass = embedded ? "overflow-hidden" : "bg-card border border-stroke rounded-2xl mt-4 overflow-hidden";
-  const headerPad = embedded ? "px-5 pt-5 pb-4" : "px-5 pt-5 pb-4";
 
   return (
     <div className={outerClass}>

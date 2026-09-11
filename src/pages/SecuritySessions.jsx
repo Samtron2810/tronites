@@ -63,7 +63,7 @@ const SecuritySessions = () => {
   }, []);
 
   useEffect(() => {
-    load();
+    void Promise.resolve().then(() => load());
   }, [load]);
 
   const handleRevokeOne = async (session) => {

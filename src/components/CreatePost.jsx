@@ -30,7 +30,6 @@ const CreatePost = ({ fetchPosts }) => {
         ? new Date(scheduledFor).toISOString()
         : undefined;
 
-      let postRes;
       if (images.length) {
         const sigRes = await api.post("/posts/signature/image");
         const signatureData = sigRes.data;
@@ -42,14 +41,14 @@ const CreatePost = ({ fetchPosts }) => {
           url: r.secure_url,
           publicId: r.public_id,
         }));
-        postRes = await api.post("/posts", {
+        await api.post("/posts", {
           text,
           images: imagePayload,
           privacy,
           ...(scheduledForISO ? { scheduledFor: scheduledForISO } : {}),
         });
       } else {
-        postRes = await api.post("/posts", {
+        await api.post("/posts", {
           text,
           privacy,
           ...(scheduledForISO ? { scheduledFor: scheduledForISO } : {}),

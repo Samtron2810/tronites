@@ -423,7 +423,9 @@ const Explore = () => {
 
   useEffect(() => {
     if (!["posts", "comments", "messages"].includes(activeTab)) return;
-    loadHistoryAndSaved(activeTab);
+    // Deferred into an async callback — setState happens in the fetch's
+    // async continuation (react-hooks/set-state-in-effect).
+    void Promise.resolve().then(() => loadHistoryAndSaved(activeTab));
   }, [activeTab, loadHistoryAndSaved]);
 
   // Debounced history logging - fires a bit after fetch, not on every
@@ -502,7 +504,6 @@ const Explore = () => {
     if (activeTab !== "trending" || trendingLoaded) return;
     // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch-on-tab-open; setState happens inside the async fetchTrending fn
     fetchTrending(null, true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab, trendingLoaded]);
 
   useEffect(() => {
@@ -547,6 +548,7 @@ const Explore = () => {
     return () => {
       if (target) observer.unobserve(target);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- fetchPosts is a per-render closure; listing it would recreate the observer each render.
   }, [
     activeTab,
     postsCursor,
@@ -576,6 +578,7 @@ const Explore = () => {
     return () => {
       if (target) observer.unobserve(target);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- fetchComments is a per-render closure; listing it would recreate the observer each render.
   }, [
     activeTab,
     commentsCursor,
@@ -605,6 +608,7 @@ const Explore = () => {
     return () => {
       if (target) observer.unobserve(target);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- fetchMessages is a per-render closure; listing it would recreate the observer each render.
   }, [
     activeTab,
     messagesCursor,

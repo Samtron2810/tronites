@@ -195,7 +195,6 @@ const ReportContextModal = ({ report, onClose, onResolved }) => {
         if (!cancelled) setLoading(false);
       }
     };
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch-on-open; setState happens inside the async fn
     fetchContext();
     return () => {
       cancelled = true;

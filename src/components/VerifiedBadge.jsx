@@ -5,36 +5,8 @@ import {
   VERIFICATION_META,
   pickPrimaryVerification,
 } from "../constants/verification";
+import BadgeSeal from "./BadgeSeal";
 import useBackButtonClose from "../hooks/useBackButtonClose";
-
-// Scalloped seal, not a plain circle-with-check — a filled circle is
-// trivially forged by dropping a similar glyph into a display name or
-// bio. The notched-star outline is much harder to fake typographically
-// and reads distinctly at 16px. Single inline <path>, no external asset,
-// so it renders in the offline PWA shell and the badge-preview iframe
-// without a network round trip.
-const SealShape = ({ color, size }) => (
-  <svg
-    viewBox="0 0 22 22"
-    width={size}
-    height={size}
-    className="shrink-0"
-    aria-hidden="true"
-  >
-    <path
-      fill={color}
-      d="M11.0 0.6 L13.1 3.18 L16.2 1.99 L16.73 5.27 L20.01 5.8 L18.82 8.9 L21.4 11.0 L18.82 13.1 L20.01 16.2 L16.73 16.73 L16.2 20.01 L13.1 18.82 L11.0 21.4 L8.9 18.82 L5.8 20.01 L5.27 16.73 L1.99 16.2 L3.18 13.1 L0.6 11.0 L3.18 8.9 L1.99 5.8 L5.27 5.27 L5.8 1.99 L8.9 3.18 Z"
-    />
-    <path
-      fill="none"
-      stroke="white"
-      strokeWidth="1.9"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      d="M6.7 11.3l2.9 2.9 5.7-6.1"
-    />
-  </svg>
-);
 
 const SIZES = { sm: 14, md: 16, lg: 20, xl: 28 };
 
@@ -89,7 +61,7 @@ const VerifiedBadge = ({
         aria-label={meta.ariaLabel}
         className={`inline-flex items-center align-middle cursor-pointer ${className}`}
       >
-        <SealShape color={meta.color} size={px} />
+        <BadgeSeal color={meta.color} size={px} />
       </span>
 
       {/* Details sheet rendered through a portal to <body>: the trigger above is
@@ -107,7 +79,7 @@ const VerifiedBadge = ({
             onClick={() => setSheetOpen(false)}
           >
             <div
-              className="bg-card rounded-t-2xl sm:rounded-2xl shadow-xl p-6 w-full max-w-sm max-h-[85vh] overflow-y-auto overscroll-contain break-words"
+              className="bg-card rounded-t-2xl sm:rounded-2xl shadow-xl p-6 w-full max-w-sm max-h-[85vh] overflow-y-auto overscroll-contain wrap-break-word"
               onClick={(e) => e.stopPropagation()}
               role="dialog"
               aria-modal="true"
@@ -132,7 +104,7 @@ const VerifiedBadge = ({
                   if (!m) return null;
                   return (
                     <div key={v.type} className="flex gap-3">
-                      <SealShape color={m.color} size={22} />
+                      <BadgeSeal color={m.color} size={22} />
                       <div className="min-w-0">
                         <p className="text-base font-semibold text-ink">
                           {m.label}
@@ -155,7 +127,11 @@ const VerifiedBadge = ({
                             Confirmed{" "}
                             {new Date(v.verifiedAt).toLocaleDateString(
                               undefined,
-                              { year: "numeric", month: "long", day: "numeric" },
+                              {
+                                year: "numeric",
+                                month: "long",
+                                day: "numeric",
+                              },
                             )}
                           </p>
                         )}
@@ -166,7 +142,7 @@ const VerifiedBadge = ({
               </div>
 
               <a
-                href="/help"
+                href="/tiers"
                 className="mt-5 flex items-center gap-1.5 text-sm font-medium text-primary-600 hover:text-primary-700"
               >
                 <FiInfo size={14} />

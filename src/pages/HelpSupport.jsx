@@ -9,6 +9,7 @@ import {
   FiLock,
   FiUserX,
   FiArrowLeft,
+  FiAward,
 } from "react-icons/fi";
 
 const FAQ_SECTIONS = [
@@ -34,6 +35,10 @@ const FAQ_SECTIONS = [
       {
         q: "Can I download a copy of my data?",
         a: "Yes. Settings → Your data → Download my data gives you a JSON export of your posts, comments, likes, bookmarks, follows, and messages.",
+      },
+      {
+        q: "What are verification badges and tiers?",
+        a: "Each badge confirms one specific claim about your account — for example that you're a real person, a registered business, a notable creator, or an official institution. Badges also unlock benefits: longer posts, pinned posts, post scheduling, and more. To compare every badge and see exactly what you're entitled to at each level, open Tiers & benefits.",
       },
     ],
   },
@@ -143,6 +148,13 @@ const HelpSupport = () => {
           >
             <FiLock size={14} className="text-primary-600" />
             Privacy Policy
+          </Link>
+          <Link
+            to="/tiers"
+            className="flex items-center gap-2 px-3 py-2.5 rounded-xl border border-stroke text-base text-ink hover:bg-surface transition"
+          >
+            <FiAward size={14} className="text-primary-600" />
+            Tiers & benefits
           </Link>
           <Link
             to="/terms"

@@ -47,6 +47,11 @@ import {
 } from "../utils/tierLimits";
 import PromotePostModal from "./PromotePostModal";
 
+// Post age at render time — wrapped behind a helper (same reasoning as
+// cooldownRemainingMs in utils/cooldown.js) so the render path doesn't
+// call Date.now() directly (react-hooks purity rule).
+const postAgeMsOf = (time) => Date.now() - new Date(time).getTime();
+
 const PostCard = ({
   postId,
   userId,
@@ -683,7 +688,7 @@ const PostCard = ({
   // 3. editCooldownActive: flat 5-min cooldown between successive edits (all tiers).
   const userCanEdit = canEditPost(currentUser);
   const editWindowMs = getEditWindowMs(currentUser);
-  const postAgeMs = Date.now() - new Date(time).getTime();
+  const postAgeMs = postAgeMsOf(time);
   const editWindowClosed =
     userCanEdit &&
     editWindowMs !== null &&

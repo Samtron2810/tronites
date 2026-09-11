@@ -52,7 +52,9 @@ const Hashtag = () => {
 
   useEffect(() => {
     let cancelled = false;
-    setFollowLoaded(false);
+    // Deferred so the state update doesn't run synchronously in the effect
+    // body (react-hooks/set-state-in-effect).
+    void Promise.resolve().then(() => setFollowLoaded(false));
     api
       .get("/posts/hashtag-follows")
       .then((res) => {

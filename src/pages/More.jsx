@@ -14,12 +14,77 @@ import {
   FaCalendarAlt,
   FaThumbtack,
   FaHandshake,
+  FaAward,
 } from "react-icons/fa";
 import { useAuth } from "../context/useAuth";
 import api from "../services/api";
 import toast from "react-hot-toast";
 import { isCreator } from "../utils/creator";
 import { canSchedule, isVerified } from "../utils/tierLimits";
+
+// Menu tile used throughout the More page — declared at module scope so it
+// isn't re-created on each render (react-hooks/static-components).
+const Tile = ({ tile }) => {
+  const Icon = tile.icon;
+  const isDisabled = tile.comingSoon || tile.locked;
+
+  const content = (
+    <div className="flex items-center gap-4 px-5 py-4">
+      <div
+        className={`flex items-center justify-center w-10 h-10 rounded-xl shrink-0 ${
+          isDisabled
+            ? "bg-surface text-ink-muted"
+            : "bg-primary-50 text-primary-600"
+        }`}
+      >
+        <Icon size={16} />
+      </div>
+      <div className="flex-1 min-w-0">
+        <p
+          className={`text-base font-semibold flex items-center gap-2 ${
+            isDisabled ? "text-ink-muted" : "text-ink"
+          }`}
+        >
+          {tile.label}
+          {tile.comingSoon && (
+            <span className="text-[10px] font-medium uppercase tracking-wide text-ink-muted bg-surface px-1.5 py-0.5 rounded">
+              Coming soon
+            </span>
+          )}
+          {tile.badge > 0 && (
+            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-primary-600 text-white">
+              {tile.badge}
+            </span>
+          )}
+        </p>
+        <p className="text-sm text-ink-muted mt-0.5 truncate">
+          {tile.description}
+        </p>
+      </div>
+      {!isDisabled && (
+        <FaChevronRight size={12} className="text-ink-muted shrink-0" />
+      )}
+    </div>
+  );
+
+  if (isDisabled) {
+    return (
+      <div
+        className={
+          tile.comingSoon ? "cursor-not-allowed opacity-60" : "cursor-default"
+        }
+      >
+        {content}
+      </div>
+    );
+  }
+
+  return (
+    <Link to={tile.href} className="block hover:bg-surface transition">
+      {content}
+    </Link>
+  );
+};
 
 const More = () => {
   const navigate = useNavigate();
@@ -36,7 +101,7 @@ const More = () => {
       .get("/posts/scheduled")
       .then((r) => setScheduledCount(r.data.posts?.length || 0))
       .catch(() => {});
-  }, [creator]);
+  }, [creator, canUserSchedule]);
 
   const handleToggleCollab = async () => {
     setCollabLoading(true);
@@ -60,6 +125,12 @@ const More = () => {
       label: "Saved posts",
       description: "Posts you've bookmarked.",
       href: "/bookmarks",
+    },
+    {
+      icon: FaAward,
+      label: "Tiers & benefits",
+      description: "What each verification badge unlocks.",
+      href: "/tiers",
     },
     {
       icon: FaQuestionCircle,
@@ -113,68 +184,6 @@ const More = () => {
     description: "Manage your queued posts.",
     href: "/scheduled-posts",
     badge: scheduledCount || null,
-  };
-
-  const Tile = ({ tile }) => {
-    const Icon = tile.icon;
-    const isDisabled = tile.comingSoon || tile.locked;
-
-    const content = (
-      <div className="flex items-center gap-4 px-5 py-4">
-        <div
-          className={`flex items-center justify-center w-10 h-10 rounded-xl shrink-0 ${
-            isDisabled
-              ? "bg-surface text-ink-muted"
-              : "bg-primary-50 text-primary-600"
-          }`}
-        >
-          <Icon size={16} />
-        </div>
-        <div className="flex-1 min-w-0">
-          <p
-            className={`text-base font-semibold flex items-center gap-2 ${
-              isDisabled ? "text-ink-muted" : "text-ink"
-            }`}
-          >
-            {tile.label}
-            {tile.comingSoon && (
-              <span className="text-[10px] font-medium uppercase tracking-wide text-ink-muted bg-surface px-1.5 py-0.5 rounded">
-                Coming soon
-              </span>
-            )}
-            {tile.badge > 0 && (
-              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-primary-600 text-white">
-                {tile.badge}
-              </span>
-            )}
-          </p>
-          <p className="text-sm text-ink-muted mt-0.5 truncate">
-            {tile.description}
-          </p>
-        </div>
-        {!isDisabled && (
-          <FaChevronRight size={12} className="text-ink-muted shrink-0" />
-        )}
-      </div>
-    );
-
-    if (isDisabled) {
-      return (
-        <div
-          className={
-            tile.comingSoon ? "cursor-not-allowed opacity-60" : "cursor-default"
-          }
-        >
-          {content}
-        </div>
-      );
-    }
-
-    return (
-      <Link to={tile.href} className="block hover:bg-surface transition">
-        {content}
-      </Link>
-    );
   };
 
   return (

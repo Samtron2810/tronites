@@ -16,7 +16,9 @@ const PromotePostModal = ({ postId, postText, promotionReference, onClose }) => 
 
   useEffect(() => {
     if (hasPending) {
-      setLoading(false);
+      // Deferred so state isn't set synchronously in the effect body
+      // (react-hooks/set-state-in-effect).
+      void Promise.resolve().then(() => setLoading(false));
       return;
     }
     api

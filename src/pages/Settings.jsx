@@ -419,6 +419,14 @@ const Settings = () => {
               <FiChevronDown size={14} className="text-ink-muted -rotate-90" />
             </Link>
             <Link
+              to="/tiers"
+              className="flex items-center gap-3 px-5 py-3.5 text-sm text-ink hover:bg-surface transition"
+            >
+              <FiAward size={15} className="text-primary-600" />
+              <span className="flex-1">Tiers & benefits</span>
+              <FiChevronDown size={14} className="text-ink-muted -rotate-90" />
+            </Link>
+            <Link
               to="/privacy"
               className="flex items-center gap-3 px-5 py-3.5 text-sm text-ink hover:bg-surface transition"
             >

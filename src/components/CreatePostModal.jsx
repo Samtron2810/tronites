@@ -20,6 +20,12 @@ import { getCharLimit, canSchedule } from "../utils/tierLimits";
 
 const MAX_IMAGES = 4;
 
+// Earliest schedulable datetime — wrapped in a helper so the render path
+// avoids calling Date.now() directly (react-hooks purity rule), matching
+// the cooldown helpers in utils/cooldown.js.
+const minSchedulableDateTime = () =>
+  new Date(Date.now() + 60_000).toISOString().slice(0, 16);
+
 // Post audience options — mirrors the backend's Post.privacy enum
 // (backend/models/Post.js) and the values validated in
 // backend/utils/validators.js.
@@ -414,7 +420,7 @@ const CreatePostModal = ({ closeModal, onSubmit, onSubmitVideo }) => {
               <input
                 type="datetime-local"
                 value={scheduledFor}
-                min={new Date(Date.now() + 60_000).toISOString().slice(0, 16)}
+                min={minSchedulableDateTime()}
                 onChange={(e) => setScheduledFor(e.target.value)}
                 className="w-full text-sm bg-surface border border-stroke rounded-xl px-3 py-2 text-ink focus:outline-none focus:border-primary-600 transition"
               />

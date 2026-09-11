@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
 import api from "../services/api";
 import { useAuth } from "../context/useAuth";
@@ -202,7 +203,7 @@ const StepType = ({ selectableTypes, disabledTypes, selectedType, onSelect, onNe
 );
 
 // ── Step: Paystack payment (business only) ────────────────────────────
-const StepPayment = ({ feeNgn, onInitiate, onBack, initiating, paid, paymentId }) => {
+const StepPayment = ({ feeNgn, onInitiate, onBack, initiating, paid }) => {
   if (paid) {
     return (
       <div className="space-y-4">
@@ -601,8 +602,13 @@ const VerificationSection = ({ embedded = false }) => {
   }, []);
 
   useEffect(() => {
-    loadRequests();
-    loadFees();
+    // Deferred into an async callback — the loaders set state (loading,
+    // requests, fees) and react-hooks forbids that synchronously in the
+    // effect body.
+    void Promise.resolve().then(() => {
+      loadRequests();
+      loadFees();
+    });
   }, [loadRequests, loadFees]);
 
   // After returning from Paystack redirect, check ?paystack_ref in URL
@@ -839,6 +845,16 @@ const VerificationSection = ({ embedded = false }) => {
               <p className="text-sm text-ink-muted">No badge types available to apply for.</p>
             )
           )}
+
+          {/* Reference to the full tier breakdown — always visible, even
+              when the user holds every badge type and the apply button above
+              has disappeared. */}
+          <Link
+            to="/tiers"
+            className="mt-2 inline-flex items-center gap-1 text-sm font-semibold text-primary-600 hover:text-primary-700"
+          >
+            See what each tier unlocks <FiChevronRight size={14} />
+          </Link>
         </>
       )}
 

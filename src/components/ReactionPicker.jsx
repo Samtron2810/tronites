@@ -4,8 +4,10 @@ import { useEffect, useRef, useState } from "react";
 // bubbles. Deliberately NOT a full emoji picker (see roadmap decision):
 // a tight, thumb-friendly row beats scrolling a full picker on mobile,
 // and a fixed set keeps the aggregation/notification text simple
-// ("X reacted ❤️" always reads correctly).
-export const REACTION_EMOJIS = ["❤️", "😂", "😮", "😢", "😡", "👍"];
+// ("X reacted ❤️" always reads correctly). Kept private to this file —
+// fast-refresh (react-refresh/only-export-components) wants component-only
+// exports here.
+const REACTION_EMOJIS = ["❤️", "😂", "😮", "😢", "😡", "👍"];
 
 const PICKER_WIDTH = 232; // approx rendered width (6 emojis + padding), for viewport clamping
 const PICKER_HEIGHT = 44;
@@ -59,9 +61,13 @@ const ReactionPicker = ({
 
   // Compute fixed-position coords once per open, clamped so the picker
   // never renders off-screen (edge bubbles, near top of viewport, etc.).
+  // State is set inside a requestAnimationFrame callback rather than
+  // synchronously in the effect body (react-hooks/set-state-in-effect);
+  // the picker already renders hidden while pos is null, so the
+  // one-frame defer is not visible.
   useEffect(() => {
     if (!open || !anchorPoint) {
-      setPos(null);
+      requestAnimationFrame(() => setPos(null));
       return;
     }
     // Clamp against the bounding container (chat modal panel) when given,
@@ -92,7 +98,7 @@ const ReactionPicker = ({
     // near a short panel's bottom-right corner could otherwise still push
     // past it.
     top = Math.max(minY, Math.min(top, maxY));
-    setPos({ left, top });
+    requestAnimationFrame(() => setPos({ left, top }));
   }, [open, anchorPoint, boundsRef]);
 
   if (!open) return null;

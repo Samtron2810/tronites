@@ -62,7 +62,11 @@ const ScheduledPosts = () => {
     }
   }, []);
 
-  useEffect(() => { fetchPosts(); }, [fetchPosts]);
+  useEffect(() => {
+    // Deferred so setState (loading skeleton) happens in the async
+    // callback, not synchronously in the effect body.
+    void Promise.resolve().then(() => fetchPosts());
+  }, [fetchPosts]);
 
   // Revalidate on focus — catches publishes/deletes from other tabs/devices
   useRefetchOnFocus(() => fetchPosts({ silent: true }));

@@ -41,6 +41,7 @@ const More = lazy(() => import("./pages/More"));
 const CreatorDashboard = lazy(() => import("./pages/CreatorDashboard"));
 const ScheduledPosts = lazy(() => import("./pages/ScheduledPosts"));
 const HelpSupport = lazy(() => import("./pages/HelpSupport"));
+const Tiers = lazy(() => import("./pages/Tiers"));
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 const TermsOfUse = lazy(() => import("./pages/TermsOfUse"));
 const NotFound = lazy(() => import("./pages/NotFound"));
@@ -288,6 +289,17 @@ const AppContent = () => {
             element={
               <ProtectedRoute>
                 <HelpSupport />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Tiers & benefits — readable by every logged-in user, since it
+              explains all badge types (not just the one they hold). */}
+          <Route
+            path="/tiers"
+            element={
+              <ProtectedRoute>
+                <Tiers />
               </ProtectedRoute>
             }
           />

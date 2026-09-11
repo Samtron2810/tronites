@@ -689,7 +689,6 @@ const ModerationQueue = () => {
         ? DEFAULT_MOD_PERMS
         : [];
 
-  const canManageReports = effectivePerms.includes("manage_reports");
   const canManageVerification = effectivePerms.includes("manage_verification");
 
   const fetchReports = useCallback(async () => {
@@ -763,7 +762,9 @@ const ModerationQueue = () => {
   // to "reports" so they don't see a stale/broken view.
   useEffect(() => {
     if (queueTab === "verification" && !canManageVerification) {
-      setQueueTab("reports");
+      // Deferred — the reset lands in the next microtask instead of
+      // synchronously in the effect body (react-hooks/set-state-in-effect).
+      void Promise.resolve().then(() => setQueueTab("reports"));
     }
   }, [canManageVerification, queueTab]);
 

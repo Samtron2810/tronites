@@ -235,17 +235,19 @@ const CreatorDashboard = () => {
     }
   }, [metric]);
 
-  // Mount fetches
+  // Mount fetches — each call is deferred into an async callback so the
+  // setState inside the fetch (loading skeletons) never happens
+  // synchronously in the effect body (react-hooks/set-state-in-effect).
   useEffect(() => {
-    fetchStatic();
+    void Promise.resolve().then(() => fetchStatic());
   }, [fetchStatic]);
 
   useEffect(() => {
-    fetchEngagement();
+    void Promise.resolve().then(() => fetchEngagement());
   }, [fetchEngagement]);
 
   useEffect(() => {
-    fetchTopPosts();
+    void Promise.resolve().then(() => fetchTopPosts());
   }, [fetchTopPosts]);
 
   // Refetch silently on tab focus / visibility — stale-while-revalidate
@@ -521,7 +523,9 @@ const BestTimeCard = () => {
     }
   }, []);
 
-  useEffect(() => { fetch(); }, [fetch]);
+  useEffect(() => {
+    void Promise.resolve().then(() => fetch());
+  }, [fetch]);
   useRefetchOnFocus(() => fetch({ silent: true }));
 
   if (loading) return <div className="h-20 bg-card border border-stroke rounded-2xl animate-pulse mb-4" />;
@@ -562,7 +566,9 @@ const TopFansCard = () => {
     }
   }, []);
 
-  useEffect(() => { fetch(); }, [fetch]);
+  useEffect(() => {
+    void Promise.resolve().then(() => fetch());
+  }, [fetch]);
   useRefetchOnFocus(() => fetch({ silent: true }));
 
   if (loading) return <div className="h-40 bg-card border border-stroke rounded-2xl animate-pulse mb-4" />;
@@ -619,7 +625,9 @@ const HashtagPerformanceCard = ({ days }) => {
     }
   }, [days]);
 
-  useEffect(() => { fetch(); }, [fetch]);
+  useEffect(() => {
+    void Promise.resolve().then(() => fetch());
+  }, [fetch]);
   useRefetchOnFocus(() => fetch({ silent: true }));
 
   if (loading) return <div className="h-32 bg-card border border-stroke rounded-2xl animate-pulse mb-4" />;
