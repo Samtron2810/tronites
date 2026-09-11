@@ -19,17 +19,19 @@ import { useAuth } from "../context/useAuth";
 import api from "../services/api";
 import toast from "react-hot-toast";
 import { isCreator } from "../utils/creator";
+import { canSchedule, isVerified } from "../utils/tierLimits";
 
 const More = () => {
   const navigate = useNavigate();
   const { user, updateUser } = useAuth();
   const creator = isCreator(user);
+  const canUserSchedule = canSchedule(user); // any verified tier
   const [collabLoading, setCollabLoading] = useState(false);
   const [scheduledCount, setScheduledCount] = useState(null);
 
-  // Load scheduled post count badge for creators
+  // Load scheduled post count badge for any verified tier that can schedule
   useEffect(() => {
-    if (!creator) return;
+    if (!canUserSchedule) return;
     api
       .get("/posts/scheduled")
       .then((r) => setScheduledCount(r.data.posts?.length || 0))
@@ -86,6 +88,7 @@ const More = () => {
     },
   ];
 
+  // Creator-only tiles (analytics dashboard + collabs)
   const CREATOR_TILES = [
     {
       icon: FaChartBar,
@@ -93,15 +96,8 @@ const More = () => {
       description: "Post analytics and reach insights.",
       href: "/dashboard",
     },
-    {
-      icon: FaCalendarAlt,
-      label: "Scheduled Posts",
-      description: "Manage your queued posts.",
-      href: "/scheduled-posts",
-      badge: scheduledCount || null,
-    },
     // Pinned post handled separately via PostCard on profile;
-    // this tile deep-links to own profile so the creator can pick one.
+    // this tile deep-links to own profile so the user can pin there.
     {
       icon: FaThumbtack,
       label: "Pin a post",
@@ -109,6 +105,15 @@ const More = () => {
       href: `/profile/${user?._id}`,
     },
   ];
+
+  // Scheduling tile — shown to ALL verified tiers (Individual, Creator, Business, Government, Staff)
+  const SCHEDULING_TILE = {
+    icon: FaCalendarAlt,
+    label: "Scheduled Posts",
+    description: "Manage your queued posts.",
+    href: "/scheduled-posts",
+    badge: scheduledCount || null,
+  };
 
   const Tile = ({ tile }) => {
     const Icon = tile.icon;
@@ -199,6 +204,8 @@ const More = () => {
             {CREATOR_TILES.map((tile) => (
               <Tile key={tile.label} tile={tile} />
             ))}
+            {/* Scheduling is part of creator section when user is a creator */}
+            <Tile tile={SCHEDULING_TILE} />
 
             {/* Open to collabs toggle */}
             <div className="flex items-center gap-4 px-5 py-4">
@@ -230,6 +237,29 @@ const More = () => {
                 />
               </button>
             </div>
+          </div>
+        </>
+      )}
+
+      {/* ── Scheduling section — verified non-creators only ── */}
+      {canUserSchedule && !creator && (
+        <>
+          <p className="text-xs font-bold text-ink-muted uppercase tracking-widest mb-2 px-1">
+            ✦ Verified tools
+          </p>
+          <div className="bg-card border border-stroke rounded-2xl divide-y divide-stroke overflow-hidden mb-5">
+            <Tile tile={SCHEDULING_TILE} />
+            {/* Pin a post — available to any verified tier with pinLimit > 0 */}
+            {isVerified(user) && (
+              <Tile
+                tile={{
+                  icon: FaThumbtack,
+                  label: "Pin a post",
+                  description: "Head to your profile, open a post's ⋯ menu, then pin it to the top.",
+                  href: `/profile/${user?._id}`,
+                }}
+              />
+            )}
           </div>
         </>
       )}

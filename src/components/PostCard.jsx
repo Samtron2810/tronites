@@ -21,7 +21,6 @@ import { HiOutlineSparkles } from "react-icons/hi2";
 import toast from "react-hot-toast";
 import api from "../services/api";
 import { useAuth } from "../context/useAuth";
-import { isCreator } from "../utils/creator";
 import DeletePostModal from "./DeletePostModal";
 import ReportModal from "./ReportModal";
 import QuotePostModal from "./QuotePostModal";
@@ -38,12 +37,15 @@ import ReactionPicker from "./ReactionPicker";
 import ReactionSummaryBar from "./ReactionSummaryBar";
 import { formatRemainingShort, cooldownRemainingMs } from "../utils/cooldown";
 import { resizedImageUrl, IMAGE_SIZES } from "../utils/cloudinaryImage";
-
-// Same window as the backend's POST_EDIT_COOLDOWN_MS in postController.js
-// — kept in sync manually since there's no shared config between the two
-// codebases. Used only to decide whether to show "Edit post" in the menu;
-// the backend is still the source of truth and the real enforcement.
-const POST_EDIT_COOLDOWN_MS = 60 * 60 * 1000;
+import {
+  getCharLimit,
+  getPinnedLimit,
+  canPromote,
+  canEditPost,
+  getEditWindowMs,
+  POST_EDIT_COOLDOWN_MS,
+} from "../utils/tierLimits";
+import PromotePostModal from "./PromotePostModal";
 
 const PostCard = ({
   postId,
@@ -104,13 +106,12 @@ const PostCard = ({
   // item, which only makes sense there, not on the Home feed where isOwner
   // can also be true for the viewer's own posts.
   isOwnProfile = false,
-  // The post currently pinned on this profile (the user DTO's
-  // profile.pinnedPost id). Drives the menu label: the matching post shows
-  // "Unpin post", everything else shows "Pin post". Undefined elsewhere.
-  pinnedPostId = undefined,
-  // Called after a successful pin/unpin with the NEW pinned post id (or
-  // null when unpinned) so the profile page can update its local state
-  // without a refetch. Undefined on non-profile surfaces.
+  // Array of pinned post ids for this profile (from profile.pinnedPosts[]).
+  // Drives pin/unpin menu label and the "Pin limit reached" message.
+  // Undefined on non-profile surfaces.
+  pinnedPostIds = undefined,
+  // Called after a successful pin/unpin with the NEW pinnedPosts id array
+  // so the profile page can update its local state without a refetch.
   onTogglePin = undefined,
 }) => {
   const { user: currentUser } = useAuth();
@@ -206,6 +207,7 @@ const PostCard = ({
   // Guards the Pin/Unpin API call against double-taps — same pattern as
   // the isLiking/isReposting guards on the other action handlers.
   const [isPinToggling, setIsPinToggling] = useState(false);
+  const [showPromoteModal, setShowPromoteModal] = useState(false);
   const triggerRef = useRef(null);
   // Separate small dropdown for the repost button (Repost vs Quote) —
   // distinct from the "..." options menu above, since it's opened by a
@@ -442,23 +444,29 @@ const PostCard = ({
     setIsEditing(false);
   };
 
-  // Pin / unpin this post on the creator's profile. Only offered on the
-  // owner's own profile (isOwnProfile) for their OWN posts (isOwner —
-  // mirrors the backend's ownership check) while holding an active creator
-  // badge (isCreator — mirrors requireCreator). The server is the real
-  // gate (PUT /users/pinned-post re-checks ownership + creator badge);
-  // these client checks only avoid surfacing a guaranteed-403 action in
-  // the menu, and on failure we surface the server's own message.
+  // Pin / unpin this post. Gate: any verified tier with pinLimit > 0
+  // (replaces the old creator-only check). Server re-validates ownership
+  // and tier limit; client-side check avoids showing a guaranteed-403.
+  const pinLimit = getPinnedLimit(currentUser);
+  const isPinned = Array.isArray(pinnedPostIds) && pinnedPostIds.includes(postId);
+  const atPinLimit =
+    Array.isArray(pinnedPostIds) && pinnedPostIds.length >= pinLimit;
+
   const handleTogglePin = async () => {
     if (isPinToggling) return;
+    // Offer "Pin limit reached" inline rather than silently failing
+    if (!isPinned && atPinLimit) {
+      toast.error(`Pin limit reached (${pinLimit}). Unpin one first.`);
+      return;
+    }
     setIsPinToggling(true);
     try {
-      const next = postId === pinnedPostId ? null : postId;
-      await api.put("/users/pinned-post", { postId: next });
-      if (onTogglePin) onTogglePin(next);
-      toast.success(
-        next ? "Pinned to the top of your profile!" : "Post unpinned.",
-      );
+      // Server uses togglePinnedPost: send postId to pin, null to unpin
+      const res = await api.put("/users/pinned-post", {
+        postId: isPinned ? null : postId,
+      });
+      if (onTogglePin) onTogglePin(res.data.pinnedPosts);
+      toast.success(isPinned ? "Post unpinned." : "Pinned to the top of your profile!");
     } catch (e) {
       console.error(e);
       toast.error(
@@ -662,13 +670,25 @@ const PostCard = ({
     setIsVideoMuted(videoEl.muted);
   };
 
-  // Client-side mirror of the backend's 1-hour edit cooldown — used only
-  // to decide whether "Edit post" appears in the menu at all, so the
-  // menu never offers an action guaranteed to 429. Recomputed on every
-  // render (cheap, no need for its own effect/interval).
+  // Tier-based edit availability:
+  // 1. canEditPost: unverified users cannot edit at all.
+  // 2. editWindowMs: how long after creation the post is editable (Infinity = always for staff).
+  // 3. editCooldownActive: flat 5-min cooldown between successive edits (all tiers).
+  const userCanEdit = canEditPost(currentUser);
+  const editWindowMs = getEditWindowMs(currentUser);
+  const postAgeMs = Date.now() - new Date(time).getTime();
+  const editWindowClosed =
+    userCanEdit &&
+    editWindowMs !== null &&
+    editWindowMs !== Infinity &&
+    postAgeMs >= editWindowMs;
   const editCooldownActive = Boolean(
     postEditedAt && cooldownRemainingMs(postEditedAt, POST_EDIT_COOLDOWN_MS),
   );
+  // Edit option is hidden when: user can't edit at all, window closed, or cooldown active.
+  const showEditOption = isOwner && userCanEdit && !editWindowClosed && !isEditing && !editCooldownActive;
+  // Per-user char limit for the inline edit textarea
+  const editCharLimit = getCharLimit(currentUser);
 
   // Click target for opening the detail modal: the media area, or the
   // post body outside interactive controls. Interactive elements inside
@@ -694,6 +714,14 @@ const PostCard = ({
           targetLabel="this post"
           onConfirm={handleReportSubmit}
           onCancel={() => setReportTarget(null)}
+        />
+      )}
+
+      {showPromoteModal && (
+        <PromotePostModal
+          postId={postId}
+          postText={postText}
+          onClose={() => setShowPromoteModal(false)}
         />
       )}
 
@@ -759,7 +787,7 @@ const PostCard = ({
           setIsDetailOpen(false);
           setReportTarget({ type: "post" });
         }}
-        editCooldownActive={editCooldownActive}
+        editCooldownActive={!showEditOption}
         quoteOf={isQuotePost ? quoteOf : null}
         onOpenOriginal={(id) => setOpenOriginalId(id)}
       />
@@ -906,24 +934,41 @@ const PostCard = ({
 
                 {isOwner ? (
                   <>
-                    {isOwnProfile && isCreator(currentUser) && (
+                    {/* Pin / Unpin — any verified tier with a pin allowance */}
+                    {isOwnProfile && pinLimit > 0 && (
                       <button
                         onClick={() => {
                           setMenuOpen(false);
                           handleTogglePin();
                         }}
-                        className="w-full flex items-center gap-3 px-4 py-2.5 text-base text-ink hover:bg-primary-50 transition"
+                        disabled={isPinToggling}
+                        className="w-full flex items-center gap-3 px-4 py-2.5 text-base text-ink hover:bg-primary-50 transition disabled:opacity-50"
                       >
                         <FaThumbtack className="text-primary-600" size={13} />
                         <span className="font-medium">
-                          {postId === pinnedPostId ? "Unpin post" : "Pin post"}
+                          {isPinned
+                            ? "Unpin post"
+                            : atPinLimit
+                              ? `Pin limit reached (${pinLimit})`
+                              : "Pin post"}
                         </span>
                       </button>
                     )}
-                    {/* "Edit post" is hidden entirely during the 1-hour
-                        cooldown, computed client-side, rather than shown
-                        and left to fail on submit. */}
-                    {!isEditing && !editCooldownActive && (
+                    {/* Promote — Business tier only (paid boost via Paystack) */}
+                    {canPromote(currentUser) && (
+                      <button
+                        onClick={() => {
+                          setMenuOpen(false);
+                          setShowPromoteModal(true);
+                        }}
+                        className="w-full flex items-center gap-3 px-4 py-2.5 text-base text-ink hover:bg-primary-50 transition"
+                      >
+                        <span className="text-primary-600 text-sm font-bold">⚡</span>
+                        <span className="font-medium">Promote post</span>
+                      </button>
+                    )}
+                    {/* Edit — verified tiers only, within their edit window */}
+                    {showEditOption && (
                       <button
                         onClick={() => {
                           setIsEditing(true);
@@ -984,14 +1029,20 @@ const PostCard = ({
               value={editText}
               onChange={(e) => setEditText(e.target.value)}
               onClick={(e) => e.stopPropagation()}
-              maxLength={280}
+              maxLength={editCharLimit}
               rows={3}
               autoFocus
               className="w-full text-base text-ink-sub leading-relaxed border border-primary-200 rounded-xl p-3 outline-none focus:ring-2 focus:ring-primary-200 resize-none"
             />
             <div className="flex items-center justify-between mt-2">
-              <span className="text-[11px] text-ink-muted">
-                {editText.length}/280
+              <span
+                className={`text-[11px] ${
+                  editCharLimit - editText.length <= 20
+                    ? "text-amber-500 font-medium"
+                    : "text-ink-muted"
+                }`}
+              >
+                {editText.length}/{editCharLimit}
               </span>
               <div className="flex items-center gap-2">
                 <button

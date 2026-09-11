@@ -44,6 +44,7 @@ const HelpSupport = lazy(() => import("./pages/HelpSupport"));
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 const TermsOfUse = lazy(() => import("./pages/TermsOfUse"));
 const NotFound = lazy(() => import("./pages/NotFound"));
+const PaystackReturnHandler = lazy(() => import("./components/PaystackReturnHandler"));
 
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -267,8 +268,17 @@ const AppContent = () => {
           <Route
             path="/scheduled-posts"
             element={
-              <ProtectedRoute requireCreator>
+              <ProtectedRoute requireScheduling>
                 <ScheduledPosts />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/paystack-return"
+            element={
+              <ProtectedRoute>
+                <PaystackReturnHandler />
               </ProtectedRoute>
             }
           />

@@ -2,11 +2,13 @@ import { Navigate } from "react-router-dom";
 
 import { useAuth } from "../context/useAuth";
 import { isCreator } from "../utils/creator";
+import { canSchedule } from "../utils/tierLimits";
 
 const ProtectedRoute = ({
   children,
   allowIncompleteOnboarding = false,
   requireCreator = false,
+  requireScheduling = false,
   requireRole,
   requirePermission,
 }) => {
@@ -40,11 +42,16 @@ const ProtectedRoute = ({
     return <Navigate to="/choose-username" />;
   }
 
-  // Creator-only pages (dashboard, scheduled posts, etc.) - mirror the
+  // Creator-only pages (dashboard, analytics, etc.) - mirror the
   // backend chain protect → requireCreator. The server is the real gate; this
   // just avoids mounting a page whose every request would 403.
-
   if (requireCreator && !isCreator(user)) {
+    return <Navigate to="/more" replace />;
+  }
+
+  // Scheduling pages — any verified tier (individual/creator/business/government/staff).
+  // Unverified users can't schedule; this avoids mounting a page whose every request would 403.
+  if (requireScheduling && !canSchedule(user)) {
     return <Navigate to="/more" replace />;
   }
 
