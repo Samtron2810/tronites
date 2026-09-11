@@ -15,6 +15,12 @@ import api from "../services/api";
 import toast from "react-hot-toast";
 import { useAuth } from "../context/useAuth";
 import { canPromote } from "../utils/tierLimits";
+import { useRefetchOnFocus } from "../hooks/useRefetchOnFocus";
+
+const CACHE_KEY = "/posts/promote/my-promotions";
+// Promotions change infrequently — 2 min local cache, always revalidate
+// in the background on re-entry (stale-while-revalidate via getCached).
+const TTL_MS = 2 * 60 * 1000;
 
 // ─── Status badge ─────────────────────────────────────────────────────────────
 
@@ -51,10 +57,10 @@ const StatusBadge = ({ status }) => {
 // ─── Single promotion row ─────────────────────────────────────────────────────
 
 const PromotionRow = ({ promo, onResume, onCancel }) => {
-  const snippet = promo.text?.trim().slice(0, 100) || (promo.images?.length ? "📷 Image post" : "🎬 Video post");
-  const hasExpiry = promo.promotedUntil;
-  const expiry = hasExpiry ? new Date(promo.promotedUntil) : null;
-  const now = new Date();
+  const snippet =
+    promo.text?.trim().slice(0, 100) ||
+    (promo.images?.length ? "📷 Image post" : "🎬 Video post");
+  const expiry = promo.promotedUntil ? new Date(promo.promotedUntil) : null;
 
   return (
     <div className="bg-card border border-stroke rounded-2xl p-4 space-y-3">
@@ -77,17 +83,29 @@ const PromotionRow = ({ promo, onResume, onCancel }) => {
         {promo.status === "active" && expiry && (
           <span className="flex items-center gap-1 text-emerald-600 font-medium">
             <FiClock size={10} />
-            Expires {expiry.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
+            Expires{" "}
+            {expiry.toLocaleDateString(undefined, {
+              month: "short",
+              day: "numeric",
+              year: "numeric",
+            })}
           </span>
         )}
         {promo.status === "expired" && expiry && (
           <span className="flex items-center gap-1">
             <FiClock size={10} />
-            Ended {expiry.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
+            Ended{" "}
+            {expiry.toLocaleDateString(undefined, {
+              month: "short",
+              day: "numeric",
+              year: "numeric",
+            })}
           </span>
         )}
         {promo.status === "pending" && (
-          <span className="text-yellow-600 font-medium">Payment awaiting verification</span>
+          <span className="text-yellow-600 font-medium">
+            Payment awaiting verification
+          </span>
         )}
       </div>
 
@@ -129,37 +147,53 @@ const MyPromotions = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [promotions, setPromotions] = useState([]);
+  // true only on first load (no cached data yet) — subsequent re-entries
+  // use stale data instantly and revalidate silently behind the scenes.
   const [loading, setLoading] = useState(true);
-  const [actionId, setActionId] = useState(null); // postId being acted on
+  const [actionId, setActionId] = useState(null);
 
-  const load = useCallback(async () => {
-    setLoading(true);
+  const load = useCallback(async ({ silent = false } = {}) => {
+    // silent=true: revalidate in the background without clearing existing
+    // list (same stale-while-revalidate pattern as Home/ScheduledPosts).
     try {
-      const res = await api.get("/posts/promote/my-promotions");
+      const res = await api.getCached(CACHE_KEY, {
+        ttlMs: TTL_MS,
+        revalidate: silent,
+      });
       setPromotions(res.data.promotions);
     } catch {
-      toast.error("Couldn't load promotions.");
+      if (!silent) toast.error("Couldn't load promotions.");
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, []);
 
+  // First load — show spinner until cache or network resolves.
   useEffect(() => {
-    load();
+    // getCached returns stale immediately if cached, so loading clears fast.
+    load({ silent: false });
   }, [load]);
+
+  // Re-entry revalidation — silently refresh when the tab regains focus
+  // so returning from a post page reflects any status changes.
+  useRefetchOnFocus(() => load({ silent: true }));
 
   const handleResume = async (reference, postId) => {
     if (!reference) return;
     setActionId(postId);
     try {
       await api.get(`/posts/promote/verify/${reference}`);
-      toast.success("Post promoted! It will now surface to more people.", { duration: 5000 });
-      await load();
+      toast.success("Post promoted! It will now surface to more people.", {
+        duration: 5000,
+      });
+      // Bust cache so next load reflects the new active status.
+      api.invalidate(CACHE_KEY);
+      await load({ silent: true });
     } catch (e) {
       toast.error(
         e.response?.data?.message ||
           "Payment not verified. If you haven't paid, cancel and try again.",
-        { duration: 6000 }
+        { duration: 6000 },
       );
     } finally {
       setActionId(null);
@@ -171,7 +205,8 @@ const MyPromotions = () => {
     try {
       await api.delete(`/posts/promote/cancel/${postId}`);
       toast.success("Pending promotion cleared.");
-      await load();
+      api.invalidate(CACHE_KEY);
+      await load({ silent: true });
     } catch (e) {
       toast.error(e.response?.data?.message || "Couldn't cancel. Try again.");
     } finally {
@@ -185,13 +220,14 @@ const MyPromotions = () => {
         <div className="py-20 text-center space-y-2 text-ink-muted">
           <FiZap size={32} className="mx-auto text-primary-400" />
           <p className="font-semibold text-ink">Business accounts only</p>
-          <p className="text-sm">Promoted posts are available to verified Business tier accounts.</p>
+          <p className="text-sm">
+            Promoted posts are available to verified Business tier accounts.
+          </p>
         </div>
       </MainLayout>
     );
   }
 
-  // Group by status for display
   const active = promotions.filter((p) => p.status === "active");
   const pending = promotions.filter((p) => p.status === "pending");
   const expired = promotions.filter((p) => p.status === "expired");
@@ -202,14 +238,20 @@ const MyPromotions = () => {
         {/* Header */}
         <div className="flex items-center gap-3">
           <button
-            onClick={() => (window.history.length > 1 ? navigate(-1) : navigate("/"))}
+            onClick={() =>
+              window.history.length > 1 ? navigate(-1) : navigate("/")
+            }
             className="p-2 rounded-xl text-ink-muted hover:bg-surface hover:text-ink transition"
           >
             <FiArrowLeft size={18} />
           </button>
           <div>
-            <h1 className="text-xl font-bold text-ink leading-tight">My Promotions</h1>
-            <p className="text-sm text-ink-muted">All posts you've promoted or started promoting</p>
+            <h1 className="text-xl font-bold text-ink leading-tight">
+              My Promotions
+            </h1>
+            <p className="text-sm text-ink-muted">
+              All posts you've promoted or started promoting
+            </p>
           </div>
         </div>
 
@@ -223,7 +265,8 @@ const MyPromotions = () => {
             <span className="text-4xl">⚡</span>
             <p className="font-semibold text-ink">No promotions yet</p>
             <p className="text-sm text-ink-muted">
-              Open any of your posts, tap ···, and choose <strong>Promote post</strong> to get started.
+              Open any of your posts, tap ···, and choose{" "}
+              <strong>Promote post</strong> to get started.
             </p>
           </div>
         ) : (
@@ -236,8 +279,17 @@ const MyPromotions = () => {
                   Pending verification ({pending.length})
                 </h2>
                 {pending.map((p) => (
-                  <div key={p._id} className={actionId === p._id ? "opacity-60 pointer-events-none" : ""}>
-                    <PromotionRow promo={p} onResume={handleResume} onCancel={handleCancel} />
+                  <div
+                    key={p._id}
+                    className={
+                      actionId === p._id ? "opacity-60 pointer-events-none" : ""
+                    }
+                  >
+                    <PromotionRow
+                      promo={p}
+                      onResume={handleResume}
+                      onCancel={handleCancel}
+                    />
                   </div>
                 ))}
               </section>
@@ -251,7 +303,12 @@ const MyPromotions = () => {
                   Active ({active.length})
                 </h2>
                 {active.map((p) => (
-                  <PromotionRow key={p._id} promo={p} onResume={handleResume} onCancel={handleCancel} />
+                  <PromotionRow
+                    key={p._id}
+                    promo={p}
+                    onResume={handleResume}
+                    onCancel={handleCancel}
+                  />
                 ))}
               </section>
             )}
@@ -264,7 +321,12 @@ const MyPromotions = () => {
                   Expired ({expired.length})
                 </h2>
                 {expired.map((p) => (
-                  <PromotionRow key={p._id} promo={p} onResume={handleResume} onCancel={handleCancel} />
+                  <PromotionRow
+                    key={p._id}
+                    promo={p}
+                    onResume={handleResume}
+                    onCancel={handleCancel}
+                  />
                 ))}
               </section>
             )}
