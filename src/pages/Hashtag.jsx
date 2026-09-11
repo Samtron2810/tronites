@@ -207,10 +207,14 @@ const Hashtag = () => {
 
         {!loading && posts.length === 0 && (
           <div className="bg-card border border-stroke rounded-2xl p-10 text-center">
-            <p className="text-3xl mb-2">#ï¸⃣</p>
+            <div className="flex items-center justify-center mb-3">
+              <div className="w-14 h-14 rounded-2xl bg-primary-50 flex items-center justify-center">
+                <FiHash className="text-primary-600" size={28} />
+              </div>
+            </div>
             <h2 className="text-lg font-semibold text-ink">No posts yet</h2>
             <p className="text-base text-ink-muted mt-1">
-              Nobody's posted with #{tag} yet.
+              Nobody&apos;s posted with #{tag} yet.
             </p>
           </div>
         )}
