@@ -28,7 +28,6 @@ const FollowersList = lazy(() => import("./pages/FollowersList"));
 const VerifyOtp = lazy(() => import("./pages/VerifyOtp"));
 const ChooseUsername = lazy(() => import("./pages/ChooseUsername"));
 const ChooseInterests = lazy(() => import("./pages/ChooseInterests"));
-const ChooseInterests = lazy(() => import("./pages/ChooseInterests"));
 const UsernameRedirect = lazy(() => import("./pages/UsernameRedirect"));
 const Hashtag = lazy(() => import("./pages/Hashtag"));
 const Bookmarks = lazy(() => import("./pages/Bookmarks"));
