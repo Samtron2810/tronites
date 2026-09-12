@@ -19,6 +19,7 @@ import {
   FiAward,
   FiChevronDown,
   FiCheck,
+  FiEyeOff,
 } from "react-icons/fi";
 
 const ROLE_TABS = [
@@ -47,6 +48,7 @@ const AccountActionsMenu = ({
   onRequestRestriction,
   onRequestGrantVerification,
   onRequestRevokeVerification,
+  onToggleShadowRank,
 }) => {
   const menuRef = useRef(null);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -93,6 +95,32 @@ const AccountActionsMenu = ({
           overlay on it look shifted/overflowing. */}
       {menuOpen && (
         <div className="absolute right-0 mt-2 w-52 max-w-[calc(100vw-2.5rem)] bg-card rounded-lg shadow-lg border border-stroke z-40 py-1">
+          {/* Feature 9 — Shadow-rank throttle. Reduces algorithmic reach
+              without suspending or banning — posts stay visible to followers. */}
+          {canRestrict && (
+            <>
+              <button
+                onClick={() => {
+                  setMenuOpen(false);
+                  onToggleShadowRank(target);
+                }}
+                className={`w-full flex items-center gap-2 px-4 py-2.5 text-base hover:bg-surface transition ${
+                  target.shadowRanked ? "text-amber-600" : "text-ink-sub"
+                }`}
+              >
+                <FiEyeOff size={14} className="shrink-0" />
+                <span className="font-medium">
+                  {target.shadowRanked ? "Lift shadow rank" : "Shadow-rank…"}
+                </span>
+                {target.shadowRanked && (
+                  <span className="ml-auto text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full font-semibold">
+                    ON
+                  </span>
+                )}
+              </button>
+              <div className="my-1 border-t border-stroke" />
+            </>
+          )}
           {/* Phase 1 — verification badges (admin only). Grant is always
               offered; per-badge revoke only shows for types the user
               actually holds. */}
@@ -181,6 +209,7 @@ const RoleRow = ({
   onRequestPermissions,
   onRequestGrantVerification,
   onRequestRevokeVerification,
+  onToggleShadowRank,
 }) => {
   const isSelf = target._id === currentUserId;
   const isSuspended =
@@ -242,6 +271,16 @@ const RoleRow = ({
           {target.strikesCount} strike{target.strikesCount === 1 ? "" : "s"}
         </span>
       )}
+      {/* Feature 9 — shadow-rank indicator */}
+      {target.shadowRanked && (
+        <span
+          className="flex items-center gap-1 text-sm font-semibold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700"
+          title={target.shadowRankedReason || "Algorithmic reach throttled"}
+        >
+          <FiEyeOff size={11} />
+          shadow
+        </span>
+      )}
       <select
         value={target.role}
         onChange={handleChange}
@@ -277,6 +316,7 @@ const RoleRow = ({
           onRequestRestriction={onRequestRestriction}
           onRequestGrantVerification={onRequestGrantVerification}
           onRequestRevokeVerification={onRequestRevokeVerification}
+          onToggleShadowRank={onToggleShadowRank}
         />
       )}
     </>
@@ -684,6 +724,39 @@ const AdminUsers = () => {
     if (closed) setPendingRestriction(null);
   };
 
+  // Feature 9 — Shadow-rank toggle. Lifts if already ranked, applies if not.
+  // Shows a reason prompt only when applying (lifting never needs justification).
+  const handleToggleShadowRank = async (target) => {
+    const isShadowed = target.shadowRanked;
+    const reason = isShadowed
+      ? ""
+      : window.prompt(
+          `Shadow-rank @${target.username || target.name}?
+
+Enter a reason (optional):`,
+          "",
+        );
+    // prompt returns null when the user cancels
+    if (reason === null && !isShadowed) return;
+    try {
+      const res = await api.put(`/admin/users/${target._id}/shadow-rank`, {
+        shadowRanked: !isShadowed,
+        reason: reason || "",
+      });
+      setUsers((prev) =>
+        prev.map((u) => (u._id === target._id ? { ...u, ...res.data.user } : u)),
+      );
+      toast.success(
+        isShadowed
+          ? `Shadow rank lifted for @${target.username || target.name}.`
+          : `@${target.username || target.name} is now shadow-ranked.`,
+      );
+    } catch (e) {
+      console.error(e);
+      toast.error(e.response?.data?.message || "Couldn't update shadow rank.");
+    }
+  };
+
   // Phase 6 — bulk suspend/ban/unrestrict via /admin/users/bulk. The
   // modal closes only when the request itself landed; per-user failures
   // (self/admin targets, already-banned) are summarized in a toast, and
@@ -916,6 +989,7 @@ const AdminUsers = () => {
                   revokeType: type,
                 })
               }
+              onToggleShadowRank={handleToggleShadowRank}
               selected={selectedIds.has(u._id)}
               onToggleSelect={() => toggleSelected(u._id)}
               expanded={expandedUserId === u._id}

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import MainLayout from "../layouts/MainLayout";
@@ -29,13 +29,13 @@ import {
   FiBell,
   FiDatabase,
   FiAlertTriangle,
+  FiMessageSquare,
+  FiMapPin,
+  FiTag,
+  FiCheck,
 } from "react-icons/fi";
 
 // ── Accordion primitives ─────────────────────────────────────────────
-// Each AccordionItem renders a trigger row + collapsible content panel.
-// The content panel uses max-height + opacity transition so it animates
-// smoothly without needing JS-measured heights.
-
 const AccordionItem = ({
   id,
   open,
@@ -51,7 +51,6 @@ const AccordionItem = ({
     <div
       className={`bg-card border rounded-2xl overflow-hidden transition-all duration-200 ${danger ? "border-red-200" : "border-stroke"}`}
     >
-      {/* Trigger */}
       <button
         type="button"
         onClick={() => onToggle(id)}
@@ -82,11 +81,10 @@ const AccordionItem = ({
         />
       </button>
 
-      {/* Content panel */}
       <div
         className={`transition-all duration-200 ease-in-out ${
           open
-            ? "max-h-2499.75 opacity-100"
+            ? "max-h-[2500px] opacity-100"
             : "max-h-0 opacity-0 pointer-events-none"
         } overflow-hidden`}
       >
@@ -122,13 +120,36 @@ const VISIBILITY_OPTIONS = [
   },
 ];
 
+// ── Feature 3: Topics/Interests ──────────────────────────────────────
+const ALL_TOPICS = [
+  { id: "technology", label: "Technology" },
+  { id: "music", label: "Music" },
+  { id: "art", label: "Art" },
+  { id: "sports", label: "Sports" },
+  { id: "gaming", label: "Gaming" },
+  { id: "science", label: "Science" },
+  { id: "politics", label: "Politics" },
+  { id: "food", label: "Food" },
+  { id: "travel", label: "Travel" },
+  { id: "fashion", label: "Fashion" },
+  { id: "finance", label: "Finance" },
+  { id: "health", label: "Health" },
+  { id: "education", label: "Education" },
+  { id: "entertainment", label: "Entertainment" },
+  { id: "news", label: "News" },
+  { id: "business", label: "Business" },
+  { id: "nature", label: "Nature" },
+  { id: "photography", label: "Photography" },
+  { id: "fitness", label: "Fitness" },
+  { id: "books", label: "Books" },
+];
+
 // ── Main page ────────────────────────────────────────────────────────
 const Settings = () => {
   const { user, updateUser, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
 
-  // Track open accordion panels — multiple can be open at once
   const [openPanels, setOpenPanels] = useState(new Set());
   const togglePanel = (id) => {
     setOpenPanels((prev) => {
@@ -161,6 +182,85 @@ const Settings = () => {
   const visibility = state.visibility;
   const setVisibility = (value) =>
     setState((prev) => ({ ...prev, visibility: value }));
+
+  // Feature 3: Interests
+  const [selectedInterests, setSelectedInterests] = useState(
+    () => user?.interests || []
+  );
+  const [savingInterests, setSavingInterests] = useState(false);
+  useEffect(() => {
+    if (user?.interests) setSelectedInterests(user.interests);
+  }, [user?.interests]);
+
+  const toggleInterest = (topic) => {
+    setSelectedInterests((prev) =>
+      prev.includes(topic)
+        ? prev.filter((t) => t !== topic)
+        : prev.length >= 10
+        ? prev
+        : [...prev, topic]
+    );
+  };
+
+  const handleSaveInterests = async () => {
+    if (savingInterests) return;
+    setSavingInterests(true);
+    try {
+      await api.put("/users/interests", { interests: selectedInterests });
+      updateUser?.({ interests: selectedInterests });
+      toast.success("Interests saved!");
+    } catch (e) {
+      toast.error("Couldn't save interests. Try again.");
+    } finally {
+      setSavingInterests(false);
+    }
+  };
+
+  // Feature 4: Location
+  const [location, setLocation] = useState(user?.location || "");
+  const [savingLocation, setSavingLocation] = useState(false);
+  useEffect(() => {
+    setLocation(user?.location || "");
+  }, [user?.location]);
+
+  const handleSaveLocation = async () => {
+    if (savingLocation) return;
+    setSavingLocation(true);
+    try {
+      await api.put("/users/location", { location });
+      updateUser?.({ location });
+      toast.success("Location updated.");
+    } catch (e) {
+      toast.error("Couldn't update location. Try again.");
+    } finally {
+      setSavingLocation(false);
+    }
+  };
+
+  // Feature 6: Read receipts
+  const [showReadReceipts, setShowReadReceiptsState] = useState(
+    () => user?.showReadReceipts !== false
+  );
+  const [savingReceipts, setSavingReceipts] = useState(false);
+  useEffect(() => {
+    setShowReadReceiptsState(user?.showReadReceipts !== false);
+  }, [user?.showReadReceipts]);
+
+  const handleToggleReadReceipts = async (value) => {
+    if (savingReceipts) return;
+    setShowReadReceiptsState(value);
+    setSavingReceipts(true);
+    try {
+      await api.put("/users/read-receipts", { showReadReceipts: value });
+      updateUser?.({ showReadReceipts: value });
+      toast.success(value ? "Read receipts on." : "Read receipts off.");
+    } catch (e) {
+      setShowReadReceiptsState(!value);
+      toast.error("Couldn't update setting. Try again.");
+    } finally {
+      setSavingReceipts(false);
+    }
+  };
 
   const handleChangeVisibility = async (value) => {
     if (value === visibility || saving) return;
@@ -216,7 +316,6 @@ const Settings = () => {
     navigate("/login", { replace: true });
   };
 
-  // Derived subtitles shown on collapsed trigger rows
   const visibilityLabel =
     VISIBILITY_OPTIONS.find((o) => o.value === visibility)?.label ?? "—";
   const themeLabel = theme === "dark" ? "Dark mode" : "Light mode";
@@ -254,96 +353,214 @@ const Settings = () => {
           id="verification"
           open={isOpen("verification")}
           onToggle={togglePanel}
-          icon={FiAward}
+          icon={FiShield}
           title="Verification"
-          subtitle={
-            (user?.verifications || []).length > 0
-              ? `${user.verifications.length} badge${user.verifications.length > 1 ? "s" : ""} active`
-              : "Apply for a verified badge"
-          }
+          subtitle="Apply for account verification"
         >
-          <div className="p-0">
+          <div className="py-4">
             <VerificationSection embedded />
           </div>
         </AccordionItem>
 
-        {/* ── 3. Privacy & visibility ───────────────────────── */}
+        {/* ── 3. Topics / Interests (Feature 3) ────────────── */}
         <AccordionItem
-          id="privacy"
-          open={isOpen("privacy")}
+          id="interests"
+          open={isOpen("interests")}
           onToggle={togglePanel}
-          icon={FiEye}
-          title="Privacy & visibility"
-          subtitle={`Online status visible to: ${visibilityLabel}`}
+          icon={FiTag}
+          title="Topics & interests"
+          subtitle={
+            selectedInterests.length
+              ? `${selectedInterests.length} topic${selectedInterests.length !== 1 ? "s" : ""} selected`
+              : "Pick up to 10 topics to personalise your feed"
+          }
         >
-          <div className="p-5 space-y-2">
-            <p className="text-sm text-ink-muted mb-3">
-              Controls the green dot on your profile and in chat.
+          <div className="p-5">
+            <p className="text-sm text-ink-muted mb-4">
+              Choose 5–10 topics that interest you. Your For You feed will
+              weight content from these areas more heavily.
+              {selectedInterests.length >= 10 && (
+                <span className="text-amber-500 font-medium"> (Max 10 reached)</span>
+              )}
             </p>
-            {VISIBILITY_OPTIONS.map((opt) => {
-              const Icon = opt.icon;
-              const selected = visibility === opt.value;
-              return (
-                <button
-                  key={opt.value}
-                  onClick={() => handleChangeVisibility(opt.value)}
-                  disabled={saving}
-                  className={`w-full flex items-start gap-3 px-4 py-3 rounded-xl border text-left transition disabled:opacity-60 ${
-                    selected
-                      ? "border-primary-400 bg-primary-50"
-                      : "border-stroke hover:bg-surface"
-                  }`}
-                >
-                  <Icon
-                    size={16}
-                    className={`mt-0.5 shrink-0 ${selected ? "text-primary-600" : "text-ink-muted"}`}
-                  />
-                  <span className="flex-1">
-                    <span className="block text-sm font-medium text-ink">
-                      {opt.label}
-                    </span>
-                    <span className="block text-[12px] text-ink-muted mt-0.5">
-                      {opt.description}
-                    </span>
-                  </span>
-                  <span
-                    className={`mt-0.5 w-4 h-4 rounded-full border-2 shrink-0 ${selected ? "border-primary-500 bg-primary-500" : "border-stroke"}`}
-                  />
-                </button>
-              );
-            })}
+            <div className="flex flex-wrap gap-2 mb-5">
+              {ALL_TOPICS.map((topic) => {
+                const selected = selectedInterests.includes(topic.id);
+                return (
+                  <button
+                    key={topic.id}
+                    type="button"
+                    onClick={() => toggleInterest(topic.id)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border transition-all ${
+                      selected
+                        ? "bg-primary-600 border-primary-600 text-white"
+                        : "bg-surface border-stroke text-ink-sub hover:border-primary-400"
+                    } ${!selected && selectedInterests.length >= 10 ? "opacity-40 cursor-not-allowed" : ""}`}
+                    disabled={!selected && selectedInterests.length >= 10}
+                  >
+                    {selected && <FiCheck size={11} />}
+                    {topic.label}
+                  </button>
+                );
+              })}
+            </div>
+            <button
+              type="button"
+              onClick={handleSaveInterests}
+              disabled={savingInterests}
+              className="px-4 py-2 rounded-xl bg-primary-600 text-white text-sm font-semibold hover:bg-primary-800 disabled:opacity-60 transition"
+            >
+              {savingInterests ? "Saving…" : "Save interests"}
+            </button>
           </div>
         </AccordionItem>
 
-        {/* ── 4. Notifications ──────────────────────────────── */}
+        {/* ── 4. Location (Feature 4) ───────────────────────── */}
+        <AccordionItem
+          id="location"
+          open={isOpen("location")}
+          onToggle={togglePanel}
+          icon={FiMapPin}
+          title="Location"
+          subtitle={location || "Used for trending near you"}
+        >
+          <div className="p-5">
+            <p className="text-sm text-ink-muted mb-3">
+              Add your city or region to see trending hashtags near you. This
+              is optional and only used for local trending.
+            </p>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+                placeholder="e.g. Lagos, London, New York"
+                maxLength={100}
+                className="flex-1 px-3 py-2.5 rounded-xl border border-stroke bg-surface text-sm text-ink placeholder:text-ink-muted outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100 transition"
+              />
+              <button
+                type="button"
+                onClick={handleSaveLocation}
+                disabled={savingLocation}
+                className="px-4 py-2 rounded-xl bg-primary-600 text-white text-sm font-semibold hover:bg-primary-800 disabled:opacity-60 transition"
+              >
+                {savingLocation ? "…" : "Save"}
+              </button>
+            </div>
+          </div>
+        </AccordionItem>
+
+        {/* ── 5. Notifications ──────────────────────────────── */}
         <AccordionItem
           id="notifications"
           open={isOpen("notifications")}
           onToggle={togglePanel}
           icon={FiBell}
           title="Notifications"
-          subtitle="Push alerts and notification preferences"
+          subtitle="Manage push notifications"
         >
-          <div className="p-0">
+          <div className="py-4">
             <PushNotificationsSection embedded />
           </div>
         </AccordionItem>
 
-        {/* ── 5. Appearance ─────────────────────────────────── */}
+        {/* ── 6. Messaging (Feature 6: read receipts) ──────── */}
         <AccordionItem
-          id="appearance"
-          open={isOpen("appearance")}
+          id="messaging"
+          open={isOpen("messaging")}
+          onToggle={togglePanel}
+          icon={FiMessageSquare}
+          title="Messaging"
+          subtitle={showReadReceipts ? "Read receipts on" : "Read receipts off"}
+        >
+          <div className="p-5 space-y-4">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-sm font-medium text-ink">Read receipts</p>
+                <p className="text-xs text-ink-muted mt-0.5">
+                  When off, others won't see double-ticks on messages you read.
+                  You also won't see theirs.
+                </p>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={showReadReceipts}
+                onClick={() => handleToggleReadReceipts(!showReadReceipts)}
+                disabled={savingReceipts}
+                className={`relative shrink-0 w-11 h-6 rounded-full transition-colors duration-200 ${
+                  showReadReceipts ? "bg-primary-600" : "bg-stroke"
+                } disabled:opacity-60`}
+              >
+                <span
+                  className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200 ${
+                    showReadReceipts ? "translate-x-5" : "translate-x-0"
+                  }`}
+                />
+              </button>
+            </div>
+          </div>
+        </AccordionItem>
+
+        {/* ── 7. Online status ──────────────────────────────── */}
+        <AccordionItem
+          id="privacy"
+          open={isOpen("privacy")}
+          onToggle={togglePanel}
+          icon={FiEye}
+          title="Online status"
+          subtitle={`Shown to: ${visibilityLabel}`}
+        >
+          <div className="divide-y divide-stroke">
+            {VISIBILITY_OPTIONS.map(({ value, label, description, icon: Icon }) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => handleChangeVisibility(value)}
+                className={`w-full flex items-center gap-3 px-5 py-3.5 text-left transition-colors ${
+                  visibility === value
+                    ? "bg-primary-50"
+                    : "hover:bg-surface"
+                }`}
+              >
+                <Icon
+                  size={15}
+                  className={
+                    visibility === value ? "text-primary-600" : "text-ink-muted"
+                  }
+                />
+                <div className="flex-1 min-w-0">
+                  <p
+                    className={`text-sm font-medium ${
+                      visibility === value ? "text-primary-600" : "text-ink"
+                    }`}
+                  >
+                    {label}
+                  </p>
+                  <p className="text-xs text-ink-muted mt-0.5">{description}</p>
+                </div>
+                {visibility === value && (
+                  <div className="w-4 h-4 rounded-full bg-primary-600 flex items-center justify-center shrink-0">
+                    <div className="w-1.5 h-1.5 rounded-full bg-white" />
+                  </div>
+                )}
+              </button>
+            ))}
+          </div>
+        </AccordionItem>
+
+        {/* ── 8. Theme ──────────────────────────────────────── */}
+        <AccordionItem
+          id="theme"
+          open={isOpen("theme")}
           onToggle={togglePanel}
           icon={theme === "dark" ? FiMoon : FiSun}
           title="Appearance"
           subtitle={themeLabel}
         >
           <div className="p-5">
-            <p className="text-sm text-ink-muted mb-4">
-              Choose between light and dark mode. Your choice is saved on this
-              device.
-            </p>
             <button
+              type="button"
               onClick={toggleTheme}
               className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-stroke text-sm font-medium text-ink hover:bg-surface transition"
             >
@@ -355,7 +572,7 @@ const Settings = () => {
           </div>
         </AccordionItem>
 
-        {/* ── 6. Security & sessions ────────────────────────── */}
+        {/* ── 9. Security & sessions ────────────────────────── */}
         <AccordionItem
           id="security"
           open={isOpen("security")}
@@ -376,7 +593,7 @@ const Settings = () => {
           </div>
         </AccordionItem>
 
-        {/* ── 7. Data & account ─────────────────────────────── */}
+        {/* ── 10. Data & account ────────────────────────────── */}
         <AccordionItem
           id="data"
           open={isOpen("data")}
@@ -400,7 +617,7 @@ const Settings = () => {
           </div>
         </AccordionItem>
 
-        {/* ── 8. Legal & support ────────────────────────────── */}
+        {/* ── 11. Legal & support ───────────────────────────── */}
         <AccordionItem
           id="legal"
           open={isOpen("legal")}
@@ -445,7 +662,7 @@ const Settings = () => {
           </div>
         </AccordionItem>
 
-        {/* ── 9. Delete account — danger, always at bottom ──── */}
+        {/* ── 12. Delete account ────────────────────────────── */}
         <AccordionItem
           id="danger"
           open={isOpen("danger")}

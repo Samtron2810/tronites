@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState, useCallback } from "react";
 import {
   FiArrowLeft,
   FiImage,
@@ -6,7 +6,10 @@ import {
   FiCheck,
   FiMic,
   FiX,
+  FiSearch,
+  FiCornerUpLeft,
 } from "react-icons/fi";
+import api from "../services/api";
 import ChatMediaViewer from "./ChatMediaViewer";
 import VoiceNotePlayer from "./VoiceNotePlayer";
 import ReportModal from "./ReportModal";
@@ -104,6 +107,11 @@ const ChatModal = ({
   // True while the other participant has an active "typing" broadcast
   // for this open thread (server-pushed, auto-expires — see Chat.jsx).
   otherUserTyping,
+  // Feature 5 — reply-to-message: the message currently being replied to.
+  replyingTo,
+  onCancelReply,
+  // Callback to set the message being replied to — called from message bubble
+  onReply,
 }) => {
   // Mobile back button closes the conversation modal; UI closes consume
   // the pushed history entry so history stays balanced (see the hook).
@@ -148,6 +156,43 @@ const ChatModal = ({
   const longPressStartRef = useRef(null);
   const LONG_PRESS_MS = 450;
   const LONG_PRESS_MOVE_TOLERANCE_PX = 10;
+
+  // Feature 7 — in-conversation search
+  const [showSearch, setShowSearch] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const searchInputRef = useRef(null);
+
+  const handleSearch = useCallback(async (q) => {
+    setSearchQuery(q);
+    if (!q.trim()) { setSearchResults([]); return; }
+    setSearchLoading(true);
+    try {
+      const other = selectedChat?.otherUser?._id;
+      if (!other) return;
+      const res = await api.get("/messages/search", {
+        params: { userId: other, q: q.trim(), limit: 20 },
+      });
+      setSearchResults(Array.isArray(res.data) ? res.data : (res.data?.messages || []));
+    } catch {
+      setSearchResults([]);
+    } finally {
+      setSearchLoading(false);
+    }
+  }, [selectedChat?.otherUser?._id]);
+
+  // Debounce search
+  useEffect(() => {
+    const t = setTimeout(() => { if (searchQuery) handleSearch(searchQuery); }, 350);
+    return () => clearTimeout(t);
+  }, [searchQuery, handleSearch]);
+
+  const closeSearch = () => {
+    setShowSearch(false);
+    setSearchQuery("");
+    setSearchResults([]);
+  };
 
   const clearLongPressTimer = () => {
     if (longPressTimerRef.current) {
@@ -324,7 +369,65 @@ const ChatModal = ({
               )}
             </p>
           </div>
+          {/* Feature 7 — search button */}
+          <button
+            type="button"
+            onClick={() => { setShowSearch(true); setTimeout(() => searchInputRef.current?.focus(), 50); }}
+            className="p-1.5 rounded-lg text-ink-muted hover:text-ink hover:bg-surface transition shrink-0"
+            title="Search messages"
+          >
+            <FiSearch size={16} />
+          </button>
         </div>
+
+        {/* Feature 7 — Search bar (shown inline below header when active) */}
+        {showSearch && (
+          <div className="px-4 py-2.5 border-b border-stroke bg-surface flex items-center gap-2">
+            <FiSearch size={14} className="text-ink-muted shrink-0" />
+            <input
+              ref={searchInputRef}
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search this conversation…"
+              className="flex-1 bg-transparent text-sm text-ink placeholder:text-ink-muted outline-none"
+            />
+            {searchQuery && (
+              <button type="button" onClick={() => setSearchQuery("")} className="text-ink-muted hover:text-ink transition">
+                <FiX size={14} />
+              </button>
+            )}
+            <button type="button" onClick={closeSearch} className="text-sm text-primary-600 font-medium hover:underline ml-1 shrink-0">
+              Cancel
+            </button>
+          </div>
+        )}
+
+        {/* Feature 7 — Search results overlay */}
+        {showSearch && (searchQuery.trim() || searchLoading) && (
+          <div className="absolute inset-0 top-[calc(3.25rem+2.75rem)] z-20 bg-card overflow-y-auto">
+            {searchLoading ? (
+              <div className="flex items-center justify-center py-10 text-ink-muted text-sm">Searching…</div>
+            ) : searchResults.length === 0 ? (
+              <div className="flex items-center justify-center py-10 text-ink-muted text-sm">No messages found</div>
+            ) : (
+              <ul className="divide-y divide-stroke">
+                {searchResults.map((msg) => (
+                  <li key={msg._id} className="px-4 py-3 hover:bg-surface cursor-pointer" onClick={closeSearch}>
+                    <p className="text-xs text-ink-muted mb-0.5">
+                      {msg.sender?._id === user._id ? "You" : activeUser?.name}
+                      {" · "}
+                      {new Date(msg.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                    </p>
+                    <p className="text-sm text-ink line-clamp-2">
+                      {msg.text || (msg.images?.length ? "📷 Photo" : msg.video ? "🎥 Video" : msg.voice ? "🎙 Voice note" : "")}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
 
         {/* Messages */}
         <div className="relative flex-1 min-h-0 flex flex-col">
@@ -567,6 +670,21 @@ const ChatModal = ({
                                     : "bg-card text-ink self-start rounded-bl-sm border border-stroke"
                                 }`}
                               >
+                                {/* Feature 5 — reply preview inside bubble */}
+                                {message.replyTo && (
+                                  <div className={`mb-2 px-2.5 py-1.5 rounded-lg border-l-2 text-left ${
+                                    isMine
+                                      ? "border-white/60 bg-white/10"
+                                      : "border-primary-400 bg-primary-50"
+                                  }`}>
+                                    <p className={`text-[10px] font-semibold mb-0.5 ${isMine ? "text-white/70" : "text-primary-600"}`}>
+                                      {message.replyTo.sender?._id === user._id ? "You" : activeUser?.name}
+                                    </p>
+                                    <p className={`text-xs truncate ${isMine ? "text-white/60" : "text-ink-muted"}`}>
+                                      {message.replyTo.text || (message.replyTo.images?.length ? "📷 Photo" : message.replyTo.video ? "🎥 Video" : "🎙 Voice")}
+                                    </p>
+                                  </div>
+                                )}
                                 <TextWithLinks
                                   text={message.text}
                                   linkClassName={
@@ -626,11 +744,22 @@ const ChatModal = ({
                               {formatMessageTime(message.createdAt)}
                             </p>
                             {!isMine && (
-                              <MessageOptionsMenu
-                                isMine={false}
-                                anchor="left"
-                                onReport={() => setReportingMessage(message)}
-                              />
+                              <div className="flex items-center gap-1">
+                                {/* Feature 5 — reply to this message */}
+                                <button
+                                  type="button"
+                                  onClick={() => onReply?.(message)}
+                                  className="opacity-0 group-hover:opacity-100 p-1 text-ink-muted hover:text-primary-600 transition rounded-full hover:bg-surface"
+                                  title="Reply"
+                                >
+                                  <FiCornerUpLeft size={12} />
+                                </button>
+                                <MessageOptionsMenu
+                                  isMine={false}
+                                  anchor="left"
+                                  onReport={() => setReportingMessage(message)}
+                                />
+                              </div>
                             )}
                             {isMine && (
                               <>
@@ -736,6 +865,27 @@ const ChatModal = ({
 
           {(!requestInfo || requestInfo.status === "accepted") && (
             <>
+              {/* Feature 5 — Reply-to preview strip */}
+              {replyingTo && (
+                <div className="flex items-start gap-2 mb-2 px-1 py-1.5 rounded-xl bg-surface border border-stroke">
+                  <div className="w-0.5 h-full min-h-[28px] self-stretch rounded-full bg-primary-600 shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[11px] font-semibold text-primary-600 mb-0.5">
+                      {replyingTo.sender?._id === user._id ? "You" : activeUser?.name}
+                    </p>
+                    <p className="text-xs text-ink-sub truncate">
+                      {replyingTo.text || (replyingTo.images?.length ? "📷 Photo" : replyingTo.video ? "🎥 Video" : "🎙 Voice note")}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={onCancelReply}
+                    className="p-1 text-ink-muted hover:text-ink transition shrink-0"
+                  >
+                    <FiX size={13} />
+                  </button>
+                </div>
+              )}
               {videoUploads.map((upload) => (
                 <div
                   key={upload.id}

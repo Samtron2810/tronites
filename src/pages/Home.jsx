@@ -22,7 +22,54 @@ const TABS = [
 ];
 
 const Home = () => {
-  const [tab, setTab] = useState("forYou"); // "forYou" | "following"
+  // Feature 10 — Infinite scroll memory: restore scroll position on back navigation.
+  // Keyed by tab so each feed restores independently. sessionStorage so it
+  // resets when the browser session ends (intentional — stale scroll positions
+  // from a prior session feel more surprising than lost ones).
+  const scrollKeyForTab = (t) => `home-scroll-${t}`;
+
+  const [tab, setTab] = useState(() => {
+    // Restore last-active tab from sessionStorage so back-nav lands on the
+    // same tab the user left (not always "forYou").
+    return sessionStorage.getItem("home-active-tab") || "forYou";
+  });
+
+  // Persist active tab
+  useEffect(() => {
+    sessionStorage.setItem("home-active-tab", tab);
+  }, [tab]);
+
+  // Save scroll position before tab change
+  const handleTabChange = (newTab) => {
+    sessionStorage.setItem(scrollKeyForTab(tab), String(window.scrollY));
+    setTab(newTab);
+  };
+
+  // Restore window scroll position after tab's posts have loaded
+  useEffect(() => {
+    const key = scrollKeyForTab(tab);
+    const saved = sessionStorage.getItem(key);
+    if (!saved || Number(saved) === 0) return;
+    const y = Number(saved);
+    const timer = setTimeout(() => {
+      window.scrollTo({ top: y, behavior: "instant" });
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [tab, feeds[tab].loaded]); // re-check once posts load
+
+  // Save scroll on page hide / browser back
+  useEffect(() => {
+    const save = () => {
+      sessionStorage.setItem(scrollKeyForTab(tab), String(window.scrollY));
+    };
+    window.addEventListener("pagehide", save);
+    window.addEventListener("beforeunload", save);
+    return () => {
+      save();
+      window.removeEventListener("pagehide", save);
+      window.removeEventListener("beforeunload", save);
+    };
+  }, [tab]);
 
   // Each tab keeps fully independent feed/pagination state so switching
   // back and forth never re-fetches or loses scroll-position-relevant
@@ -252,7 +299,7 @@ const Home = () => {
           {TABS.map(({ key, label, icon: Icon }) => (
             <button
               key={key}
-              onClick={() => setTab(key)}
+              onClick={() => handleTabChange(key)}
               className={`relative flex items-center gap-1.5 px-4 py-3 text-base font-semibold transition ${
                 tab === key
                   ? "text-primary-600"

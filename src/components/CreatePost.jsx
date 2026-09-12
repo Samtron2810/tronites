@@ -20,7 +20,7 @@ const CreatePost = ({ fetchPosts }) => {
   //
   // scheduledFor is passed directly in the POST /posts body so the backend
   // creates the post in a hidden state from the start — no two-step approach.
-  const handleSubmit = async ({ text, images, privacy, scheduledFor }) => {
+  const handleSubmit = async ({ text, images, altTexts = [], privacy, scheduledFor }) => {
     const isScheduled = !!scheduledFor;
     const toastId = toast.loading(isScheduled ? "Scheduling…" : "Posting…");
     try {
@@ -37,9 +37,10 @@ const CreatePost = ({ fetchPosts }) => {
         const uploaded = await Promise.all(
           compressed.map((file) => uploadToCloudinary({ file, signatureData })),
         );
-        const imagePayload = uploaded.map((r) => ({
+        const imagePayload = uploaded.map((r, i) => ({
           url: r.secure_url,
           publicId: r.public_id,
+          altText: (altTexts[i] || "").trim(),
         }));
         await api.post("/posts", {
           text,

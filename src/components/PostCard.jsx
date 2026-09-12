@@ -266,7 +266,9 @@ const PostCard = ({
   const [openOriginalId, setOpenOriginalId] = useState(null);
   const { socket } = useSocket();
 
-  const media = images || [];
+  const media = (images || []).map((img) =>
+    typeof img === "string" ? { url: img, altText: "" } : img
+  );
 
   // Mirrors Profile.jsx's user-report submit — same endpoint, same payload
   // shape, same toasts, closes the modal only on success. Post-only now;
@@ -1192,7 +1194,7 @@ const PostCard = ({
             onClick={() => openDetail(0)}
           >
             <LazyImage
-              src={resizedImageUrl(media[0], IMAGE_SIZES.feedImage)}
+              src={resizedImageUrl(media[0]?.url || media[0], IMAGE_SIZES.feedImage)}
               alt="post-1"
               className="max-h-96 object-contain"
               priority={priority}
@@ -1220,8 +1222,8 @@ const PostCard = ({
                   onClick={() => openDetail(i)}
                 >
                   <LazyImage
-                    src={resizedImageUrl(img, IMAGE_SIZES.feedImage)}
-                    alt={`post-${i + 1}`}
+                    src={resizedImageUrl(img.url || img, IMAGE_SIZES.feedImage)}
+                    alt={img.altText || `Image ${i + 1}`}
                     className="h-full object-contain"
                     style={{ height: "100%" }}
                     priority={priority && i === 0}

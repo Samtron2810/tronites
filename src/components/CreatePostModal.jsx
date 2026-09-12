@@ -47,6 +47,9 @@ const CreatePostModal = ({ closeModal, onSubmit, onSubmitVideo }) => {
   const [previews, setPreviews] = useState([]); // objectURL[]
   const [scheduledFor, setScheduledFor] = useState("");
   const [showScheduler, setShowScheduler] = useState(false);
+  // Feature 2 — alt text per image for accessibility
+  const [altTexts, setAltTexts] = useState([]); // string[] parallel to previews
+  const [altEditIndex, setAltEditIndex] = useState(null); // which image is being labelled
   // Video is only validated (format/size) + previewed locally here — no
   // local decode/duration probe. The browser's <video> support doesn't
   // match what Cloudinary can actually accept (HEVC MOV, AVI/MKV with
@@ -108,6 +111,7 @@ const CreatePostModal = ({ closeModal, onSubmit, onSubmitVideo }) => {
       ...prev,
       ...accepted.map((f) => URL.createObjectURL(f)),
     ]);
+    setAltTexts((prev) => [...prev, ...accepted.map(() => "")]);
     e.target.value = "";
   };
 
@@ -117,6 +121,8 @@ const CreatePostModal = ({ closeModal, onSubmit, onSubmitVideo }) => {
       return prev.filter((_, i) => i !== index);
     });
     setImages((prev) => prev.filter((_, i) => i !== index));
+    setAltTexts((prev) => prev.filter((_, i) => i !== index));
+    if (altEditIndex === index) setAltEditIndex(null);
   };
 
   // Video selection: format/size validation only, no decode probe. Any
@@ -178,7 +184,7 @@ const CreatePostModal = ({ closeModal, onSubmit, onSubmitVideo }) => {
     if (videoFile) {
       onSubmitVideo({ text, videoFile, privacy, scheduledFor: scheduledFor || null });
     } else {
-      onSubmit({ text, images, privacy, scheduledFor: scheduledFor || null });
+      onSubmit({ text, images, altTexts, privacy, scheduledFor: scheduledFor || null });
     }
     closeModal();
   };
@@ -266,25 +272,56 @@ const CreatePostModal = ({ closeModal, onSubmit, onSubmitVideo }) => {
             </label>
           </div>
 
-          {/* Image previews — carousel grid */}
+          {/* Image previews — carousel grid with alt text support */}
           {previews.length > 0 && (
             <div className={`grid ${gridClass} gap-2`}>
               {previews.map((src, i) => (
-                <div
-                  key={src}
-                  className="relative rounded-xl overflow-hidden bg-surface"
-                >
+                <div key={src} className="relative rounded-xl overflow-hidden bg-surface group">
                   <img
                     src={src}
-                    alt={`preview-${i}`}
+                    alt={altTexts[i] || `preview-${i}`}
                     className="w-full h-40 object-cover"
                   />
                   <button
                     onClick={() => removeImage(i)}
-                    className="absolute top-2 right-2 bg-black/50 text-white rounded-full p-1 hover:bg-black/70 transition"
+                    className="absolute top-2 right-2 bg-black/50 text-white rounded-full p-1 hover:bg-black/70 transition z-10"
                   >
                     <FiX size={12} />
                   </button>
+                  {/* Alt text toggle */}
+                  <button
+                    type="button"
+                    onClick={() => setAltEditIndex(altEditIndex === i ? null : i)}
+                    className={`absolute bottom-2 left-2 text-[10px] font-semibold px-1.5 py-0.5 rounded-md transition z-10 ${
+                      altTexts[i]
+                        ? "bg-primary-600 text-white"
+                        : "bg-black/50 text-white/80 hover:bg-black/70"
+                    }`}
+                    title="Add alt text for accessibility"
+                  >
+                    ALT
+                  </button>
+                  {/* Alt text input panel */}
+                  {altEditIndex === i && (
+                    <div className="absolute inset-x-0 bottom-0 bg-black/80 p-2 z-20">
+                      <input
+                        type="text"
+                        value={altTexts[i] || ""}
+                        onChange={(e) => {
+                          const v = e.target.value.slice(0, 200);
+                          setAltTexts((prev) => prev.map((t, idx) => idx === i ? v : t));
+                        }}
+                        placeholder="Describe this image…"
+                        maxLength={200}
+                        className="w-full text-xs bg-transparent text-white placeholder:text-white/50 border-b border-white/30 outline-none pb-0.5"
+                        autoFocus
+                        onKeyDown={(e) => e.key === "Enter" && setAltEditIndex(null)}
+                      />
+                      <p className="text-white/40 text-[10px] mt-1 text-right">
+                        {(altTexts[i] || "").length}/200 · Enter to save
+                      </p>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

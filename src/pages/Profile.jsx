@@ -20,11 +20,31 @@ import {
   FiBellOff,
   FiBell,
   FiSettings,
+  FiCalendar,
 } from "react-icons/fi";
 import BlockUserModal from "../components/BlockUserModal";
 import defaultAvatar from "../assets/defaultAvatar";
 import { resizedImageUrl, IMAGE_SIZES } from "../utils/cloudinaryImage";
 import ReportModal from "../components/ReportModal";
+
+// Feature 8 — format join date as "Member since Jan 2024"
+const formatJoinDate = (dateStr) => {
+  if (!dateStr) return null;
+  const d = new Date(dateStr);
+  if (isNaN(d)) return null;
+  const diff = Date.now() - d.getTime();
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  const months = Math.floor(days / 30);
+  const years = Math.floor(days / 365);
+
+  const label = d.toLocaleDateString("en-US", { month: "short", year: "numeric" });
+  let age = "";
+  if (years >= 1) age = `${years}y`;
+  else if (months >= 1) age = `${months}mo`;
+  else age = `${days}d`;
+
+  return { label, age };
+};
 
 const Profile = () => {
   const { id } = useParams();
@@ -515,6 +535,23 @@ const Profile = () => {
           {profile.bio && (
             <p className="text-base text-ink-sub mt-1">{profile.bio}</p>
           )}
+
+          {/* Feature 8 — Account age / join date badge */}
+          {profile.createdAt && (() => {
+            const join = formatJoinDate(profile.createdAt);
+            if (!join) return null;
+            return (
+              <div className="flex items-center gap-1.5 mt-2">
+                <span className="inline-flex items-center gap-1 text-xs text-ink-muted">
+                  <FiCalendar size={11} className="text-ink-muted" />
+                  Joined {join.label}
+                </span>
+                <span className="px-1.5 py-0.5 rounded-md bg-surface border border-stroke text-[10px] font-semibold text-ink-muted">
+                  {join.age} old
+                </span>
+              </div>
+            );
+          })()}
 
           {/* Open to collabs chip — visible to everyone on creator profiles */}
           {profile.openToCollabs && (
