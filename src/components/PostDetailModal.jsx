@@ -472,8 +472,8 @@ const PostDetailModal = ({
               onClick={handleImageClick}
             >
               <LazyImage
-                src={resizedImageUrl(media[activeSlide], IMAGE_SIZES.modalImage)}
-                alt={`post-${activeSlide + 1}`}
+                src={resizedImageUrl(media[activeSlide]?.url || media[activeSlide], IMAGE_SIZES.modalImage)}
+                alt={media[activeSlide]?.altText || `post-${activeSlide + 1}`}
                 className="max-h-[70vh] w-full object-contain transition-transform duration-200"
                 style={{
                   transform: isZoomed ? "scale(2)" : "scale(1)",

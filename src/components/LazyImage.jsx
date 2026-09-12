@@ -2,23 +2,15 @@ import { useState, useRef, useEffect } from "react";
 import { FiImage } from "react-icons/fi";
 
 // Real lazy loading via IntersectionObserver, NOT the native
-// loading="lazy" attribute. That was tried before and reverted -- the
+// loading="lazy" attribute. That was tried before and reverted — the
 // browser's own lazy-load heuristic deferred the fetch for images it
 // judged "not yet in viewport" and never fired onLoad for them, leaving
 // posts stuck on the spinner even though the image URL itself was fine.
 //
-// This sidesteps that failure mode entirely: the <img>'s src is left
-// unset (so nothing is fetched) until this component's own
-// IntersectionObserver confirms the element is actually in or near the
-// viewport, then src is set directly by this code -- not deferred to the
-// browser's judgment -- so onLoad is guaranteed to fire once the network
-// request completes. Same IntersectionObserver pattern PostCard already
-// uses for video auto-pause.
-//
-// `priority` skips the observer entirely and loads immediately -- for the
-// first post's image in a feed, which is already in the viewport on
-// page load, so deferring it would only add a needless round trip
-// before the fetch even starts.
+// `priority` skips the observer entirely and loads immediately.
+// `fill` switches the img to absolute inset-0 mode for fixed-height
+// grid cells (multi-image layout). Without fill the img uses natural
+// flow (w-full) so single images expand the container correctly.
 const LazyImage = ({
   src,
   alt,
@@ -26,17 +18,14 @@ const LazyImage = ({
   aspectRatio,
   style,
   priority = false,
+  fill = false,
 }) => {
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState(false);
   const [isVisible, setIsVisible] = useState(priority);
   const containerRef = useRef(null);
 
-  // Remembers the last src this instance rendered, so that when the same
-  // component is reused with a new src (e.g. the PostCard carousel slides
-  // between images) we reset loading/error/visibility during render -- the
-  // React-blessed "adjust state when props change" pattern instead of a
-  // setState-in-effect cascade.
+  // Reset state when src changes (carousel slide change, etc.)
   const [lastSrc, setLastSrc] = useState(src);
   if (lastSrc !== src) {
     setLastSrc(src);
@@ -66,7 +55,7 @@ const LazyImage = ({
   return (
     <div
       ref={containerRef}
-      className={`relative w-full h-full overflow-hidden bg-surface`}
+      className="relative w-full h-full overflow-hidden bg-surface"
       style={aspectRatio ? { aspectRatio } : undefined}
     >
       {error ? (
@@ -93,7 +82,15 @@ const LazyImage = ({
               onLoad={() => setLoaded(true)}
               onError={() => setError(true)}
               style={style}
-              className={`relative w-full ${className}`}
+              className={
+                fill
+                  ? // Fixed-height grid cell: fill the cell completely
+                    `absolute inset-0 w-full h-full ${className}`
+                  : // Natural flow (single image, detail modal, etc.):
+                    // w-full expands the container to the image's natural
+                    // aspect ratio — object-contain/cover comes from className
+                    `relative w-full ${className}`
+              }
             />
           )}
         </>

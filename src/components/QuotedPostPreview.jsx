@@ -96,8 +96,8 @@ const QuotedPostPreview = ({ post }) => {
             return (
               <div key={i} className="relative overflow-hidden bg-surface">
                 <img
-                  src={resizedImageUrl(img, IMAGE_SIZES.feedImage)}
-                  alt={`quoted post image ${i + 1}`}
+                  src={resizedImageUrl(img?.url || img, IMAGE_SIZES.feedImage)}
+                  alt={img?.altText || `quoted post image ${i + 1}`}
                   className="w-full h-full object-cover"
                   style={{ maxHeight: visibleMedia.length === 1 ? "10rem" : "5rem" }}
                 />

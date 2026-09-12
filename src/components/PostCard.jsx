@@ -1216,7 +1216,7 @@ const PostCard = ({
               return (
                 <div
                   key={i}
-                  className={`relative bg-surface cursor-pointer ${
+                  className={`relative h-full bg-surface cursor-pointer ${
                     isFirstOfThree ? "row-span-2" : ""
                   }`}
                   onClick={() => openDetail(i)}
@@ -1224,8 +1224,8 @@ const PostCard = ({
                   <LazyImage
                     src={resizedImageUrl(img.url || img, IMAGE_SIZES.feedImage)}
                     alt={img.altText || `Image ${i + 1}`}
-                    className="h-full object-contain"
-                    style={{ height: "100%" }}
+                    className="object-contain"
+                    fill
                     priority={priority && i === 0}
                   />
                   {isLastVisibleOfFour && extraCount > 0 && (
