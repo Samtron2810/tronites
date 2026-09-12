@@ -254,9 +254,12 @@ const Home = () => {
 
     // When the cron job publishes one of the current user's scheduled
     // posts, refresh the following feed so the newly-published post
-    // appears without a manual reload.
+    // appears without a manual reload. Must use the full signature:
+    // fetchPosts(targetTab, afterCursor, isFirstPage, opts) — the old
+    // call passed the opts object as targetTab, which silently reset
+    // the Following cursor to page 1 and stalled pagination on that tab.
     const handleScheduledPublished = () => {
-      fetchPosts({ silent: true });
+      fetchPosts("following", null, true, { silent: true });
     };
     socket.on("scheduledPostPublished", handleScheduledPublished);
 

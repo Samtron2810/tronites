@@ -50,7 +50,7 @@ const insertMessageSorted = (prev, msg) => {
 
 const Chat = () => {
   const { user } = useAuth();
-  const { socket, onlineUsers, refreshUnreadCount } = useSocket();
+  const { socket, onlineUsers, refreshUnreadCount, activeChatConversationIdRef } = useSocket();
   const audioRef = useRef(null);
   const audioUnlockedRef = useRef(false);
   const lastSoundPlayedAtRef = useRef(0);
@@ -140,6 +140,21 @@ const Chat = () => {
   const [newMessagesBelowCount, setNewMessagesBelowCount] = useState(0);
   const prevMessageCountRef = useRef(0);
   const NEAR_BOTTOM_PX = 120;
+
+  // Keep SocketContext's activeChatConversationIdRef in sync so incoming
+  // messages for this thread don't increment the nav badge while open.
+  useEffect(() => {
+    if (activeChatConversationIdRef) {
+      activeChatConversationIdRef.current =
+        selectedChat?.conversationId || null;
+    }
+    return () => {
+      // Clear on unmount so the badge increments normally after leaving Chat.
+      if (activeChatConversationIdRef) {
+        activeChatConversationIdRef.current = null;
+      }
+    };
+  }, [selectedChat, activeChatConversationIdRef]);
 
   // Keep activeChatIdRef in sync with the currently-open thread so the
   // async video-send path can detect a mid-upload conversation switch.
@@ -1061,11 +1076,25 @@ const Chat = () => {
       const inCurrent =
         selectedChat?.otherUser?._id === message.sender._id ||
         selectedChat?.otherUser?._id === message.receiver._id;
+      const isForMe = message.receiver._id === user._id;
       if (inCurrent && message.sender._id !== user._id) {
         setMessages((prev) => [...prev, message]);
         playMessageSound();
+        // Mark read immediately on the server — getMessages does this as a
+        // side effect of a full fetch, but we're not re-fetching here.
+        // This keeps the DB in sync and triggers the messagesRead socket
+        // event so the sender's read receipts update in real time.
+        if (isForMe && selectedChat?.otherUser?._id) {
+          api
+            .patch(`/messages/${selectedChat.otherUser._id}/read`)
+            .then(() => refreshUnreadCount())
+            .catch(() => {});
+        }
       }
-      updateConversationPreview(message, message.receiver._id === user._id);
+      // Only increment the conversation-list unread badge when the message
+      // is NOT for the currently-open thread (SocketContext suppresses the
+      // nav badge for the open thread; mirror that here for the sidebar).
+      updateConversationPreview(message, isForMe && !inCurrent);
     };
     const handleDeleted = ({ messageId }) =>
       setMessages((prev) => prev.filter((m) => m._id !== messageId));

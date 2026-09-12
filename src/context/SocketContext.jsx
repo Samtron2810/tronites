@@ -2,6 +2,7 @@ import {
   useEffect,
   useState,
   useCallback,
+  useRef,
 } from "react";
 import { io } from "socket.io-client";
 import toast from "react-hot-toast";
@@ -14,6 +15,13 @@ export const SocketProvider = ({ children }) => {
   const [onlineUsers, setOnlineUsers] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const { user, logout, getMe } = useAuth();
+
+  // Chat page registers the currently-open conversationId here so that
+  // incoming messages for that thread don't increment the nav badge —
+  // the user is already reading them. The ref avoids a re-render on
+  // every thread switch and is safe to read from the socket callback
+  // closure without stale-closure issues.
+  const activeChatConversationIdRef = useRef(null);
 
   // Single source of truth for the navbar badge. Both the Navbar (on
   // mount / on socket events) and the Chat page (right after it marks
@@ -99,6 +107,18 @@ export const SocketProvider = ({ children }) => {
       // regardless of which page is currently mounted.
       const onReceiveMessage = (msg) => {
         if (msg.receiver._id === user?._id) {
+          // Suppress the increment when the receiver is actively viewing
+          // this thread — the message is visible on screen and will be
+          // marked read immediately by Chat.jsx's markConversationRead call.
+          // Comparing by conversationId (not otherUser._id) is consistent
+          // with how Chat.jsx builds its activeChatIdRef.
+          const msgConversationId = msg.conversationId;
+          if (
+            msgConversationId &&
+            activeChatConversationIdRef.current === msgConversationId
+          ) {
+            return;
+          }
           setUnreadCount((prev) => prev + 1);
         }
       };
@@ -177,7 +197,7 @@ export const SocketProvider = ({ children }) => {
 
   return (
     <SocketContext.Provider
-      value={{ socket, onlineUsers, unreadCount, refreshUnreadCount }}
+      value={{ socket, onlineUsers, unreadCount, refreshUnreadCount, activeChatConversationIdRef }}
     >
       {children}
     </SocketContext.Provider>
