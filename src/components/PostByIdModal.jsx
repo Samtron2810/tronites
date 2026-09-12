@@ -294,7 +294,9 @@ const PostByIdModal = ({
           privacy={post.privacy}
           postHasBeenEdited={post.edited}
           postEditedAt={post.editedAt}
-          media={post.images || []}
+          media={(post.images || []).map((img) =>
+            typeof img === "string" ? { url: img, altText: "" } : img
+          )}
           postVideo={post.video}
           commentCount={commentCount}
           onCommentCountChange={setCommentCount}

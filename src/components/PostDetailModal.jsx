@@ -122,6 +122,12 @@ const PostDetailModal = ({
   highlightCommentId,
   highlightParentId,
 }) => {
+  // Normalize to {url, altText} objects — handles legacy string entries and
+  // ensures media[i]?.url is never undefined regardless of the call site.
+  const normalizedMedia = (media || []).map((img) =>
+    typeof img === "string" ? { url: img, altText: "" } : img
+  );
+
   const [activeSlide, setActiveSlide] = useState(initialSlide);
   const [isZoomed, setIsZoomed] = useState(false);
   const [zoomOrigin, setZoomOrigin] = useState("50% 50%");
@@ -198,18 +204,18 @@ const PostDetailModal = ({
     if (!isOpen) return;
     const handleKeyDown = (e) => {
       if (e.key === "Escape") onClose();
-      if (e.key === "ArrowLeft" && media.length > 1) {
-        setActiveSlide((i) => (i - 1 + media.length) % media.length);
+      if (e.key === "ArrowLeft" && normalizedMedia.length > 1) {
+        setActiveSlide((i) => (i - 1 + normalizedMedia.length) % normalizedMedia.length);
         setIsZoomed(false);
       }
-      if (e.key === "ArrowRight" && media.length > 1) {
-        setActiveSlide((i) => (i + 1) % media.length);
+      if (e.key === "ArrowRight" && normalizedMedia.length > 1) {
+        setActiveSlide((i) => (i + 1) % normalizedMedia.length);
         setIsZoomed(false);
       }
     };
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, media.length, onClose]);
+  }, [isOpen, normalizedMedia.length, onClose]);
 
   // Close the options menu on outside click — same pattern PostCard and
   // CommentOptionsMenu already use.
@@ -250,14 +256,14 @@ const PostDetailModal = ({
   };
 
   const handleTouchEnd = (e) => {
-    if (touchStartX.current === null || media.length <= 1) return;
+    if (touchStartX.current === null || normalizedMedia.length <= 1) return;
     const delta = e.changedTouches[0].clientX - touchStartX.current;
     if (Math.abs(delta) > 50) {
       setIsZoomed(false);
       if (delta > 0) {
-        setActiveSlide((i) => (i - 1 + media.length) % media.length);
+        setActiveSlide((i) => (i - 1 + normalizedMedia.length) % normalizedMedia.length);
       } else {
-        setActiveSlide((i) => (i + 1) % media.length);
+        setActiveSlide((i) => (i + 1) % normalizedMedia.length);
       }
     }
     touchStartX.current = null;
@@ -461,7 +467,7 @@ const PostDetailModal = ({
 
         {/* Image carousel — same interaction promoted from PostCard,
             plus click-to-toggle-2x zoom and keyboard/swipe nav. */}
-        {media.length > 0 && (
+        {normalizedMedia.length > 0 && (
           <div
             className="relative bg-surface overflow-hidden"
             onTouchStart={handleTouchStart}
@@ -472,8 +478,8 @@ const PostDetailModal = ({
               onClick={handleImageClick}
             >
               <LazyImage
-                src={resizedImageUrl(media[activeSlide]?.url || media[activeSlide], IMAGE_SIZES.modalImage)}
-                alt={media[activeSlide]?.altText || `post-${activeSlide + 1}`}
+                src={resizedImageUrl(normalizedMedia[activeSlide]?.url, IMAGE_SIZES.modalImage)}
+                alt={normalizedMedia[activeSlide]?.altText || `post-${activeSlide + 1}`}
                 className="max-h-[70vh] w-full object-contain transition-transform duration-200"
                 style={{
                   transform: isZoomed ? "scale(2)" : "scale(1)",
@@ -483,14 +489,14 @@ const PostDetailModal = ({
               />
             </div>
 
-            {media.length > 1 && (
+            {normalizedMedia.length > 1 && (
               <>
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
                     setIsZoomed(false);
                     setActiveSlide(
-                      (i) => (i - 1 + media.length) % media.length,
+                      (i) => (i - 1 + normalizedMedia.length) % normalizedMedia.length,
                     );
                   }}
                   className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 text-white rounded-full p-1.5 hover:bg-black/70 transition"
@@ -502,7 +508,7 @@ const PostDetailModal = ({
                   onClick={(e) => {
                     e.stopPropagation();
                     setIsZoomed(false);
-                    setActiveSlide((i) => (i + 1) % media.length);
+                    setActiveSlide((i) => (i + 1) % normalizedMedia.length);
                   }}
                   className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 text-white rounded-full p-1.5 hover:bg-black/70 transition"
                   aria-label="Next image"
@@ -510,7 +516,7 @@ const PostDetailModal = ({
                   <FaChevronRight size={12} />
                 </button>
                 <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5">
-                  {media.map((_, i) => (
+                  {normalizedMedia.map((_, i) => (
                     <button
                       key={i}
                       onClick={(e) => {
@@ -526,7 +532,7 @@ const PostDetailModal = ({
                   ))}
                 </div>
                 <span className="absolute top-2 right-2 bg-black/50 text-white text-sm px-2 py-0.5 rounded-full">
-                  {activeSlide + 1}/{media.length}
+                  {activeSlide + 1}/{normalizedMedia.length}
                 </span>
               </>
             )}
