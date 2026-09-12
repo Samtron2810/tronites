@@ -12,40 +12,50 @@ import { useSocket } from "../context/useSocket";
 import { HiOutlineSparkles } from "react-icons/hi2";
 import { FiClock, FiUsers } from "react-icons/fi";
 
-// Two tabs — see tab-architecture.html. For You absorbs Trending as a
-// weighted source (services/forYouService.js on the backend) rather
-// than sitting alongside it as a third, overlapping algorithmic tab.
-// Following stays the strictly-chronological, never-ranked promise.
 const TABS = [
   { key: "forYou", label: "For You", icon: HiOutlineSparkles },
   { key: "following", label: "Following", icon: FiClock },
 ];
 
 const Home = () => {
-  // Feature 10 — Infinite scroll memory: restore scroll position on back navigation.
-  // Keyed by tab so each feed restores independently. sessionStorage so it
-  // resets when the browser session ends (intentional — stale scroll positions
-  // from a prior session feel more surprising than lost ones).
   const scrollKeyForTab = (t) => `home-scroll-${t}`;
 
   const [tab, setTab] = useState(() => {
-    // Restore last-active tab from sessionStorage so back-nav lands on the
-    // same tab the user left (not always "forYou").
     return sessionStorage.getItem("home-active-tab") || "forYou";
   });
+
+  // ── feeds must be declared BEFORE any useEffect that reads feeds[tab] ──
+  // Moving it here (above the scroll-restore effect) fixes the
+  // ReferenceError: Cannot access 'feeds' before initialization that was
+  // crashing the page with the ErrorBoundary.
+  const [feeds, setFeeds] = useState({
+    forYou: { posts: [], cursor: null, hasMore: true, loaded: false },
+    following: { posts: [], cursor: null, hasMore: true, loaded: false },
+  });
+  const [loading, setLoading] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const observerTarget = useRef(null);
+  const fetchInFlightRef = useRef(false);
+  const loadPausedUntilRef = useRef(0);
+  const feedsRef = useRef(feeds);
+  useEffect(() => {
+    feedsRef.current = feeds;
+  }, [feeds]);
+  const { socket } = useSocket();
+
+  const current = feeds[tab];
 
   // Persist active tab
   useEffect(() => {
     sessionStorage.setItem("home-active-tab", tab);
   }, [tab]);
 
-  // Save scroll position before tab change
   const handleTabChange = (newTab) => {
     sessionStorage.setItem(scrollKeyForTab(tab), String(window.scrollY));
     setTab(newTab);
   };
 
-  // Restore window scroll position after tab's posts have loaded
+  // Restore scroll position — feeds is now declared above so this is safe
   useEffect(() => {
     const key = scrollKeyForTab(tab);
     const saved = sessionStorage.getItem(key);
@@ -55,7 +65,7 @@ const Home = () => {
       window.scrollTo({ top: y, behavior: "instant" });
     }, 100);
     return () => clearTimeout(timer);
-  }, [tab, feeds[tab].loaded]); // re-check once posts load
+  }, [tab, feeds[tab].loaded]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Save scroll on page hide / browser back
   useEffect(() => {
@@ -71,49 +81,8 @@ const Home = () => {
     };
   }, [tab]);
 
-  // Each tab keeps fully independent feed/pagination state so switching
-  // back and forth never re-fetches or loses scroll-position-relevant
-  // data for the tab you're leaving.
-  const [feeds, setFeeds] = useState({
-    forYou: { posts: [], cursor: null, hasMore: true, loaded: false },
-    following: { posts: [], cursor: null, hasMore: true, loaded: false },
-  });
-  const [loading, setLoading] = useState(true);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const observerTarget = useRef(null);
-  // Synchronous in-flight guard — the observer's `!isLoadingMore` check
-  // reads React state, which commits asynchronously, so two intersection
-  // callbacks in the same tick can both pass it and double-fetch a page.
-  // A ref flips synchronously, so the second call is dropped before it
-  // can fire a request.
-  const fetchInFlightRef = useRef(false);
-  // After a load-more failure we pause the observer for 5 s so the toast
-  // can't fire in a tight loop on slow / no network. Stores a timestamp
-  // (Date.now() + 5000) while paused; 0 means not paused.
-  const loadPausedUntilRef = useRef(0);
-  // Latest posts per tab, kept in a ref so the stable fetchPosts callback
-  // (empty deps) can read the current list for the For You excludeIds
-  // param without closing over a stale `feeds`. Synced via an effect —
-  // the react-hooks/refs rule forbids touching refs during render.
-  const feedsRef = useRef(feeds);
-  useEffect(() => {
-    feedsRef.current = feeds;
-  }, [feeds]);
-  const { socket } = useSocket();
-
-  const current = feeds[tab];
-
-  // fetchPosts — the `silent` flag controls whether a first-page fetch
-  // shows the skeleton or not.
-  //   silent=false (default): shows skeleton — used on initial tab open.
-  //   silent=true: leaves existing posts visible and revalidates behind
-  //     the scenes — used by useRefetchOnFocus and explicit invalidation
-  //     after creating a post (getCached revalidate:true already returns
-  //     stale data instantly, so the skeleton would flash for no reason).
   const fetchPosts = useCallback(
     async (targetTab, afterCursor, isFirstPage, { silent = false } = {}) => {
-      // Drop concurrent fetches (see fetchInFlightRef above); the first
-      // call still completes and resets the ref in `finally`.
       if (fetchInFlightRef.current) return;
       fetchInFlightRef.current = true;
       try {
@@ -124,18 +93,7 @@ const Home = () => {
           targetTab === "forYou"
             ? {
                 limit: 10,
-                ...(afterCursor
-                  ? {
-                      // Opaque comma-joined id cursor — see
-                      // getForYouFeed in postController.js. Unlike
-                      // Trending's score+id cursor, For You's ranking
-                      // shifts between loads (affinity/exploration are
-                      // meant to vary), so it hard-excludes everything
-                      // already delivered rather than trying to resume
-                      // from a stable rank position.
-                      excludeIds: afterCursor,
-                    }
-                  : {}),
+                ...(afterCursor ? { excludeIds: afterCursor } : {}),
               }
             : {
                 limit: 10,
@@ -152,15 +110,8 @@ const Home = () => {
         setFeeds((prev) => {
           let nextPosts;
           if (isFirstPage) {
-            // Full refresh (e.g. after creating a post) — replace
-            // wholesale. Never filter against the old list here: that
-            // would strip every already-displayed post and leave only
-            // the brand-new one(s).
             nextPosts = res.data.posts;
           } else {
-            // Append (load more): never re-add a post that's already in
-            // the list — this is the guard that keeps ordering drift /
-            // score decay in For You from duplicating posts.
             const existingIds = new Set(
               prev[targetTab].posts.map((p) => p._id),
             );
@@ -182,8 +133,6 @@ const Home = () => {
       } catch (e) {
         console.error(e);
         if (!isFirstPage) {
-          // Only toast once per error burst; the observer is paused below
-          // so it won't fire again until the cooldown expires.
           toast.error("Couldn't load more posts. Try again.");
           loadPausedUntilRef.current = Date.now() + 5_000;
         }
@@ -196,19 +145,13 @@ const Home = () => {
     [],
   );
 
-  // Load a tab the first time it's opened; switching back later reuses
-  // what's already in state instead of re-fetching from scratch.
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch-on-tab-open; setState happens inside the async fetchPosts fn, not synchronously in this effect body
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (!feeds[tab].loaded) fetchPosts(tab, null, true, { silent: false });
     else setLoading(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab]);
 
-  // Tier-2 revalidate-on-focus — re-runs the CURRENT tab's first-page
-  // fetch SILENTLY: getCached revalidate:true already serves stale data
-  // instantly, so we must not set loading=true here or the existing
-  // posts flash away and the skeleton appears for no reason.
   useRefetchOnFocus(() => fetchPosts(tab, null, true, { silent: true }));
 
   useEffect(() => {
@@ -235,9 +178,6 @@ const Home = () => {
   useEffect(() => {
     if (!socket) return;
     const handleNewPost = (newPost) => {
-      // New posts only prepend into the reverse-chronological Following
-      // feed — For You is ranked by score, so a brand new post belongs
-      // wherever its score lands, not at the top.
       setFeeds((prev) =>
         prev.following.posts.some((p) => p._id === newPost._id)
           ? prev
@@ -252,12 +192,6 @@ const Home = () => {
     };
     socket.on("newPost", handleNewPost);
 
-    // When the cron job publishes one of the current user's scheduled
-    // posts, refresh the following feed so the newly-published post
-    // appears without a manual reload. Must use the full signature:
-    // fetchPosts(targetTab, afterCursor, isFirstPage, opts) — the old
-    // call passed the opts object as targetTab, which silently reset
-    // the Following cursor to page 1 and stalled pagination on that tab.
     const handleScheduledPublished = () => {
       fetchPosts("following", null, true, { silent: true });
     };
@@ -288,16 +222,12 @@ const Home = () => {
         <CreatePost
           fetchPosts={() => {
             api.invalidateMany(["/posts/for-you", "/posts/feed", "/posts/hashtag/"]);
-            // Silent revalidate — we just created a post so the feed will
-            // update, but we don't want to flash the skeleton.
             fetchPosts("following", null, true, { silent: true });
           }}
         />
 
         <TrendingHashtagsWidget />
 
-        {/* Underline tab switcher — deliberately not the filled-pill
-            style Explore uses, so Home reads as its own surface. */}
         <div className="flex border-b border-stroke">
           {TABS.map(({ key, label, icon: Icon }) => (
             <button
