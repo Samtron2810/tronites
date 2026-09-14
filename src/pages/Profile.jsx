@@ -41,7 +41,10 @@ const formatJoinDate = (dateStr) => {
   const months = Math.floor(days / 30);
   const years = Math.floor(days / 365);
 
-  const label = d.toLocaleDateString("en-US", { month: "short", year: "numeric" });
+  const label = d.toLocaleDateString("en-US", {
+    month: "short",
+    year: "numeric",
+  });
   let age = "";
   if (years >= 1) age = `${years}y`;
   else if (months >= 1) age = `${months}mo`;
@@ -117,8 +120,14 @@ const Profile = () => {
       setIsFollowing(res.data.isFollowing);
       if (viewerIdRef.current !== id) {
         const [blockRes, muteRes] = await Promise.all([
-          api.getCached(`/users/${id}/block-status`, { ttlMs: 30_000, revalidate: true }),
-          api.getCached(`/users/${id}/mute-status`, { ttlMs: 30_000, revalidate: true }),
+          api.getCached(`/users/${id}/block-status`, {
+            ttlMs: 30_000,
+            revalidate: true,
+          }),
+          api.getCached(`/users/${id}/mute-status`, {
+            ttlMs: 30_000,
+            revalidate: true,
+          }),
         ]);
         setIBlockedThem(blockRes.data.iBlockedThem);
         setTheyBlockedMe(blockRes.data.theyBlockedMe);
@@ -260,7 +269,9 @@ const Profile = () => {
       // reusing already-hydrated objects where possible.
       const allKnown = [...prevPins, ...posts];
       return ids
-        .map((id) => allKnown.find((p) => p._id === id || p._id?.toString() === id))
+        .map((id) =>
+          allKnown.find((p) => p._id === id || p._id?.toString() === id),
+        )
         .filter(Boolean);
     });
     api.invalidate(`/users/profile/${id}`);
@@ -350,8 +361,6 @@ const Profile = () => {
       e.target.value = "";
     }
   };
-
-
 
   if (!currentUser) return <ProfileSkeleton />;
   if (!profile) return <ProfileSkeleton />;
@@ -452,32 +461,7 @@ const Profile = () => {
                   Message
                 </button>
 
-                {/* Tip button — only shown on creator profiles */}
-                {isCreator(profile) && (
-                  <button
-                    onClick={() => setShowTipModal(true)}
-                    title="Send a tip"
-                    className="flex items-center gap-1.5 px-2 py-2 rounded-xl text-base font-semibold border border-stroke text-ink-sub hover:border-amber-400 hover:text-amber-600 transition"
-                  >
-                    <FaHeart size={13} />
-                    Tip
-                  </button>
-                )}
-
-                {/* Subscribe button — only shown on creator profiles */}
-                {isCreator(profile) && (
-                  <button
-                    onClick={() => setShowSubscribeModal(true)}
-                    title="Subscribe to this creator"
-                    className="flex items-center gap-1.5 px-2 py-2 rounded-xl text-base font-semibold border border-stroke text-ink-sub hover:border-primary-400 hover:text-primary-600 transition"
-                  >
-                    <FaStar size={13} />
-                    Sub
-                  </button>
-                )}
-
-                {/* More options — kept behind a dropdown so block/unblock
-                    isn't a bare tappable button next to Follow/Message. */}
+                {/* More options — dropdown for monetization actions (tip/sub) and moderation */}
                 <button
                   onClick={() => setShowOptionsMenu((v) => !v)}
                   className="p-2 rounded-xl border border-stroke text-ink-muted hover:text-ink hover:bg-surface transition"
@@ -493,6 +477,32 @@ const Profile = () => {
                       onClick={() => setShowOptionsMenu(false)}
                     />
                     <div className="absolute top-full right-0 mt-1 w-44 bg-card border border-stroke rounded-xl shadow-lg z-20 overflow-hidden">
+                      {/* Monetization options for creator profiles */}
+                      {isCreator(profile) && (
+                        <>
+                          <button
+                            onClick={() => {
+                              setShowOptionsMenu(false);
+                              setShowTipModal(true);
+                            }}
+                            className="w-full flex items-center gap-2 px-4 py-2.5 text-base text-amber-600 hover:bg-surface transition"
+                          >
+                            <FaHeart size={14} />
+                            Send a tip
+                          </button>
+                          <button
+                            onClick={() => {
+                              setShowOptionsMenu(false);
+                              setShowSubscribeModal(true);
+                            }}
+                            className="w-full flex items-center gap-2 px-4 py-2.5 text-base text-primary-600 hover:bg-surface transition"
+                          >
+                            <FaStar size={14} />
+                            Subscribe
+                          </button>
+                          <div className="h-px bg-stroke" />
+                        </>
+                      )}
                       <button
                         onClick={() => {
                           setShowOptionsMenu(false);
@@ -552,14 +562,24 @@ const Profile = () => {
 
             {showTipModal && (
               <TipModal
-                creator={{ _id: profile._id, name: profile.name, username: profile.username, profilePic: profile.profilePic }}
+                creator={{
+                  _id: profile._id,
+                  name: profile.name,
+                  username: profile.username,
+                  profilePic: profile.profilePic,
+                }}
                 onClose={() => setShowTipModal(false)}
               />
             )}
 
             {showSubscribeModal && (
               <SubscribeModal
-                creator={{ _id: profile._id, name: profile.name, username: profile.username, profilePic: profile.profilePic }}
+                creator={{
+                  _id: profile._id,
+                  name: profile.name,
+                  username: profile.username,
+                  profilePic: profile.profilePic,
+                }}
                 onClose={() => setShowSubscribeModal(false)}
               />
             )}
@@ -581,27 +601,34 @@ const Profile = () => {
           )}
 
           {/* Feature 8 — Account age / join date badge */}
-          {profile.createdAt && (() => {
-            const join = formatJoinDate(profile.createdAt);
-            if (!join) return null;
-            return (
-              <div className="flex items-center gap-1.5 mt-2">
-                <span className="inline-flex items-center gap-1 text-xs text-ink-muted">
-                  <FiCalendar size={11} className="text-ink-muted" />
-                  Joined {join.label}
-                </span>
-                <span className="px-1.5 py-0.5 rounded-md bg-surface border border-stroke text-[10px] font-semibold text-ink-muted">
-                  {join.age} old
-                </span>
-              </div>
-            );
-          })()}
+          {profile.createdAt &&
+            (() => {
+              const join = formatJoinDate(profile.createdAt);
+              if (!join) return null;
+              return (
+                <div className="flex items-center gap-1.5 mt-2">
+                  <span className="inline-flex items-center gap-1 text-xs text-ink-muted">
+                    <FiCalendar size={11} className="text-ink-muted" />
+                    Joined {join.label}
+                  </span>
+                  <span className="px-1.5 py-0.5 rounded-md bg-surface border border-stroke text-[10px] font-semibold text-ink-muted">
+                    {join.age} old
+                  </span>
+                </div>
+              );
+            })()}
 
           {/* Open to collabs chip — visible to everyone on creator profiles */}
           {profile.openToCollabs && (
             <div className="flex items-center gap-2 mt-2 flex-wrap">
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold"
-                style={{ backgroundColor: "#9B59D015", color: "#9B59D0", border: "1px solid #9B59D030" }}>
+              <div
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold"
+                style={{
+                  backgroundColor: "#9B59D015",
+                  color: "#9B59D0",
+                  border: "1px solid #9B59D030",
+                }}
+              >
                 <span>✦</span>
                 <span>Open to collabs</span>
               </div>
@@ -643,8 +670,14 @@ const Profile = () => {
       {pinnedPosts.length > 0 && (
         <div className="mt-4 space-y-3">
           <div className="flex items-center gap-1.5 px-1">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" className="text-ink-muted">
-              <path d="M16 4v8l2 2v2h-6v6l-1 1-1-1v-6H4v-2l2-2V4h10z"/>
+            <svg
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              className="text-ink-muted"
+            >
+              <path d="M16 4v8l2 2v2h-6v6l-1 1-1-1v-6H4v-2l2-2V4h10z" />
             </svg>
             <span className="text-xs font-semibold text-ink-muted uppercase tracking-wide">
               Pinned{pinnedPosts.length > 1 ? ` (${pinnedPosts.length})` : ""}
@@ -658,7 +691,9 @@ const Profile = () => {
               name={pinnedPost.user?.name || profile.name}
               username={pinnedPost.user?.username || profile.username}
               profilePic={pinnedPost.user?.profilePic || profile.profilePic}
-              verifications={pinnedPost.user?.verifications || profile.verifications}
+              verifications={
+                pinnedPost.user?.verifications || profile.verifications
+              }
               time={new Date(pinnedPost.createdAt).toLocaleString()}
               text={pinnedPost.text}
               images={pinnedPost.images}
