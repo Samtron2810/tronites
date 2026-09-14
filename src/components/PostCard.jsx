@@ -223,7 +223,12 @@ const PostCard = ({
   const [isPinToggling, setIsPinToggling] = useState(false);
   const [showPromoteModal, setShowPromoteModal] = useState(false);
   const [showTipModal, setShowTipModal] = useState(false);
-  const [viewerIsSubscriber, setViewerIsSubscriber] = useState(false);
+  // Whether this viewer already has an active paid subscription to the
+  // post's creator. Currently a plain constant — real subscription state
+  // is resolved inside SubscriberOnlyGate/SubscribeModal once a viewer
+  // unlocks a post; written as a named value so a future server-side
+  // membership check can slot straight in.
+  const viewerIsSubscriber = false;
   const triggerRef = useRef(null);
   // Separate small dropdown for the repost button (Repost vs Quote) —
   // distinct from the "..." options menu above, since it's opened by a
@@ -1115,11 +1120,12 @@ const PostCard = ({
           </div>
         ) : (
           <>{/* ── Subscriber gate — wraps text + media for subscriber-only posts ── */}
-          {privacy === "subscribers" && !isOwner ? (
-            <SubscriberOnlyGate
-              creator={{ _id: userId, name, username, profilePic }}
-              isSubscribed={viewerIsSubscriber}
-            >
+          <SubscriberOnlyGate
+            creator={{ _id: userId, name, username, profilePic }}
+            isSubscribed={
+              privacy !== "subscribers" || isOwner || viewerIsSubscriber
+            }
+          >
           <p
             onClick={openDetail}
             className="text-ink-sub text-base leading-relaxed cursor-pointer whitespace-pre-line"
@@ -1138,7 +1144,6 @@ const PostCard = ({
               </span>
             )}
           </p>
-        )}
 
         {/* Embedded original — quote cards only. Clicking it opens the
             ORIGINAL post's own detail view (a separate post, with its
@@ -1270,8 +1275,7 @@ const PostCard = ({
         {/* Reaction summary — sits above the action bar, same info
             tier as the like count today. Hidden entirely when no one
             has reacted yet (no empty state clutter). */}
-            </SubscriberOnlyGate>
-          ) : null}
+          </SubscriberOnlyGate>
           </>
         )}
 
