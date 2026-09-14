@@ -54,6 +54,23 @@ const Chat = () => {
   const audioRef = useRef(null);
   const audioUnlockedRef = useRef(false);
   const lastSoundPlayedAtRef = useRef(0);
+
+  // Staff (moderator/admin) DMs open as accepted threads server-side -
+  // evaluateSendPermission never routes them through the request system.
+  // isStaff mirrors that rule client-side so the optimistic composer
+  // state never paints a "Message request sent" banner for a send the
+  // server opens as a normal conversation.
+  const isStaff = user?.role === "moderator" || user?.role === "admin";
+  // Non-staff first contact becomes a pending request; staff bypasses it.
+  const requestInfoAfterSend = useCallback(
+    (prev) =>
+      isStaff
+        ? { status: "accepted", isInitiator: true }
+        : prev?.status === "pending"
+          ? prev
+          : { status: "pending", isInitiator: true },
+    [isStaff],
+  );
   const [conversations, setConversations] = useState([]);
   const [conversationsPage, setConversationsPage] = useState(1);
   const [conversationsHasMore, setConversationsHasMore] = useState(false);
@@ -120,6 +137,13 @@ const Chat = () => {
   // detect a mid-upload thread switch (the closure's selectedChat is stale
   // by the time the upload resolves).
   const activeChatIdRef = useRef(null);
+
+  // Deep-link (?user=) threads are opened exactly once per target ? see
+  // fetchConversations. Prevents silent refetches (window focus, tab
+  // re-show, bfcache pageshow) from flashing the thread skeleton over the
+  // open modal or yanking the user back to the URL target after they
+  // switched to a different conversation.
+  const handledUrlUserIdRef = useRef(null);
   // Monotonic id source for background video-send entries (used as React
   // keys). A ref, not Date.now(), so no impure call happens in render scope.
   const videoSendIdRef = useRef(0);
@@ -192,6 +216,14 @@ const Chat = () => {
       setTotalConversationsCount(res.data.totalConversations);
       const urlUserId = searchParams.get("user");
       if (urlUserId) {
+        // Open the deep-linked thread exactly ONCE per URL target. Every
+        // focus/visibility refetch re-enters this branch (the URL param
+        // persists), and re-running loadConversation would set
+        // threadLoading and flash the three-bubble skeleton over the open
+        // modal - and would swap the user back to this thread even if
+        // they had since clicked another conversation.
+        if (handledUrlUserIdRef.current === urlUserId) return;
+        handledUrlUserIdRef.current = urlUserId;
         const existing = res.data.conversations.find(
           (c) => c.otherUser._id === urlUserId,
         );
@@ -592,11 +624,7 @@ const Chat = () => {
       // A pending request just got its first (and only) message sent —
       // reflect that in local gating state without waiting for a refetch.
       if (requestInfo?.status !== "accepted") {
-        setRequestInfo((prev) =>
-          prev?.status === "pending"
-            ? prev
-            : { status: "pending", isInitiator: true },
-        );
+        setRequestInfo(requestInfoAfterSend);
       }
     } catch (e) {
       const code = e?.response?.data?.code;
@@ -644,11 +672,7 @@ const Chat = () => {
       updateConversationPreview(res.data, false);
       api.invalidate("/messages/conversations");
       if (item.markPendingRequest) {
-        setRequestInfo((prev) =>
-          prev?.status === "pending"
-            ? prev
-            : { status: "pending", isInitiator: true },
-        );
+        setRequestInfo(requestInfoAfterSend);
       }
     } catch (e) {
       alert(
@@ -722,11 +746,7 @@ const Chat = () => {
       updateConversationPreview(res.data, false);
       api.invalidate("/messages/conversations");
       if (item.markPendingRequest) {
-        setRequestInfo((prev) =>
-          prev?.status === "pending"
-            ? prev
-            : { status: "pending", isInitiator: true },
-        );
+        setRequestInfo(requestInfoAfterSend);
       }
     } catch (e) {
       alert(

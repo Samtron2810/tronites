@@ -92,14 +92,14 @@ const MediaKit = () => {
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-6 space-y-5">
-      {/* Back */}
-      <Link
-        to={`/profile/${creator.username}`}
+      {/* go to previous page */}
+      <button
+        onClick={() => window.history.back()}
         className="inline-flex items-center gap-1.5 text-xs text-ink-muted hover:text-ink transition"
       >
         <FaArrowLeft size={11} />
-        Back to profile
-      </Link>
+        Previous page
+      </button>
 
       {/* Creator hero */}
       <div className="bg-card border border-stroke rounded-3xl overflow-hidden">
