@@ -183,7 +183,7 @@ const More = () => {
       icon: FaChartBar,
       label: "Dashboard",
       description: "Post analytics and reach insights.",
-      href: "/dashboard",
+      href: "/creator-dashboard",
     },
     {
       icon: FaWallet,

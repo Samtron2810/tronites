@@ -274,7 +274,7 @@ const AppContent = () => {
           />
 
           <Route
-            path="/dashboard"
+            path="/creator-dashboard"
             element={
               <ProtectedRoute requireCreator>
                 <CreatorDashboard />
