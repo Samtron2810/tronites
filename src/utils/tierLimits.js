@@ -65,5 +65,14 @@ export const POST_EDIT_WINDOW_MS = {
 
 export const canEditPost = (user) => getActiveTier(user) !== "unverified";
 
+// ── Creator monetization ─────────────────────────────────────────────────────
+export const canAccessAnalytics = (user) => {
+  const tier = getActiveTier(user);
+  return tier === "creator" || tier === "business" || tier === "staff";
+};
+
+export const canCreateSubscriptionPlan = (user) => getActiveTier(user) === "creator";
+export const canPostSubscribersOnly = (user) => getActiveTier(user) === "creator";
+
 export const getEditWindowMs = (user) =>
   POST_EDIT_WINDOW_MS[getActiveTier(user)] ?? null;

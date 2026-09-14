@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import PlanSetupCard from "../components/PlanSetupCard";
 import {
   FaArrowLeft,
   FaHeart,
@@ -290,6 +291,12 @@ const CreatorDashboard = () => {
           <p className="text-xs text-ink-muted">Your audience & content analytics</p>
         </div>
         <div className="ml-auto flex items-center gap-2">
+          <Link
+            to="/creator-earnings"
+            className="text-xs font-semibold px-3 py-1.5 rounded-xl border border-stroke text-ink-muted hover:text-primary-600 hover:border-primary-300 transition"
+          >
+            Earnings →
+          </Link>
           <img
             src={resizedImageUrl(user?.profilePic, IMAGE_SIZES.avatarTiny) || defaultAvatar}
             alt={user?.name}
@@ -495,6 +502,7 @@ const CreatorDashboard = () => {
       })()}
 
       {/* ── Sub-cards (each manages its own cache slice) ── */}
+      <PlanSetupCard />
       <BestTimeCard />
       <TopFansCard />
       <HashtagPerformanceCard days={days} />

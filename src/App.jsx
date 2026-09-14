@@ -48,6 +48,8 @@ const TermsOfUse = lazy(() => import("./pages/TermsOfUse"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const PaystackReturnHandler = lazy(() => import("./components/PaystackReturnHandler"));
 const MyPromotions = lazy(() => import("./pages/MyPromotions"));
+const CreatorEarnings = lazy(() => import("./pages/CreatorEarnings"));
+const MediaKit = lazy(() => import("./pages/MediaKit"));
 
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -305,6 +307,18 @@ const AppContent = () => {
               </ProtectedRoute>
             }
           />
+
+          <Route
+            path="/creator-earnings"
+            element={
+              <ProtectedRoute>
+                <CreatorEarnings />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Public — brands and viewers can view a creator's media kit */}
+          <Route path="/media-kit/:creatorId" element={<MediaKit />} />
 
           <Route
             path="/help"

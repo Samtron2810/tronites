@@ -10,13 +10,14 @@ import {
   FiLock,
   FiClock,
 } from "react-icons/fi";
+import { FaStar } from "react-icons/fa";
 import useMentionAutocomplete from "../hooks/useMentionAutocomplete";
 import MentionSuggestions from "./MentionSuggestions";
 import ConfirmDiscardModal from "./ConfirmDiscardModal";
 import useBackButtonClose from "../hooks/useBackButtonClose";
 import { validateVideoFile } from "../services/videoUpload";
 import { useAuth } from "../context/useAuth";
-import { getCharLimit, canSchedule } from "../utils/tierLimits";
+import { getCharLimit, canSchedule, canPostSubscribersOnly } from "../utils/tierLimits";
 
 const MAX_IMAGES = 4;
 
@@ -29,11 +30,19 @@ const minSchedulableDateTime = () =>
 // Post audience options — mirrors the backend's Post.privacy enum
 // (backend/models/Post.js) and the values validated in
 // backend/utils/validators.js.
-const PRIVACY_OPTIONS = [
+const BASE_PRIVACY_OPTIONS = [
   { value: "public", label: "Public", icon: FiGlobe },
   { value: "followers", label: "Followers", icon: FiUsers },
   { value: "only-me", label: "Only me", icon: FiLock },
 ];
+const SUBSCRIBER_OPTION = { value: "subscribers", label: "Subscribers only", icon: FaStar };
+
+// Creator-tier users get a "Subscribers only" option sandwiched between
+// Followers and Only me — matching the post visibility hierarchy.
+const getPrivacyOptions = (user) =>
+  canPostSubscribersOnly(user)
+    ? [BASE_PRIVACY_OPTIONS[0], BASE_PRIVACY_OPTIONS[1], SUBSCRIBER_OPTION, BASE_PRIVACY_OPTIONS[2]]
+    : BASE_PRIVACY_OPTIONS;
 
 const CreatePostModal = ({ closeModal, onSubmit, onSubmitVideo }) => {
   const { user } = useAuth();
@@ -246,7 +255,7 @@ const CreatePostModal = ({ closeModal, onSubmit, onSubmitVideo }) => {
           <div className="flex items-center gap-2">
             <label className="flex items-center gap-2 text-base text-ink-sub cursor-pointer">
               {(() => {
-                const current = PRIVACY_OPTIONS.find(
+                const current = getPrivacyOptions(user).find(
                   (o) => o.value === privacy,
                 );
                 const CurrentIcon = current?.icon || FiGlobe;
@@ -263,7 +272,7 @@ const CreatePostModal = ({ closeModal, onSubmit, onSubmitVideo }) => {
                 aria-label="Who can see this post"
                 className="bg-surface border border-stroke rounded-lg px-2.5 py-1.5 text-base text-ink outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100 transition cursor-pointer"
               >
-                {PRIVACY_OPTIONS.map(({ value, label }) => (
+                {getPrivacyOptions(user).map(({ value, label }) => (
                   <option key={value} value={value}>
                     {label}
                   </option>

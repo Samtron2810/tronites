@@ -15,6 +15,8 @@ import {
   FaThumbtack,
   FaHandshake,
   FaAward,
+  FaWallet,
+  FaIdCard,
 } from "react-icons/fa";
 import { useAuth } from "../context/useAuth";
 import api from "../services/api";
@@ -175,6 +177,18 @@ const More = () => {
       description: "Post analytics and reach insights.",
       href: "/dashboard",
     },
+    {
+      icon: FaWallet,
+      label: "Earnings",
+      description: "Tips, subscriptions, and payout requests.",
+      href: "/creator-earnings",
+    },
+    {
+      icon: FaIdCard,
+      label: "My Media Kit",
+      description: "Auto-generated kit for brands and collabs.",
+      href: `/media-kit/${user?._id}`,
+    },
     // Pinned post handled separately via PostCard on profile;
     // this tile deep-links to own profile so the user can pin there.
     {
@@ -238,6 +252,14 @@ const More = () => {
                     ? "Visible on your profile — brands can see you're available."
                     : "Show brands and creators you're open to partnerships."}
                 </p>
+                {user?.openToCollabs && (
+                  <Link
+                    to={`/media-kit/${user?._id}`}
+                    className="inline-flex items-center gap-1 mt-1.5 text-xs text-primary-600 hover:underline"
+                  >
+                    <FaIdCard size={10} /> Preview your media kit →
+                  </Link>
+                )}
               </div>
               <button
                 onClick={handleToggleCollab}

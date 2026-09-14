@@ -46,6 +46,8 @@ import {
   POST_EDIT_COOLDOWN_MS,
 } from "../utils/tierLimits";
 import PromotePostModal from "./PromotePostModal";
+import TipModal from "./TipModal";
+import SubscriberOnlyGate from "./SubscriberOnlyGate";
 
 // Post age at render time — wrapped behind a helper (same reasoning as
 // cooldownRemainingMs in utils/cooldown.js) so the render path doesn't
@@ -220,6 +222,8 @@ const PostCard = ({
   // the isLiking/isReposting guards on the other action handlers.
   const [isPinToggling, setIsPinToggling] = useState(false);
   const [showPromoteModal, setShowPromoteModal] = useState(false);
+  const [showTipModal, setShowTipModal] = useState(false);
+  const [viewerIsSubscriber, setViewerIsSubscriber] = useState(false);
   const triggerRef = useRef(null);
   // Separate small dropdown for the repost button (Repost vs Quote) —
   // distinct from the "..." options menu above, since it's opened by a
@@ -740,6 +744,14 @@ const PostCard = ({
         />
       )}
 
+      {showTipModal && (
+        <TipModal
+          creator={{ _id: userId, name, username, profilePic }}
+          postId={postId}
+          onClose={() => setShowTipModal(false)}
+        />
+      )}
+
       {showQuoteModal && (
         <QuotePostModal
           post={{
@@ -918,6 +930,14 @@ const PostCard = ({
                     aria-label="Visible to your followers"
                   />
                 )}
+                {privacy === "subscribers" && (
+                  <FiLock
+                    size={11}
+                    className="shrink-0 text-primary-500"
+                    title="Subscribers only"
+                    aria-label="Subscribers only"
+                  />
+                )}
                 {privacy === "only-me" && (
                   <FiLock
                     size={11}
@@ -1094,6 +1114,12 @@ const PostCard = ({
             </div>
           </div>
         ) : (
+          <>{/* ── Subscriber gate — wraps text + media for subscriber-only posts ── */}
+          {privacy === "subscribers" && !isOwner ? (
+            <SubscriberOnlyGate
+              creator={{ _id: userId, name, username, profilePic }}
+              isSubscribed={viewerIsSubscriber}
+            >
           <p
             onClick={openDetail}
             className="text-ink-sub text-base leading-relaxed cursor-pointer whitespace-pre-line"
@@ -1244,6 +1270,11 @@ const PostCard = ({
         {/* Reaction summary — sits above the action bar, same info
             tier as the like count today. Hidden entirely when no one
             has reacted yet (no empty state clutter). */}
+            </SubscriberOnlyGate>
+          ) : null}
+          </>
+        )}
+
         <ReactionSummaryBar
           summary={reactionSummaryState}
           myReaction={myReactionState}
@@ -1358,6 +1389,37 @@ const PostCard = ({
               </div>
             )}
           </div>
+
+          {/* Tip button — shown on other people's creator posts only */}
+          {!isOwner && userId && (() => {
+            // Check if post author has creator badge — we approximate here
+            // by checking if verifications prop includes 'creator'.
+            // Full check happens server-side; this is just a UI hint.
+            const authorIsCreator = (verifications || []).some(
+              (v) => v.type === "creator",
+            );
+            if (!authorIsCreator) return null;
+            return (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowTipModal(true);
+                }}
+                title="Send a tip"
+                className="flex items-center gap-1.5 text-ink-muted hover:text-amber-500 transition text-base"
+              >
+                <svg
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                  className="w-4 h-4"
+                  aria-hidden="true"
+                >
+                  <path d="M10 2a8 8 0 100 16A8 8 0 0010 2zm.75 11.5v.75a.75.75 0 01-1.5 0v-.75a2.25 2.25 0 01-1.856-2.2c0-1.034.7-1.907 1.856-2.194V7.75a.75.75 0 011.5 0v1.306c1.156.287 1.856 1.16 1.856 2.194a.75.75 0 01-1.5 0c0-.414-.374-.75-.856-.75s-.856.336-.856.75.374.75.856.75c1.156.287 1.856 1.16 1.856 2.194a2.25 2.25 0 01-1.856 2.2z" />
+                </svg>
+                <span className="text-sm">Tip</span>
+              </button>
+            );
+          })()}
 
           <button
             onClick={handleBookmark}

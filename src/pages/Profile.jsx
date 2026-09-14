@@ -22,10 +22,14 @@ import {
   FiSettings,
   FiCalendar,
 } from "react-icons/fi";
+import { FaHeart, FaStar, FaIdCard } from "react-icons/fa";
 import BlockUserModal from "../components/BlockUserModal";
 import defaultAvatar from "../assets/defaultAvatar";
 import { resizedImageUrl, IMAGE_SIZES } from "../utils/cloudinaryImage";
 import ReportModal from "../components/ReportModal";
+import TipModal from "../components/TipModal";
+import SubscribeModal from "../components/SubscribeModal";
+import { isCreator } from "../utils/creator";
 
 // Feature 8 — format join date as "Member since Jan 2024"
 const formatJoinDate = (dateStr) => {
@@ -71,6 +75,8 @@ const Profile = () => {
   const [showBlockModal, setShowBlockModal] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
+  const [showTipModal, setShowTipModal] = useState(false);
+  const [showSubscribeModal, setShowSubscribeModal] = useState(false);
   const postsObserverTarget = useRef(null);
   const loadPausedUntilRef = useRef(0);
 
@@ -446,6 +452,30 @@ const Profile = () => {
                   Message
                 </button>
 
+                {/* Tip button — only shown on creator profiles */}
+                {isCreator(profile) && (
+                  <button
+                    onClick={() => setShowTipModal(true)}
+                    title="Send a tip"
+                    className="flex items-center gap-1.5 px-2 py-2 rounded-xl text-base font-semibold border border-stroke text-ink-sub hover:border-amber-400 hover:text-amber-600 transition"
+                  >
+                    <FaHeart size={13} />
+                    Tip
+                  </button>
+                )}
+
+                {/* Subscribe button — only shown on creator profiles */}
+                {isCreator(profile) && (
+                  <button
+                    onClick={() => setShowSubscribeModal(true)}
+                    title="Subscribe to this creator"
+                    className="flex items-center gap-1.5 px-2 py-2 rounded-xl text-base font-semibold border border-stroke text-ink-sub hover:border-primary-400 hover:text-primary-600 transition"
+                  >
+                    <FaStar size={13} />
+                    Sub
+                  </button>
+                )}
+
                 {/* More options — kept behind a dropdown so block/unblock
                     isn't a bare tappable button next to Follow/Message. */}
                 <button
@@ -519,6 +549,20 @@ const Profile = () => {
                 onCancel={() => setShowReportModal(false)}
               />
             )}
+
+            {showTipModal && (
+              <TipModal
+                creator={{ _id: profile._id, name: profile.name, username: profile.username, profilePic: profile.profilePic }}
+                onClose={() => setShowTipModal(false)}
+              />
+            )}
+
+            {showSubscribeModal && (
+              <SubscribeModal
+                creator={{ _id: profile._id, name: profile.name, username: profile.username, profilePic: profile.profilePic }}
+                onClose={() => setShowSubscribeModal(false)}
+              />
+            )}
           </div>
 
           {/* Name + bio */}
@@ -555,10 +599,19 @@ const Profile = () => {
 
           {/* Open to collabs chip — visible to everyone on creator profiles */}
           {profile.openToCollabs && (
-            <div className="inline-flex items-center gap-1.5 mt-2 px-2.5 py-1 rounded-full text-xs font-semibold"
-              style={{ backgroundColor: "#9B59D015", color: "#9B59D0", border: "1px solid #9B59D030" }}>
-              <span>✦</span>
-              <span>Open to collabs</span>
+            <div className="flex items-center gap-2 mt-2 flex-wrap">
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold"
+                style={{ backgroundColor: "#9B59D015", color: "#9B59D0", border: "1px solid #9B59D030" }}>
+                <span>✦</span>
+                <span>Open to collabs</span>
+              </div>
+              <Link
+                to={`/media-kit/${profile._id}`}
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold border border-stroke text-ink-muted hover:text-primary-600 hover:border-primary-300 transition"
+              >
+                <FaIdCard size={10} />
+                View media kit
+              </Link>
             </div>
           )}
 
