@@ -14,6 +14,7 @@ import {
 } from "react-icons/fa6";
 import VerifiedBadge from "../components/VerifiedBadge";
 import api from "../services/api";
+import { useAuth } from "../context/useAuth";
 
 // ─── Metric block ─────────────────────────────────────────────────────────
 const Metric = ({ value, label, icon: Icon, className = "" }) => (
@@ -38,6 +39,7 @@ const fmtNum = (n) => {
 // ─── MediaKit page ────────────────────────────────────────────────────────
 const MediaKit = () => {
   const { creatorId } = useParams();
+  const { user: currentUser } = useAuth();
   const [kit, setKit] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -45,8 +47,9 @@ const MediaKit = () => {
   useEffect(() => {
     const load = async () => {
       try {
-        const { data } = await api.get(
+        const { data } = await api.getCached(
           `/creator-monetization/media-kit/${creatorId}`,
+          { ttlMs: 60_000 },
         );
         setKit(data.mediaKit);
       } catch (e) {
@@ -82,6 +85,9 @@ const MediaKit = () => {
     topPosts,
     generatedAt,
   } = kit;
+
+  // Check if viewing own profile
+  const isOwnProfile = currentUser?._id === creatorId;
 
   const engagementColor =
     engagement.engagementRatePct >= 5
@@ -303,7 +309,7 @@ const MediaKit = () => {
       )}
 
       {/* Contact CTA */}
-      {creator.openToCollabs && (
+      {creator.openToCollabs && !isOwnProfile && (
         <div className="bg-primary-50 dark:bg-primary-950/20 border border-primary-200 dark:border-primary-800 rounded-2xl px-6 py-5 text-center space-y-3">
           <FaHandshake size={24} className="text-primary-600 mx-auto" />
           <p className="text-sm font-semibold text-ink">
@@ -313,7 +319,7 @@ const MediaKit = () => {
             Reach out to @{creator.username} directly on Tronites.
           </p>
           <Link
-            to={`/messages/new?user=${creatorId}`}
+            to={`/chat?user=${creatorId}`}
             className="inline-flex items-center gap-1.5 px-4 py-2 bg-primary-600 text-white text-xs font-semibold rounded-lg hover:bg-primary-700 transition"
           >
             <FaEnvelope size={11} />
