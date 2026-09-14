@@ -258,6 +258,8 @@ const PostCard = ({
   const [activeSlide, setActiveSlide] = useState(0);
   const [postVideo, setPostVideo] = useState(video);
   const videoRef = useRef(null);
+  const cardRef = useRef(null);
+  const impressionFired = useRef(false);
   const [syncedVideoStatus, setSyncedVideoStatus] = useState(video?.status);
   // Mute state for the post video's overlay button — mirrors the element's
   // muted property so the icon stays in sync.
@@ -684,6 +686,27 @@ const PostCard = ({
     return () => observer.disconnect();
   }, [postVideo?.url]);
 
+  // Impression tracking — fires once per mount for promoted posts when
+  // the card scrolls into view. Uses a 0.5 threshold so at least half
+  // the card is visible before we count it, matching IAB viewability.
+  useEffect(() => {
+    if (!isPromoted || !postId || impressionFired.current) return;
+    const el = cardRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && !impressionFired.current) {
+          impressionFired.current = true;
+          observer.disconnect();
+          api.post(`/posts/promote/impression/${postId}`).catch(() => {});
+        }
+      },
+      { threshold: 0.5 },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [isPromoted, postId]);
+
   // Mute/unmute toggle for the post video overlay. Drives the element's
   // muted property imperatively and mirrors it into state for the icon.
   const handleToggleVideoMute = () => {
@@ -834,7 +857,11 @@ const PostCard = ({
         onClose={() => setOpenOriginalId(null)}
       />
 
-      <div className="bg-card border border-stroke rounded-2xl p-5 transition hover:shadow-sm">
+      <div
+        ref={cardRef}
+        className="bg-card border border-stroke rounded-2xl p-5 transition hover:shadow-sm"
+        onClick={isPromoted && postId ? () => api.post(`/posts/promote/click/${postId}`).catch(() => {}) : undefined}
+      >
         {/* "Reposted by X" header — only for plain reposts surfaced
             into a follower's feed (repostedBy is null for the
             reposter's own original post and for quotes, which get

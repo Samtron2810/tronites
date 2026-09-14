@@ -30,6 +30,8 @@ import ReportModal from "../components/ReportModal";
 import TipModal from "../components/TipModal";
 import SubscribeModal from "../components/SubscribeModal";
 import { isCreator } from "../utils/creator";
+import BusinessProfileSection from "../components/BusinessProfileSection";
+import { getActiveTier } from "../utils/tierLimits";
 
 // Feature 8 — format join date as "Member since Jan 2024"
 const formatJoinDate = (dateStr) => {
@@ -665,6 +667,25 @@ const Profile = () => {
           </div>
         </div>
       </div>
+
+      {/* Business profile card — shown for business-tier accounts */}
+      {profile && getActiveTier(profile) === "business" && profile.businessProfile && (
+        <div className="mt-4">
+          <BusinessProfileSection
+            isOwnProfile={profile._id === currentUser?._id}
+            businessProfile={profile.businessProfile}
+          />
+        </div>
+      )}
+      {/* Business profile editor — own profile, business tier, no data yet */}
+      {profile && getActiveTier(profile) === "business" && !profile.businessProfile?.address && profile._id === currentUser?._id && (
+        <div className="mt-4">
+          <BusinessProfileSection
+            isOwnProfile={true}
+            businessProfile={profile.businessProfile || {}}
+          />
+        </div>
+      )}
 
       {/* Pinned posts — multi-pin banner (tier-based: 1/3/5 max) */}
       {pinnedPosts.length > 0 && (

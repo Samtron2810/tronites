@@ -48,6 +48,7 @@ const TermsOfUse = lazy(() => import("./pages/TermsOfUse"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const PaystackReturnHandler = lazy(() => import("./components/PaystackReturnHandler"));
 const MyPromotions = lazy(() => import("./pages/MyPromotions"));
+const CampaignManager = lazy(() => import("./pages/CampaignManager"));
 const CreatorEarnings = lazy(() => import("./pages/CreatorEarnings"));
 const MediaKit = lazy(() => import("./pages/MediaKit"));
 
@@ -304,6 +305,15 @@ const AppContent = () => {
             element={
               <ProtectedRoute>
                 <MyPromotions />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/campaigns"
+            element={
+              <ProtectedRoute>
+                <CampaignManager />
               </ProtectedRoute>
             }
           />

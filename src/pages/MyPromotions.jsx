@@ -1,14 +1,9 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import {
-  FiArrowLeft,
-  FiZap,
-  FiClock,
-  FiCheckCircle,
-  FiAlertCircle,
-  FiRefreshCw,
-  FiLoader,
-  FiChevronRight,
+  FiArrowLeft, FiZap, FiClock, FiCheckCircle, FiAlertCircle,
+  FiRefreshCw, FiLoader, FiChevronRight, FiEye, FiMousePointer,
+  FiTrendingUp, FiBarChart2,
 } from "react-icons/fi";
 import MainLayout from "../layouts/MainLayout";
 import api from "../services/api";
@@ -18,122 +13,148 @@ import { canPromote } from "../utils/tierLimits";
 import { useRefetchOnFocus } from "../hooks/useRefetchOnFocus";
 
 const CACHE_KEY = "/posts/promote/my-promotions";
-// Promotions change infrequently — 2 min local cache, always revalidate
-// in the background on re-entry (stale-while-revalidate via getCached).
 const TTL_MS = 2 * 60 * 1000;
 
-// ─── Status badge ─────────────────────────────────────────────────────────────
-
 const STATUS_MAP = {
-  active: {
-    label: "Active",
-    icon: FiCheckCircle,
-    cls: "bg-emerald-50 text-emerald-700 border-emerald-200",
-  },
-  pending: {
-    label: "Pending",
-    icon: FiAlertCircle,
-    cls: "bg-yellow-50 text-yellow-700 border-yellow-200",
-  },
-  expired: {
-    label: "Expired",
-    icon: FiClock,
-    cls: "bg-surface text-ink-muted border-stroke",
-  },
+  active:  { label: "Active",  icon: FiCheckCircle, cls: "bg-emerald-50 text-emerald-700 border-emerald-200" },
+  pending: { label: "Pending", icon: FiAlertCircle, cls: "bg-yellow-50 text-yellow-700 border-yellow-200" },
+  expired: { label: "Expired", icon: FiClock,       cls: "bg-surface text-ink-muted border-stroke" },
+};
+
+const TIER_COLORS = {
+  basic:    "text-blue-600 bg-blue-50 border-blue-200",
+  standard: "text-violet-600 bg-violet-50 border-violet-200",
+  premium:  "text-amber-600 bg-amber-50 border-amber-200",
 };
 
 const StatusBadge = ({ status }) => {
   const { label, icon: Icon, cls } = STATUS_MAP[status] || STATUS_MAP.expired;
   return (
-    <span
-      className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full border text-[11px] font-semibold ${cls}`}
-    >
-      <Icon size={11} />
-      {label}
+    <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full border text-[11px] font-semibold ${cls}`}>
+      <Icon size={11} />{label}
     </span>
   );
 };
 
-// ─── Single promotion row ─────────────────────────────────────────────────────
+const ReachBar = ({ impressions, impressionCap, reachPct }) => {
+  if (impressionCap === null || impressionCap === undefined) {
+    return (
+      <div className="flex items-center gap-1.5 text-[11px] text-ink-muted">
+        <FiEye size={11} />
+        <span className="font-medium text-ink">{(impressions ?? 0).toLocaleString()}</span> impressions
+        <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200 font-semibold ml-1">Unlimited</span>
+      </div>
+    );
+  }
+  return (
+    <div className="space-y-1">
+      <div className="flex items-center justify-between text-[11px]">
+        <span className="flex items-center gap-1 text-ink-muted"><FiEye size={11} />Reach</span>
+        <span className="font-semibold text-ink">
+          {(impressions ?? 0).toLocaleString()} / {impressionCap.toLocaleString()}
+        </span>
+      </div>
+      <div className="w-full h-1.5 rounded-full bg-surface overflow-hidden">
+        <div
+          className="h-full rounded-full bg-primary-500 transition-all"
+          style={{ width: `${reachPct ?? 0}%` }}
+        />
+      </div>
+    </div>
+  );
+};
 
 const PromotionRow = ({ promo, onResume, onCancel }) => {
-  const snippet =
-    promo.text?.trim().slice(0, 100) ||
-    (promo.images?.length ? "📷 Image post" : "🎬 Video post");
+  const snippet = promo.text?.trim().slice(0, 100) || (promo.images?.length ? "📷 Image post" : "🎬 Video post");
   const expiry = promo.promotedUntil ? new Date(promo.promotedUntil) : null;
+  const tierCls = TIER_COLORS[promo.promotionTier] || "";
 
   return (
     <div className="bg-card border border-stroke rounded-2xl p-4 space-y-3">
-      {/* Top row: snippet + status */}
+      {/* Top row */}
       <div className="flex items-start justify-between gap-3">
-        <Link
-          to={`/post/${promo._id}`}
-          className="flex-1 min-w-0 text-sm text-ink leading-snug line-clamp-2 hover:text-primary-600 transition"
-        >
+        <Link to={`/post/${promo._id}`} className="flex-1 min-w-0 text-sm text-ink leading-snug line-clamp-2 hover:text-primary-600 transition">
           {snippet}
         </Link>
-        <StatusBadge status={promo.status} />
+        <div className="flex flex-col items-end gap-1 shrink-0">
+          <StatusBadge status={promo.status} />
+          {promo.promotionTier && (
+            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${tierCls}`}>
+              {promo.promotionTier}
+            </span>
+          )}
+        </div>
       </div>
 
-      {/* Meta row */}
+      {/* Reach / impressions bar */}
+      {promo.status !== "pending" && (
+        <ReachBar
+          impressions={promo.impressions}
+          impressionCap={promo.impressionCap}
+          reachPct={promo.reachPct}
+        />
+      )}
+
+      {/* Stats row */}
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-ink-muted">
+        <span className="flex items-center gap-1"><FiMousePointer size={10} />{(promo.clicks ?? 0).toLocaleString()} clicks</span>
         <span>❤️ {promo.likesCount ?? 0}</span>
         <span>💬 {promo.commentsCount ?? 0}</span>
         <span>🔁 {promo.repostsCount ?? 0}</span>
+
+        {/* CTR */}
+        {(promo.impressions ?? 0) > 0 && (
+          <span className="flex items-center gap-1 text-primary-600 font-medium">
+            <FiTrendingUp size={10} />
+            {((promo.clicks / promo.impressions) * 100).toFixed(1)}% CTR
+          </span>
+        )}
+
         {promo.status === "active" && expiry && (
           <span className="flex items-center gap-1 text-emerald-600 font-medium">
             <FiClock size={10} />
-            Expires{" "}
-            {expiry.toLocaleDateString(undefined, {
-              month: "short",
-              day: "numeric",
-              year: "numeric",
-            })}
+            Expires {expiry.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
           </span>
         )}
         {promo.status === "expired" && expiry && (
           <span className="flex items-center gap-1">
             <FiClock size={10} />
-            Ended{" "}
-            {expiry.toLocaleDateString(undefined, {
-              month: "short",
-              day: "numeric",
-              year: "numeric",
-            })}
+            Ended {expiry.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
           </span>
         )}
         {promo.status === "pending" && (
-          <span className="text-yellow-600 font-medium">
-            Payment awaiting verification
-          </span>
+          <span className="text-yellow-600 font-medium">Payment awaiting verification</span>
         )}
       </div>
+
+      {/* Targeting info */}
+      {promo.promotionTargeting && (promo.promotionTargeting.location || promo.promotionTargeting.interests?.length > 0) && (
+        <div className="text-[11px] text-ink-muted flex flex-wrap gap-2">
+          {promo.promotionTargeting.location && (
+            <span className="bg-surface px-2 py-0.5 rounded-full border border-stroke">
+              📍 {promo.promotionTargeting.location}
+            </span>
+          )}
+          {promo.promotionTargeting.interests?.map((i) => (
+            <span key={i} className="bg-surface px-2 py-0.5 rounded-full border border-stroke">{i}</span>
+          ))}
+        </div>
+      )}
 
       {/* Actions for pending */}
       {promo.status === "pending" && (
         <div className="flex gap-2 pt-1">
-          <button
-            onClick={() => onCancel(promo._id)}
-            className="flex-1 py-2 rounded-xl border border-red-200 text-red-600 text-xs font-semibold hover:bg-red-50 transition flex items-center justify-center gap-1.5"
-          >
+          <button onClick={() => onCancel(promo._id)} className="flex-1 py-2 rounded-xl border border-red-200 text-red-600 text-xs font-semibold hover:bg-red-50 transition flex items-center justify-center gap-1.5">
             Cancel pending
           </button>
-          <button
-            onClick={() => onResume(promo.promotionReference, promo._id)}
-            className="flex-1 py-2 rounded-xl bg-primary-600 hover:bg-primary-700 text-white text-xs font-semibold transition flex items-center justify-center gap-1.5"
-          >
-            <FiRefreshCw size={11} />
-            Resume verification
+          <button onClick={() => onResume(promo.promotionReference, promo._id)} className="flex-1 py-2 rounded-xl bg-primary-600 hover:bg-primary-700 text-white text-xs font-semibold transition flex items-center justify-center gap-1.5">
+            <FiRefreshCw size={11} />Resume verification
           </button>
         </div>
       )}
 
-      {/* View post link for non-pending */}
       {promo.status !== "pending" && (
-        <Link
-          to={`/post/${promo._id}`}
-          className="flex items-center justify-end gap-1 text-[11px] text-ink-muted hover:text-primary-600 transition"
-        >
+        <Link to={`/post/${promo._id}`} className="flex items-center justify-end gap-1 text-[11px] text-ink-muted hover:text-primary-600 transition">
           View post <FiChevronRight size={11} />
         </Link>
       )}
@@ -141,25 +162,44 @@ const PromotionRow = ({ promo, onResume, onCancel }) => {
   );
 };
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
+// ── Summary stats bar ──────────────────────────────────────────────────────
+
+const SummaryBar = ({ promotions }) => {
+  const active = promotions.filter((p) => p.status === "active");
+  const totalImpressions = promotions.reduce((s, p) => s + (p.impressions ?? 0), 0);
+  const totalClicks = promotions.reduce((s, p) => s + (p.clicks ?? 0), 0);
+  const avgCtr = totalImpressions > 0 ? ((totalClicks / totalImpressions) * 100).toFixed(1) : "0.0";
+
+  return (
+    <div className="grid grid-cols-3 gap-3">
+      {[
+        { icon: FiZap, label: "Active", value: active.length, sub: "promotions" },
+        { icon: FiEye, label: "Impressions", value: totalImpressions.toLocaleString(), sub: "all-time" },
+        { icon: FiBarChart2, label: "Avg CTR", value: `${avgCtr}%`, sub: "clicks/impressions" },
+      ].map(({ icon: Icon, label, value, sub }) => (
+        <div key={label} className="bg-card border border-stroke rounded-2xl p-3 text-center">
+          <Icon size={16} className="mx-auto text-primary-500 mb-1" />
+          <p className="text-lg font-bold text-ink leading-none">{value}</p>
+          <p className="text-[10px] text-ink-muted mt-0.5 font-medium">{label}</p>
+          <p className="text-[9px] text-ink-muted">{sub}</p>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+// ── Page ────────────────────────────────────────────────────────────────────
 
 const MyPromotions = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [promotions, setPromotions] = useState([]);
-  // true only on first load (no cached data yet) — subsequent re-entries
-  // use stale data instantly and revalidate silently behind the scenes.
   const [loading, setLoading] = useState(true);
   const [actionId, setActionId] = useState(null);
 
   const load = useCallback(async ({ silent = false } = {}) => {
-    // silent=true: revalidate in the background without clearing existing
-    // list (same stale-while-revalidate pattern as Home/ScheduledPosts).
     try {
-      const res = await api.getCached(CACHE_KEY, {
-        ttlMs: TTL_MS,
-        revalidate: silent,
-      });
+      const res = await api.getCached(CACHE_KEY, { ttlMs: TTL_MS, revalidate: silent });
       setPromotions(res.data.promotions);
     } catch {
       if (!silent) toast.error("Couldn't load promotions.");
@@ -168,14 +208,7 @@ const MyPromotions = () => {
     }
   }, []);
 
-  // First load — show spinner until cache or network resolves.
-  useEffect(() => {
-    // getCached returns stale immediately if cached, so loading clears fast.
-    load({ silent: false });
-  }, [load]);
-
-  // Re-entry revalidation — silently refresh when the tab regains focus
-  // so returning from a post page reflects any status changes.
+  useEffect(() => { load({ silent: false }); }, [load]);
   useRefetchOnFocus(() => load({ silent: true }));
 
   const handleResume = async (reference, postId) => {
@@ -183,21 +216,12 @@ const MyPromotions = () => {
     setActionId(postId);
     try {
       await api.get(`/posts/promote/verify/${reference}`);
-      toast.success("Post promoted! It will now surface to more people.", {
-        duration: 5000,
-      });
-      // Bust cache so next load reflects the new active status.
+      toast.success("Post promoted! It will now surface to more people.", { duration: 5000 });
       api.invalidate(CACHE_KEY);
       await load({ silent: true });
     } catch (e) {
-      toast.error(
-        e.response?.data?.message ||
-          "Payment not verified. If you haven't paid, cancel and try again.",
-        { duration: 6000 },
-      );
-    } finally {
-      setActionId(null);
-    }
+      toast.error(e.response?.data?.message || "Payment not verified. If you haven't paid, cancel and try again.", { duration: 6000 });
+    } finally { setActionId(null); }
   };
 
   const handleCancel = async (postId) => {
@@ -209,9 +233,7 @@ const MyPromotions = () => {
       await load({ silent: true });
     } catch (e) {
       toast.error(e.response?.data?.message || "Couldn't cancel. Try again.");
-    } finally {
-      setActionId(null);
-    }
+    } finally { setActionId(null); }
   };
 
   if (!canPromote(user)) {
@@ -220,15 +242,13 @@ const MyPromotions = () => {
         <div className="py-20 text-center space-y-2 text-ink-muted">
           <FiZap size={32} className="mx-auto text-primary-400" />
           <p className="font-semibold text-ink">Business accounts only</p>
-          <p className="text-sm">
-            Promoted posts are available to verified Business tier accounts.
-          </p>
+          <p className="text-sm">Promoted posts are available to verified Business tier accounts.</p>
         </div>
       </MainLayout>
     );
   }
 
-  const active = promotions.filter((p) => p.status === "active");
+  const active  = promotions.filter((p) => p.status === "active");
   const pending = promotions.filter((p) => p.status === "pending");
   const expired = promotions.filter((p) => p.status === "expired");
 
@@ -238,20 +258,14 @@ const MyPromotions = () => {
         {/* Header */}
         <div className="flex items-center gap-3">
           <button
-            onClick={() =>
-              window.history.length > 1 ? navigate(-1) : navigate("/")
-            }
+            onClick={() => window.history.length > 1 ? navigate(-1) : navigate("/")}
             className="p-2 rounded-xl text-ink-muted hover:bg-surface hover:text-ink transition"
           >
             <FiArrowLeft size={18} />
           </button>
           <div>
-            <h1 className="text-xl font-bold text-ink leading-tight">
-              My Promotions
-            </h1>
-            <p className="text-sm text-ink-muted">
-              All posts you've promoted or started promoting
-            </p>
+            <h1 className="text-xl font-bold text-ink leading-tight">My Promotions</h1>
+            <p className="text-sm text-ink-muted">Impressions, clicks & ROI across all promoted posts</p>
           </div>
         </div>
 
@@ -265,68 +279,44 @@ const MyPromotions = () => {
             <span className="text-4xl">⚡</span>
             <p className="font-semibold text-ink">No promotions yet</p>
             <p className="text-sm text-ink-muted">
-              Open any of your posts, tap ···, and choose{" "}
-              <strong>Promote post</strong> to get started.
+              Open any of your posts, tap ···, and choose <strong>Promote post</strong> to get started.
             </p>
           </div>
         ) : (
           <div className="space-y-6">
-            {/* Pending — most urgent, show first */}
+            <SummaryBar promotions={promotions} />
+
             {pending.length > 0 && (
               <section className="space-y-3">
                 <h2 className="text-xs font-bold uppercase tracking-widest text-yellow-600 flex items-center gap-1.5">
-                  <FiAlertCircle size={12} />
-                  Pending verification ({pending.length})
+                  <FiAlertCircle size={12} />Pending verification ({pending.length})
                 </h2>
                 {pending.map((p) => (
-                  <div
-                    key={p._id}
-                    className={
-                      actionId === p._id ? "opacity-60 pointer-events-none" : ""
-                    }
-                  >
-                    <PromotionRow
-                      promo={p}
-                      onResume={handleResume}
-                      onCancel={handleCancel}
-                    />
+                  <div key={p._id} className={actionId === p._id ? "opacity-60 pointer-events-none" : ""}>
+                    <PromotionRow promo={p} onResume={handleResume} onCancel={handleCancel} />
                   </div>
                 ))}
               </section>
             )}
 
-            {/* Active */}
             {active.length > 0 && (
               <section className="space-y-3">
                 <h2 className="text-xs font-bold uppercase tracking-widest text-emerald-600 flex items-center gap-1.5">
-                  <FiCheckCircle size={12} />
-                  Active ({active.length})
+                  <FiCheckCircle size={12} />Active ({active.length})
                 </h2>
                 {active.map((p) => (
-                  <PromotionRow
-                    key={p._id}
-                    promo={p}
-                    onResume={handleResume}
-                    onCancel={handleCancel}
-                  />
+                  <PromotionRow key={p._id} promo={p} onResume={handleResume} onCancel={handleCancel} />
                 ))}
               </section>
             )}
 
-            {/* Expired */}
             {expired.length > 0 && (
               <section className="space-y-3">
                 <h2 className="text-xs font-bold uppercase tracking-widest text-ink-muted flex items-center gap-1.5">
-                  <FiClock size={12} />
-                  Expired ({expired.length})
+                  <FiClock size={12} />Expired ({expired.length})
                 </h2>
                 {expired.map((p) => (
-                  <PromotionRow
-                    key={p._id}
-                    promo={p}
-                    onResume={handleResume}
-                    onCancel={handleCancel}
-                  />
+                  <PromotionRow key={p._id} promo={p} onResume={handleResume} onCancel={handleCancel} />
                 ))}
               </section>
             )}

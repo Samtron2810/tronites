@@ -167,7 +167,15 @@ const More = () => {
           href: null,
           comingSoon: true,
         },
-  ];
+    canUserPromote
+      ? {
+          icon: FaBullhorn,
+          label: "Ad Campaigns",
+          description: "Schedule multi-post campaigns, track spend and export reports.",
+          href: "/campaigns",
+        }
+      : null,
+  ].filter(Boolean);
 
   // Creator-only tiles (analytics dashboard + collabs)
   const CREATOR_TILES = [
