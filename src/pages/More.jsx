@@ -22,7 +22,7 @@ import { useAuth } from "../context/useAuth";
 import api from "../services/api";
 import toast from "react-hot-toast";
 import { isCreator } from "../utils/creator";
-import { canSchedule, isVerified, canPromote } from "../utils/tierLimits";
+import { canSchedule, isVerified, canPromote, getActiveTier } from "../utils/tierLimits";
 
 // Menu tile used throughout the More page — declared at module scope so it
 // isn't re-created on each render (react-hooks/static-components).
@@ -92,6 +92,7 @@ const More = () => {
   const navigate = useNavigate();
   const { user, updateUser } = useAuth();
   const creator = isCreator(user);
+  const isBusiness = getActiveTier(user) === "business";
   const canUserSchedule = canSchedule(user); // any verified tier
   const canUserPromote = canPromote(user);   // business tier only
   const [collabLoading, setCollabLoading] = useState(false);
@@ -288,8 +289,77 @@ const More = () => {
         </>
       )}
 
-      {/* ── Scheduling section — verified non-creators only ── */}
-      {canUserSchedule && !creator && (
+      {/* ── Business tools section ── */}
+      {isBusiness && !creator && (
+        <>
+          <p className="text-xs font-bold text-ink-muted uppercase tracking-widest mb-2 px-1">
+            ✦ Business tools
+          </p>
+          <div className="bg-card border border-stroke rounded-2xl divide-y divide-stroke overflow-hidden mb-5">
+            {/* Media Kit */}
+            <Tile
+              tile={{
+                icon: FaIdCard,
+                label: "My Media Kit",
+                description: "Auto-generated kit for brands and collab partners.",
+                href: `/media-kit/${user?._id}`,
+              }}
+            />
+            {/* Scheduling */}
+            <Tile tile={SCHEDULING_TILE} />
+            {/* Pin a post */}
+            <Tile
+              tile={{
+                icon: FaThumbtack,
+                label: "Pin a post",
+                description: "Head to your profile, open a post's ⋯ menu, then pin it to the top.",
+                href: `/profile/${user?._id}`,
+              }}
+            />
+            {/* Open to collabs toggle */}
+            <div className="flex items-center gap-4 px-5 py-4">
+              <div className="flex items-center justify-center w-10 h-10 rounded-xl shrink-0 bg-primary-50 text-primary-600">
+                <FaHandshake size={16} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-base font-semibold text-ink">
+                  Open to collabs
+                </p>
+                <p className="text-sm text-ink-muted mt-0.5">
+                  {user?.openToCollabs
+                    ? "Visible on your profile — creators can see you're available."
+                    : "Show creators you're open to brand partnerships."}
+                </p>
+                {user?.openToCollabs && (
+                  <Link
+                    to={`/media-kit/${user?._id}`}
+                    className="inline-flex items-center gap-1 mt-1.5 text-xs text-primary-600 hover:underline"
+                  >
+                    <FaIdCard size={10} /> Preview your media kit →
+                  </Link>
+                )}
+              </div>
+              <button
+                onClick={handleToggleCollab}
+                disabled={collabLoading}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
+                  user?.openToCollabs ? "bg-primary-600" : "bg-stroke"
+                } ${collabLoading ? "opacity-50" : ""}`}
+                aria-label="Toggle open to collabs"
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+                    user?.openToCollabs ? "translate-x-6" : "translate-x-1"
+                  }`}
+                />
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* ── Scheduling section — verified non-creators, non-business only ── */}
+      {canUserSchedule && !creator && !isBusiness && (
         <>
           <p className="text-xs font-bold text-ink-muted uppercase tracking-widest mb-2 px-1">
             ✦ Verified tools

@@ -620,7 +620,7 @@ const Profile = () => {
               );
             })()}
 
-          {/* Open to collabs chip — visible to everyone on creator profiles */}
+          {/* Open to collabs chip — visible to everyone on eligible profiles */}
           {profile.openToCollabs && (
             <div className="flex items-center gap-2 mt-2 flex-wrap">
               <div
@@ -643,6 +643,21 @@ const Profile = () => {
               </Link>
             </div>
           )}
+
+          {/* Media kit shortcut — own business profile, not already shown via openToCollabs chip */}
+          {profile._id === currentUser?._id &&
+            getActiveTier(profile) === "business" &&
+            !profile.openToCollabs && (
+              <div className="mt-2">
+                <Link
+                  to={`/media-kit/${profile._id}`}
+                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold border border-stroke text-ink-muted hover:text-primary-600 hover:border-primary-300 transition"
+                >
+                  <FaIdCard size={10} />
+                  My media kit
+                </Link>
+              </div>
+            )}
 
           {/* Stats */}
           <div className="flex gap-5 mt-4 text-base">
