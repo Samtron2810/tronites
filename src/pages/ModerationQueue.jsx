@@ -22,6 +22,20 @@ const REASON_LABELS = {
   other: "Other",
 };
 
+// Phase 7+ — system-generated pre-moderation signals (see
+// utils/moderationHeuristics.js, services/aiModerationService.js,
+// jobs/detectSpamClusters.js). Falls back to the raw signal string for
+// anything not in this map, so a new heuristic never renders blank.
+const SIGNAL_LABELS = {
+  slur_list: "Blocklisted term",
+  link_spam: "Link spam",
+  all_caps: "All-caps shouting",
+  new_account_link: "New account + link",
+  posting_velocity: "Posting velocity",
+  ai_moderation: "AI-flagged content",
+  spam_cluster: "Coordinated spam cluster",
+};
+
 const TARGET_TYPE_LABELS = {
   user: "User",
   post: "Post",
@@ -149,6 +163,30 @@ const ReportCard = ({
             <p className="text-base text-ink-muted mt-1.5 bg-surface rounded-lg px-3 py-2 line-clamp-3">
               {report.contentPreview}
             </p>
+          )}
+
+          {(report.signals?.length > 0 || report.aiFlags?.length > 0) && (
+            <div className="flex items-center gap-1.5 flex-wrap mt-1.5">
+              {report.signals
+                ?.filter((s) => s !== "ai_moderation")
+                .map((signal) => (
+                  <span
+                    key={signal}
+                    className="text-sm font-medium px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200"
+                  >
+                    {SIGNAL_LABELS[signal] || signal}
+                  </span>
+                ))}
+              {report.aiFlags?.map((flag) => (
+                <span
+                  key={flag.category}
+                  title="AI classifier confidence score"
+                  className="text-sm font-medium px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200"
+                >
+                  {flag.category} · {Math.round(flag.score * 100)}%
+                </span>
+              ))}
+            </div>
           )}
 
           {report.details && (
