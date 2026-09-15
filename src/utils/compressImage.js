@@ -27,11 +27,16 @@ const CANVAS_DECODABLE = new Set([
   "image/bmp",
 ]);
 
+// Compression is a nice-to-have. It must NEVER be the reason a post fails —
+// any failure at any stage (read, decode, or encode) resolves with the
+// original, uncompressed file instead of rejecting. The upload step further
+// downstream already handles large files fine; a bigger upload is always
+// better than a blocked post.
 const compressImage = (
   file,
   { maxWidth = 1920, quality = 0.7, skipBelowBytes = 500 * 1024 } = {},
 ) => {
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
     // Pass through formats the canvas pipeline can't decode (e.g. HEIC/HEIF
     // from iPhone cameras, files with an empty or unknown MIME type).
     // Cloudinary accepts these natively — no need to transcode client-side.
@@ -56,55 +61,83 @@ const compressImage = (
           ? "webp"
           : "jpg";
 
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = (event) => {
-      const img = new Image();
-      img.src = event.target.result;
-      img.onload = () => {
-        const canvas = document.createElement("canvas");
-        let { width, height } = img;
+    // Safety net: if any step stalls or never fires an event (some mobile
+    // webviews), fall back after 8s instead of hanging the post forever.
+    let settled = false;
+    const fallback = () => {
+      if (settled) return;
+      settled = true;
+      resolve(file);
+    };
+    const watchdog = setTimeout(fallback, 8000);
+    const settle = (result) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(watchdog);
+      resolve(result);
+    };
 
-        // Resize if too large
-        if (width > maxWidth || height > maxWidth) {
-          if (width > height) {
-            height = Math.round((height / width) * maxWidth);
-            width = maxWidth;
-          } else {
-            width = Math.round((width / height) * maxWidth);
-            height = maxWidth;
-          }
-        }
+    try {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const img = new Image();
+        img.onload = () => {
+          try {
+            const canvas = document.createElement("canvas");
+            let { width, height } = img;
 
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext("2d");
-        ctx.drawImage(img, 0, 0, width, height);
+            // Resize if too large
+            if (width > maxWidth || height > maxWidth) {
+              if (width > height) {
+                height = Math.round((height / width) * maxWidth);
+                width = maxWidth;
+              } else {
+                width = Math.round((width / height) * maxWidth);
+                height = maxWidth;
+              }
+            }
 
-        canvas.toBlob(
-          (blob) => {
-            if (!blob) {
-              reject(new Error("Canvas toBlob failed"));
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext("2d");
+            if (!ctx) {
+              settle(file);
               return;
             }
-            const baseName = file.name.replace(/\.[^.]+$/, "");
-            const compressedFile = new File(
-              [blob],
-              `${baseName}.${outputExt}`,
-              {
-                type: outputType,
-                lastModified: Date.now(),
+            ctx.drawImage(img, 0, 0, width, height);
+
+            canvas.toBlob(
+              (blob) => {
+                if (!blob) {
+                  settle(file);
+                  return;
+                }
+                const baseName = file.name.replace(/\.[^.]+$/, "");
+                const compressedFile = new File(
+                  [blob],
+                  `${baseName}.${outputExt}`,
+                  {
+                    type: outputType,
+                    lastModified: Date.now(),
+                  },
+                );
+                settle(compressedFile);
               },
+              outputType,
+              quality,
             );
-            resolve(compressedFile);
-          },
-          outputType,
-          quality,
-        );
+          } catch {
+            settle(file);
+          }
+        };
+        img.onerror = () => settle(file);
+        img.src = event.target.result;
       };
-      img.onerror = () => reject(new Error("Image loading failed"));
-    };
-    reader.onerror = () => reject(new Error("FileReader failed"));
+      reader.onerror = () => settle(file);
+      reader.readAsDataURL(file);
+    } catch {
+      settle(file);
+    }
   });
 };
 
