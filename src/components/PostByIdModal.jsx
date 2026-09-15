@@ -117,11 +117,20 @@ const PostByIdModal = ({
   const handleLike = async () => {
     if (isLiking || !post) return;
     setIsLiking(true);
+    const prevLiked = post.isLiked;
+    const prevCount = post.likesCount;
+    const nextLiked = !prevLiked;
+    setPost((p) => ({
+      ...p,
+      isLiked: nextLiked,
+      likesCount: Math.max(0, prevCount + (nextLiked ? 1 : -1)),
+    }));
     try {
       const res = await api.put(`/posts/like/${post._id}`);
       setPost((p) => ({ ...p, likesCount: res.data.likes, isLiked: res.data.liked }));
     } catch (e) {
       console.error(e);
+      setPost((p) => ({ ...p, isLiked: prevLiked, likesCount: prevCount }));
       toast.error("Couldn't update like. Try again.");
     } finally {
       setIsLiking(false);
@@ -131,11 +140,14 @@ const PostByIdModal = ({
   const handleBookmark = async () => {
     if (isBookmarking || !post) return;
     setIsBookmarking(true);
+    const prevBookmarked = post.isBookmarked;
+    setPost((p) => ({ ...p, isBookmarked: !prevBookmarked }));
     try {
       const res = await api.put(`/posts/bookmark/${post._id}`);
       setPost((p) => ({ ...p, isBookmarked: res.data.bookmarked }));
     } catch (e) {
       console.error(e);
+      setPost((p) => ({ ...p, isBookmarked: prevBookmarked }));
       toast.error("Couldn't update saved posts. Try again.");
     } finally {
       setIsBookmarking(false);
@@ -145,6 +157,14 @@ const PostByIdModal = ({
   const handleRepost = async () => {
     if (isReposting || !post) return;
     setIsReposting(true);
+    const prevReposted = post.isReposted;
+    const prevCount = post.repostsCount;
+    const nextReposted = !prevReposted;
+    setPost((p) => ({
+      ...p,
+      isReposted: nextReposted,
+      repostsCount: Math.max(0, prevCount + (nextReposted ? 1 : -1)),
+    }));
     try {
       const res = await api.put(`/posts/repost/${post._id}`);
       setPost((p) => ({
@@ -156,6 +176,11 @@ const PostByIdModal = ({
       else toast.success("Repost undone");
     } catch (e) {
       console.error(e);
+      setPost((p) => ({
+        ...p,
+        isReposted: prevReposted,
+        repostsCount: prevCount,
+      }));
       toast.error(
         e.response?.data?.message || "Couldn't update repost. Try again.",
       );
@@ -172,7 +197,16 @@ const PostByIdModal = ({
     if (isReacting || !post) return;
     setIsReacting(true);
     const prevMine = post.myReaction || null;
+    const prevSummary = post.reactionSummary || {};
     const nextMine = prevMine === emoji ? null : emoji;
+    const optimisticSummary = { ...prevSummary };
+    if (prevMine) {
+      optimisticSummary[prevMine] = Math.max(0, (optimisticSummary[prevMine] || 1) - 1);
+    }
+    if (nextMine) {
+      optimisticSummary[nextMine] = (optimisticSummary[nextMine] || 0) + 1;
+    }
+    setPost((p) => ({ ...p, myReaction: nextMine, reactionSummary: optimisticSummary }));
     try {
       const res = await api.put(`/posts/react/${post._id}`, {
         emoji: nextMine,
@@ -184,6 +218,7 @@ const PostByIdModal = ({
       }));
     } catch (e) {
       console.error(e);
+      setPost((p) => ({ ...p, myReaction: prevMine, reactionSummary: prevSummary }));
       toast.error("Couldn't update reaction. Try again.");
     } finally {
       setIsReacting(false);
@@ -202,10 +237,13 @@ const PostByIdModal = ({
 
   const handleDeleteConfirm = async () => {
     if (!post) return;
+    // Optimistic: close both modals immediately, request happens in the
+    // background. On failure there's no card to restore (the overlay is
+    // already gone) — surface a clear error so the user knows to check.
+    setShowDeleteModal(false);
+    onClose();
     try {
       await api.delete(`/posts/${post._id}`);
-      setShowDeleteModal(false);
-      onClose();
       api.invalidateMany([
         "/posts/for-you",
         "/posts/feed",
@@ -219,7 +257,9 @@ const PostByIdModal = ({
       toast.success("Post deleted");
     } catch (e) {
       console.error(e);
-      toast.error("Couldn't delete post. Try again.");
+      toast.error(
+        "Couldn't delete post — it's still up. Try again from the post.",
+      );
     }
   };
 

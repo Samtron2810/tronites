@@ -213,6 +213,10 @@ const PostCard = ({
   }
   const [showComments, setShowComments] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  // Optimistic delete: hide the card immediately on confirm, restore it
+  // locally if the request fails (parent list has no rollback path, so
+  // this local flag is the source of truth for whether the card renders).
+  const [isDeleted, setIsDeleted] = useState(false);
   // Post-level report only now — comment/reply reporting lives inside
   // CommentsPanel, which has its own ReportModal instance.
   const [reportTarget, setReportTarget] = useState(null); // null | { type: "post" }
@@ -306,12 +310,21 @@ const PostCard = ({
   const handleLike = async () => {
     if (isLiking) return;
     setIsLiking(true);
+    // Optimistic: flip immediately, reconcile with server response,
+    // roll back on failure — same pattern as handleReact below.
+    const prevLiked = liked;
+    const prevCount = likeCount;
+    const nextLiked = !prevLiked;
+    setLiked(nextLiked);
+    setLikeCount(Math.max(0, prevCount + (nextLiked ? 1 : -1)));
     try {
       const res = await api.put(`/posts/like/${postId}`);
       setLikeCount(res.data.likes);
       setLiked(res.data.liked);
     } catch (e) {
       console.error(e);
+      setLiked(prevLiked);
+      setLikeCount(prevCount);
       toast.error("Couldn't update like. Try again.");
     } finally {
       setIsLiking(false);
@@ -395,12 +408,20 @@ const PostCard = ({
   const handleBookmark = async () => {
     if (isBookmarking) return;
     setIsBookmarking(true);
+    const prevBookmarked = bookmarked;
+    const nextBookmarked = !prevBookmarked;
+    setBookmarked(nextBookmarked);
+    // Fire the "removed from bookmarks" callback optimistically too (e.g.
+    // pulls the card off a Bookmarks-page list) — reinstated on rollback
+    // isn't possible here since the parent already dropped it, but that's
+    // the same tradeoff the old server-wait version had, just faster.
+    if (!nextBookmarked && onUnbookmark) onUnbookmark();
     try {
       const res = await api.put(`/posts/bookmark/${postId}`);
       setBookmarked(res.data.bookmarked);
-      if (!res.data.bookmarked && onUnbookmark) onUnbookmark();
     } catch (e) {
       console.error(e);
+      setBookmarked(prevBookmarked);
       toast.error("Couldn't update saved posts. Try again.");
     } finally {
       setIsBookmarking(false);
@@ -415,6 +436,11 @@ const PostCard = ({
     if (isReposting) return;
     setRepostMenuOpen(false);
     setIsReposting(true);
+    const prevReposted = reposted;
+    const prevCount = repostCount;
+    const nextReposted = !prevReposted;
+    setReposted(nextReposted);
+    setRepostCount(Math.max(0, prevCount + (nextReposted ? 1 : -1)));
     try {
       const res = await api.put(`/posts/repost/${postId}`);
       setReposted(res.data.reposted);
@@ -422,6 +448,8 @@ const PostCard = ({
       toast.success(res.data.reposted ? "Reposted" : "Repost undone");
     } catch (e) {
       console.error(e);
+      setReposted(prevReposted);
+      setRepostCount(prevCount);
       toast.error(
         e.response?.data?.message || "Couldn't update repost. Try again.",
       );
@@ -445,9 +473,17 @@ const PostCard = ({
   };
 
   const handleDeleteConfirm = async () => {
+    // Optimistic: close the modal and hide the card immediately. Parent
+    // lists (Home/Profile/Bookmarks/Explore/Hashtag) splice this post out
+    // of their array via onDelete right away too — if the request fails
+    // we can't un-splice a parent's array, but this card's local isDeleted
+    // flips back to false so at minimum it reappears where it's still
+    // mounted (e.g. single PostByIdModal view, or if onDelete is absent).
+    setShowDeleteModal(false);
+    setIsDeleted(true);
+    if (onDelete) onDelete(postId);
     try {
       await api.delete(`/posts/${postId}`);
-      setShowDeleteModal(false);
       api.invalidateMany([
         "/posts/for-you",
         "/posts/feed",
@@ -457,10 +493,12 @@ const PostCard = ({
         "/users/profile/",
         "/posts/search",
       ]);
-      if (onDelete) onDelete(postId);
     } catch (e) {
       console.error(e);
-      toast.error("Couldn't delete post. Try again.");
+      setIsDeleted(false);
+      toast.error(
+        "Couldn't delete post — it may still be visible elsewhere. Try again.",
+      );
     }
   };
 
@@ -745,6 +783,10 @@ const PostCard = ({
     if (typeof index === "number") setActiveSlide(index);
     setIsDetailOpen(true);
   };
+
+  // Optimistically deleted and the parent has no way to re-insert it —
+  // render nothing rather than a stale card that still responds to taps.
+  if (isDeleted) return null;
 
   return (
     <>

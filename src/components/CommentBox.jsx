@@ -126,22 +126,42 @@ const CommentsPanel = ({
   const handleAddComment = async () => {
     if (isCommentSending || !commentText.trim()) return;
     setIsCommentSending(true);
+    const text = commentText;
+    // True optimistic add: render a temp comment immediately using the
+    // current user's own profile data, before the request even starts.
+    // Replaced with the real comment (real _id) on success, removed on
+    // failure. The temp id is prefixed so it can never collide with a
+    // real Mongo _id, and the socket dedup guard elsewhere only matches
+    // real _ids so it won't touch this temp entry.
+    const tempId = `temp-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    const optimisticComment = {
+      _id: tempId,
+      text,
+      user: currentUser,
+      likesCount: 0,
+      isLiked: false,
+      createdAt: new Date().toISOString(),
+      pending: true,
+    };
+    setCommentText("");
+    setComments((prev) => [optimisticComment, ...prev]);
+    setCommentCount((prev) => prev + 1);
     try {
-      const res = await api.post(`/comments/${postId}`, { text: commentText });
-      setCommentText("");
-      // Optimistically add the new comment and increment the count so the
-      // author sees their own comment immediately — the subsequent socket
-      // event's dedup guard (prev.some(c => c._id === data.comment._id))
-      // prevents a double-add if the event also arrives normally.
+      const res = await api.post(`/comments/${postId}`, { text });
       if (res.data?._id) {
-        setComments((prev) =>
-          prev.some((c) => c._id === res.data._id) ? prev : [res.data, ...prev],
-        );
-        setCommentCount((prev) => prev + 1);
+        setComments((prev) => {
+          const withoutTemp = prev.filter((c) => c._id !== tempId);
+          return withoutTemp.some((c) => c._id === res.data._id)
+            ? withoutTemp
+            : [res.data, ...withoutTemp];
+        });
       }
       api.invalidate(`/comments/${postId}`);
     } catch (e) {
       console.error(e);
+      setComments((prev) => prev.filter((c) => c._id !== tempId));
+      setCommentCount((prev) => Math.max(0, prev - 1));
+      setCommentText(text); // restore so the user doesn't retype
       toast.error("Couldn't post your comment. Try again.");
     } finally {
       setIsCommentSending(false);
@@ -187,22 +207,35 @@ const CommentsPanel = ({
   const handleDeleteComment = async (commentId) => {
     if (commentDeletingId) return;
     setCommentDeletingId(commentId);
+    // Optimistic: remove immediately, restore (comment + its replies) on
+    // failure. Snapshot both before mutating so rollback can put things
+    // back exactly where they were.
+    const prevComments = comments;
+    const prevReplies = repliesByComment[commentId];
+    const removedIndex = comments.findIndex((c) => c._id === commentId);
+    setComments((prev) => prev.filter((c) => c._id !== commentId));
+    setRepliesByComment((prev) => {
+      const next = { ...prev };
+      delete next[commentId];
+      return next;
+    });
+    setCommentCount((prev) => Math.max(0, prev - 1));
     try {
       const res = await api.delete(`/comments/${commentId}`);
-      setComments((prev) => prev.filter((c) => c._id !== commentId));
-      // Backend cascades: deleting a top-level comment deletes its
-      // replies too. Drop that comment's cached reply list to match.
-      setRepliesByComment((prev) => {
-        const next = { ...prev };
-        delete next[commentId];
-        return next;
-      });
-      setCommentCount(
-        (prev) => res.data.commentCount ?? Math.max(prev - 1, 0),
-      );
+      setCommentCount((prev) => res.data.commentCount ?? prev);
       api.invalidate(`/comments/${postId}`);
     } catch (e) {
       console.error(e);
+      setComments((prev) => {
+        if (prev.some((c) => c._id === commentId)) return prev;
+        const restored = [...prev];
+        restored.splice(Math.max(0, removedIndex), 0, prevComments[removedIndex]);
+        return restored;
+      });
+      if (prevReplies) {
+        setRepliesByComment((prev) => ({ ...prev, [commentId]: prevReplies }));
+      }
+      setCommentCount((prev) => prev + 1);
       toast.error("Couldn't delete comment. Try again.");
     } finally {
       setCommentDeletingId(null);
@@ -234,22 +267,41 @@ const CommentsPanel = ({
   const handleCommentLike = async (commentId, parentCommentId) => {
     if (commentLikingId) return;
     setCommentLikingId(commentId);
-    try {
-      const res = await api.put(`/comments/like/${commentId}`);
-      const applyLike = (c) =>
-        c._id === commentId
-          ? { ...c, likesCount: res.data.likes, isLiked: res.data.liked }
-          : c;
+
+    // Find current like state so we can flip it optimistically and know
+    // what to roll back to on failure.
+    const list = parentCommentId
+      ? repliesByComment[parentCommentId] || []
+      : comments;
+    const target = list.find((c) => c._id === commentId);
+    const prevLiked = target?.isLiked ?? false;
+    const prevCount = target?.likesCount ?? 0;
+    const nextLiked = !prevLiked;
+    const nextCount = Math.max(0, prevCount + (nextLiked ? 1 : -1));
+
+    const applyLike = (c, liked, count) =>
+      c._id === commentId ? { ...c, isLiked: liked, likesCount: count } : c;
+
+    const setOptimistic = (liked, count) => {
       if (parentCommentId) {
         setRepliesByComment((prev) => ({
           ...prev,
-          [parentCommentId]: (prev[parentCommentId] || []).map(applyLike),
+          [parentCommentId]: (prev[parentCommentId] || []).map((c) =>
+            applyLike(c, liked, count),
+          ),
         }));
       } else {
-        setComments((prev) => prev.map(applyLike));
+        setComments((prev) => prev.map((c) => applyLike(c, liked, count)));
       }
+    };
+
+    setOptimistic(nextLiked, nextCount);
+    try {
+      const res = await api.put(`/comments/like/${commentId}`);
+      setOptimistic(res.data.liked, res.data.likes);
     } catch (e) {
       console.error(e);
+      setOptimistic(prevLiked, prevCount);
       toast.error("Couldn't update like. Try again.");
     } finally {
       setCommentLikingId(null);
@@ -259,29 +311,58 @@ const CommentsPanel = ({
   const handleAddReply = async (parentCommentId) => {
     if (isReplySending || !replyText.trim()) return;
     setIsReplySending(true);
+    const text = replyText;
+    const tempId = `temp-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    const optimisticReply = {
+      _id: tempId,
+      text,
+      user: currentUser,
+      likesCount: 0,
+      isLiked: false,
+      parentCommentId,
+      createdAt: new Date().toISOString(),
+      pending: true,
+    };
+    setReplyText("");
+    setReplyingTo(null);
+    setOpenReplies((prev) => ({ ...prev, [parentCommentId]: true }));
+    setRepliesByComment((prev) => ({
+      ...prev,
+      [parentCommentId]: prev[parentCommentId]
+        ? [...prev[parentCommentId], optimisticReply]
+        : [optimisticReply],
+    }));
     try {
       const res = await api.post(`/comments/${postId}`, {
-        text: replyText,
+        text,
         parentCommentId,
       });
-      setReplyText("");
-      setReplyingTo(null);
-      setOpenReplies((prev) => ({ ...prev, [parentCommentId]: true }));
       if (res.data?._id) {
-        setRepliesByComment((prev) => ({
-          ...prev,
-          [parentCommentId]: prev[parentCommentId]
-            ? prev[parentCommentId].some((r) => r._id === res.data._id)
-              ? prev[parentCommentId]
-              : [...prev[parentCommentId], res.data]
-            : [res.data],
-        }));
+        setRepliesByComment((prev) => {
+          const withoutTemp = (prev[parentCommentId] || []).filter(
+            (r) => r._id !== tempId,
+          );
+          return {
+            ...prev,
+            [parentCommentId]: withoutTemp.some((r) => r._id === res.data._id)
+              ? withoutTemp
+              : [...withoutTemp, res.data],
+          };
+        });
       } else {
         fetchReplies(parentCommentId);
       }
       api.invalidate(`/comments/${postId}`);
     } catch (e) {
       console.error(e);
+      setRepliesByComment((prev) => ({
+        ...prev,
+        [parentCommentId]: (prev[parentCommentId] || []).filter(
+          (r) => r._id !== tempId,
+        ),
+      }));
+      setReplyText(text);
+      setReplyingTo(parentCommentId);
       toast.error("Couldn't post your reply. Try again.");
     } finally {
       setIsReplySending(false);
@@ -291,27 +372,43 @@ const CommentsPanel = ({
   const handleDeleteReply = async (replyId, parentCommentId) => {
     if (commentDeletingId) return;
     setCommentDeletingId(replyId);
+    const prevReplies = repliesByComment[parentCommentId] || [];
+    const removedIndex = prevReplies.findIndex((r) => r._id === replyId);
+    setRepliesByComment((prev) => ({
+      ...prev,
+      [parentCommentId]: (prev[parentCommentId] || []).filter(
+        (r) => r._id !== replyId,
+      ),
+    }));
+    setComments((prev) =>
+      prev.map((c) =>
+        c._id === parentCommentId
+          ? { ...c, repliesCount: Math.max((c.repliesCount || 1) - 1, 0) }
+          : c,
+      ),
+    );
+    setCommentCount((prev) => Math.max(0, prev - 1));
     try {
       const res = await api.delete(`/comments/${replyId}`);
-      setRepliesByComment((prev) => ({
-        ...prev,
-        [parentCommentId]: (prev[parentCommentId] || []).filter(
-          (r) => r._id !== replyId,
-        ),
-      }));
-      setComments((prev) =>
-        prev.map((c) =>
-          c._id === parentCommentId
-            ? { ...c, repliesCount: Math.max((c.repliesCount || 1) - 1, 0) }
-            : c,
-        ),
-      );
-      setCommentCount(
-        (prev) => res.data.commentCount ?? Math.max(prev - 1, 0),
-      );
+      setCommentCount((prev) => res.data.commentCount ?? prev);
       api.invalidate(`/comments/${postId}`);
     } catch (e) {
       console.error(e);
+      setRepliesByComment((prev) => {
+        const current = prev[parentCommentId] || [];
+        if (current.some((r) => r._id === replyId)) return prev;
+        const restored = [...current];
+        restored.splice(Math.max(0, removedIndex), 0, prevReplies[removedIndex]);
+        return { ...prev, [parentCommentId]: restored };
+      });
+      setComments((prev) =>
+        prev.map((c) =>
+          c._id === parentCommentId
+            ? { ...c, repliesCount: (c.repliesCount || 0) + 1 }
+            : c,
+        ),
+      );
+      setCommentCount((prev) => prev + 1);
       toast.error("Couldn't delete reply. Try again.");
     } finally {
       setCommentDeletingId(null);
@@ -653,7 +750,7 @@ const CommentsPanel = ({
               highlightedCommentId === c._id
                 ? "bg-primary-50 ring-2 ring-primary-300"
                 : "bg-surface"
-            }`}
+            } ${c.pending ? "opacity-60" : ""}`}
           >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-1">
@@ -777,7 +874,7 @@ const CommentsPanel = ({
                         highlightedCommentId === r._id
                           ? "bg-primary-50 ring-2 ring-primary-300"
                           : "bg-card"
-                      }`}
+                      } ${r.pending ? "opacity-60" : ""}`}
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-1">
