@@ -13,6 +13,7 @@ import {
   FaArrowLeft,
 } from "react-icons/fa6";
 import VerifiedBadge from "../components/VerifiedBadge";
+import ShareMenu from "../components/ShareMenu";
 import api from "../services/api";
 import { useAuth } from "../context/useAuth";
 
@@ -98,14 +99,21 @@ const MediaKit = () => {
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-6 space-y-5">
-      {/* go to previous page */}
-      <button
-        onClick={() => window.history.back()}
-        className="inline-flex items-center gap-1.5 text-xs text-ink-muted hover:text-ink transition"
-      >
-        <FaArrowLeft size={11} />
-        Previous page
-      </button>
+      {/* header row: back + share */}
+      <div className="flex items-center justify-between">
+        <button
+          onClick={() => window.history.back()}
+          className="inline-flex items-center gap-1.5 text-xs text-ink-muted hover:text-ink transition"
+        >
+          <FaArrowLeft size={11} />
+          Previous page
+        </button>
+        <ShareMenu
+          url={`${window.location.origin}/media-kit/${creatorId}`}
+          title={`${creator.name}'s media kit`}
+          text={`Check out @${creator.username}'s media kit on Tronites`}
+        />
+      </div>
 
       {/* Creator hero */}
       <div className="bg-card border border-stroke rounded-3xl overflow-hidden">
