@@ -27,6 +27,17 @@ const TIER_COLORS = {
   premium:  "text-amber-600 bg-amber-50 border-amber-200",
 };
 
+const CTA_LABELS = {
+  learn_more: "Learn More",
+  shop_now: "Shop Now",
+  sign_up: "Sign Up",
+  contact_us: "Contact Us",
+  download: "Download",
+  get_quote: "Get Quote",
+  visit_website: "Visit Website",
+  book_now: "Book Now",
+};
+
 const StatusBadge = ({ status }) => {
   const { label, icon: Icon, cls } = STATUS_MAP[status] || STATUS_MAP.expired;
   return (
@@ -98,6 +109,11 @@ const PromotionRow = ({ promo, onResume, onCancel }) => {
       {/* Stats row */}
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-ink-muted">
         <span className="flex items-center gap-1"><FiMousePointer size={10} />{(promo.clicks ?? 0).toLocaleString()} clicks</span>
+        {promo.ctaType && (
+          <span className="flex items-center gap-1 text-primary-600 font-medium">
+            <FiZap size={10} />{(promo.ctaClicks ?? 0).toLocaleString()} CTA clicks
+          </span>
+        )}
         <span>❤️ {promo.likesCount ?? 0}</span>
         <span>💬 {promo.commentsCount ?? 0}</span>
         <span>🔁 {promo.repostsCount ?? 0}</span>
@@ -126,6 +142,18 @@ const PromotionRow = ({ promo, onResume, onCancel }) => {
           <span className="text-yellow-600 font-medium">Payment awaiting verification</span>
         )}
       </div>
+
+      {/* CTA + destination */}
+      {promo.ctaType && CTA_LABELS[promo.ctaType] && (
+        <div className="flex items-center gap-2 text-[11px]">
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary-50 border border-primary-100 text-primary-600 font-semibold">
+            <FiZap size={10} />{CTA_LABELS[promo.ctaType]}
+          </span>
+          {promo.destinationUrl && (
+            <span className="text-ink-muted truncate max-w-[160px]">{promo.destinationUrl}</span>
+          )}
+        </div>
+      )}
 
       {/* Targeting info */}
       {promo.promotionTargeting && (promo.promotionTargeting.location || promo.promotionTargeting.interests?.length > 0) && (
@@ -168,15 +196,22 @@ const SummaryBar = ({ promotions }) => {
   const active = promotions.filter((p) => p.status === "active");
   const totalImpressions = promotions.reduce((s, p) => s + (p.impressions ?? 0), 0);
   const totalClicks = promotions.reduce((s, p) => s + (p.clicks ?? 0), 0);
+  const totalCtaClicks = promotions.reduce((s, p) => s + (p.ctaClicks ?? 0), 0);
   const avgCtr = totalImpressions > 0 ? ((totalClicks / totalImpressions) * 100).toFixed(1) : "0.0";
+  const hasCta = promotions.some((p) => p.ctaType);
+
+  const stats = [
+    { icon: FiZap, label: "Active", value: active.length, sub: "promotions" },
+    { icon: FiEye, label: "Impressions", value: totalImpressions.toLocaleString(), sub: "all-time" },
+    { icon: FiBarChart2, label: "Avg CTR", value: `${avgCtr}%`, sub: "clicks/impressions" },
+  ];
+  if (hasCta) {
+    stats.push({ icon: FiMousePointer, label: "CTA clicks", value: totalCtaClicks.toLocaleString(), sub: "all-time" });
+  }
 
   return (
-    <div className="grid grid-cols-3 gap-3">
-      {[
-        { icon: FiZap, label: "Active", value: active.length, sub: "promotions" },
-        { icon: FiEye, label: "Impressions", value: totalImpressions.toLocaleString(), sub: "all-time" },
-        { icon: FiBarChart2, label: "Avg CTR", value: `${avgCtr}%`, sub: "clicks/impressions" },
-      ].map(({ icon: Icon, label, value, sub }) => (
+    <div className={`grid gap-3 ${hasCta ? "grid-cols-2 sm:grid-cols-4" : "grid-cols-3"}`}>
+      {stats.map(({ icon: Icon, label, value, sub }) => (
         <div key={label} className="bg-card border border-stroke rounded-2xl p-3 text-center">
           <Icon size={16} className="mx-auto text-primary-500 mb-1" />
           <p className="text-lg font-bold text-ink leading-none">{value}</p>
@@ -241,8 +276,8 @@ const MyPromotions = () => {
       <MainLayout>
         <div className="py-20 text-center space-y-2 text-ink-muted">
           <FiZap size={32} className="mx-auto text-primary-400" />
-          <p className="font-semibold text-ink">Business accounts only</p>
-          <p className="text-sm">Promoted posts are available to verified Business tier accounts.</p>
+          <p className="font-semibold text-ink">Creator or Business accounts only</p>
+          <p className="text-sm">Promoted posts are available to verified Creator and Business tier accounts.</p>
         </div>
       </MainLayout>
     );

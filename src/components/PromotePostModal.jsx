@@ -7,6 +7,17 @@ import {
 import api from "../services/api";
 import toast from "react-hot-toast";
 
+const CTA_OPTIONS = [
+  { value: "learn_more",    label: "Learn More" },
+  { value: "shop_now",      label: "Shop Now" },
+  { value: "sign_up",       label: "Sign Up" },
+  { value: "contact_us",    label: "Contact Us" },
+  { value: "download",      label: "Download" },
+  { value: "get_quote",     label: "Get Quote" },
+  { value: "visit_website", label: "Visit Website" },
+  { value: "book_now",      label: "Book Now" },
+];
+
 const AVAILABLE_INTERESTS = [
   "technology","music","art","sports","gaming","science",
   "politics","food","travel","fashion","finance","health",
@@ -61,6 +72,8 @@ const PromotePostModal = ({ postId, postText, promotionReference, onClose }) => 
   const [showTargeting, setShowTargeting] = useState(false);
   const [targetLocation, setTargetLocation] = useState("");
   const [targetInterests, setTargetInterests] = useState([]);
+  const [ctaType, setCtaType] = useState("");
+  const [destinationUrl, setDestinationUrl] = useState("");
 
   useEffect(() => {
     if (hasPending) { setLoading(false); return; }
@@ -108,6 +121,10 @@ const PromotePostModal = ({ postId, postText, promotionReference, onClose }) => 
 
   const handlePromote = async () => {
     if (initiating) return;
+    if (destinationUrl.trim()) {
+      try { new URL(destinationUrl.trim()); }
+      catch { toast.error("Destination URL must be a valid URL (include https://)."); return; }
+    }
     setInitiating(true);
     try {
       const res = await api.post("/posts/promote/initiate", {
@@ -117,6 +134,8 @@ const PromotePostModal = ({ postId, postText, promotionReference, onClose }) => 
           location: targetLocation.trim(),
           interests: targetInterests,
         },
+        ctaType: ctaType || null,
+        destinationUrl: destinationUrl.trim() || null,
       });
       window.location.href = res.data.authorizationUrl;
     } catch (e) {
@@ -250,6 +269,39 @@ const PromotePostModal = ({ postId, postText, promotionReference, onClose }) => 
                       </div>
                     </div>
                   )}
+                </div>
+              )}
+
+              {/* CTA button + destination URL */}
+              {!loading && tiers && (
+                <div className="space-y-3">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-ink-muted">CTA button (optional)</label>
+                    <select
+                      value={ctaType}
+                      onChange={(e) => setCtaType(e.target.value)}
+                      className="w-full px-3 py-2.5 rounded-xl border border-stroke bg-surface text-sm text-ink focus:outline-none focus:border-primary-400 transition"
+                    >
+                      <option value="">No CTA button</option>
+                      {CTA_OPTIONS.map((o) => (
+                        <option key={o.value} value={o.value}>{o.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-ink-muted">Destination URL (optional)</label>
+                    <input
+                      type="url"
+                      value={destinationUrl}
+                      onChange={(e) => setDestinationUrl(e.target.value)}
+                      placeholder="https://your-site.com/offer"
+                      className="w-full px-3 py-2.5 rounded-xl border border-stroke bg-surface text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:border-primary-400 transition"
+                      maxLength={2000}
+                    />
+                    <p className="text-[10px] text-ink-muted">
+                      Blank = the CTA button opens the post itself.
+                    </p>
+                  </div>
                 </div>
               )}
 

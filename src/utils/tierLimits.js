@@ -10,7 +10,13 @@ export const getActiveTier = (user) => {
     verifications.some(
       (v) => v?.type === type && (!v.expiresAt || new Date(v.expiresAt) > now),
     );
-  for (const tier of ["staff", "government", "business", "creator", "individual"]) {
+  for (const tier of [
+    "staff",
+    "government",
+    "business",
+    "creator",
+    "individual",
+  ]) {
     if (has(tier)) return tier;
   }
   return "unverified";
@@ -46,7 +52,10 @@ export const PINNED_POST_LIMITS = {
 export const getPinnedLimit = (user) =>
   PINNED_POST_LIMITS[getActiveTier(user)] ?? 0;
 
-export const canPromote = (user) => getActiveTier(user) === "business";
+export const canPromote = (user) => {
+  const tier = getActiveTier(user);
+  return tier === "business" || tier === "creator";
+};
 
 // Flat cooldown between successive edits, any tier (mirrors backend).
 export const POST_EDIT_COOLDOWN_MS = 5 * 60 * 1000;
@@ -71,8 +80,10 @@ export const canAccessAnalytics = (user) => {
   return tier === "creator" || tier === "business" || tier === "staff";
 };
 
-export const canCreateSubscriptionPlan = (user) => getActiveTier(user) === "creator";
-export const canPostSubscribersOnly = (user) => getActiveTier(user) === "creator";
+export const canCreateSubscriptionPlan = (user) =>
+  getActiveTier(user) === "creator";
+export const canPostSubscribersOnly = (user) =>
+  getActiveTier(user) === "creator";
 
 export const getEditWindowMs = (user) =>
   POST_EDIT_WINDOW_MS[getActiveTier(user)] ?? null;

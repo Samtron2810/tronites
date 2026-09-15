@@ -22,7 +22,12 @@ import { useAuth } from "../context/useAuth";
 import api from "../services/api";
 import toast from "react-hot-toast";
 import { isCreator } from "../utils/creator";
-import { canSchedule, isVerified, canPromote, getActiveTier } from "../utils/tierLimits";
+import {
+  canSchedule,
+  isVerified,
+  canPromote,
+  getActiveTier,
+} from "../utils/tierLimits";
 
 // Menu tile used throughout the More page — declared at module scope so it
 // isn't re-created on each render (react-hooks/static-components).
@@ -94,7 +99,7 @@ const More = () => {
   const creator = isCreator(user);
   const isBusiness = getActiveTier(user) === "business";
   const canUserSchedule = canSchedule(user); // any verified tier
-  const canUserPromote = canPromote(user);   // business tier only
+  const canUserPromote = canPromote(user); // creator + business tiers
   const [collabLoading, setCollabLoading] = useState(false);
   const [scheduledCount, setScheduledCount] = useState(null);
 
@@ -172,7 +177,8 @@ const More = () => {
       ? {
           icon: FaBullhorn,
           label: "Ad Campaigns",
-          description: "Schedule multi-post campaigns, track spend and export reports.",
+          description:
+            "Schedule multi-post campaigns, track spend and export reports.",
           href: "/campaigns",
         }
       : null,
@@ -203,7 +209,8 @@ const More = () => {
     {
       icon: FaThumbtack,
       label: "Pin a post",
-      description: "Head to your profile, open a post's ⋯ menu, then pin it to the top.",
+      description:
+        "Head to your profile, open a post's ⋯ menu, then pin it to the top.",
       href: `/profile/${user?._id}`,
     },
   ];
@@ -301,7 +308,8 @@ const More = () => {
               tile={{
                 icon: FaIdCard,
                 label: "My Media Kit",
-                description: "Auto-generated kit for brands and collab partners.",
+                description:
+                  "Auto-generated kit for brands and collab partners.",
                 href: `/media-kit/${user?._id}`,
               }}
             />
@@ -312,7 +320,8 @@ const More = () => {
               tile={{
                 icon: FaThumbtack,
                 label: "Pin a post",
-                description: "Head to your profile, open a post's ⋯ menu, then pin it to the top.",
+                description:
+                  "Head to your profile, open a post's ⋯ menu, then pin it to the top.",
                 href: `/profile/${user?._id}`,
               }}
             />
@@ -372,7 +381,8 @@ const More = () => {
                 tile={{
                   icon: FaThumbtack,
                   label: "Pin a post",
-                  description: "Head to your profile, open a post's ⋯ menu, then pin it to the top.",
+                  description:
+                    "Head to your profile, open a post's ⋯ menu, then pin it to the top.",
                   href: `/profile/${user?._id}`,
                 }}
               />

@@ -16,7 +16,18 @@ import {
   FaThumbtack,
   FaQuoteRight,
 } from "react-icons/fa";
-import { FiFlag, FiUsers, FiLock, FiZap } from "react-icons/fi";
+import { FiFlag, FiUsers, FiLock, FiZap, FiExternalLink } from "react-icons/fi";
+
+const CTA_LABELS = {
+  learn_more: "Learn More",
+  shop_now: "Shop Now",
+  sign_up: "Sign Up",
+  contact_us: "Contact Us",
+  download: "Download",
+  get_quote: "Get Quote",
+  visit_website: "Visit Website",
+  book_now: "Book Now",
+};
 import { HiOutlineSparkles } from "react-icons/hi2";
 import toast from "react-hot-toast";
 import api from "../services/api";
@@ -109,6 +120,17 @@ const PostCard = ({
   // Non-null when the owner has a pending/failed Paystack session for this
   // post — passed into PromotePostModal so it can show the cancel-pending UI.
   promotionReference = null,
+  // The post's OWN promotion expiry (distinct from isPromoted, which only
+  // fires when the backend injects this post into someone ELSE's feed).
+  // Used on the owner's own profile to know their post is currently
+  // promoted, independent of who's viewing it.
+  promotedUntil = null,
+  // CTA button type + optional destination URL, set at promote/campaign
+  // time. Renders a dedicated CTA button on promoted posts, tracked as
+  // its own click-through event (see recordCtaClick), separate from
+  // organic engagement and from the whole-card sponsored click.
+  ctaType = null,
+  destinationUrl = null,
   // True only for the very first post rendered on initial page load
   // (e.g. index 0 of the Home feed) -- skips the lazy-load observer
   // entirely so the one image that's already in the viewport on first
@@ -226,6 +248,31 @@ const PostCard = ({
   // the isLiking/isReposting guards on the other action handlers.
   const [isPinToggling, setIsPinToggling] = useState(false);
   const [showPromoteModal, setShowPromoteModal] = useState(false);
+  // True when THIS post (not "is this feed slot a sponsored injection")
+  // currently has an active, unexpired promotion — drives the owner-facing
+  // dropdown disable/relabel (bug: previously always clickable, opening the
+  // modal and immediately erroring "already promoted").
+  const isCurrentlyPromoted = Boolean(promotedUntil && new Date(promotedUntil) > new Date());
+  const [ctaClicking, setCtaClicking] = useState(false);
+
+  const handleCtaClick = async (e) => {
+    e.stopPropagation();
+    if (ctaClicking || !postId) return;
+    setCtaClicking(true);
+    try {
+      const res = await api.post(`/posts/promote/cta-click/${postId}`);
+      const target = res?.data?.destinationUrl || destinationUrl;
+      if (target) {
+        window.open(target, "_blank", "noopener,noreferrer");
+      }
+    } catch {
+      // Non-fatal — still let the user reach the destination even if the
+      // click-tracking call failed.
+      if (destinationUrl) window.open(destinationUrl, "_blank", "noopener,noreferrer");
+    } finally {
+      setCtaClicking(false);
+    }
+  };
   const [showTipModal, setShowTipModal] = useState(false);
   // Whether this viewer already has an active paid subscription to the
   // post's creator. Currently a plain constant — real subscription state
@@ -1073,17 +1120,25 @@ const PostCard = ({
                         </span>
                       </button>
                     )}
-                    {/* Promote — Business tier only (paid boost via Paystack) */}
+                    {/* Promote — Creator/Business tier (paid boost via Paystack).
+                        Disabled + relabeled once already promoted, instead of
+                        opening the modal again and erroring "already promoted". */}
                     {canPromote(currentUser) && (
                       <button
                         onClick={() => {
+                          if (isCurrentlyPromoted) return;
                           setMenuOpen(false);
                           setShowPromoteModal(true);
                         }}
-                        className="w-full flex items-center gap-3 px-4 py-2.5 text-base text-ink hover:bg-primary-50 transition"
+                        disabled={isCurrentlyPromoted}
+                        className={`w-full flex items-center gap-3 px-4 py-2.5 text-base transition ${
+                          isCurrentlyPromoted
+                            ? "text-ink-muted cursor-default"
+                            : "text-ink hover:bg-primary-50"
+                        }`}
                       >
-                        <span className="text-primary-600 text-sm font-bold">⚡</span>
-                        <span className="font-medium">Promote post</span>
+                        <span className={`text-sm font-bold ${isCurrentlyPromoted ? "text-ink-muted" : "text-primary-600"}`}>⚡</span>
+                        <span className="font-medium">{isCurrentlyPromoted ? "Promoted" : "Promote post"}</span>
                       </button>
                     )}
                     {/* Edit — verified tiers only, within their edit window */}
@@ -1346,6 +1401,21 @@ const PostCard = ({
             has reacted yet (no empty state clutter). */}
           </SubscriberOnlyGate>
           </>
+        )}
+
+        {/* CTA button — rendered on any post carrying a ctaType (promoted
+            post or campaign post), regardless of who's viewing it. Click
+            is its own tracked event (recordCtaClick), separate from
+            promotionClicks (whole-card) and organic engagement. */}
+        {ctaType && CTA_LABELS[ctaType] && (
+          <button
+            onClick={handleCtaClick}
+            disabled={ctaClicking}
+            className="w-full mt-4 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold transition disabled:opacity-60 flex items-center justify-center gap-2"
+          >
+            {CTA_LABELS[ctaType]}
+            <FiExternalLink size={13} />
+          </button>
         )}
 
         <ReactionSummaryBar

@@ -752,6 +752,10 @@ const Profile = () => {
               isOwnProfile={isOwnProfile}
               pinnedPostIds={profile.pinnedPosts || []}
               onTogglePin={handleTogglePin}
+              promotedUntil={pinnedPost.promotedUntil}
+              promotionReference={pinnedPost.promotionReference}
+              ctaType={pinnedPost.ctaType}
+              destinationUrl={pinnedPost.destinationUrl}
             />
           ))}
         </div>
@@ -807,6 +811,10 @@ const Profile = () => {
             isOwnProfile={isOwnProfile}
             pinnedPostIds={profile.pinnedPosts || []}
             onTogglePin={handleTogglePin}
+            promotedUntil={post.promotedUntil}
+            promotionReference={post.promotionReference}
+            ctaType={post.ctaType}
+            destinationUrl={post.destinationUrl}
           />
         ))}
         {postsHasMore && posts.length > 0 && (

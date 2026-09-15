@@ -287,6 +287,9 @@ const Home = () => {
               forYouSource={tab === "forYou" ? post.forYouSource : undefined}
               isPromoted={post.isPromoted === true}
               promotionReference={post.promotionReference ?? null}
+              promotedUntil={post.promotedUntil ?? null}
+              ctaType={post.ctaType ?? null}
+              destinationUrl={post.destinationUrl ?? null}
               priority={index === 0}
             />
           ))}

@@ -12,6 +12,17 @@ import toast from "react-hot-toast";
 import { useAuth } from "../context/useAuth";
 import { canPromote } from "../utils/tierLimits";
 
+const CTA_OPTIONS = [
+  { value: "learn_more",    label: "Learn More" },
+  { value: "shop_now",      label: "Shop Now" },
+  { value: "sign_up",       label: "Sign Up" },
+  { value: "contact_us",    label: "Contact Us" },
+  { value: "download",      label: "Download" },
+  { value: "get_quote",     label: "Get Quote" },
+  { value: "visit_website", label: "Visit Website" },
+  { value: "book_now",      label: "Book Now" },
+];
+
 const AVAILABLE_INTERESTS = [
   "technology","music","art","sports","gaming","science",
   "politics","food","travel","fashion","finance","health",
@@ -72,11 +83,12 @@ const CampaignCard = ({ campaign, onPay, onCancel, onExport, onRefresh }) => {
 
       {/* Stats */}
       {campaign.status !== "draft" && (
-        <div className="grid grid-cols-3 gap-px border-t border-stroke">
+        <div className="grid grid-cols-4 gap-px border-t border-stroke">
           {[
             { icon: FiEye,         label: "Impressions",  value: (campaign.impressions ?? 0).toLocaleString() },
             { icon: FiMousePointer,label: "Clicks",       value: (campaign.clicks ?? 0).toLocaleString() },
             { icon: FiTrendingUp,  label: "CTR",          value: `${ctr}%` },
+            { icon: FiZap,         label: "CTA clicks",   value: (campaign.ctaClicks ?? 0).toLocaleString() },
           ].map(({ icon: Icon, label, value }) => (
             <div key={label} className="bg-surface px-3 py-2.5 text-center">
               <Icon size={12} className="mx-auto text-ink-muted mb-1" />
@@ -153,23 +165,36 @@ const CampaignCard = ({ campaign, onPay, onCancel, onExport, onRefresh }) => {
 };
 
 // ── Create campaign modal ─────────────────────────────────────────────────
-const CreateCampaignModal = ({ onClose, onCreated, tiers }) => {
-  const [step, setStep] = useState(1); // 1=basics, 2=targeting, 3=review
+const CreateCampaignModal = ({ onClose, onCreated, tiers, currentUserId }) => {
+  const [step, setStep] = useState(1); // 1=basics, 2=targeting, 3=CTA, 4=review
   const [name, setName] = useState("");
   const [selectedTier, setSelectedTier] = useState("basic");
   const [postIds, setPostIds] = useState([]);
   const [targetLocation, setTargetLocation] = useState("");
   const [targetInterests, setTargetInterests] = useState([]);
+  const [ctaType, setCtaType] = useState("");
+  const [destinationUrl, setDestinationUrl] = useState("");
   const [myPosts, setMyPosts] = useState([]);
   const [loadingPosts, setLoadingPosts] = useState(true);
   const [creating, setCreating] = useState(false);
 
   useEffect(() => {
-    api.get("/posts/user/me", { params: { limit: 20 } })
-      .then((r) => setMyPosts(r.data.posts || []))
-      .catch(() => {})
+    if (!currentUserId) { setLoadingPosts(false); return; }
+    // Posts live behind the profile endpoint, not a dedicated "/posts/user/me"
+    // route — it returns a merged { items: [{ post, reposter }] } timeline
+    // (posts + reposts), paginated. We only want this user's OWN authored
+    // posts (not their reposts) as promotion candidates.
+    api.get(`/users/profile/${currentUserId}`, { params: { limit: 50 } })
+      .then((r) => {
+        const items = r.data.items || r.data.posts?.items || [];
+        const owned = items
+          .filter((it) => !it.reposter && it.post)
+          .map((it) => it.post);
+        setMyPosts(owned);
+      })
+      .catch(() => toast.error("Couldn't load your posts."))
       .finally(() => setLoadingPosts(false));
-  }, []);
+  }, [currentUserId]);
 
   const togglePost = (id) => {
     setPostIds((prev) =>
@@ -182,6 +207,10 @@ const CreateCampaignModal = ({ onClose, onCreated, tiers }) => {
   const handleCreate = async () => {
     if (!name.trim()) { toast.error("Campaign name is required."); return; }
     if (postIds.length === 0) { toast.error("Select at least one post."); return; }
+    if (destinationUrl.trim()) {
+      try { new URL(destinationUrl.trim()); }
+      catch { toast.error("Destination URL must be a valid URL (include https://)."); return; }
+    }
     setCreating(true);
     try {
       const res = await api.post("/campaigns", {
@@ -189,6 +218,8 @@ const CreateCampaignModal = ({ onClose, onCreated, tiers }) => {
         postIds,
         tier: selectedTier,
         targeting: { location: targetLocation.trim(), interests: targetInterests },
+        ctaType: ctaType || null,
+        destinationUrl: destinationUrl.trim() || null,
       });
       toast.success("Campaign created as draft.");
       onCreated(res.data.campaign);
@@ -212,7 +243,7 @@ const CreateCampaignModal = ({ onClose, onCreated, tiers }) => {
             </span>
             <div>
               <h2 className="text-base font-bold text-ink">New campaign</h2>
-              <p className="text-[11px] text-ink-muted">Step {step} of 3</p>
+              <p className="text-[11px] text-ink-muted">Step {step} of 4</p>
             </div>
           </div>
           <button onClick={onClose} className="p-1.5 rounded-lg text-ink-muted hover:bg-surface transition"><FiX size={16} /></button>
@@ -333,6 +364,39 @@ const CreateCampaignModal = ({ onClose, onCreated, tiers }) => {
           )}
 
           {step === 3 && (
+            <>
+              <p className="text-sm text-ink-muted">Add a call-to-action button to every post in this campaign. Optional — skip to keep posts CTA-free.</p>
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-ink-muted">CTA button (optional)</label>
+                <select
+                  value={ctaType}
+                  onChange={(e) => setCtaType(e.target.value)}
+                  className="w-full px-3 py-2.5 rounded-xl border border-stroke bg-surface text-sm text-ink focus:outline-none focus:border-primary-400 transition"
+                >
+                  <option value="">No CTA button</option>
+                  {CTA_OPTIONS.map((o) => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-ink-muted">Destination URL (optional)</label>
+                <input
+                  type="url"
+                  value={destinationUrl}
+                  onChange={(e) => setDestinationUrl(e.target.value)}
+                  placeholder="https://your-site.com/offer"
+                  className="w-full px-3 py-2.5 rounded-xl border border-stroke bg-surface text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:border-primary-400 transition"
+                  maxLength={2000}
+                />
+                <p className="text-[10px] text-ink-muted">
+                  If left blank, the CTA button (when set) opens the post itself.
+                </p>
+              </div>
+            </>
+          )}
+
+          {step === 4 && (
             <div className="space-y-4">
               <div className="bg-surface border border-stroke rounded-xl p-4 space-y-3">
                 <p className="text-xs font-bold uppercase tracking-widest text-ink-muted">Campaign summary</p>
@@ -343,6 +407,12 @@ const CreateCampaignModal = ({ onClose, onCreated, tiers }) => {
                   <div className="flex justify-between"><span className="text-ink-muted">Per post</span><span className="font-semibold text-ink">₦{tiers?.[selectedTier]?.amountNgn?.toLocaleString()}</span></div>
                   {(targetLocation || targetInterests.length > 0) && (
                     <div className="flex justify-between"><span className="text-ink-muted">Targeting</span><span className="font-semibold text-ink text-right text-xs">{[targetLocation, ...targetInterests.slice(0,2)].filter(Boolean).join(", ")}{targetInterests.length > 2 ? "…" : ""}</span></div>
+                  )}
+                  {ctaType && (
+                    <div className="flex justify-between"><span className="text-ink-muted">CTA</span><span className="font-semibold text-ink">{CTA_OPTIONS.find((o) => o.value === ctaType)?.label}</span></div>
+                  )}
+                  {destinationUrl && (
+                    <div className="flex justify-between"><span className="text-ink-muted">Link</span><span className="font-semibold text-ink text-right text-xs truncate max-w-[180px]">{destinationUrl}</span></div>
                   )}
                   <div className="flex justify-between border-t border-stroke pt-2 mt-2">
                     <span className="font-bold text-ink">Total budget</span>
@@ -368,12 +438,16 @@ const CreateCampaignModal = ({ onClose, onCreated, tiers }) => {
               Cancel
             </button>
           )}
-          {step < 3 ? (
+          {step < 4 ? (
             <button
               onClick={() => {
                 if (step === 1 && (!name.trim() || postIds.length === 0)) {
                   toast.error("Enter a name and select at least one post.");
                   return;
+                }
+                if (step === 3 && destinationUrl.trim()) {
+                  try { new URL(destinationUrl.trim()); }
+                  catch { toast.error("Destination URL must be a valid URL (include https://)."); return; }
                 }
                 setStep((s) => s + 1);
               }}
@@ -429,8 +503,8 @@ const CampaignManager = () => {
       <MainLayout>
         <div className="py-20 text-center space-y-2 text-ink-muted">
           <FiBarChart2 size={32} className="mx-auto text-primary-400" />
-          <p className="font-semibold text-ink">Business accounts only</p>
-          <p className="text-sm">Ad campaigns are available to verified Business tier accounts.</p>
+          <p className="font-semibold text-ink">Creator or Business accounts only</p>
+          <p className="text-sm">Ad campaigns are available to verified Creator and Business tier accounts.</p>
         </div>
       </MainLayout>
     );
@@ -553,6 +627,7 @@ const CampaignManager = () => {
       {showCreate && tiers && (
         <CreateCampaignModal
           tiers={tiers}
+          currentUserId={user?._id}
           onClose={() => setShowCreate(false)}
           onCreated={(newCampaign) => setCampaigns((prev) => [newCampaign, ...prev])}
         />
