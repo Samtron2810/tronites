@@ -55,8 +55,11 @@ const StatusChip = ({ status }) => {
 };
 
 // ── Campaign card ─────────────────────────────────────────────────────────
-const CampaignCard = ({ campaign, onPay, onCancel, onExport, onRefresh }) => {
+const CampaignCard = ({ campaign, onPay, onCancel, onExport, onResume, onCancelPending, resumingId, cancellingId }) => {
   const totalPosts = campaign.posts?.length ?? 0;
+  const isPending = campaign.status === "draft" && Boolean(campaign.paymentReference);
+  const isResuming = resumingId === campaign._id;
+  const isCancellingPending = cancellingId === campaign._id;
   const ctr = campaign.impressions > 0
     ? ((campaign.clicks / campaign.impressions) * 100).toFixed(1)
     : "0.0";
@@ -117,9 +120,35 @@ const CampaignCard = ({ campaign, onPay, onCancel, onExport, onRefresh }) => {
         </div>
       )}
 
+      {isPending && (
+        <div className="mx-4 mt-1 mb-2 px-3 py-2 rounded-xl bg-amber-50 border border-amber-200 text-[11px] text-amber-700">
+          Payment started but not confirmed yet. If you already paid, resume to verify it — otherwise cancel to start over.
+        </div>
+      )}
+
       {/* Actions */}
       <div className="flex gap-2 px-4 pb-4 pt-2 border-t border-stroke">
-        {campaign.status === "draft" && (
+        {campaign.status === "draft" && isPending && (
+          <>
+            <button
+              onClick={() => onResume(campaign)}
+              disabled={isResuming || isCancellingPending}
+              className="flex-1 py-2 rounded-xl bg-primary-600 hover:bg-primary-700 text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition disabled:opacity-60"
+            >
+              <FiRefreshCw size={12} className={isResuming ? "animate-spin" : ""} />
+              {isResuming ? "Verifying…" : "Resume / Verify payment"}
+            </button>
+            <button
+              onClick={() => onCancelPending(campaign)}
+              disabled={isResuming || isCancellingPending}
+              className="py-2 px-3 rounded-xl border border-red-200 text-red-500 text-xs font-semibold hover:bg-red-50 transition disabled:opacity-60"
+              title="Clear pending payment and start over"
+            >
+              {isCancellingPending ? "…" : <FiTrash2 size={12} />}
+            </button>
+          </>
+        )}
+        {campaign.status === "draft" && !isPending && (
           <>
             <button
               onClick={() => onPay(campaign)}
@@ -480,6 +509,8 @@ const CampaignManager = () => {
   const [showCreate, setShowCreate] = useState(false);
   const [tiers, setTiers] = useState(null);
   const [payingId, setPayingId] = useState(null);
+  const [resumingId, setResumingId] = useState(null);
+  const [cancellingId, setCancellingId] = useState(null);
 
   const load = useCallback(async () => {
     try {
@@ -518,6 +549,35 @@ const CampaignManager = () => {
     } catch (e) {
       toast.error(e.response?.data?.message || "Couldn't initiate payment.");
       setPayingId(null);
+    }
+  };
+
+  const handleResume = async (campaign) => {
+    setResumingId(campaign._id);
+    try {
+      const res = await api.get(`/campaigns/${campaign._id}/verify`);
+      toast.success("Payment confirmed — your campaign is live!", { duration: 5000 });
+      setCampaigns((prev) =>
+        prev.map((c) => c._id === campaign._id ? { ...c, status: res.data.status || "active", paymentReference: null } : c)
+      );
+      load();
+    } catch (e) {
+      toast.error(e.response?.data?.message || "Payment not verified yet. Try again shortly, or cancel to start over.", { duration: 6000 });
+    } finally {
+      setResumingId(null);
+    }
+  };
+
+  const handleCancelPending = async (campaign) => {
+    setCancellingId(campaign._id);
+    try {
+      await api.delete(`/campaigns/${campaign._id}`);
+      toast.success("Pending payment cleared. Campaign moved to cancelled — create a new one to retry.");
+      setCampaigns((prev) => prev.map((c) => c._id === campaign._id ? { ...c, status: "cancelled" } : c));
+    } catch (e) {
+      toast.error(e.response?.data?.message || "Couldn't clear pending payment.");
+    } finally {
+      setCancellingId(null);
     }
   };
 
@@ -617,6 +677,10 @@ const CampaignManager = () => {
                   onCancel={handleCancel}
                   onExport={handleExport}
                   onRefresh={load}
+                  onResume={handleResume}
+                  onCancelPending={handleCancelPending}
+                  resumingId={resumingId}
+                  cancellingId={cancellingId}
                 />
               </div>
             ))}
