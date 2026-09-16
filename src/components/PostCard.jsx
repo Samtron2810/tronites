@@ -912,6 +912,14 @@ const PostCard = ({
         repostCount={repostCount}
         isReposting={isReposting}
         onRepost={handleRepost}
+        isQuotePost={isQuotePost}
+        onQuote={() => setShowQuoteModal(true)}
+        promotionReference={promotionReference}
+        promotedUntil={promotedUntil}
+        onPromote={() => setShowPromoteModal(true)}
+        isOwnProfile={isOwnProfile}
+        pinnedPostIds={pinnedPostIds}
+        onTogglePin={onTogglePin}
         onCopy={handleCopyPost}
         onEdit={() => {
           // No modal-native edit UI — close the modal and drop into the

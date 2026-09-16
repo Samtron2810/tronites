@@ -6,6 +6,8 @@ import { useSocket } from "../context/useSocket";
 import PostDetailModal from "./PostDetailModal";
 import DeletePostModal from "./DeletePostModal";
 import ReportModal from "./ReportModal";
+import QuotePostModal from "./QuotePostModal";
+import PromotePostModal from "./PromotePostModal";
 import useBackButtonClose from "../hooks/useBackButtonClose";
 
 // Opens an arbitrary post's own detail view by id, fetching it fresh
@@ -41,6 +43,8 @@ const PostByIdModal = ({
   const [loadError, setLoadError] = useState(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [reportTarget, setReportTarget] = useState(null);
+  const [showQuoteModal, setShowQuoteModal] = useState(false);
+  const [showPromoteModal, setShowPromoteModal] = useState(false);
   const [isLiking, setIsLiking] = useState(false);
   const [isBookmarking, setIsBookmarking] = useState(false);
   const [isReposting, setIsReposting] = useState(false);
@@ -83,6 +87,8 @@ const PostByIdModal = ({
     setPost(null);
     setShowDeleteModal(false);
     setReportTarget(null);
+    setShowQuoteModal(false);
+    setShowPromoteModal(false);
     setLoadError(null);
   }, [isOpen]);
   /* eslint-enable react-hooks/set-state-in-effect */
@@ -225,6 +231,21 @@ const PostByIdModal = ({
     }
   };
 
+  const handleQuoteSubmit = async ({ text: quoteText }) => {
+    if (!post) return;
+    try {
+      await api.post(`/posts/quote/${post._id}`, { text: quoteText });
+      setPost((p) => ({ ...p, repostsCount: p.repostsCount + 1 }));
+      toast.success("Quote posted!");
+    } catch (e) {
+      console.error(e);
+      toast.error(
+        e.response?.data?.message || "Couldn't post your quote. Try again.",
+      );
+      throw e; // keeps QuotePostModal open on failure
+    }
+  };
+
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(post?.text || "");
@@ -299,6 +320,29 @@ const PostByIdModal = ({
         />
       )}
 
+      {showQuoteModal && post && (
+        <QuotePostModal
+          post={{
+            _id: post._id,
+            user: post.user,
+            text: post.text,
+            images: post.images,
+            video: post.video,
+          }}
+          closeModal={() => setShowQuoteModal(false)}
+          onSubmit={handleQuoteSubmit}
+        />
+      )}
+
+      {showPromoteModal && post && (
+        <PromotePostModal
+          postId={post._id}
+          postText={post.text}
+          promotionReference={post.promotionReference}
+          onClose={() => setShowPromoteModal(false)}
+        />
+      )}
+
       {loadError && !loading && !post && (
         <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center px-4">
           <div className="bg-card border border-stroke rounded-2xl shadow-xl p-6 w-full max-w-sm text-center">
@@ -355,6 +399,11 @@ const PostByIdModal = ({
           repostCount={post.repostsCount}
           isReposting={isReposting}
           onRepost={handleRepost}
+          isQuotePost={post.isQuotePost}
+          onQuote={() => setShowQuoteModal(true)}
+          promotionReference={post.promotionReference}
+          promotedUntil={post.promotedUntil}
+          onPromote={() => setShowPromoteModal(true)}
           onCopy={handleCopy}
           onEdit={() => {}}
           onDelete={() => setShowDeleteModal(true)}

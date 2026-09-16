@@ -17,8 +17,10 @@ import {
   FaRegCopy,
   FaRetweet,
   FaQuoteRight,
+  FaThumbtack,
 } from "react-icons/fa";
 import { FiFlag, FiUsers, FiLock } from "react-icons/fi";
+import toast from "react-hot-toast";
 import defaultAvatar from "../assets/defaultAvatar";
 import LazyImage from "./LazyImage";
 import TextWithLinks from "./TextWithLinks";
@@ -29,7 +31,10 @@ import ReactionSummaryBar from "./ReactionSummaryBar";
 import VerifiedBadge from "./VerifiedBadge";
 import { resizedImageUrl, IMAGE_SIZES } from "../utils/cloudinaryImage";
 import { useSocket } from "../context/useSocket";
+import { useAuth } from "../context/useAuth";
+import api from "../services/api";
 import useBackButtonClose from "../hooks/useBackButtonClose";
+import { canPromote, getPinnedLimit } from "../utils/tierLimits";
 
 // Stacked-only layout at every breakpoint (confirmed — no desktop
 // side-by-side variant). Media on top, post text below it, action bar
@@ -99,12 +104,38 @@ const PostDetailModal = ({
   repostCount,
   isReposting,
   onRepost,
+  // Set only when the post THIS modal shows is itself a quote — mirrors
+  // PostCard's isQuotePost: one level of embedding only, so the "Quote"
+  // option is omitted from the repost dropdown when this is already a
+  // quote (plain repost is still offered, via onRepost above).
+  isQuotePost = false,
+  // Opens the caller's QuotePostModal for the post this modal shows.
+  // Left undefined (rather than defaulted to a no-op) hides the repost
+  // split-button dropdown entirely and falls back to a single repost
+  // toggle — same graceful-degradation shape as onReact/onRepost above,
+  // for any future caller that hasn't wired quoting up yet.
+  onQuote,
   // Options menu (Copy always; Edit/Delete for owner; Report for non-owner)
   onCopy,
   onEdit,
   onDelete,
   onReport,
   editCooldownActive,
+  // Promote — Creator/Business tier only, gated the same way as
+  // PostCard's ellipsis menu (canPromote(currentUser) below). Disabled +
+  // relabeled once the post is already promoted so re-opening the modal
+  // never fires the API's "already promoted" error.
+  promotionReference = null,
+  promotedUntil = null,
+  onPromote,
+  // Pin/unpin — only meaningful on the owner's own profile, where the
+  // caller has pinnedPostIds to check against and a place to reflect the
+  // update. Left undefined (isOwnProfile false) on any surface that
+  // doesn't have that context (e.g. PostByIdModal's standalone lookup),
+  // which hides the menu item entirely, exactly like PostCard's own gate.
+  isOwnProfile = false,
+  pinnedPostIds = undefined,
+  onTogglePin = undefined,
   initialSlide = 0,
   // Set only when this modal is showing a quote — the embedded
   // original to render below the quote's own text. Passing the
@@ -142,6 +173,42 @@ const PostDetailModal = ({
   const longPressFired = useRef(false);
   const hoverIntentTimer = useRef(null);
   const { socket } = useSocket();
+  const { user: currentUser } = useAuth();
+
+  // Repost split-button dropdown (Repost vs Quote) — same pattern as
+  // PostCard's own repostMenuOpen/repostMenuRef/repostTriggerRef.
+  const [repostMenuOpen, setRepostMenuOpen] = useState(false);
+  const repostMenuRef = useRef(null);
+  const repostTriggerRef = useRef(null);
+
+  const [isPinToggling, setIsPinToggling] = useState(false);
+  const pinLimit = getPinnedLimit(currentUser);
+  const isPinned = Array.isArray(pinnedPostIds) && pinnedPostIds.includes(postId);
+  const atPinLimit = Array.isArray(pinnedPostIds) && pinnedPostIds.length >= pinLimit;
+  const isCurrentlyPromoted = Boolean(promotedUntil && new Date(promotedUntil) > new Date());
+
+  const handleTogglePin = async () => {
+    if (isPinToggling) return;
+    if (!isPinned && atPinLimit) {
+      toast.error(`Pin limit reached (${pinLimit}). Unpin one first.`);
+      return;
+    }
+    setIsPinToggling(true);
+    try {
+      const res = await api.put("/users/pinned-post", {
+        postId: isPinned ? null : postId,
+      });
+      if (onTogglePin) onTogglePin(res.data.pinnedPosts);
+      toast.success(isPinned ? "Post unpinned." : "Pinned to the top of your profile!");
+    } catch (e) {
+      console.error(e);
+      toast.error(
+        e.response?.data?.message || "Couldn't update pinned post. Try again.",
+      );
+    } finally {
+      setIsPinToggling(false);
+    }
+  };
 
   // Ensure this modal is always in the post's socket room so CommentsPanel
   // receives real-time newComment/commentDeleted/commentLikeUpdate events.
@@ -236,6 +303,26 @@ const PostDetailModal = ({
         document.removeEventListener("mousedown", handleClickOutside);
     }
   }, [menuOpen]);
+
+  // Close the repost dropdown on outside click — mirrors the options
+  // menu handler above and PostCard's own repostMenuOpen effect.
+  useEffect(() => {
+    const handleClickOutsideRepost = (event) => {
+      if (
+        repostMenuRef.current &&
+        !repostMenuRef.current.contains(event.target) &&
+        repostTriggerRef.current &&
+        !repostTriggerRef.current.contains(event.target)
+      ) {
+        setRepostMenuOpen(false);
+      }
+    };
+    if (repostMenuOpen) {
+      document.addEventListener("mousedown", handleClickOutsideRepost);
+      return () =>
+        document.removeEventListener("mousedown", handleClickOutsideRepost);
+    }
+  }, [repostMenuOpen]);
 
   if (!isOpen) return null;
 
@@ -374,6 +461,48 @@ const PostDetailModal = ({
 
                     {isOwner ? (
                       <>
+                        {/* Pin / Unpin — same gate as PostCard: any verified
+                            tier with a pin allowance, and only where the
+                            caller has profile context to act on it. */}
+                        {isOwnProfile && pinLimit > 0 && (
+                          <button
+                            onClick={() => {
+                              setMenuOpen(false);
+                              handleTogglePin();
+                            }}
+                            disabled={isPinToggling}
+                            className="w-full flex items-center gap-3 px-4 py-2.5 text-base text-ink hover:bg-primary-50 transition disabled:opacity-50"
+                          >
+                            <FaThumbtack className="text-primary-600" size={13} />
+                            <span className="font-medium">
+                              {isPinned
+                                ? "Unpin post"
+                                : atPinLimit
+                                  ? `Pin limit reached (${pinLimit})`
+                                  : "Pin post"}
+                            </span>
+                          </button>
+                        )}
+                        {/* Promote — Creator/Business tier (paid boost).
+                            Disabled + relabeled once already promoted. */}
+                        {onPromote && canPromote(currentUser) && (
+                          <button
+                            onClick={() => {
+                              if (isCurrentlyPromoted) return;
+                              setMenuOpen(false);
+                              onPromote();
+                            }}
+                            disabled={isCurrentlyPromoted}
+                            className={`w-full flex items-center gap-3 px-4 py-2.5 text-base transition ${
+                              isCurrentlyPromoted
+                                ? "text-ink-muted cursor-default"
+                                : "text-ink hover:bg-primary-50"
+                            }`}
+                          >
+                            <span className={`text-sm font-bold ${isCurrentlyPromoted ? "text-ink-muted" : "text-primary-600"}`}>⚡</span>
+                            <span className="font-medium">{isCurrentlyPromoted ? "Promoted" : "Promote post"}</span>
+                          </button>
+                        )}
                         {!editCooldownActive && (
                           <button
                             onClick={() => {
@@ -619,21 +748,68 @@ const PostDetailModal = ({
           </div>
 
           {onRepost && (
-            <button
-              onClick={onRepost}
-              disabled={isReposting}
-              title={reposted ? "Undo repost" : "Repost"}
-              className={`flex items-center gap-1.5 text-base transition ${
-                isReposting
-                  ? "opacity-50 cursor-not-allowed"
-                  : reposted
-                    ? "text-green-600"
-                    : "text-ink-muted hover:text-green-600"
-              }`}
-            >
-              <FaRetweet size={15} />
-              <span>{repostCount}</span>
-            </button>
+            <div className="relative">
+              <button
+                ref={repostTriggerRef}
+                onClick={() => {
+                  if (isQuotePost || !onQuote) {
+                    // Same one-level-of-embedding rule as PostCard: a
+                    // quote's own detail view never offers Quote, and
+                    // without a caller-supplied onQuote we just fall
+                    // back to a plain toggle.
+                    onRepost();
+                  } else {
+                    setRepostMenuOpen((o) => !o);
+                  }
+                }}
+                disabled={isReposting}
+                title={reposted ? "Undo repost" : "Repost"}
+                className={`flex items-center gap-1.5 text-base transition ${
+                  isReposting
+                    ? "opacity-50 cursor-not-allowed"
+                    : reposted
+                      ? "text-green-600"
+                      : "text-ink-muted hover:text-green-600"
+                }`}
+              >
+                <FaRetweet size={15} />
+                <span>{repostCount}</span>
+              </button>
+
+              {repostMenuOpen && (
+                <div
+                  ref={repostMenuRef}
+                  className="absolute left-0 bottom-full mb-2 w-40 bg-card rounded-lg shadow-lg border border-stroke z-40 py-1"
+                >
+                  <button
+                    onClick={() => {
+                      setRepostMenuOpen(false);
+                      onRepost();
+                    }}
+                    disabled={isReposting}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-base text-ink hover:bg-surface transition disabled:opacity-50"
+                  >
+                    <FaRetweet
+                      className={reposted ? "text-green-600" : "text-ink-muted"}
+                      size={13}
+                    />
+                    <span className="font-medium">
+                      {reposted ? "Undo repost" : "Repost"}
+                    </span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setRepostMenuOpen(false);
+                      onQuote();
+                    }}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-base text-ink hover:bg-surface transition"
+                  >
+                    <FaQuoteRight className="text-ink-muted" size={13} />
+                    <span className="font-medium">Quote</span>
+                  </button>
+                </div>
+              )}
+            </div>
           )}
 
           <button
