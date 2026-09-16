@@ -682,6 +682,24 @@ const Explore = () => {
   const handleFollow = async (userId) => {
     if (followingId) return;
     setFollowingId(userId);
+    const target = users.find((u) => u._id === userId);
+    const wasFollowing = Boolean(
+      target?.followers?.includes(currentUser._id),
+    );
+    const prevUsers = users;
+    // Optimistic: flip immediately, trust server response to reconcile,
+    // roll back the whole list snapshot on failure.
+    setUsers((prev) =>
+      prev.map((u) => {
+        if (u._id !== userId) return u;
+        return {
+          ...u,
+          followers: wasFollowing
+            ? u.followers.filter((id) => id !== currentUser._id)
+            : [...u.followers, currentUser._id],
+        };
+      }),
+    );
     try {
       const res = await api.put(`/users/follow/${userId}`);
       // Trust the server's answer for whether we're now following,
@@ -700,6 +718,7 @@ const Explore = () => {
       );
     } catch (e) {
       console.error(e);
+      setUsers(prevUsers);
       toast.error("Couldn't update follow status. Try again.");
     } finally {
       setFollowingId(null);
@@ -728,29 +747,38 @@ const Explore = () => {
   };
 
   const handleDeleteHistoryEntry = async (id) => {
+    const prevHistory = history;
     setHistory((prev) => prev.filter((h) => h._id !== id));
     try {
       await api.delete(`/search/history/${id}`);
     } catch (e) {
       console.error(e);
+      setHistory(prevHistory);
+      toast.error("Couldn't remove that search. Try again.");
     }
   };
 
   const handleClearHistory = async () => {
+    const prevHistory = history;
     setHistory([]);
     try {
       await api.delete("/search/history", { params: { scope: activeTab } });
     } catch (e) {
       console.error(e);
+      setHistory(prevHistory);
+      toast.error("Couldn't clear history. Try again.");
     }
   };
 
   const handleDeleteSavedSearch = async (id) => {
+    const prevSavedSearches = savedSearches;
     setSavedSearches((prev) => prev.filter((s) => s._id !== id));
     try {
       await api.delete(`/search/saved/${id}`);
     } catch (e) {
       console.error(e);
+      setSavedSearches(prevSavedSearches);
+      toast.error("Couldn't remove saved search. Try again.");
     }
   };
 

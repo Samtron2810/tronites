@@ -194,6 +194,20 @@ const Profile = () => {
   const handleFollow = async () => {
     if (isFollowingLoading) return;
     setIsFollowingLoading(true);
+    const prevFollowing = isFollowing;
+    const nextFollowing = !prevFollowing;
+    const prevFollowers = profile.followers;
+    // Optimistic: flip button state and the followers array immediately,
+    // roll both back on failure.
+    setIsFollowing(nextFollowing);
+    setProfile((prev) => ({
+      ...prev,
+      followers: nextFollowing
+        ? [...prev.followers, { _id: currentUser._id }]
+        : prev.followers.filter(
+            (f) => (f._id || f).toString() !== currentUser._id.toString(),
+          ),
+    }));
     try {
       const res = await api.put(`/users/follow/${id}`);
       setIsFollowing(res.data.following);
@@ -217,6 +231,8 @@ const Profile = () => {
       ]);
     } catch (e) {
       console.error(e);
+      setIsFollowing(prevFollowing);
+      setProfile((prev) => ({ ...prev, followers: prevFollowers }));
       toast.error("Couldn't update follow status. Try again.");
     } finally {
       setIsFollowingLoading(false);

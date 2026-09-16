@@ -148,7 +148,26 @@ const Notifications = () => {
       // Only fire the PUT when there's actually something unread —
       // stops the wasteful mark-read call on every visit (§7).
       if (res.data.notifications.some((r) => !r.read)) {
-        await api.put("/notifications/mark-read");
+        // Optimistic: clear the unread highlight immediately rather than
+        // waiting on a slow connection to confirm — this is a pure
+        // read-state flag with no other side effect, low risk to flip
+        // early. Roll back to unread on failure so it's retried on the
+        // next visit/focus instead of silently staying "read" locally
+        // while the server still thinks it's unread.
+        setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+        try {
+          await api.put("/notifications/mark-read");
+        } catch (e) {
+          console.error(e);
+          setNotifications((prev) =>
+            prev.map((n) => {
+              const original = res.data.notifications.find(
+                (o) => o._id === n._id,
+              );
+              return original ? { ...n, read: original.read } : n;
+            }),
+          );
+        }
       }
     } catch (e) {
       console.error(e);

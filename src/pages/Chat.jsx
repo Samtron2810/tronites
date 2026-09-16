@@ -287,19 +287,25 @@ const Chat = () => {
   const handleAcceptRequest = async (req) => {
     if (requestActionId) return;
     setRequestActionId(req.conversationId);
+    const prevRequests = requests;
+    // Optimistic: remove from the pending list immediately. Navigation
+    // into the thread stays gated on the server confirming acceptance —
+    // jumping into a conversation that turns out not to be accepted would
+    // be more confusing than a half-second delay on that part alone.
+    setRequests((prev) =>
+      prev.filter((r) => r.conversationId !== req.conversationId),
+    );
     try {
       await api.put(`/messages/requests/${req.otherUser._id}`, {
         action: "accept",
       });
-      setRequests((prev) =>
-        prev.filter((r) => r.conversationId !== req.conversationId),
-      );
       api.invalidate("/messages/conversations");
       // Open the now-accepted thread directly.
       setActiveTab("messages");
       loadConversation(req.otherUser);
     } catch (e) {
       console.error(e);
+      setRequests(prevRequests);
       alert(e?.response?.data?.message || "Couldn't accept request.");
     } finally {
       setRequestActionId(null);
@@ -309,16 +315,18 @@ const Chat = () => {
   const handleDeclineRequest = async (req) => {
     if (requestActionId) return;
     setRequestActionId(req.conversationId);
+    const prevRequests = requests;
+    setRequests((prev) =>
+      prev.filter((r) => r.conversationId !== req.conversationId),
+    );
     try {
       await api.put(`/messages/requests/${req.otherUser._id}`, {
         action: "decline",
       });
-      setRequests((prev) =>
-        prev.filter((r) => r.conversationId !== req.conversationId),
-      );
       api.invalidate("/messages/conversations");
     } catch (e) {
       console.error(e);
+      setRequests(prevRequests);
       alert(e?.response?.data?.message || "Couldn't decline request.");
     } finally {
       setRequestActionId(null);
