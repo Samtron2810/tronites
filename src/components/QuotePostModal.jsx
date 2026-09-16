@@ -18,11 +18,11 @@ const QuotePostModal = ({ post, closeModal, onSubmit }) => {
   // Quotes are authored posts — the quoter's own tier limit applies
   // (enforced server-side in createQuotePost as well).
   const charLimit = getCharLimit(user);
-  const nearLimit = charLimit - text.length <= 20;
   const [text, setText] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const textareaRef = useRef(null);
   const mention = useMentionAutocomplete();
+  const nearLimit = charLimit - text.length <= 20;
 
   // Mobile back button closes the composer; UI closes consume the pushed
   // history entry so history stays balanced (see the hook).
