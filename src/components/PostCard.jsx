@@ -274,12 +274,9 @@ const PostCard = ({
     }
   };
   const [showTipModal, setShowTipModal] = useState(false);
-  // Whether this viewer already has an active paid subscription to the
-  // post's creator. Currently a plain constant — real subscription state
-  // is resolved inside SubscriberOnlyGate/SubscribeModal once a viewer
-  // unlocks a post; written as a named value so a future server-side
-  // membership check can slot straight in.
-  const viewerIsSubscriber = false;
+  // Subscriber-only gating is resolved inside SubscriberOnlyGate against
+  // GET /creator-monetization/subscribe/status/:creatorId — the post
+  // payload carries no membership state, so there's no flag here.
   const triggerRef = useRef(null);
   // Separate small dropdown for the repost button (Repost vs Quote) —
   // distinct from the "..." options menu above, since it's opened by a
@@ -1246,9 +1243,7 @@ const PostCard = ({
           <>{/* ── Subscriber gate — wraps text + media for subscriber-only posts ── */}
           <SubscriberOnlyGate
             creator={{ _id: userId, name, username, profilePic }}
-            isSubscribed={
-              privacy !== "subscribers" || isOwner || viewerIsSubscriber
-            }
+            isSubscribed={privacy !== "subscribers" || isOwner}
           >
           <p
             onClick={openDetail}

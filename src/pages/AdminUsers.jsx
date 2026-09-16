@@ -7,6 +7,7 @@ import ConfirmRoleChangeModal from "../components/ConfirmRoleChangeModal";
 import ConfirmPermissionChangeModal from "../components/ConfirmPermissionChangeModal";
 import ConfirmRestrictionModal from "../components/ConfirmRestrictionModal";
 import ConfirmVerificationModal from "../components/ConfirmVerificationModal";
+import CaseHistoryModal from "../components/CaseHistoryModal";
 import VerifiedBadge from "../components/VerifiedBadge";
 import { useAuth } from "../context/useAuth";
 import defaultAvatar from "../assets/defaultAvatar";
@@ -20,6 +21,7 @@ import {
   FiChevronDown,
   FiCheck,
   FiEyeOff,
+  FiFileText,
 } from "react-icons/fi";
 
 const ROLE_TABS = [
@@ -49,6 +51,7 @@ const AccountActionsMenu = ({
   onRequestGrantVerification,
   onRequestRevokeVerification,
   onToggleShadowRank,
+  onRequestCaseHistory,
 }) => {
   const menuRef = useRef(null);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -95,6 +98,18 @@ const AccountActionsMenu = ({
           overlay on it look shifted/overflowing. */}
       {menuOpen && (
         <div className="absolute right-0 mt-2 w-52 max-w-[calc(100vw-2.5rem)] bg-card rounded-lg shadow-lg border border-stroke z-40 py-1">
+          {/* Phase 7 — Moderator notes + one-screen case history. */}
+          <button
+            onClick={() => {
+              setMenuOpen(false);
+              onRequestCaseHistory(target);
+            }}
+            className="w-full flex items-center gap-2 px-4 py-2.5 text-base text-ink-sub hover:bg-surface transition"
+          >
+            <FiFileText size={14} className="shrink-0" />
+            <span className="font-medium">Case history…</span>
+          </button>
+          <div className="my-1 border-t border-stroke" />
           {/* Feature 9 — Shadow-rank throttle. Reduces algorithmic reach
               without suspending or banning — posts stay visible to followers. */}
           {canRestrict && (
@@ -210,6 +225,7 @@ const RoleRow = ({
   onRequestGrantVerification,
   onRequestRevokeVerification,
   onToggleShadowRank,
+  onRequestCaseHistory,
 }) => {
   const isSelf = target._id === currentUserId;
   const isSuspended =
@@ -317,6 +333,7 @@ const RoleRow = ({
           onRequestGrantVerification={onRequestGrantVerification}
           onRequestRevokeVerification={onRequestRevokeVerification}
           onToggleShadowRank={onToggleShadowRank}
+          onRequestCaseHistory={onRequestCaseHistory}
         />
       )}
     </>
@@ -419,6 +436,8 @@ const AdminUsers = () => {
   // Phase 1 — { user, mode: "grant" | "revoke", revokeType? } for the
   // verification badge modal.
   const [pendingVerification, setPendingVerification] = useState(null);
+  // Phase 7 — { user } for the moderator case-history/notes modal.
+  const [pendingCaseHistory, setPendingCaseHistory] = useState(null);
   // Phase 6 — bulk selection ("_id" strings), the bulk confirm modal,
   // and the user-list sort option ("Most reported").
   const [selectedIds, setSelectedIds] = useState(() => new Set());
@@ -851,6 +870,14 @@ Enter a reason (optional):`,
           onCancel={() => setPendingRestriction(null)}
         />
       )}
+      {pendingCaseHistory && (
+        <CaseHistoryModal
+          user={pendingCaseHistory.user}
+          currentUserId={user._id}
+          viewerRole={user.role}
+          onClose={() => setPendingCaseHistory(null)}
+        />
+      )}
       <div className="flex items-center gap-2 mb-1">
         <FiShield className="text-primary-600" size={18} />
         <h1 className="text-2xl font-bold text-ink">Manage roles</h1>
@@ -990,6 +1017,9 @@ Enter a reason (optional):`,
                 })
               }
               onToggleShadowRank={handleToggleShadowRank}
+              onRequestCaseHistory={(target) =>
+                setPendingCaseHistory({ user: target })
+              }
               selected={selectedIds.has(u._id)}
               onToggleSelect={() => toggleSelected(u._id)}
               expanded={expandedUserId === u._id}

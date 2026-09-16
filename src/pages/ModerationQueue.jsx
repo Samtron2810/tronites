@@ -5,6 +5,7 @@ import MainLayout from "../layouts/MainLayout";
 import api from "../services/api";
 import ConfirmRestrictionModal from "../components/ConfirmRestrictionModal";
 import ReportContextModal from "../components/ReportContextModal";
+import CaseHistoryModal from "../components/CaseHistoryModal";
 import { useAuth } from "../context/useAuth";
 import { FiExternalLink, FiCheck, FiX, FiInbox, FiAlertTriangle, FiFileText, FiAward } from "react-icons/fi";
 import { VERIFICATION_META } from "../constants/verification";
@@ -57,6 +58,7 @@ const ReportCard = ({
   onView,
   onRequestRestriction,
   onWarn,
+  onCaseHistory,
 }) => {
   const [resolving, setResolving] = useState(false);
   const [note, setNote] = useState("");
@@ -223,6 +225,14 @@ const ReportCard = ({
             className="shrink-0 flex items-center gap-1 text-sm font-medium text-primary-600 hover:text-primary-800 px-2.5 py-1.5 rounded-lg border border-stroke hover:bg-primary-50 transition"
           >
             View <FiExternalLink size={12} />
+          </button>
+        )}
+        {report.targetOwner?._id && (
+          <button
+            onClick={() => onCaseHistory(report)}
+            className="shrink-0 flex items-center gap-1 text-sm font-medium text-ink-sub hover:text-primary-700 px-2.5 py-1.5 rounded-lg border border-stroke hover:border-primary-300 hover:bg-primary-50 transition"
+          >
+            <FiFileText size={12} /> Case history
           </button>
         )}
       </div>
@@ -712,6 +722,8 @@ const ModerationQueue = () => {
   const [contextReport, setContextReport] = useState(null);
   // { report, mode } — user-report restriction shortcut modal (Phase 2).
   const [pendingUserRestriction, setPendingUserRestriction] = useState(null);
+  // Phase 7 — { user } open in the case-history/notes modal.
+  const [caseHistoryUser, setCaseHistoryUser] = useState(null);
 
   const isModerator = user && ["moderator", "admin"].includes(user.role);
   const isAdmin = user?.role === "admin";
@@ -953,6 +965,14 @@ const ModerationQueue = () => {
           }}
         />
       )}
+      {caseHistoryUser && (
+        <CaseHistoryModal
+          user={caseHistoryUser}
+          currentUserId={user?._id}
+          viewerRole={user?.role}
+          onClose={() => setCaseHistoryUser(null)}
+        />
+      )}
       {pendingUserRestriction && (
         <ConfirmRestrictionModal
           mode={pendingUserRestriction.mode}
@@ -1051,6 +1071,10 @@ const ModerationQueue = () => {
                     setPendingUserRestriction({ report, mode })
                   }
                   onWarn={handleWarn}
+                  onCaseHistory={(report) =>
+                    report.targetOwner &&
+                    setCaseHistoryUser(report.targetOwner)
+                  }
                 />
               ))}
             </div>
