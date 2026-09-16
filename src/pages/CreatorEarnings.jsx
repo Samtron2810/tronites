@@ -11,6 +11,7 @@ import {
   FaClock,
   FaTimesCircle,
   FaChevronLeft,
+  FaUsers,
 } from "react-icons/fa";
 import api from "../services/api";
 import toast from "react-hot-toast";
@@ -195,13 +196,66 @@ const PayoutRequest = ({ availableKobo, minPayoutNgn, hasBankAccount, onRequeste
   );
 };
 
-// ─── Main page ───────────────────────────────────────────────────────────────
+// ─── Paginated list loader (tips / subscribers) ──────────────────────────────
+const usePaginatedList = (endpoint, dataKey) => {
+  const [items, setItems] = useState([]);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+  const limit = 15;
+
+  const fetchPage = useCallback(async (p) => {
+    setLoading(true);
+    try {
+      const res = await api.get(endpoint, { params: { page: p, limit } });
+      setItems(res.data[dataKey] || []);
+      setTotal(res.data.total || 0);
+      setPage(p);
+      setLoaded(true);
+    } catch {
+      toast.error("Could not load list.");
+    } finally {
+      setLoading(false);
+    }
+  }, [endpoint, dataKey]);
+
+  return { items, page, total, limit, loading, loaded, fetchPage };
+};
+// ─── Pagination footer ────────────────────────────────────────────────────────
+const PageFooter = ({ page, limit, total, onPage, loading }) => {
+  const pages = Math.ceil(total / limit);
+  if (pages <= 1) return null;
+  return (
+    <div className="flex items-center justify-center gap-3 pt-2">
+      <button
+        onClick={() => onPage(page - 1)}
+        disabled={page <= 1 || loading}
+        className="px-3 py-1.5 rounded-lg border border-stroke text-xs font-semibold text-ink disabled:opacity-40"
+      >
+        Prev
+      </button>
+      <span className="text-xs text-ink-muted">{page} / {pages}</span>
+      <button
+        onClick={() => onPage(page + 1)}
+        disabled={page >= pages || loading}
+        className="px-3 py-1.5 rounded-lg border border-stroke text-xs font-semibold text-ink disabled:opacity-40"
+      >
+        Next
+      </button>
+    </div>
+  );
+};
+
 const CreatorEarnings = () => {
   const [data, setData] = useState(null);
   const [bankAccount, setBankAccount] = useState(null);
   const [payoutHistory, setPayoutHistory] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState("overview"); // overview | tips | payouts | bank
+  const [tab, setTab] = useState("overview"); // overview | tips | subscribers | payouts | bank
+
+  const tipsList = usePaginatedList("/tips/received", "tips");
+  const subsList = usePaginatedList("/creator-monetization/subscribers", "subscribers");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -223,6 +277,12 @@ const CreatorEarnings = () => {
 
   useEffect(() => { load(); }, [load]);
 
+  useEffect(() => {
+    if (tab === "tips" && !tipsList.loaded) tipsList.fetchPage(1);
+    if (tab === "subscribers" && !subsList.loaded) subsList.fetchPage(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab]);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -232,13 +292,13 @@ const CreatorEarnings = () => {
   }
 
   const e = data?.earnings || {};
-  const tips = data?.recentTips || [];
   const subCount = data?.activeSubscriberCount || 0;
   const minPayoutNgn = data?.minPayoutNgn || 500;
 
   const TABS = [
     { id: "overview", label: "Overview" },
-    { id: "tips", label: "Tips & Subs" },
+    { id: "tips", label: "Tips" },
+    { id: "subscribers", label: "Subscribers" },
     { id: "payouts", label: "Payouts" },
     { id: "bank", label: "Bank" },
   ];
@@ -299,47 +359,98 @@ const CreatorEarnings = () => {
         </div>
       )}
 
-      {/* Tips & Subscriptions */}
+      {/* Tips */}
       {tab === "tips" && (
         <div className="space-y-3">
-          {tips.length === 0 ? (
+          {tipsList.loading && tipsList.items.length === 0 ? (
+            <div className="flex justify-center py-12">
+              <FaSpinner size={18} className="animate-spin text-primary-500" />
+            </div>
+          ) : tipsList.items.length === 0 ? (
             <div className="text-center py-12 text-ink-muted text-sm">
               No tips received yet.
             </div>
           ) : (
-            tips.map((tip) => (
-              <div
-                key={tip._id}
-                className="bg-card border border-stroke rounded-2xl px-4 py-3 flex items-center gap-3"
-              >
-                {tip.sender ? (
+            <>
+              {tipsList.items.map((tip) => (
+                <div
+                  key={tip._id}
+                  className="bg-card border border-stroke rounded-2xl px-4 py-3 flex items-center gap-3"
+                >
+                  {tip.sender ? (
+                    <img
+                      src={tip.sender.profilePic || ""}
+                      alt={tip.sender.name}
+                      className="w-9 h-9 rounded-full object-cover bg-surface shrink-0"
+                    />
+                  ) : (
+                    <div className="w-9 h-9 rounded-full bg-surface flex items-center justify-center shrink-0">
+                      <FaHeart size={13} className="text-ink-muted" />
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-ink leading-none">
+                      {tip.sender ? tip.sender.name : "Anonymous"}
+                    </p>
+                    {tip.message && (
+                      <p className="text-xs text-ink-muted mt-0.5 truncate">"{tip.message}"</p>
+                    )}
+                    <p className="text-xs text-ink-muted mt-0.5">
+                      {new Date(tip.createdAt).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="text-sm font-bold text-green-600">{fmt(tip.amountKobo)}</p>
+                    <StatusPill status={tip.status} />
+                  </div>
+                </div>
+              ))}
+              <PageFooter {...tipsList} onPage={tipsList.fetchPage} />
+            </>
+          )}
+        </div>
+      )}
+
+      {/* Subscribers */}
+      {tab === "subscribers" && (
+        <div className="space-y-3">
+          {subsList.loading && subsList.items.length === 0 ? (
+            <div className="flex justify-center py-12">
+              <FaSpinner size={18} className="animate-spin text-primary-500" />
+            </div>
+          ) : subsList.items.length === 0 ? (
+            <div className="text-center py-12 text-ink-muted text-sm">
+              No active subscribers yet.
+            </div>
+          ) : (
+            <>
+              {subsList.items.map((sub) => (
+                <div
+                  key={sub._id}
+                  className="bg-card border border-stroke rounded-2xl px-4 py-3 flex items-center gap-3"
+                >
                   <img
-                    src={tip.sender.profilePic || ""}
-                    alt={tip.sender.name}
+                    src={sub.subscriber?.profilePic || ""}
+                    alt={sub.subscriber?.name}
                     className="w-9 h-9 rounded-full object-cover bg-surface shrink-0"
                   />
-                ) : (
-                  <div className="w-9 h-9 rounded-full bg-surface flex items-center justify-center shrink-0">
-                    <FaHeart size={13} className="text-ink-muted" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-ink leading-none">
+                      {sub.subscriber?.name}
+                    </p>
+                    <p className="text-xs text-ink-muted mt-0.5">
+                      @{sub.subscriber?.username}
+                    </p>
                   </div>
-                )}
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-ink leading-none">
-                    {tip.sender ? tip.sender.name : "Anonymous"}
-                  </p>
-                  {tip.message && (
-                    <p className="text-xs text-ink-muted mt-0.5 truncate">"{tip.message}"</p>
-                  )}
-                  <p className="text-xs text-ink-muted mt-0.5">
-                    {new Date(tip.createdAt).toLocaleDateString()}
-                  </p>
+                  <div className="text-right shrink-0">
+                    <p className="text-xs text-ink-muted flex items-center gap-1 justify-end">
+                      <FaUsers size={10} />Renews {new Date(sub.currentPeriodEnd).toLocaleDateString()}
+                    </p>
+                  </div>
                 </div>
-                <div className="text-right shrink-0">
-                  <p className="text-sm font-bold text-green-600">{fmt(tip.amountKobo)}</p>
-                  <StatusPill status={tip.status} />
-                </div>
-              </div>
-            ))
+              ))}
+              <PageFooter {...subsList} onPage={subsList.fetchPage} />
+            </>
           )}
         </div>
       )}

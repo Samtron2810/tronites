@@ -131,7 +131,7 @@ const StepEligibility = ({ checks, allMet, onProceed }) => (
 
 // ── Step: Badge type picker ───────────────────────────────────────────
 // disabledTypes: map of type → reason string (shown as tooltip/subtext)
-const StepType = ({ selectableTypes, disabledTypes, selectedType, onSelect, onNext, feeInfo }) => (
+const StepType = ({ selectableTypes, disabledTypes, selectedType, onSelect, onNext, feeInfo, checking }) => (
   <div className="space-y-4">
     <div>
       <h3 className="text-base font-semibold text-ink mb-0.5">Choose a badge type</h3>
@@ -194,10 +194,14 @@ const StepType = ({ selectableTypes, disabledTypes, selectedType, onSelect, onNe
     </div>
     <button
       onClick={onNext}
-      disabled={!selectedType || !selectableTypes.includes(selectedType)}
+      disabled={!selectedType || !selectableTypes.includes(selectedType) || checking}
       className="w-full py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-sm font-semibold text-white disabled:opacity-50 disabled:cursor-not-allowed transition flex items-center justify-center gap-1.5"
     >
-      Continue <FiChevronRight size={16} />
+      {checking ? (
+        <span className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+      ) : (
+        <>Continue <FiChevronRight size={16} /></>
+      )}
     </button>
   </div>
 );
@@ -683,7 +687,18 @@ const VerificationSection = ({ embedded = false }) => {
     }
   };
 
-  const handleTypeNext = () => {
+  const [checkingEligibility, setCheckingEligibility] = useState(false);
+
+  const handleTypeNext = async () => {
+    setCheckingEligibility(true);
+    try {
+      await api.get("/verification-requests/eligibility", { params: { type: selectedType } });
+    } catch (e) {
+      toast.error(e.response?.data?.message || "You're not eligible for this badge type yet.");
+      setCheckingEligibility(false);
+      return;
+    }
+    setCheckingEligibility(false);
     const fee = feeInfo[selectedType];
     if (fee?.requiresPayment) {
       setView("step-payment");
@@ -870,6 +885,7 @@ const VerificationSection = ({ embedded = false }) => {
           onSelect={setSelectedType}
           onNext={handleTypeNext}
           feeInfo={feeInfo}
+          checking={checkingEligibility}
         />
       )}
 

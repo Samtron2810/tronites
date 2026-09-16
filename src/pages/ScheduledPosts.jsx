@@ -12,6 +12,8 @@ import {
   FaPaperPlane,
   FaImage,
   FaVideo,
+  FaEdit,
+  FaTimes,
 } from "react-icons/fa";
 
 // Short TTL — scheduled posts are mutable (user can publish/delete them),
@@ -40,12 +42,88 @@ const timeUntil = (iso) => {
   return `in ${m}m`;
 };
 
+// datetime-local input <-> ISO helpers (local time, no timezone conversion surprises)
+const isoToLocalInput = (iso) => {
+  const d = new Date(iso);
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+};
+const localInputToIso = (val) => new Date(val).toISOString();
+
+const RescheduleModal = ({ post, onClose, onSaved }) => {
+  const [value, setValue] = useState(isoToLocalInput(post.scheduledFor));
+  const [saving, setSaving] = useState(false);
+  const minValue = isoToLocalInput(new Date(Date.now() + 60_000).toISOString());
+
+  const handleSave = async () => {
+    const iso = localInputToIso(value);
+    if (new Date(iso) <= new Date()) {
+      toast.error("Pick a time in the future.");
+      return;
+    }
+    setSaving(true);
+    try {
+      await api.put(`/posts/${post._id}/schedule`, { scheduledFor: iso });
+      api.invalidate(CACHE_PREFIX);
+      toast.success("Schedule updated.");
+      onSaved(iso);
+    } catch (e) {
+      toast.error(e.response?.data?.message || "Failed to reschedule.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" onClick={onClose}>
+      <div
+        className="bg-card border border-stroke rounded-2xl w-full max-w-sm p-5 space-y-4"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-bold text-ink">Reschedule post</h3>
+          <button onClick={onClose} className="p-1.5 rounded-lg text-ink-muted hover:bg-surface transition">
+            <FaTimes size={14} />
+          </button>
+        </div>
+        <div>
+          <label className="block text-xs text-ink-muted mb-1">New date & time</label>
+          <input
+            type="datetime-local"
+            value={value}
+            min={minValue}
+            onChange={(e) => setValue(e.target.value)}
+            className="w-full px-3 py-2.5 bg-surface border border-stroke rounded-xl text-sm text-ink focus:outline-none focus:border-primary-400 transition"
+          />
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={onClose}
+            className="flex-1 py-2.5 rounded-xl border border-stroke text-sm font-semibold text-ink hover:bg-surface transition"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="flex-1 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold transition disabled:opacity-50 flex items-center justify-center gap-2"
+          >
+            {saving ? <span className="w-3 h-3 border-2 border-white/40 border-t-white rounded-full animate-spin" /> : null}
+            {saving ? "Saving…" : "Save"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const ScheduledPosts = () => {
   const navigate = useNavigate();
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [cancelling, setCancelling] = useState(null);
   const [publishing, setPublishing] = useState(null);
+  const [rescheduling, setRescheduling] = useState(null); // post object or null
 
   const fetchPosts = useCallback(async ({ silent = false } = {}) => {
     if (!silent) setLoading(true);
@@ -206,6 +284,13 @@ const ScheduledPosts = () => {
                   )}
                 </button>
                 <button
+                  onClick={() => setRescheduling(post)}
+                  title="Change scheduled time"
+                  className="w-8 h-8 rounded-xl flex items-center justify-center bg-surface hover:bg-primary-50 text-ink-muted hover:text-primary-600 transition"
+                >
+                  <FaEdit size={11} />
+                </button>
+                <button
                   onClick={() => handleCancel(post._id)}
                   disabled={!!cancelling}
                   title="Delete scheduled post"
@@ -221,6 +306,19 @@ const ScheduledPosts = () => {
             </div>
           ))}
         </div>
+      )}
+
+      {rescheduling && (
+        <RescheduleModal
+          post={rescheduling}
+          onClose={() => setRescheduling(null)}
+          onSaved={(newIso) => {
+            setPosts((prev) =>
+              prev.map((p) => p._id === rescheduling._id ? { ...p, scheduledFor: newIso } : p)
+            );
+            setRescheduling(null);
+          }}
+        />
       )}
     </MainLayout>
   );
