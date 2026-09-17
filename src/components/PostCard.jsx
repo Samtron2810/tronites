@@ -57,6 +57,8 @@ import {
   POST_EDIT_COOLDOWN_MS,
 } from "../utils/tierLimits";
 import PromotePostModal from "./PromotePostModal";
+import AdminPromotePostModal from "./AdminPromotePostModal";
+import { hasPermission } from "../constants/permissions";
 import TipModal from "./TipModal";
 import SubscriberOnlyGate from "./SubscriberOnlyGate";
 
@@ -233,6 +235,16 @@ const PostCard = ({
     setSyncedReactionSummary(reactionSummary);
     setReactionSummaryState(reactionSummary || {});
   }
+  // Same synced-prop pattern, for the one non-owner mutation this card
+  // can trigger on a post it doesn't own: an admin/moderator granting a
+  // free promotion (see canAdminPromoteThisPost below) updates this
+  // locally so isCurrentlyPromoted flips without a refetch.
+  const [syncedPromotedUntil, setSyncedPromotedUntil] = useState(promotedUntil);
+  const [promotedUntilState, setPromotedUntilState] = useState(promotedUntil);
+  if (promotedUntil !== syncedPromotedUntil) {
+    setSyncedPromotedUntil(promotedUntil);
+    setPromotedUntilState(promotedUntil);
+  }
   const [showComments, setShowComments] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   // Optimistic delete: hide the card immediately on confirm, restore it
@@ -251,8 +263,23 @@ const PostCard = ({
   // True when THIS post (not "is this feed slot a sponsored injection")
   // currently has an active, unexpired promotion — drives the owner-facing
   // dropdown disable/relabel (bug: previously always clickable, opening the
-  // modal and immediately erroring "already promoted").
-  const isCurrentlyPromoted = Boolean(promotedUntil && new Date(promotedUntil) > new Date());
+  // modal and immediately erroring "already promoted"). Reads the synced
+  // local override so an admin-granted promotion (see below) reflects here
+  // immediately too, not just the original prop.
+  const isCurrentlyPromoted = Boolean(promotedUntilState && new Date(promotedUntilState) > new Date());
+  // Admin/moderator comp — a non-owner path distinct from the owner's own
+  // paid Promote above. Gated on the POST AUTHOR's tier (canPromote reads
+  // `verifications`, which here is the AUTHOR's badges, not the viewer's —
+  // same prop PostCard already uses for the Tip-button creator check), the
+  // viewer's manage_content permission, and the same already-promoted /
+  // pending-payment conflict guards the paid flow uses server-side.
+  const [showAdminPromoteModal, setShowAdminPromoteModal] = useState(false);
+  const canAdminPromoteThisPost =
+    !isOwner &&
+    hasPermission(currentUser, "manage_content") &&
+    canPromote({ verifications }) &&
+    !isCurrentlyPromoted &&
+    !promotionReference;
   const [ctaClicking, setCtaClicking] = useState(false);
 
   const handleCtaClick = async (e) => {
@@ -858,6 +885,20 @@ const PostCard = ({
         />
       )}
 
+      {showAdminPromoteModal && (
+        <AdminPromotePostModal
+          postId={postId}
+          postText={postText}
+          authorName={name}
+          authorUsername={username}
+          onClose={() => setShowAdminPromoteModal(false)}
+          onPromoted={(newPromotedUntil) => {
+            setPromotedUntilState(newPromotedUntil);
+            setShowAdminPromoteModal(false);
+          }}
+        />
+      )}
+
       {showTipModal && (
         <TipModal
           creator={{ _id: userId, name, username, profilePic }}
@@ -915,8 +956,9 @@ const PostCard = ({
         isQuotePost={isQuotePost}
         onQuote={() => setShowQuoteModal(true)}
         promotionReference={promotionReference}
-        promotedUntil={promotedUntil}
+        promotedUntil={promotedUntilState}
         onPromote={() => setShowPromoteModal(true)}
+        onAdminPromote={() => setShowAdminPromoteModal(true)}
         isOwnProfile={isOwnProfile}
         pinnedPostIds={pinnedPostIds}
         onTogglePin={onTogglePin}
@@ -1171,16 +1213,30 @@ const PostCard = ({
                     </button>
                   </>
                 ) : (
-                  <button
-                    onClick={() => {
-                      setReportTarget({ type: "post" });
-                      setMenuOpen(false);
-                    }}
-                    className="w-full flex items-center gap-3 px-4 py-2.5 text-base text-ink-sub hover:bg-surface transition"
-                  >
-                    <FiFlag className="text-amber-500" size={13} />
-                    <span className="font-medium">Report post</span>
-                  </button>
+                  <>
+                    {canAdminPromoteThisPost && (
+                      <button
+                        onClick={() => {
+                          setMenuOpen(false);
+                          setShowAdminPromoteModal(true);
+                        }}
+                        className="w-full flex items-center gap-3 px-4 py-2.5 text-base text-ink hover:bg-primary-50 transition"
+                      >
+                        <span className="text-sm font-bold text-primary-600">⚡</span>
+                        <span className="font-medium">Promote for creator</span>
+                      </button>
+                    )}
+                    <button
+                      onClick={() => {
+                        setReportTarget({ type: "post" });
+                        setMenuOpen(false);
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-2.5 text-base text-ink-sub hover:bg-surface transition"
+                    >
+                      <FiFlag className="text-amber-500" size={13} />
+                      <span className="font-medium">Report post</span>
+                    </button>
+                  </>
                 )}
               </div>
             )}

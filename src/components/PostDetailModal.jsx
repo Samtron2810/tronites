@@ -35,6 +35,7 @@ import { useAuth } from "../context/useAuth";
 import api from "../services/api";
 import useBackButtonClose from "../hooks/useBackButtonClose";
 import { canPromote, getPinnedLimit } from "../utils/tierLimits";
+import { hasPermission } from "../constants/permissions";
 
 // Stacked-only layout at every breakpoint (confirmed — no desktop
 // side-by-side variant). Media on top, post text below it, action bar
@@ -128,6 +129,14 @@ const PostDetailModal = ({
   promotionReference = null,
   promotedUntil = null,
   onPromote,
+  // Admin/moderator comp — a non-owner path distinct from onPromote
+  // above (the owner's own paid flow). Left undefined by any caller
+  // that hasn't wired it up, which hides the menu item entirely, same
+  // graceful-degradation shape as onQuote. Visibility is gated fully
+  // inside this component (hasPermission + canPromote(author) +
+  // isCurrentlyPromoted + promotionReference below) — the caller only
+  // needs to supply the modal opener, not re-derive eligibility.
+  onAdminPromote,
   // Pin/unpin — only meaningful on the owner's own profile, where the
   // caller has pinnedPostIds to check against and a place to reflect the
   // update. Left undefined (isOwnProfile false) on any surface that
@@ -186,6 +195,18 @@ const PostDetailModal = ({
   const isPinned = Array.isArray(pinnedPostIds) && pinnedPostIds.includes(postId);
   const atPinLimit = Array.isArray(pinnedPostIds) && pinnedPostIds.length >= pinLimit;
   const isCurrentlyPromoted = Boolean(promotedUntil && new Date(promotedUntil) > new Date());
+  // Same eligibility rule as PostCard's canAdminPromoteThisPost: gated on
+  // the POST AUTHOR's tier (canPromote reads `verifications`, the
+  // author's badges here, not the viewer's), the viewer's manage_content
+  // permission, and the same already-promoted/pending-payment guards the
+  // paid flow enforces server-side.
+  const canAdminPromoteThisPost =
+    !isOwner &&
+    Boolean(onAdminPromote) &&
+    hasPermission(currentUser, "manage_content") &&
+    canPromote({ verifications }) &&
+    !isCurrentlyPromoted &&
+    !promotionReference;
 
   const handleTogglePin = async () => {
     if (isPinToggling) return;
@@ -527,16 +548,30 @@ const PostDetailModal = ({
                         </button>
                       </>
                     ) : (
-                      <button
-                        onClick={() => {
-                          setMenuOpen(false);
-                          onReport();
-                        }}
-                        className="w-full flex items-center gap-3 px-4 py-2.5 text-base text-ink-sub hover:bg-surface transition"
-                      >
-                        <FiFlag className="text-amber-500" size={13} />
-                        <span className="font-medium">Report post</span>
-                      </button>
+                      <>
+                        {canAdminPromoteThisPost && (
+                          <button
+                            onClick={() => {
+                              setMenuOpen(false);
+                              onAdminPromote();
+                            }}
+                            className="w-full flex items-center gap-3 px-4 py-2.5 text-base text-ink hover:bg-primary-50 transition"
+                          >
+                            <span className="text-sm font-bold text-primary-600">⚡</span>
+                            <span className="font-medium">Promote for creator</span>
+                          </button>
+                        )}
+                        <button
+                          onClick={() => {
+                            setMenuOpen(false);
+                            onReport();
+                          }}
+                          className="w-full flex items-center gap-3 px-4 py-2.5 text-base text-ink-sub hover:bg-surface transition"
+                        >
+                          <FiFlag className="text-amber-500" size={13} />
+                          <span className="font-medium">Report post</span>
+                        </button>
+                      </>
                     )}
                   </div>
                 )}

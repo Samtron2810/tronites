@@ -89,10 +89,16 @@ const PromotionRow = ({ promo, onResume, onCancel }) => {
         </Link>
         <div className="flex flex-col items-end gap-1 shrink-0">
           <StatusBadge status={promo.status} />
-          {promo.promotionTier && (
-            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${tierCls}`}>
-              {promo.promotionTier}
+          {promo.promotionSource === "admin" ? (
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border text-primary-600 bg-primary-50 border-primary-200">
+              Boosted by Tronites
             </span>
+          ) : (
+            promo.promotionTier && (
+              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${tierCls}`}>
+                {promo.promotionTier}
+              </span>
+            )
           )}
         </div>
       </div>

@@ -8,6 +8,7 @@ import DeletePostModal from "./DeletePostModal";
 import ReportModal from "./ReportModal";
 import QuotePostModal from "./QuotePostModal";
 import PromotePostModal from "./PromotePostModal";
+import AdminPromotePostModal from "./AdminPromotePostModal";
 import useBackButtonClose from "../hooks/useBackButtonClose";
 
 // Opens an arbitrary post's own detail view by id, fetching it fresh
@@ -45,6 +46,7 @@ const PostByIdModal = ({
   const [reportTarget, setReportTarget] = useState(null);
   const [showQuoteModal, setShowQuoteModal] = useState(false);
   const [showPromoteModal, setShowPromoteModal] = useState(false);
+  const [showAdminPromoteModal, setShowAdminPromoteModal] = useState(false);
   const [isLiking, setIsLiking] = useState(false);
   const [isBookmarking, setIsBookmarking] = useState(false);
   const [isReposting, setIsReposting] = useState(false);
@@ -89,6 +91,7 @@ const PostByIdModal = ({
     setReportTarget(null);
     setShowQuoteModal(false);
     setShowPromoteModal(false);
+    setShowAdminPromoteModal(false);
     setLoadError(null);
   }, [isOpen]);
   /* eslint-enable react-hooks/set-state-in-effect */
@@ -343,6 +346,20 @@ const PostByIdModal = ({
         />
       )}
 
+      {showAdminPromoteModal && post && (
+        <AdminPromotePostModal
+          postId={post._id}
+          postText={post.text}
+          authorName={post.user?.name}
+          authorUsername={post.user?.username}
+          onClose={() => setShowAdminPromoteModal(false)}
+          onPromoted={(newPromotedUntil) => {
+            setPost((p) => ({ ...p, promotedUntil: newPromotedUntil }));
+            setShowAdminPromoteModal(false);
+          }}
+        />
+      )}
+
       {loadError && !loading && !post && (
         <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center px-4">
           <div className="bg-card border border-stroke rounded-2xl shadow-xl p-6 w-full max-w-sm text-center">
@@ -404,6 +421,7 @@ const PostByIdModal = ({
           promotionReference={post.promotionReference}
           promotedUntil={post.promotedUntil}
           onPromote={() => setShowPromoteModal(true)}
+          onAdminPromote={() => setShowAdminPromoteModal(true)}
           onCopy={handleCopy}
           onEdit={() => {}}
           onDelete={() => setShowDeleteModal(true)}

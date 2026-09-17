@@ -6,7 +6,7 @@ import NotificationSkeleton from "../components/NotificationSkeleton";
 import api from "../services/api";
 import { useRefetchOnFocus } from "../hooks/useRefetchOnFocus";
 import { useSocket } from "../context/useSocket";
-import { FaHeart, FaRegComment, FaUserPlus, FaAt, FaReply, FaBell, FaShieldAlt, FaExclamationTriangle, FaRetweet, FaQuoteRight, FaRegSmile, FaAward, FaTimesCircle, FaClock } from "react-icons/fa";
+import { FaHeart, FaRegComment, FaUserPlus, FaAt, FaReply, FaBell, FaShieldAlt, FaExclamationTriangle, FaRetweet, FaQuoteRight, FaRegSmile, FaAward, FaTimesCircle, FaClock, FaBolt } from "react-icons/fa";
 import defaultAvatar from "../assets/defaultAvatar";
 import { resizedImageUrl, IMAGE_SIZES } from "../utils/cloudinaryImage";
 import VerifiedBadge from "../components/VerifiedBadge";
@@ -36,6 +36,12 @@ const typeConfig = {
   verification_approved: { icon: FaAward, color: "text-primary-600", label: "" },
   verification_denied:   { icon: FaTimesCircle, color: "text-red-500",  label: "" },
   verification_expired:  { icon: FaClock,       color: "text-amber-500", label: "" },
+  // A moderator/admin granted a free promotion (adminPromotePost). Renders
+  // like moderator_warning/verification_*: system avatar, no sender link
+  // (the creator sees "The Tronites team", not which moderator granted
+  // it — see controllers/promotedPostController.js's notification copy),
+  // full message from n.message. Clickable — links to the boosted post.
+  post_admin_promoted: { icon: FaBolt, color: "text-primary-600", label: "" },
 };
 
 // Router target a notification row navigates to when clicked — the
@@ -57,6 +63,7 @@ const rowTarget = (row) => {
     case "repost":
     case "quote":
     case "reaction":
+    case "post_admin_promoted":
       return `/post/${postId}`;
     case "comment":
     case "commentLike":
@@ -278,16 +285,16 @@ const Notifications = () => {
                         : "bg-primary-50"
                 } ${target ? "cursor-pointer" : ""}`}
               >
-                {["moderator_warning", "verification_approved", "verification_denied", "verification_expired"].includes(row.type) ? (
+                {["moderator_warning", "verification_approved", "verification_denied", "verification_expired", "post_admin_promoted"].includes(row.type) ? (
                   // System notifications — no sender identity. Icon and
                   // colour come from typeConfig for the specific type.
                   (() => {
                     const cfg = typeConfig[row.type];
                     const Icon = cfg?.icon || FaShieldAlt;
-                    const isApproved = row.type === "verification_approved";
+                    const isPositive = row.type === "verification_approved" || row.type === "post_admin_promoted";
                     return (
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ring-2 shrink-0 ${isApproved ? "bg-primary-100 ring-primary-200" : "bg-amber-100 ring-amber-200"}`}>
-                        <Icon className={isApproved ? "text-primary-600" : "text-amber-600"} size={16} />
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ring-2 shrink-0 ${isPositive ? "bg-primary-100 ring-primary-200" : "bg-amber-100 ring-amber-200"}`}>
+                        <Icon className={isPositive ? "text-primary-600" : "text-amber-600"} size={16} />
                       </div>
                     );
                   })()
@@ -319,7 +326,7 @@ const Notifications = () => {
                     />
                   </Link>
                 )}
-                {["moderator_warning", "verification_approved", "verification_denied", "verification_expired"].includes(row.type) ? (
+                {["moderator_warning", "verification_approved", "verification_denied", "verification_expired", "post_admin_promoted"].includes(row.type) ? (
                   // System notification — render message from n.message directly.
                   <div className="flex-1 min-w-0">
                     {row.type === "moderator_warning" ? (
@@ -330,6 +337,16 @@ const Notifications = () => {
                         </p>
                         {row.message && (
                           <p className="text-base text-ink-sub mt-1">"{row.message}"</p>
+                        )}
+                      </>
+                    ) : row.type === "post_admin_promoted" ? (
+                      <>
+                        <p className="text-base text-ink">
+                          <span className="font-semibold">The Tronites team</span>{" "}
+                          <span className="text-ink-sub">boosted your post</span>
+                        </p>
+                        {row.message && (
+                          <p className="text-sm text-ink-sub mt-0.5">{row.message}</p>
                         )}
                       </>
                     ) : (
