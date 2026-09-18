@@ -275,6 +275,7 @@ const CreatorEarnings = () => {
     }
   }, []);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch-on-mount; setState happens inside the async load fn, not in this effect body.
   useEffect(() => { load(); }, [load]);
 
   useEffect(() => {

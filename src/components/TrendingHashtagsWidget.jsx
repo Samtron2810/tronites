@@ -30,6 +30,7 @@ const TrendingHashtagsWidget = () => {
   useEffect(() => {
     const cached = getCached(cacheKey);
     if (cached) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- TTL-cache fast path; the fetch below covers a miss.
       setTags(cached);
       return;
     }

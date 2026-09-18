@@ -30,6 +30,7 @@ const SubscriberOnlyGate = ({ creator, isSubscribed, children }) => {
     if (!creatorId) return;
 
     if (SUBSCRIBED_CACHE.has(creatorId)) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- fast path from the module cache; the request below still owns the authoritative unlock.
       setLocalSubscribed(SUBSCRIBED_CACHE.get(creatorId));
       return;
     }

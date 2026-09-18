@@ -204,11 +204,13 @@ const CreateCampaignModal = ({ onClose, onCreated, tiers, currentUserId }) => {
   const [ctaType, setCtaType] = useState("");
   const [destinationUrl, setDestinationUrl] = useState("");
   const [myPosts, setMyPosts] = useState([]);
-  const [loadingPosts, setLoadingPosts] = useState(true);
+  // Seeded from the prop for the same reason as the fetch guard below: with
+  // no user id there is nothing to load, so the list is not still loading.
+  const [loadingPosts, setLoadingPosts] = useState(Boolean(currentUserId));
   const [creating, setCreating] = useState(false);
 
   useEffect(() => {
-    if (!currentUserId) { setLoadingPosts(false); return; }
+    if (!currentUserId) return;
     // Posts live behind the profile endpoint, not a dedicated "/posts/user/me"
     // route — it returns a merged { items: [{ post, reposter }] } timeline
     // (posts + reposts), paginated. We only want this user's OWN authored
@@ -527,6 +529,7 @@ const CampaignManager = () => {
     }
   }, []);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch-on-mount; setState happens inside the async load fn, not in this effect body.
   useEffect(() => { load(); }, [load]);
 
   if (!canPromote(user)) {

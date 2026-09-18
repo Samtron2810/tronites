@@ -51,7 +51,7 @@ const ChooseInterests = () => {
       await api.put("/users/interests", { interests: selected });
       updateUser?.({ interests: selected });
       navigate("/", { replace: true });
-    } catch (e) {
+    } catch {
       toast.error("Couldn't save interests. Try again.");
     } finally {
       setSubmitting(false);

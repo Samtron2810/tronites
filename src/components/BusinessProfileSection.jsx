@@ -69,6 +69,7 @@ const BusinessProfileSection = ({ isOwnProfile, businessProfile: initialProfile 
   // Hydrate form from prop
   useEffect(() => {
     if (initialProfile) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- hydrates the edit form from the profile prop; re-runs when the profile request resolves, and the form is user-editable, so it cannot be derived during render.
       setForm({
         address:   initialProfile.address   || "",
         city:      initialProfile.city      || "",

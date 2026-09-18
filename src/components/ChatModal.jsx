@@ -164,15 +164,20 @@ const ChatModal = ({
   const [searchLoading, setSearchLoading] = useState(false);
   const searchInputRef = useRef(null);
 
+  // Hoisted so the memo below depends on one primitive. Depending on
+  // selectedChat?.otherUser?._id inline made the compiler infer a less
+  // specific dependency than the source one, which skipped optimizing
+  // this component (react-hooks/preserve-manual-memoization).
+  const otherUserId = selectedChat?.otherUser?._id;
+
   const handleSearch = useCallback(async (q) => {
     setSearchQuery(q);
     if (!q.trim()) { setSearchResults([]); return; }
     setSearchLoading(true);
     try {
-      const other = selectedChat?.otherUser?._id;
-      if (!other) return;
+      if (!otherUserId) return;
       const res = await api.get("/messages/search", {
-        params: { userId: other, q: q.trim(), limit: 20 },
+        params: { userId: otherUserId, q: q.trim(), limit: 20 },
       });
       setSearchResults(Array.isArray(res.data) ? res.data : (res.data?.messages || []));
     } catch {
@@ -180,7 +185,7 @@ const ChatModal = ({
     } finally {
       setSearchLoading(false);
     }
-  }, [selectedChat?.otherUser?._id]);
+  }, [otherUserId]);
 
   // Debounce search
   useEffect(() => {

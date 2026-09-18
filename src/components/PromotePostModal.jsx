@@ -63,7 +63,10 @@ const TierCard = ({ tierKey, config, selected, onSelect }) => {
 const PromotePostModal = ({ postId, postText, promotionReference, onClose }) => {
   const [tiers, setTiers] = useState(null);
   const [selectedTier, setSelectedTier] = useState("basic");
-  const [loading, setLoading] = useState(true);
+  // Seeded from the prop: a returning payment is already pending, so the fee
+  // fetch below never runs for it and the modal must not open in a loading
+  // state waiting for a request that will not be made.
+  const [loading, setLoading] = useState(!promotionReference);
   const [initiating, setInitiating] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [resuming, setResuming] = useState(false);
@@ -76,7 +79,7 @@ const PromotePostModal = ({ postId, postText, promotionReference, onClose }) => 
   const [destinationUrl, setDestinationUrl] = useState("");
 
   useEffect(() => {
-    if (hasPending) { setLoading(false); return; }
+    if (hasPending) return;
     api.get("/posts/promote/fees")
       .then((r) => setTiers(r.data.tiers))
       .catch(() => toast.error("Couldn't load promotion info."))

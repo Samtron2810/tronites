@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import MainLayout from "../layouts/MainLayout";
 import api from "../services/api";
@@ -53,7 +53,13 @@ const localInputToIso = (val) => new Date(val).toISOString();
 const RescheduleModal = ({ post, onClose, onSaved }) => {
   const [value, setValue] = useState(isoToLocalInput(post.scheduledFor));
   const [saving, setSaving] = useState(false);
-  const minValue = isoToLocalInput(new Date(Date.now() + 60_000).toISOString());
+  // Memoised so the picker floor is computed once per open rather than on
+  // every render (Date.now() during render is impure).
+  const minValue = useMemo(
+    // eslint-disable-next-line react-hooks/purity -- one-shot picker floor; stale-by-minutes is harmless (past picks rejected on submit + server re-checks)
+    () => isoToLocalInput(new Date(Date.now() + 60_000).toISOString()),
+    [],
+  );
 
   const handleSave = async () => {
     const iso = localInputToIso(value);

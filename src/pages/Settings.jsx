@@ -189,6 +189,7 @@ const Settings = () => {
   );
   const [savingInterests, setSavingInterests] = useState(false);
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- mirrors the async-updated user object into editable local state; without it the saved interests would look unselected until a refetch.
     if (user?.interests) setSelectedInterests(user.interests);
   }, [user?.interests]);
 
@@ -209,7 +210,7 @@ const Settings = () => {
       await api.put("/users/interests", { interests: selectedInterests });
       updateUser?.({ interests: selectedInterests });
       toast.success("Interests saved!");
-    } catch (e) {
+    } catch {
       toast.error("Couldn't save interests. Try again.");
     } finally {
       setSavingInterests(false);
@@ -220,6 +221,7 @@ const Settings = () => {
   const [location, setLocation] = useState(user?.location || "");
   const [savingLocation, setSavingLocation] = useState(false);
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- mirrors the async-updated user object into editable local state; without it a saved location would look empty until a refetch.
     setLocation(user?.location || "");
   }, [user?.location]);
 
@@ -230,7 +232,7 @@ const Settings = () => {
       await api.put("/users/location", { location });
       updateUser?.({ location });
       toast.success("Location updated.");
-    } catch (e) {
+    } catch {
       toast.error("Couldn't update location. Try again.");
     } finally {
       setSavingLocation(false);
@@ -243,6 +245,7 @@ const Settings = () => {
   );
   const [savingReceipts, setSavingReceipts] = useState(false);
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- mirrors the async-updated user object into editable local state; without it a saved preference would flip back until a refetch.
     setShowReadReceiptsState(user?.showReadReceipts !== false);
   }, [user?.showReadReceipts]);
 
@@ -254,7 +257,7 @@ const Settings = () => {
       await api.put("/users/read-receipts", { showReadReceipts: value });
       updateUser?.({ showReadReceipts: value });
       toast.success(value ? "Read receipts on." : "Read receipts off.");
-    } catch (e) {
+    } catch {
       setShowReadReceiptsState(!value);
       toast.error("Couldn't update setting. Try again.");
     } finally {
