@@ -929,7 +929,9 @@ const PostCard = ({
         name={name}
         username={username}
         profilePic={profilePic}
+        verifications={verifications}
         time={time}
+        privacy={privacy}
         postText={postText}
         postHasBeenEdited={postHasBeenEdited}
         postEditedAt={postEditedAt}
@@ -981,6 +983,9 @@ const PostCard = ({
         editCooldownActive={!showEditOption}
         quoteOf={isQuotePost ? quoteOf : null}
         onOpenOriginal={(id) => setOpenOriginalId(id)}
+        isPromoted={isPromoted}
+        ctaType={ctaType}
+        destinationUrl={destinationUrl}
       />
 
       {/* The embedded original's own detail view — opened by id,

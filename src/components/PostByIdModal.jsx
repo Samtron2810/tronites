@@ -430,6 +430,8 @@ const PostByIdModal = ({
           quoteOf={post.isQuotePost ? post.quoteOf : null}
           highlightCommentId={highlightCommentId}
           highlightParentId={highlightParentId}
+          ctaType={post.ctaType}
+          destinationUrl={post.destinationUrl}
         />
       )}
     </>

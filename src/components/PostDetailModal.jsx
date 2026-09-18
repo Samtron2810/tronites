@@ -19,7 +19,7 @@ import {
   FaQuoteRight,
   FaThumbtack,
 } from "react-icons/fa";
-import { FiFlag, FiUsers, FiLock } from "react-icons/fi";
+import { FiFlag, FiUsers, FiLock, FiZap, FiExternalLink } from "react-icons/fi";
 import toast from "react-hot-toast";
 import defaultAvatar from "../assets/defaultAvatar";
 import LazyImage from "./LazyImage";
@@ -29,6 +29,7 @@ import QuotedPostPreview from "./QuotedPostPreview";
 import ReactionPicker from "./ReactionPicker";
 import ReactionSummaryBar from "./ReactionSummaryBar";
 import VerifiedBadge from "./VerifiedBadge";
+import TipModal from "./TipModal";
 import { resizedImageUrl, IMAGE_SIZES } from "../utils/cloudinaryImage";
 import { useSocket } from "../context/useSocket";
 import { useAuth } from "../context/useAuth";
@@ -36,6 +37,20 @@ import api from "../services/api";
 import useBackButtonClose from "../hooks/useBackButtonClose";
 import { canPromote, getPinnedLimit } from "../utils/tierLimits";
 import { hasPermission } from "../constants/permissions";
+
+// Mirrors PostCard's own CTA_LABELS — promoted/campaign posts render a
+// CTA button here too (see the "CTA button" section below), not just
+// on the feed card.
+const CTA_LABELS = {
+  learn_more: "Learn More",
+  shop_now: "Shop Now",
+  sign_up: "Sign Up",
+  contact_us: "Contact Us",
+  download: "Download",
+  get_quote: "Get Quote",
+  visit_website: "Visit Website",
+  book_now: "Book Now",
+};
 
 // Stacked-only layout at every breakpoint (confirmed — no desktop
 // side-by-side variant). Media on top, post text below it, action bar
@@ -161,6 +176,16 @@ const PostDetailModal = ({
   // scroll-to-and-highlight behavior. See CommentsPanel's props.
   highlightCommentId,
   highlightParentId,
+  // True when this post was paid-promoted and injected into the feed the
+  // modal was opened from — mirrors PostCard's isPromoted, renders the
+  // same "Sponsored" badge here for consistency between card and modal.
+  isPromoted = false,
+  // CTA button type + destination URL — set at promote/campaign time.
+  // Rendered regardless of isPromoted (a post can carry a ctaType outside
+  // the feed-injection path too — see PostCard's own CTA comment), tracked
+  // as its own click-through event, separate from organic engagement.
+  ctaType = null,
+  destinationUrl = null,
 }) => {
   // Normalize to {url, altText} objects — handles legacy string entries and
   // ensures media[i]?.url is never undefined regardless of the call site.
@@ -195,6 +220,26 @@ const PostDetailModal = ({
   const isPinned = Array.isArray(pinnedPostIds) && pinnedPostIds.includes(postId);
   const atPinLimit = Array.isArray(pinnedPostIds) && pinnedPostIds.length >= pinLimit;
   const isCurrentlyPromoted = Boolean(promotedUntil && new Date(promotedUntil) > new Date());
+  // Tip button — shown on other people's creator posts only, same
+  // approximate client-side check as PostCard's (full check happens
+  // server-side); gated on the author's verifications, not the viewer's.
+  const [showTipModal, setShowTipModal] = useState(false);
+  const authorIsCreator = (verifications || []).some((v) => v.type === "creator");
+  const [ctaClicking, setCtaClicking] = useState(false);
+  const handleCtaClick = async (e) => {
+    e.stopPropagation();
+    if (ctaClicking || !postId) return;
+    setCtaClicking(true);
+    try {
+      const res = await api.post(`/posts/promote/cta-click/${postId}`);
+      const target = res?.data?.destinationUrl || destinationUrl;
+      if (target) window.open(target, "_blank", "noopener,noreferrer");
+    } catch {
+      if (destinationUrl) window.open(destinationUrl, "_blank", "noopener,noreferrer");
+    } finally {
+      setCtaClicking(false);
+    }
+  };
   // Same eligibility rule as PostCard's canAdminPromoteThisPost: gated on
   // the POST AUTHOR's tier (canPromote reads `verifications`, the
   // author's badges here, not the viewer's), the viewer's manage_content
@@ -385,7 +430,15 @@ const PostDetailModal = ({
   };
 
   return (
-    <div
+    <>
+      {showTipModal && (
+        <TipModal
+          creator={{ _id: userId, name, username, profilePic }}
+          postId={postId}
+          onClose={() => setShowTipModal(false)}
+        />
+      )}
+      <div
       className="fixed inset-0 z-50 bg-black/80 flex items-start min-h-full justify-center p-0 overflow-y-auto"
       onClick={onClose}
     >
@@ -395,6 +448,17 @@ const PostDetailModal = ({
       >
         {/* Header */}
         <div className="px-5 py-4 border-b border-stroke sticky top-0 bg-card z-10 sm:rounded-t-2xl">
+          {/* Sponsored badge — mirrors PostCard's, shown when this post
+              was paid-promoted and injected into the feed this modal was
+              opened from. */}
+          {isPromoted && (
+            <div className="flex items-center gap-1.5 mb-2">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary-50 border border-primary-100 text-[10.5px] font-semibold text-primary-600 tracking-wide">
+                <FiZap size={9} />
+                Sponsored
+              </span>
+            </div>
+          )}
           <div className="flex items-center justify-between">
             <div className="flex items-start sm:items-center gap-3">
               <img
@@ -734,6 +798,23 @@ const PostDetailModal = ({
           </div>
         )}
 
+        {/* CTA button — mirrors PostCard's: rendered on any post
+            carrying a ctaType (promoted post or campaign post),
+            regardless of who's viewing it or where the modal was
+            opened from. */}
+        {ctaType && CTA_LABELS[ctaType] && (
+          <div className="px-5">
+            <button
+              onClick={handleCtaClick}
+              disabled={ctaClicking}
+              className="w-full py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold transition disabled:opacity-60 flex items-center justify-center gap-2"
+            >
+              {CTA_LABELS[ctaType]}
+              <FiExternalLink size={13} />
+            </button>
+          </div>
+        )}
+
         {/* Actions — same like/comment-count/save bar as PostCard,
             driven by the same state via props so liking here and
             liking on the card stay in sync (no second like/bookmark
@@ -847,6 +928,28 @@ const PostDetailModal = ({
             </div>
           )}
 
+          {/* Tip button — shown on other people's creator posts only */}
+          {!isOwner && userId && authorIsCreator && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowTipModal(true);
+              }}
+              title="Send a tip"
+              className="flex items-center gap-1.5 text-ink-muted hover:text-amber-500 transition text-base"
+            >
+              <svg
+                viewBox="0 0 20 20"
+                fill="currentColor"
+                className="w-4 h-4"
+                aria-hidden="true"
+              >
+                <path d="M10 2a8 8 0 100 16A8 8 0 0010 2zm.75 11.5v.75a.75.75 0 01-1.5 0v-.75a2.25 2.25 0 01-1.856-2.2c0-1.034.7-1.907 1.856-2.194V7.75a.75.75 0 011.5 0v1.306c1.156.287 1.856 1.16 1.856 2.194a.75.75 0 01-1.5 0c0-.414-.374-.75-.856-.75s-.856.336-.856.75.374.75.856.75c1.156.287 1.856 1.16 1.856 2.194a2.25 2.25 0 01-1.856 2.2z" />
+              </svg>
+              <span className="text-sm">Tip</span>
+            </button>
+          )}
+
           <button
             onClick={onBookmark}
             disabled={isBookmarking}
@@ -879,6 +982,7 @@ const PostDetailModal = ({
         </div>
       </div>
     </div>
+    </>
   );
 };
 
