@@ -17,6 +17,9 @@ import {
   FaAward,
   FaWallet,
   FaIdCard,
+  FaBolt,
+  FaUserShield,
+  FaClipboardList,
 } from "react-icons/fa";
 import { useAuth } from "../context/useAuth";
 import api from "../services/api";
@@ -28,6 +31,7 @@ import {
   canPromote,
   getActiveTier,
 } from "../utils/tierLimits";
+import { hasPermission } from "../constants/permissions";
 
 // Menu tile used throughout the More page — declared at module scope so it
 // isn't re-created on each render (react-hooks/static-components).
@@ -224,6 +228,44 @@ const More = () => {
     badge: scheduledCount || null,
   };
 
+  // Staff tools — moderation/admin navigation. Mirrors the gates in
+  // components/UserMenu.jsx; the server re-checks every request and stays
+  // the source of truth for authorisation.
+  const STAFF_TILES = [
+    ...(["moderator", "admin"].includes(user?.role)
+      ? [{
+          icon: FaShieldAlt,
+          label: "Moderation queue",
+          description: "Reports, appeals, and verification requests.",
+          href: "/moderation",
+        }]
+      : []),
+    ...(hasPermission(user, "manage_content")
+      ? [{
+          icon: FaBolt,
+          label: "Promotions",
+          description: "Manage every promoted post across the platform.",
+          href: "/admin/promotions",
+        }]
+      : []),
+    ...(user?.role === "admin"
+      ? [{
+          icon: FaUserShield,
+          label: "Manage roles",
+          description: "Promote moderators, grant permissions and badges.",
+          href: "/admin/users",
+        }]
+      : []),
+    ...(user?.role === "admin" || user?.permissions?.includes("view_audit_log")
+      ? [{
+          icon: FaClipboardList,
+          label: "Audit log",
+          description: "Read the moderation audit trail.",
+          href: "/admin/audit-log",
+        }]
+      : []),
+  ];
+
   return (
     <MainLayout>
       <button
@@ -387,6 +429,20 @@ const More = () => {
                 }}
               />
             )}
+          </div>
+        </>
+      )}
+
+      {/* ── Staff tools — moderation/admin navigation ── */}
+      {STAFF_TILES.length > 0 && (
+        <>
+          <p className="text-xs font-bold text-ink-muted uppercase tracking-widest mb-2 px-1">
+            ✦ Staff tools
+          </p>
+          <div className="bg-card border border-stroke rounded-2xl divide-y divide-stroke overflow-hidden mb-5">
+            {STAFF_TILES.map((tile) => (
+              <Tile key={tile.label} tile={tile} />
+            ))}
           </div>
         </>
       )}

@@ -16,7 +16,7 @@ import {
   FaThumbtack,
   FaQuoteRight,
 } from "react-icons/fa";
-import { FiFlag, FiUsers, FiLock, FiZap, FiExternalLink } from "react-icons/fi";
+import { FiFlag, FiUsers, FiLock, FiZap, FiExternalLink, FiAlertTriangle } from "react-icons/fi";
 
 const CTA_LABELS = {
   learn_more: "Learn More",
@@ -58,6 +58,7 @@ import {
 } from "../utils/tierLimits";
 import PromotePostModal from "./PromotePostModal";
 import AdminPromotePostModal from "./AdminPromotePostModal";
+import AdminCancelPromotionModal from "./AdminCancelPromotionModal";
 import { hasPermission } from "../constants/permissions";
 import TipModal from "./TipModal";
 import SubscriberOnlyGate from "./SubscriberOnlyGate";
@@ -280,6 +281,14 @@ const PostCard = ({
     canPromote({ verifications }) &&
     !isCurrentlyPromoted &&
     !promotionReference;
+  // Force-cancel — same manage_content gate, but the mirror condition of
+  // canAdminPromoteThisPost: only actionable once there's something to
+  // cancel (active promotion, or a pending payment reference).
+  const [showAdminCancelModal, setShowAdminCancelModal] = useState(false);
+  const canAdminCancelThisPost =
+    !isOwner &&
+    hasPermission(currentUser, "manage_content") &&
+    (isCurrentlyPromoted || Boolean(promotionReference));
   const [ctaClicking, setCtaClicking] = useState(false);
 
   const handleCtaClick = async (e) => {
@@ -885,6 +894,20 @@ const PostCard = ({
         />
       )}
 
+      {showAdminCancelModal && (
+        <AdminCancelPromotionModal
+          postId={postId}
+          postText={postText}
+          authorName={name}
+          authorUsername={username}
+          wasActive={isCurrentlyPromoted}
+          onClose={() => setShowAdminCancelModal(false)}
+          onCancelled={() => {
+            setPromotedUntilState(null);
+            setShowAdminCancelModal(false);
+          }}
+        />
+      )}
       {showAdminPromoteModal && (
         <AdminPromotePostModal
           postId={postId}
@@ -961,6 +984,7 @@ const PostCard = ({
         promotedUntil={promotedUntilState}
         onPromote={() => setShowPromoteModal(true)}
         onAdminPromote={() => setShowAdminPromoteModal(true)}
+        onAdminCancelPromotion={() => setShowAdminCancelModal(true)}
         isOwnProfile={isOwnProfile}
         pinnedPostIds={pinnedPostIds}
         onTogglePin={onTogglePin}
@@ -1229,6 +1253,20 @@ const PostCard = ({
                       >
                         <span className="text-sm font-bold text-primary-600">⚡</span>
                         <span className="font-medium">Promote for creator</span>
+                      </button>
+                    )}
+                    {canAdminCancelThisPost && (
+                      <button
+                        onClick={() => {
+                          setMenuOpen(false);
+                          setShowAdminCancelModal(true);
+                        }}
+                        className="w-full flex items-center gap-3 px-4 py-2.5 text-base text-red-600 hover:bg-red-50 transition"
+                      >
+                        <FiAlertTriangle size={13} />
+                        <span className="font-medium">
+                          {isCurrentlyPromoted ? "Cancel promotion" : "Cancel pending promotion"}
+                        </span>
                       </button>
                     )}
                     <button

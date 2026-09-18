@@ -42,6 +42,11 @@ const typeConfig = {
   // it — see controllers/promotedPostController.js's notification copy),
   // full message from n.message. Clickable — links to the boosted post.
   post_admin_promoted: { icon: FaBolt, color: "text-primary-600", label: "" },
+  // Promotion lifecycle on the same admin-comp surface — force-cancelled
+  // (adminCancelPromotion) and extended (adminExtendPromotion). Rendered
+  // like post_admin_promoted: system avatar, no sender link, message from n.message.
+  post_promotion_cancelled: { icon: FaTimesCircle, color: "text-amber-500", label: "" },
+  post_promotion_extended:   { icon: FaBolt, color: "text-primary-600", label: "" },
 };
 
 // Router target a notification row navigates to when clicked — the
@@ -64,6 +69,8 @@ const rowTarget = (row) => {
     case "quote":
     case "reaction":
     case "post_admin_promoted":
+    case "post_promotion_cancelled":
+    case "post_promotion_extended":
       return `/post/${postId}`;
     case "comment":
     case "commentLike":
@@ -278,20 +285,20 @@ const Notifications = () => {
                 className={`flex items-center gap-3 px-5 py-4 transition ${
                   row.read
                     ? ""
-                    : ["moderator_warning", "verification_denied", "verification_expired"].includes(row.type)
+                    : ["moderator_warning", "verification_denied", "verification_expired", "post_promotion_cancelled"].includes(row.type)
                       ? "bg-amber-50"
                       : row.type === "verification_approved"
                         ? "bg-primary-50"
                         : "bg-primary-50"
                 } ${target ? "cursor-pointer" : ""}`}
               >
-                {["moderator_warning", "verification_approved", "verification_denied", "verification_expired", "post_admin_promoted"].includes(row.type) ? (
+                {["moderator_warning", "verification_approved", "verification_denied", "verification_expired", "post_admin_promoted", "post_promotion_cancelled", "post_promotion_extended"].includes(row.type) ? (
                   // System notifications — no sender identity. Icon and
                   // colour come from typeConfig for the specific type.
                   (() => {
                     const cfg = typeConfig[row.type];
                     const Icon = cfg?.icon || FaShieldAlt;
-                    const isPositive = row.type === "verification_approved" || row.type === "post_admin_promoted";
+                    const isPositive = row.type === "verification_approved" || row.type === "post_admin_promoted" || row.type === "post_promotion_extended";
                     return (
                       <div className={`w-10 h-10 rounded-full flex items-center justify-center ring-2 shrink-0 ${isPositive ? "bg-primary-100 ring-primary-200" : "bg-amber-100 ring-amber-200"}`}>
                         <Icon className={isPositive ? "text-primary-600" : "text-amber-600"} size={16} />
@@ -326,7 +333,7 @@ const Notifications = () => {
                     />
                   </Link>
                 )}
-                {["moderator_warning", "verification_approved", "verification_denied", "verification_expired", "post_admin_promoted"].includes(row.type) ? (
+                {["moderator_warning", "verification_approved", "verification_denied", "verification_expired", "post_admin_promoted", "post_promotion_cancelled", "post_promotion_extended"].includes(row.type) ? (
                   // System notification — render message from n.message directly.
                   <div className="flex-1 min-w-0">
                     {row.type === "moderator_warning" ? (
@@ -339,11 +346,17 @@ const Notifications = () => {
                           <p className="text-base text-ink-sub mt-1">"{row.message}"</p>
                         )}
                       </>
-                    ) : row.type === "post_admin_promoted" ? (
+                    ) : ["post_admin_promoted", "post_promotion_cancelled", "post_promotion_extended"].includes(row.type) ? (
                       <>
                         <p className="text-base text-ink">
                           <span className="font-semibold">The Tronites team</span>{" "}
-                          <span className="text-ink-sub">boosted your post</span>
+                          <span className="text-ink-sub">
+                            {row.type === "post_promotion_cancelled"
+                              ? "ended your post promotion"
+                              : row.type === "post_promotion_extended"
+                              ? "extended your post promotion"
+                              : "boosted your post"}
+                          </span>
                         </p>
                         {row.message && (
                           <p className="text-sm text-ink-sub mt-0.5">{row.message}</p>

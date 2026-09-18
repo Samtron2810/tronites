@@ -21,6 +21,9 @@ const ACTION_OPTIONS = [
   { value: "user_warned", label: "Warnings" },
   { value: "user_permissions_changed", label: "Permission changes" },
   { value: "report_resolved", label: "Reports resolved" },
+  { value: "post_admin_promoted", label: "Promotions granted" },
+  { value: "post_promotion_extended", label: "Promotions extended" },
+  { value: "post_promotion_cancelled", label: "Promotions cancelled" },
   { value: "appeal_granted", label: "Appeals granted" },
   { value: "appeal_denied", label: "Appeals denied" },
   { value: "verification_request_approved", label: "Verification approved" },
@@ -49,6 +52,9 @@ const ACTION_STYLES = {
   user_role_changed: "bg-primary-100 text-primary-700",
   user_warned: "bg-orange-100 text-orange-700",
   report_resolved: "bg-blue-100 text-blue-600",
+  post_admin_promoted: "bg-primary-100 text-primary-700",
+  post_promotion_extended: "bg-primary-100 text-primary-700",
+  post_promotion_cancelled: "bg-amber-100 text-amber-700",
   appeal_granted: "bg-green-100 text-green-700",
   appeal_denied: "bg-gray-100 text-gray-500",
   verification_request_approved: "bg-emerald-100 text-emerald-700",
@@ -216,6 +222,40 @@ const DetailCell = ({ log }) => {
         </span>
       );
     }
+    // ── Promotion management (admin/moderator comps) ─────────────────────
+    case "post_admin_promoted":
+      return (
+        <span>
+          <span className="font-medium text-primary-700">Granted</span>
+          <span className="text-ink-muted"> · {d.days} day{d.days === 1 ? "" : "s"}</span>
+          {formatUntil(d.promotedUntil) && (
+            <span className="text-ink-muted">
+              {" "}· until {formatUntil(d.promotedUntil)}
+            </span>
+          )}
+        </span>
+      );
+    case "post_promotion_extended":
+      return (
+        <span>
+          <span className="font-medium text-primary-700">Extended</span>
+          <span className="text-ink-muted"> · +{d.addedDays} day{d.addedDays === 1 ? "" : "s"}</span>
+          {formatUntil(d.promotedUntil) && (
+            <span className="text-ink-muted">
+              {" "}· now until {formatUntil(d.promotedUntil)}
+            </span>
+          )}
+        </span>
+      );
+    case "post_promotion_cancelled":
+      return (
+        <span>
+          {d.wasActive ? "Active promotion ended" : "Pending promotion cancelled"}
+          {d.previousSource && (
+            <span className="text-ink-muted"> · was {d.previousSource}</span>
+          )}
+        </span>
+      );
     default:
       // Fallback: render key=value pairs instead of raw JSON blob
       if (Object.keys(d).length === 0) return <span className="text-ink-muted">—</span>;

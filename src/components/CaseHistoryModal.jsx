@@ -36,6 +36,9 @@ const ACTION_LABELS = {
   user_shadow_rank_lifted: "Shadow rank lifted",
   user_auto_suspended: "Auto-suspended (repeat offender)",
   user_auto_banned: "Auto-banned (repeat offender)",
+  post_admin_promoted: "Post promoted",
+  post_promotion_extended: "Promotion extended",
+  post_promotion_cancelled: "Promotion cancelled",
 };
 
 const ACTION_TONE = {
@@ -46,6 +49,9 @@ const ACTION_TONE = {
   user_unrestricted: "text-primary-700 bg-primary-50",
   appeal_granted: "text-primary-700 bg-primary-50",
   user_warned: "text-orange-600 bg-orange-50",
+  post_admin_promoted: "text-primary-700 bg-primary-50",
+  post_promotion_extended: "text-primary-700 bg-primary-50",
+  post_promotion_cancelled: "text-amber-600 bg-amber-50",
 };
 
 const formatDate = (iso) => {

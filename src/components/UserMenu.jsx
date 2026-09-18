@@ -11,9 +11,11 @@ import {
   FaClipboardList,
   FaEllipsisH,
 } from "react-icons/fa";
+import { FiZap } from "react-icons/fi";
 import defaultAvatar from "../assets/defaultAvatar";
 import { resizedImageUrl, IMAGE_SIZES } from "../utils/cloudinaryImage";
 import { useTheme } from "../context/useTheme";
+import { hasPermission } from "../constants/permissions";
 
 const UserMenu = ({ user, onLogoutClick }) => {
   const { theme, toggleTheme } = useTheme();
@@ -73,6 +75,19 @@ const UserMenu = ({ user, onLogoutClick }) => {
             icon: FaShieldAlt,
             label: "Moderation queue",
             href: "/moderation",
+            isLink: true,
+            onClick: () => setIsOpen(false),
+          },
+        ]
+      : []),
+    // Promotions management — moderator (via manage_content, default-
+    // granted) or admin, same gate as PostCard's canAdminPromoteThisPost.
+    ...(hasPermission(user, "manage_content")
+      ? [
+          {
+            icon: FiZap,
+            label: "Promotions",
+            href: "/admin/promotions",
             isLink: true,
             onClick: () => setIsOpen(false),
           },

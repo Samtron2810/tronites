@@ -19,7 +19,7 @@ import {
   FaQuoteRight,
   FaThumbtack,
 } from "react-icons/fa";
-import { FiFlag, FiUsers, FiLock, FiZap, FiExternalLink } from "react-icons/fi";
+import { FiFlag, FiUsers, FiLock, FiZap, FiExternalLink, FiAlertTriangle } from "react-icons/fi";
 import toast from "react-hot-toast";
 import defaultAvatar from "../assets/defaultAvatar";
 import LazyImage from "./LazyImage";
@@ -152,6 +152,10 @@ const PostDetailModal = ({
   // isCurrentlyPromoted + promotionReference below) — the caller only
   // needs to supply the modal opener, not re-derive eligibility.
   onAdminPromote,
+  // Mirror of onAdminPromote for the cancel path — see PostCard's
+  // canAdminCancelThisPost. Left undefined by any caller that hasn't
+  // wired it up, hiding the menu item entirely.
+  onAdminCancelPromotion,
   // Pin/unpin — only meaningful on the owner's own profile, where the
   // caller has pinnedPostIds to check against and a place to reflect the
   // update. Left undefined (isOwnProfile false) on any surface that
@@ -252,6 +256,11 @@ const PostDetailModal = ({
     canPromote({ verifications }) &&
     !isCurrentlyPromoted &&
     !promotionReference;
+  const canAdminCancelThisPost =
+    !isOwner &&
+    Boolean(onAdminCancelPromotion) &&
+    hasPermission(currentUser, "manage_content") &&
+    (isCurrentlyPromoted || Boolean(promotionReference));
 
   const handleTogglePin = async () => {
     if (isPinToggling) return;
@@ -623,6 +632,20 @@ const PostDetailModal = ({
                           >
                             <span className="text-sm font-bold text-primary-600">⚡</span>
                             <span className="font-medium">Promote for creator</span>
+                          </button>
+                        )}
+                        {canAdminCancelThisPost && (
+                          <button
+                            onClick={() => {
+                              setMenuOpen(false);
+                              onAdminCancelPromotion();
+                            }}
+                            className="w-full flex items-center gap-3 px-4 py-2.5 text-base text-red-600 hover:bg-red-50 transition"
+                          >
+                            <FiAlertTriangle size={13} />
+                            <span className="font-medium">
+                              {isCurrentlyPromoted ? "Cancel promotion" : "Cancel pending promotion"}
+                            </span>
                           </button>
                         )}
                         <button
