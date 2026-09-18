@@ -39,6 +39,8 @@ const ACTION_LABELS = {
   post_admin_promoted: "Post promoted",
   post_promotion_extended: "Promotion extended",
   post_promotion_cancelled: "Promotion cancelled",
+  moderator_note_added: "Note added",
+  moderator_note_deleted: "Note deleted",
 };
 
 const ACTION_TONE = {
@@ -52,6 +54,8 @@ const ACTION_TONE = {
   post_admin_promoted: "text-primary-700 bg-primary-50",
   post_promotion_extended: "text-primary-700 bg-primary-50",
   post_promotion_cancelled: "text-amber-600 bg-amber-50",
+  moderator_note_added: "text-primary-700 bg-primary-50",
+  moderator_note_deleted: "text-gray-500 bg-gray-100",
 };
 
 const formatDate = (iso) => {
@@ -66,7 +70,7 @@ const formatDate = (iso) => {
 const detailText = (detail) => {
   if (!detail || typeof detail !== "object") return "";
   const bits = [];
-  for (const key of ["reason", "toRole", "status", "note", "permissions"]) {
+  for (const key of ["reason", "toRole", "status", "note", "body", "permissions"]) {
     const v = detail[key];
     if (v == null || v === "") continue;
     bits.push(String(v));
