@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import MainLayout from "../layouts/MainLayout";
 import api from "../services/api";
 import toast from "react-hot-toast";
-import { FaArrowLeft, FaFileCsv, FaSyncAlt } from "react-icons/fa";
+import { FaArrowLeft, FaFileCsv, FaFilter, FaSyncAlt } from "react-icons/fa";
 import { useAuth } from "../context/useAuth";
 
 // PHASE 3 — admin-only view over the append-only moderation audit log
@@ -336,6 +336,79 @@ const TargetCell = ({ log }) => {
   );
 };
 
+// ── Layout helpers ─────────────────────────────────────────────────────
+// The page lives inside MainLayout's max-w-3xl column, so a 6-column table
+// never has room to breathe (phone OR desktop). Entries are rendered as a
+// divided list of compact cards instead: what happened + when on top, the
+// detail as the main line, then who/what/where as small labelled meta.
+const INPUT =
+  "w-full min-w-0 rounded-lg border border-stroke bg-card px-3 py-2 text-base text-ink placeholder:text-ink-muted focus:outline-none focus:border-primary-500";
+
+const Field = ({ label, className = "", children }) => (
+  <label className={`flex flex-col gap-1 min-w-0 ${className}`}>
+    <span className="text-xs font-semibold uppercase tracking-wide text-ink-muted">
+      {label}
+    </span>
+    {children}
+  </label>
+);
+
+const MetaItem = ({ label, children }) => (
+  <span className="inline-flex items-baseline gap-1.5 min-w-0">
+    <span className="text-[11px] font-semibold uppercase tracking-wide text-ink-muted shrink-0">
+      {label}
+    </span>
+    <span className="text-sm text-ink-sub min-w-0 wrap-break-word">
+      {children}
+    </span>
+  </span>
+);
+
+const Person = ({ name, username, fallback = "—" }) => (
+  <>
+    <span className="font-medium text-ink">{name || fallback}</span>
+    {username && <span className="text-ink-muted"> @{username}</span>}
+  </>
+);
+
+const Pill = ({ className = "", children, ...rest }) => (
+  <span
+    className={`inline-block rounded-full px-2.5 py-0.5 text-sm font-semibold ${className}`}
+    {...rest}
+  >
+    {children}
+  </span>
+);
+
+const ListShell = ({ dim, children }) => (
+  <div
+    className={`bg-card rounded-xl border border-stroke overflow-hidden transition-opacity ${
+      dim ? "opacity-60" : ""
+    }`}
+  >
+    {children}
+  </div>
+);
+
+const SkeletonRows = () => (
+  <ul className="divide-y divide-stroke" aria-hidden="true">
+    {[0, 1, 2, 3].map((i) => (
+      <li key={i} className="px-4 py-4 sm:px-5 animate-pulse space-y-2.5">
+        <div className="flex justify-between gap-3">
+          <div className="h-5 w-28 rounded-full bg-surface" />
+          <div className="h-4 w-12 rounded bg-surface" />
+        </div>
+        <div className="h-4 w-4/5 rounded bg-surface" />
+        <div className="h-3 w-2/5 rounded bg-surface" />
+      </li>
+    ))}
+  </ul>
+);
+
+const EmptyState = ({ children }) => (
+  <div className="px-4 py-12 text-center text-ink-muted">{children}</div>
+);
+
 const AdminAuditLog = () => {
   const { user } = useAuth();
   const isAdmin = user?.role === "admin";
@@ -359,6 +432,7 @@ const AdminAuditLog = () => {
   const [toFilter, setToFilter] = useState("");
   const [oldestFirst, setOldestFirst] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   // Pre-audit view: report resolutions that predate the trail (see the
   // backend listPreAuditResolutions endpoint).
@@ -499,6 +573,25 @@ const AdminAuditLog = () => {
     }
   };
 
+  const activeFilterCount = [
+    actionFilter,
+    targetFilter,
+    actorFilter,
+    fromFilter,
+    toFilter,
+    oldestFirst,
+  ].filter(Boolean).length;
+
+  const clearFilters = () => {
+    setActionFilter("");
+    setTargetFilter("");
+    setActorInput("");
+    setActorFilter("");
+    setFromFilter("");
+    setToFilter("");
+    setOldestFirst(false);
+  };
+
   const handleRefresh = () => {
     api.invalidate("/admin/audit");
     if (tab === "trail") {
@@ -530,7 +623,7 @@ const AdminAuditLog = () => {
   if (!canView) {
     return (
       <MainLayout>
-        <div className="max-w-3xl mx-auto px-4 py-16 text-center">
+        <div className="max-w-3xl mx-auto px-0 py-10 sm:py-16 text-center">
           <h1 className="text-2xl font-bold text-ink mb-2">
             No audit access
           </h1>
@@ -543,387 +636,438 @@ const AdminAuditLog = () => {
     );
   }
 
+  const TABS = [
+    { id: "trail", label: "Audit trail", short: "Trail" },
+    { id: "resolutions", label: "Pre-audit resolutions", short: "Pre-audit" },
+    { id: "gaps", label: "Unlogged state", short: "Unlogged" },
+  ];
+
+  const actionBtn =
+    "flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-3 py-2.5 sm:py-2 rounded-lg border border-stroke text-base font-medium text-ink-sub hover:text-ink hover:bg-surface transition disabled:opacity-50";
+
   return (
     <MainLayout>
-      <div className="max-w-5xl mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="flex items-start justify-between gap-4 mb-6">
-          <div>
-            <Link
-              to="/admin/users"
-              className="inline-flex items-center gap-1.5 text-sm font-medium text-ink-sub hover:text-ink transition"
-            >
-              <FaArrowLeft className="text-[10px]" /> Back to role management
-            </Link>
-            <h1 className="text-3xl font-bold text-ink mt-2">
-              Moderation audit log
-            </h1>
-            <p className="text-ink-sub text-base mt-1">{subtitle}</p>
-          </div>
-          <div className="flex items-center gap-2 shrink-0">
-            {tab === "trail" && (
+      <div className="max-w-5xl mx-auto px-0 sm:px-4 py-1 sm:py-6">
+        {/* Header — stacks on phones so the title gets the full width and
+            the actions become two equal tap targets underneath. */}
+        <div className="mb-5">
+          <Link
+            to="/admin/users"
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-ink-sub hover:text-ink transition"
+          >
+            <FaArrowLeft className="text-[10px]" /> Back to role management
+          </Link>
+          <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
+            <div className="min-w-0">
+              <h1 className="text-2xl sm:text-3xl font-bold text-ink leading-tight">
+                Moderation audit log
+              </h1>
+              <p className="text-ink-sub text-sm sm:text-base mt-1.5 leading-relaxed">
+                {subtitle}
+              </p>
+            </div>
+            <div className="flex items-center gap-2 sm:shrink-0">
+              {tab === "trail" && (
+                <button
+                  onClick={handleExport}
+                  disabled={exporting || isLoading}
+                  title="Download every entry matching the current filters"
+                  className={actionBtn}
+                >
+                  <FaFileCsv className="text-sm" />
+                  {exporting ? "Exporting..." : "Export CSV"}
+                </button>
+              )}
               <button
-                onClick={handleExport}
-                disabled={exporting || isLoading}
-                title="Download every entry matching the current filters"
-                className="flex items-center gap-2 px-3 py-2 rounded-lg border border-stroke text-base font-medium text-ink-sub hover:text-ink hover:bg-surface transition disabled:opacity-50"
+                onClick={handleRefresh}
+                disabled={isLoading}
+                className={actionBtn}
               >
-                <FaFileCsv className="text-sm" />
-                {exporting ? "Exporting..." : "Export CSV"}
+                <FaSyncAlt
+                  className={isLoading ? "animate-spin text-sm" : "text-sm"}
+                />
+                Refresh
               </button>
-            )}
-            <button
-              onClick={handleRefresh}
-              disabled={isLoading}
-              className="flex items-center gap-2 px-3 py-2 rounded-lg border border-stroke text-base font-medium text-ink-sub hover:text-ink hover:bg-surface transition disabled:opacity-50"
-            >
-              <FaSyncAlt
-                className={isLoading ? "animate-spin text-sm" : "text-sm"}
-              />
-              Refresh
-            </button>
+            </div>
           </div>
         </div>
 
-        {/* Tabs - one page, three views of the same moderation history. */}
-        <div className="flex flex-wrap gap-1.5 mb-4">
-          {[
-            { id: "trail", label: "Audit trail" },
-            { id: "resolutions", label: "Pre-audit resolutions" },
-            { id: "gaps", label: "Unlogged state" },
-          ].map((t) => (
+        {/* Tabs — segmented control; short labels on phones so all three
+            fit on one line without wrapping or scrolling. */}
+        <div
+          role="tablist"
+          className="flex gap-1 p-1 mb-4 rounded-xl bg-surface border border-stroke"
+        >
+          {TABS.map((tb) => (
             <button
-              key={t.id}
-              onClick={() => setTab(t.id)}
-              className={`px-3 py-2 rounded-lg text-base font-medium transition ${
-                tab === t.id
-                  ? "bg-primary-50 text-primary-600 border border-primary-200"
-                  : "border border-stroke text-ink-sub hover:text-ink hover:bg-surface"
+              key={tb.id}
+              role="tab"
+              aria-selected={tab === tb.id}
+              onClick={() => setTab(tb.id)}
+              className={`flex-1 min-w-0 px-2 sm:px-3 py-2 rounded-lg text-sm sm:text-base font-medium text-center whitespace-nowrap transition ${
+                tab === tb.id
+                  ? "bg-card text-primary-600 shadow-sm"
+                  : "text-ink-sub hover:text-ink"
               }`}
             >
-              {t.label}
+              <span className="sm:hidden">{tb.short}</span>
+              <span className="hidden sm:inline">{tb.label}</span>
             </button>
           ))}
         </div>
 
+        {/* Filters — collapsed behind a button on phones (with an active
+            count), always open from sm up. Labels sit above full-width
+            fields; 16px inputs so iOS doesn't zoom on focus. */}
         {tab === "trail" && (
-          <div className="flex flex-wrap items-center gap-3 mb-4">
-            <select
-              value={actionFilter}
-              onChange={(e) => setActionFilter(e.target.value)}
-              className="rounded-lg border border-stroke bg-card px-3 py-2 text-base text-ink focus:outline-none focus:border-primary-500"
+          <div className="mb-4">
+            <div className="flex items-center justify-between gap-2 sm:hidden">
+              <button
+                onClick={() => setFiltersOpen((o) => !o)}
+                aria-expanded={filtersOpen}
+                className="inline-flex items-center gap-2 px-3 py-2.5 rounded-lg border border-stroke bg-card text-base font-medium text-ink-sub"
+              >
+                <FaFilter className="text-xs" />
+                Filters
+                {activeFilterCount > 0 && (
+                  <span className="min-w-5 h-5 px-1.5 rounded-full bg-primary-600 text-white text-xs font-semibold inline-flex items-center justify-center">
+                    {activeFilterCount}
+                  </span>
+                )}
+              </button>
+              {activeFilterCount > 0 && (
+                <button
+                  onClick={clearFilters}
+                  className="px-2 py-2 text-base font-medium text-primary-600"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+
+            <div
+              className={`${
+                filtersOpen ? "grid" : "hidden"
+              } sm:grid mt-3 sm:mt-0 grid-cols-2 gap-3 bg-card border border-stroke rounded-xl p-3 sm:p-4`}
             >
-              {ACTION_OPTIONS.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
-            <select
-              value={targetFilter}
-              onChange={(e) => setTargetFilter(e.target.value)}
-              className="rounded-lg border border-stroke bg-card px-3 py-2 text-base text-ink focus:outline-none focus:border-primary-500"
-            >
-              {TARGET_OPTIONS.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
-            <label className="flex items-center gap-2 text-base text-ink-sub">
-              Actor id
-              <input
-                value={actorInput}
-                onChange={(e) => setActorInput(e.target.value)}
-                placeholder="24-character user id"
-                className="w-56 rounded-lg border border-stroke bg-card px-3 py-2 text-base text-ink font-mono placeholder:text-ink-muted focus:outline-none focus:border-primary-500"
-              />
-            </label>
-            <label className="flex items-center gap-2 text-base text-ink-sub">
-              From
-              <input
-                type="date"
-                value={fromFilter}
-                onChange={(e) => setFromFilter(e.target.value)}
-                className="rounded-lg border border-stroke bg-card px-3 py-2 text-base text-ink focus:outline-none focus:border-primary-500"
-              />
-            </label>
-            <label className="flex items-center gap-2 text-base text-ink-sub">
-              To
-              <input
-                type="date"
-                value={toFilter}
-                onChange={(e) => setToFilter(e.target.value)}
-                className="rounded-lg border border-stroke bg-card px-3 py-2 text-base text-ink focus:outline-none focus:border-primary-500"
-              />
-            </label>
-            <label className="flex items-center gap-2 text-base text-ink-sub">
-              <input
-                type="checkbox"
-                checked={oldestFirst}
-                onChange={(e) => setOldestFirst(e.target.checked)}
-              />
-              Oldest first
-            </label>
+              <Field label="Action" className="col-span-2 sm:col-span-1">
+                <select
+                  value={actionFilter}
+                  onChange={(e) => setActionFilter(e.target.value)}
+                  className={INPUT}
+                >
+                  {ACTION_OPTIONS.map((o) => (
+                    <option key={o.value} value={o.value}>
+                      {o.label}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              <Field label="Target" className="col-span-2 sm:col-span-1">
+                <select
+                  value={targetFilter}
+                  onChange={(e) => setTargetFilter(e.target.value)}
+                  className={INPUT}
+                >
+                  {TARGET_OPTIONS.map((o) => (
+                    <option key={o.value} value={o.value}>
+                      {o.label}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              <Field label="Actor id" className="col-span-2">
+                <input
+                  value={actorInput}
+                  onChange={(e) => setActorInput(e.target.value)}
+                  placeholder="24-character user id"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  className={`${INPUT} font-mono`}
+                />
+              </Field>
+              <Field label="From">
+                <input
+                  type="date"
+                  value={fromFilter}
+                  onChange={(e) => setFromFilter(e.target.value)}
+                  className={INPUT}
+                />
+              </Field>
+              <Field label="To">
+                <input
+                  type="date"
+                  value={toFilter}
+                  onChange={(e) => setToFilter(e.target.value)}
+                  className={INPUT}
+                />
+              </Field>
+              <div className="col-span-2 flex items-center justify-between gap-3 pt-1">
+                <label className="inline-flex items-center gap-2 text-base text-ink-sub">
+                  <input
+                    type="checkbox"
+                    checked={oldestFirst}
+                    onChange={(e) => setOldestFirst(e.target.checked)}
+                    className="w-4 h-4"
+                  />
+                  Oldest first
+                </label>
+                {activeFilterCount > 0 && (
+                  <button
+                    onClick={clearFilters}
+                    className="hidden sm:inline text-base font-medium text-primary-600 hover:underline"
+                  >
+                    Clear filters
+                  </button>
+                )}
+              </div>
+            </div>
           </div>
         )}
 
         {/* TRAIL - the audit log itself. */}
         {tab === "trail" && (
-          <div className="bg-card rounded-xl border border-stroke overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-base">
-                <thead>
-                  <tr className="text-left text-sm uppercase tracking-wide text-ink-muted border-b border-stroke">
-                    <th className="px-4 py-3 font-semibold">When</th>
-                    <th className="px-4 py-3 font-semibold">Actor</th>
-                    <th className="px-4 py-3 font-semibold">Action</th>
-                    <th className="px-4 py-3 font-semibold">Target</th>
-                    <th className="px-4 py-3 font-semibold">Detail</th>
-                    <th className="px-4 py-3 font-semibold">IP</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {logs.map((log) => (
-                    <tr
-                      key={log._id}
-                      className="border-b border-stroke last:border-0 align-top"
-                    >
-                      <td
-                        className="px-4 py-3 whitespace-nowrap text-ink-sub"
-                        title={new Date(log.createdAt).toLocaleString()}
-                      >
-                        {formatWhen(log.createdAt)}
-                      </td>
-                      <td className="px-4 py-3 whitespace-nowrap">
-                        <div className="font-medium text-ink">
-                          {log.actor?.name || "-"}
-                        </div>
-                        {log.actor?.username && (
-                          <div className="text-sm text-ink-muted">
-                            @{log.actor.username}
-                          </div>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 whitespace-nowrap">
-                        <span
-                          className={`inline-block rounded-full px-2.5 py-0.5 text-sm font-semibold ${
+          <ListShell dim={isLoading && logs.length > 0}>
+            {isLoading && logs.length === 0 && <SkeletonRows />}
+
+            {!isLoading && logs.length === 0 && (
+              <EmptyState>No audit entries match these filters yet.</EmptyState>
+            )}
+
+            {logs.length > 0 && (
+              <ul className="divide-y divide-stroke">
+                {logs.map((log) => (
+                  <li key={log._id} className="px-4 py-3.5 sm:px-5">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex flex-wrap items-center gap-1.5 min-w-0">
+                        <Pill
+                          className={
                             ACTION_STYLES[log.action] || "bg-surface text-ink-sub"
-                          }`}
+                          }
                         >
                           {ACTION_LABELS[log.action] || log.action}
-                        </span>
+                        </Pill>
                         {log.detail?.backfilled && (
                           <span
-                            className="ml-1 inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold bg-amber-100 text-amber-700 align-middle"
+                            className="inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold bg-amber-100 text-amber-700"
                             title="Reconstructed from the report record during backfill - not a live write."
                           >
                             backfilled
                           </span>
                         )}
-                      </td>
-                      <td className="px-4 py-3 whitespace-nowrap text-ink-sub">
+                      </div>
+                      <time
+                        dateTime={log.createdAt}
+                        title={new Date(log.createdAt).toLocaleString()}
+                        className="shrink-0 pt-0.5 text-sm text-ink-muted whitespace-nowrap"
+                      >
+                        {formatWhen(log.createdAt)}
+                      </time>
+                    </div>
+
+                    <div className="mt-2 text-base text-ink-sub leading-snug wrap-break-word">
+                      <DetailCell log={log} />
+                    </div>
+
+                    <div className="mt-2.5 flex flex-wrap gap-x-4 gap-y-1">
+                      <MetaItem label="By">
+                        <Person
+                          name={log.actor?.name}
+                          username={log.actor?.username}
+                        />
+                      </MetaItem>
+                      <MetaItem label="On">
                         <TargetCell log={log} />
-                      </td>
-                      <td className="px-4 py-3 text-ink-sub max-w-xs">
-                        <DetailCell log={log} />
-                      </td>
-                      <td className="px-4 py-3 whitespace-nowrap text-sm text-ink-muted font-mono">
-                        {log.ip ? cleanIp(log.ip) : "-"}
-                      </td>
-                    </tr>
-                  ))}
-
-                  {isLoading && logs.length === 0 && (
-                    <tr>
-                      <td colSpan={6} className="px-4 py-12 text-center text-ink-muted">
-                        Loading audit entries...
-                      </td>
-                    </tr>
-                  )}
-
-                  {!isLoading && logs.length === 0 && (
-                    <tr>
-                      <td colSpan={6} className="px-4 py-12 text-center text-ink-muted">
-                        No audit entries match these filters yet.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
+                      </MetaItem>
+                      {log.ip && (
+                        <MetaItem label="IP">
+                          <span className="font-mono text-xs">
+                            {cleanIp(log.ip)}
+                          </span>
+                        </MetaItem>
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
 
             {totalPages > 1 && (
-              <div className="border-t border-stroke p-3 flex items-center justify-center gap-1.5 flex-wrap">
-                <button
-                  onClick={() => fetchPage(page - 1)}
-                  disabled={page <= 1 || isLoading}
-                  className="px-3 py-1.5 rounded-lg text-base border border-stroke disabled:opacity-40 hover:bg-surface transition"
-                >
-                  Prev
-                </button>
-                {pageWindow(page, totalPages).map((p, i) =>
-                  p === "..." ? (
-                    <span
-                      key={`ellipsis-${i}`}
-                      className="px-1 text-base text-ink-muted"
-                    >
-                      ...
-                    </span>
-                  ) : (
-                    <button
-                      key={p}
-                      onClick={() => fetchPage(p)}
-                      disabled={isLoading}
-                      className={`px-3 py-1.5 rounded-lg text-base border transition ${
-                        p === page
-                          ? "border-primary-200 bg-primary-50 text-primary-600 font-semibold"
-                          : "border-stroke hover:bg-surface"
-                      }`}
-                    >
-                      {p}
-                    </button>
-                  ),
-                )}
-                <button
-                  onClick={() => fetchPage(page + 1)}
-                  disabled={page >= totalPages || isLoading}
-                  className="px-3 py-1.5 rounded-lg text-base border border-stroke disabled:opacity-40 hover:bg-surface transition"
-                >
-                  Next
-                </button>
+              <div className="border-t border-stroke p-3">
+                {/* Phones: Prev · Page x of y · Next */}
+                <div className="flex items-center justify-between gap-2 sm:hidden">
+                  <button
+                    onClick={() => fetchPage(page - 1)}
+                    disabled={page <= 1 || isLoading}
+                    className="px-4 py-2.5 rounded-lg text-base font-medium border border-stroke disabled:opacity-40 hover:bg-surface transition"
+                  >
+                    Prev
+                  </button>
+                  <span className="text-sm text-ink-muted">
+                    Page <span className="font-semibold text-ink">{page}</span>{" "}
+                    of {totalPages}
+                  </span>
+                  <button
+                    onClick={() => fetchPage(page + 1)}
+                    disabled={page >= totalPages || isLoading}
+                    className="px-4 py-2.5 rounded-lg text-base font-medium border border-stroke disabled:opacity-40 hover:bg-surface transition"
+                  >
+                    Next
+                  </button>
+                </div>
+
+                {/* sm+: windowed page numbers */}
+                <div className="hidden sm:flex items-center justify-center gap-1.5 flex-wrap">
+                  <button
+                    onClick={() => fetchPage(page - 1)}
+                    disabled={page <= 1 || isLoading}
+                    className="px-3 py-1.5 rounded-lg text-base border border-stroke disabled:opacity-40 hover:bg-surface transition"
+                  >
+                    Prev
+                  </button>
+                  {pageWindow(page, totalPages).map((p, i) =>
+                    p === "..." ? (
+                      <span
+                        key={`ellipsis-${i}`}
+                        className="px-1 text-base text-ink-muted"
+                      >
+                        ...
+                      </span>
+                    ) : (
+                      <button
+                        key={p}
+                        onClick={() => fetchPage(p)}
+                        disabled={isLoading}
+                        className={`px-3 py-1.5 rounded-lg text-base border transition ${
+                          p === page
+                            ? "border-primary-200 bg-primary-50 text-primary-600 font-semibold"
+                            : "border-stroke hover:bg-surface"
+                        }`}
+                      >
+                        {p}
+                      </button>
+                    ),
+                  )}
+                  <button
+                    onClick={() => fetchPage(page + 1)}
+                    disabled={page >= totalPages || isLoading}
+                    className="px-3 py-1.5 rounded-lg text-base border border-stroke disabled:opacity-40 hover:bg-surface transition"
+                  >
+                    Next
+                  </button>
+                </div>
               </div>
             )}
-          </div>
+          </ListShell>
         )}
 
         {/* PRE-AUDIT RESOLUTIONS - read straight off the report records. */}
         {tab === "resolutions" && (
           <div>
-            <p className="text-sm text-ink-muted mb-3">
+            <p className="text-sm text-ink-muted mb-3 leading-relaxed">
               Resolved before the audit trail began recording, read from the
               report records themselves. Nothing here is invented, and no
               entry is ever merged into the append-only trail above.
             </p>
-            <div className="bg-card rounded-xl border border-stroke overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full text-base">
-                  <thead>
-                    <tr className="text-left text-sm uppercase tracking-wide text-ink-muted border-b border-stroke">
-                      <th className="px-4 py-3 font-semibold">Resolved</th>
-                      <th className="px-4 py-3 font-semibold">Resolved by</th>
-                      <th className="px-4 py-3 font-semibold">Target</th>
-                      <th className="px-4 py-3 font-semibold">Outcome</th>
-                      <th className="px-4 py-3 font-semibold">Note</th>
-                      <th className="px-4 py-3 font-semibold">In trail</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {legacy.map((r) => (
-                      <tr
-                        key={r._id}
-                        className="border-b border-stroke last:border-0 align-top"
-                      >
-                        <td
-                          className="px-4 py-3 whitespace-nowrap text-ink-sub"
+            <ListShell>
+              {isLegacyLoading && legacy.length === 0 && <SkeletonRows />}
+
+              {!isLegacyLoading && legacyLoaded && legacy.length === 0 && (
+                <EmptyState>
+                  Every recorded resolution already has a trail entry - there
+                  is no pre-audit history to show.
+                </EmptyState>
+              )}
+
+              {legacy.length > 0 && (
+                <ul className="divide-y divide-stroke">
+                  {legacy.map((r) => (
+                    <li key={r._id} className="px-4 py-3.5 sm:px-5">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex flex-wrap items-center gap-1.5 min-w-0">
+                          <Pill
+                            className={
+                              STATUS_LABELS[r.status] === "Actioned"
+                                ? "bg-blue-100 text-blue-600"
+                                : "bg-gray-100 text-gray-500"
+                            }
+                          >
+                            {STATUS_LABELS[r.status] || r.status}
+                          </Pill>
+                          {r.loggedInAuditTrail ? (
+                            <Pill className="bg-green-100 text-green-700">
+                              logged
+                            </Pill>
+                          ) : (
+                            <Pill
+                              className="bg-amber-100 text-amber-700"
+                              title="No report_resolved entry exists for this resolution."
+                            >
+                              pre-audit
+                            </Pill>
+                          )}
+                        </div>
+                        <time
+                          dateTime={r.resolvedAt}
                           title={new Date(r.resolvedAt).toLocaleString()}
+                          className="shrink-0 pt-0.5 text-sm text-ink-muted whitespace-nowrap"
                         >
                           {formatWhen(r.resolvedAt)}
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap">
-                          <div className="font-medium text-ink">
-                            {r.resolvedBy?.name || "Unknown"}
-                          </div>
-                          {r.resolvedBy?.username && (
-                            <div className="text-sm text-ink-muted">
-                              @{r.resolvedBy.username}
-                            </div>
-                          )}
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap text-ink-sub">
+                        </time>
+                      </div>
+
+                      <div className="mt-2 text-base text-ink-sub leading-snug wrap-break-word">
+                        {r.resolutionNote || (
+                          <span className="text-ink-muted">no note</span>
+                        )}
+                        {r.reason && (
+                          <span className="text-sm text-ink-muted">
+                            {" "}
+                            (reported as {r.reason})
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="mt-2.5 flex flex-wrap gap-x-4 gap-y-1">
+                        <MetaItem label="By">
+                          <Person
+                            name={r.resolvedBy?.name}
+                            username={r.resolvedBy?.username}
+                            fallback="Unknown"
+                          />
+                        </MetaItem>
+                        <MetaItem label="On">
                           {r.targetType}{" "}
                           <span className="text-ink-muted">
                             ...{shortId(r.targetId)}
                           </span>
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap">
-                          <span
-                            className={`inline-block rounded-full px-2.5 py-0.5 text-sm font-semibold ${
-                              STATUS_LABELS[r.status] === "Actioned"
-                                ? "bg-blue-100 text-blue-600"
-                                : "bg-gray-100 text-gray-500"
-                            }`}
-                          >
-                            {STATUS_LABELS[r.status] || r.status}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 text-ink-sub max-w-xs">
-                          {r.resolutionNote || (
-                            <span className="text-ink-muted">no note</span>
-                          )}
-                          {r.reason && (
-                            <span className="text-sm text-ink-muted">
-                              {" "}
-                              (reported as {r.reason})
-                            </span>
-                          )}
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap">
-                          {r.loggedInAuditTrail ? (
-                            <span className="inline-block rounded-full px-2.5 py-0.5 text-sm font-semibold bg-green-100 text-green-700">
-                              logged
-                            </span>
-                          ) : (
-                            <span
-                              className="inline-block rounded-full px-2.5 py-0.5 text-sm font-semibold bg-amber-100 text-amber-700"
-                              title="No report_resolved entry exists for this resolution."
-                            >
-                              pre-audit
-                            </span>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-
-                    {isLegacyLoading && legacy.length === 0 && (
-                      <tr>
-                        <td colSpan={6} className="px-4 py-12 text-center text-ink-muted">
-                          Loading pre-audit resolutions...
-                        </td>
-                      </tr>
-                    )}
-
-                    {!isLegacyLoading && legacyLoaded && legacy.length === 0 && (
-                      <tr>
-                        <td colSpan={6} className="px-4 py-12 text-center text-ink-muted">
-                          Every recorded resolution already has a trail entry -
-                          there is no pre-audit history to show.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
+                        </MetaItem>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
 
               {legacyHasMore && (
-                <div className="border-t border-stroke p-3 text-center">
+                <div className="border-t border-stroke p-3">
                   <button
                     onClick={() => fetchLegacy(legacyOffset)}
                     disabled={isLegacyLoading}
-                    className="px-4 py-2 rounded-lg text-base font-medium text-primary-600 hover:bg-primary-50 transition disabled:opacity-50"
+                    className="w-full sm:w-auto sm:mx-auto sm:block px-4 py-2.5 rounded-lg text-base font-medium text-primary-600 hover:bg-primary-50 transition disabled:opacity-50"
                   >
                     {isLegacyLoading ? "Loading..." : "Load more"}
                   </button>
                 </div>
               )}
-            </div>
+            </ListShell>
           </div>
         )}
 
         {/* UNLOGGED STATE - the honest treatment of an unrecoverable gap. */}
         {tab === "gaps" && (
           <div>
-            <p className="text-sm text-ink-muted mb-3">
+            <p className="text-sm text-ink-muted mb-3 leading-relaxed">
               Accounts still carrying a restriction that no audit entry ever
               recorded. Their actor and application time were never stored,
               and every audit row requires a real actor, so these cannot be
@@ -931,15 +1075,18 @@ const AdminAuditLog = () => {
             </p>
 
             {isGapsLoading && gaps.length === 0 && (
-              <div className="bg-card rounded-xl border border-stroke p-8 text-center text-ink-muted">
-                Checking restriction state...
-              </div>
+              <ListShell>
+                <SkeletonRows />
+              </ListShell>
             )}
 
             {!isGapsLoading && gapsLoaded && gaps.length === 0 && (
-              <div className="bg-card rounded-xl border border-stroke p-8 text-center text-ink-muted">
-                Nothing unlogged - every current restriction has a trail entry.
-              </div>
+              <ListShell>
+                <EmptyState>
+                  Nothing unlogged - every current restriction has a trail
+                  entry.
+                </EmptyState>
+              </ListShell>
             )}
 
             <div className="space-y-3">
@@ -948,12 +1095,12 @@ const AdminAuditLog = () => {
                   key={gap.user._id}
                   className="bg-card rounded-xl border border-amber-200 p-4"
                 >
-                  <div className="flex flex-wrap items-center gap-2 mb-2">
-                    <span className="font-semibold text-ink">
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 mb-2">
+                    <span className="font-semibold text-ink wrap-break-word">
                       {gap.user.name || "Unknown user"}
                     </span>
                     {gap.user.username && (
-                      <span className="text-sm text-ink-muted">
+                      <span className="text-sm text-ink-muted wrap-break-word">
                         @{gap.user.username}
                       </span>
                     )}
@@ -976,7 +1123,7 @@ const AdminAuditLog = () => {
                       </span>
                     )}
                   </div>
-                  <p className="text-sm text-ink-sub">
+                  <p className="text-sm text-ink-sub wrap-break-word">
                     Missing from the trail:{" "}
                     <span className="font-medium text-ink">
                       {gap.missing.join(", ")}
@@ -988,7 +1135,9 @@ const AdminAuditLog = () => {
                       </span>
                     )}
                   </p>
-                  <p className="text-sm text-ink-muted mt-1">{gap.note}</p>
+                  <p className="text-sm text-ink-muted mt-1 wrap-break-word">
+                    {gap.note}
+                  </p>
                 </div>
               ))}
             </div>
@@ -999,4 +1148,3 @@ const AdminAuditLog = () => {
   );
 };
 export default AdminAuditLog;
-
