@@ -345,6 +345,9 @@ const PostDetailModal = ({
   useEffect(() => {
     if (!isOpen) return;
     const handleKeyDown = (e) => {
+      // A secondary modal (delete/report/quote/tip/promote...) is stacked
+      // on top — keys belong to it, not to this modal or its carousel.
+      if (document.querySelector("[data-modal-layer]")) return;
       if (e.key === "Escape") onClose();
       if (e.key === "ArrowLeft" && normalizedMedia.length > 1) {
         setActiveSlide((i) => (i - 1 + normalizedMedia.length) % normalizedMedia.length);

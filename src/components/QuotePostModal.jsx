@@ -60,7 +60,7 @@ const QuotePostModal = ({ post, closeModal, onSubmit }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 px-4">
+    <div data-modal-layer className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[60] px-4">
       <div className="bg-card w-full max-w-lg rounded-2xl shadow-xl overflow-hidden max-h-[90vh] flex flex-col">
         <div className="flex items-center justify-between px-5 py-4 border-b border-stroke">
           <h2 className="text-lg font-semibold text-ink">Quote post</h2>

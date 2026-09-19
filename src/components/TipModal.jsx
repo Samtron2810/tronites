@@ -35,7 +35,7 @@ const TipModal = ({ creator, postId = null, onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm px-0 sm:px-4">
+    <div data-modal-layer className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm px-0 sm:px-4">
       <div className="bg-card w-full sm:max-w-md rounded-t-3xl sm:rounded-2xl border border-stroke shadow-2xl overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-stroke">
