@@ -11,6 +11,8 @@ import api from "../services/api";
 import toast from "react-hot-toast";
 import { useAuth } from "../context/useAuth";
 import { canPromote } from "../utils/tierLimits";
+import ModalPortal from "../components/ModalPortal";
+import useBackButtonClose from "../hooks/useBackButtonClose";
 
 const CTA_OPTIONS = [
   { value: "learn_more",    label: "Learn More" },
@@ -195,6 +197,7 @@ const CampaignCard = ({ campaign, onPay, onCancel, onExport, onResume, onCancelP
 
 // ── Create campaign modal ─────────────────────────────────────────────────
 const CreateCampaignModal = ({ onClose, onCreated, tiers, currentUserId }) => {
+  useBackButtonClose(true, onClose);
   const [step, setStep] = useState(1); // 1=basics, 2=targeting, 3=CTA, 4=review
   const [name, setName] = useState("");
   const [selectedTier, setSelectedTier] = useState("basic");
@@ -264,8 +267,9 @@ const CreateCampaignModal = ({ onClose, onCreated, tiers, currentUserId }) => {
   const budget = tierConfig ? tierConfig.amountNgn * postIds.length : 0;
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-card border border-stroke rounded-2xl w-full max-w-md shadow-2xl max-h-[88vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+    <ModalPortal>
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-stretch sm:items-center justify-center sm:p-4" onClick={onClose}>
+      <div className="bg-card sm:border border-stroke sm:rounded-2xl w-full max-w-md shadow-2xl overflow-y-auto h-full sm:h-auto sm:max-h-[90dvh] max-sm:max-w-none max-sm:rounded-none max-sm:pt-[env(safe-area-inset-top)] max-sm:pb-[env(safe-area-inset-bottom)]" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-stroke sticky top-0 bg-card z-10">
           <div className="flex items-center gap-2">
@@ -498,6 +502,7 @@ const CreateCampaignModal = ({ onClose, onCreated, tiers, currentUserId }) => {
         </div>
       </div>
     </div>
+    </ModalPortal>
   );
 };
 

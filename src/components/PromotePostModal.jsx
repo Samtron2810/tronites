@@ -6,6 +6,8 @@ import {
 } from "react-icons/fi";
 import api from "../services/api";
 import toast from "react-hot-toast";
+import ModalPortal from "./ModalPortal";
+import useBackButtonClose from "../hooks/useBackButtonClose";
 
 const CTA_OPTIONS = [
   { value: "learn_more",    label: "Learn More" },
@@ -61,6 +63,7 @@ const TierCard = ({ tierKey, config, selected, onSelect }) => {
 };
 
 const PromotePostModal = ({ postId, postText, promotionReference, onClose }) => {
+  useBackButtonClose(true, onClose);
   const [tiers, setTiers] = useState(null);
   const [selectedTier, setSelectedTier] = useState("basic");
   // Seeded from the prop: a returning payment is already pending, so the fee
@@ -150,9 +153,10 @@ const PromotePostModal = ({ postId, postText, promotionReference, onClose }) => 
   const selectedTierConfig = tiers?.[selectedTier];
 
   return (
-    <div data-modal-layer className="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4" onClick={onClose}>
+    <ModalPortal>
+    <div data-modal-layer className="fixed inset-0 bg-black/50 z-[60] flex items-stretch sm:items-center justify-center sm:p-4" onClick={onClose}>
       <div
-        className="bg-card border border-stroke rounded-2xl w-full max-w-sm shadow-xl max-h-[90vh] overflow-y-auto"
+        className="bg-card sm:border border-stroke sm:rounded-2xl w-full max-w-sm shadow-xl overflow-y-auto h-full sm:h-auto sm:max-h-[90dvh] max-sm:max-w-none max-sm:rounded-none max-sm:pt-[env(safe-area-inset-top)] max-sm:pb-[env(safe-area-inset-bottom)]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -355,6 +359,7 @@ const PromotePostModal = ({ postId, postText, promotionReference, onClose }) => 
         </div>
       </div>
     </div>
+    </ModalPortal>
   );
 };
 

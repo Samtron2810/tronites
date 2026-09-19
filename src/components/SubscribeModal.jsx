@@ -2,8 +2,11 @@ import { useState, useEffect } from "react";
 import { FaTimes, FaStar, FaLock, FaCheckCircle } from "react-icons/fa";
 import api from "../services/api";
 import toast from "react-hot-toast";
+import ModalPortal from "./ModalPortal";
+import useBackButtonClose from "../hooks/useBackButtonClose";
 
 const SubscribeModal = ({ creator, onClose, onAlreadySubscribed }) => {
+  useBackButtonClose(true, onClose);
   const [plan, setPlan] = useState(null);
   const [subStatus, setSubStatus] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -63,8 +66,9 @@ const SubscribeModal = ({ creator, onClose, onAlreadySubscribed }) => {
     : null;
 
   return (
+    <ModalPortal>
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm px-0 sm:px-4">
-      <div className="bg-card w-full sm:max-w-md rounded-t-3xl sm:rounded-2xl border border-stroke shadow-2xl overflow-hidden">
+      <div className="bg-card w-full sm:max-w-md rounded-t-3xl sm:rounded-2xl border border-stroke shadow-2xl overflow-y-auto max-h-[95dvh] pb-[env(safe-area-inset-bottom)]">
         {/* Header */}
         <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-stroke">
           <div className="flex items-center gap-3">
@@ -188,6 +192,7 @@ const SubscribeModal = ({ creator, onClose, onAlreadySubscribed }) => {
         )}
       </div>
     </div>
+    </ModalPortal>
   );
 };
 

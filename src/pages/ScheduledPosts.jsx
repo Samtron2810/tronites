@@ -15,6 +15,8 @@ import {
   FaEdit,
   FaTimes,
 } from "react-icons/fa";
+import ModalPortal from "../components/ModalPortal";
+import useBackButtonClose from "../hooks/useBackButtonClose";
 
 // Short TTL — scheduled posts are mutable (user can publish/delete them),
 // so we keep the local cache very fresh (20 s) and always revalidate on
@@ -51,6 +53,7 @@ const isoToLocalInput = (iso) => {
 const localInputToIso = (val) => new Date(val).toISOString();
 
 const RescheduleModal = ({ post, onClose, onSaved }) => {
+  useBackButtonClose(true, onClose);
   const [value, setValue] = useState(isoToLocalInput(post.scheduledFor));
   const [saving, setSaving] = useState(false);
   // Memoised so the picker floor is computed once per open rather than on
@@ -81,9 +84,10 @@ const RescheduleModal = ({ post, onClose, onSaved }) => {
   };
 
   return (
+    <ModalPortal>
     <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" onClick={onClose}>
       <div
-        className="bg-card border border-stroke rounded-2xl w-full max-w-sm p-5 space-y-4"
+        className="bg-card border border-stroke rounded-2xl w-full max-w-sm p-5 space-y-4 max-h-[90dvh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between">
@@ -120,6 +124,7 @@ const RescheduleModal = ({ post, onClose, onSaved }) => {
         </div>
       </div>
     </div>
+    </ModalPortal>
   );
 };
 

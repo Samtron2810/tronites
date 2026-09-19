@@ -2,10 +2,13 @@ import { useState } from "react";
 import { FaTimes, FaHeart, FaLock } from "react-icons/fa";
 import api from "../services/api";
 import toast from "react-hot-toast";
+import ModalPortal from "./ModalPortal";
+import useBackButtonClose from "../hooks/useBackButtonClose";
 
 const PRESET_AMOUNTS = [100, 200, 500, 1000, 2000, 5000];
 
 const TipModal = ({ creator, postId = null, onClose }) => {
+  useBackButtonClose(true, onClose);
   const [amount, setAmount] = useState("");
   const [customAmount, setCustomAmount] = useState("");
   const [message, setMessage] = useState("");
@@ -35,8 +38,9 @@ const TipModal = ({ creator, postId = null, onClose }) => {
   };
 
   return (
+    <ModalPortal>
     <div data-modal-layer className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm px-0 sm:px-4">
-      <div className="bg-card w-full sm:max-w-md rounded-t-3xl sm:rounded-2xl border border-stroke shadow-2xl overflow-hidden">
+      <div className="bg-card w-full sm:max-w-md rounded-t-3xl sm:rounded-2xl border border-stroke shadow-2xl overflow-y-auto max-h-[95dvh] pb-[env(safe-area-inset-bottom)]">
         {/* Header */}
         <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-stroke">
           <div className="flex items-center gap-3">
@@ -182,6 +186,7 @@ const TipModal = ({ creator, postId = null, onClose }) => {
         </div>
       </div>
     </div>
+    </ModalPortal>
   );
 };
 

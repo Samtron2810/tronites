@@ -10,6 +10,11 @@ import { useEffect, useRef } from "react";
 const activeStack = [];
 let nextInstanceId = 0;
 let nextEntrySeq = 0;
+// Deferred history.back() calls scheduled by cleanups that haven't run yet
+// ({ ownerId, timer }). Module-level (not per instance) so a modal that
+// opens in the SAME commit another one closes can take over the closing
+// modal's history entry instead of pushing a second one — see (5) below.
+const pendingBacks = [];
 
 // Lets a modal be dismissed with the browser/OS back button (Android back
 // gesture, browser Back) instead of leaving the page.
@@ -65,6 +70,14 @@ let nextEntrySeq = 0;
 //    consumes the entry, so a popstate close must NOT trigger another
 //    back() in the cleanup), and the cleanup only back()s when it is.
 //
+// 5. HAND-OFF between modals in one commit (e.g. PostCard: detail modal
+//    closes while the delete/report modal opens). Without it the closing
+//    modal's deferred back() would fire AFTER the new modal pushed its own
+//    entry, pop THAT entry, and the new modal would read it as a Back press
+//    and close itself instantly. Instead the opening modal cancels the
+//    pending back() and re-tags the still-current entry as its own
+//    (replaceState) — history stays balanced with no extra push/pop.
+//
 // `onClose` is read through a ref so the listener effect doesn't need to
 // re-run (and re-push history entries) when the parent re-creates the
 // callback on each render — only `isActive` toggling pushes/consumes.
@@ -77,9 +90,6 @@ const useBackButtonClose = (isActive, onClose) => {
   // consumed yet. Survives StrictMode's remount so bookkeeping isn't reset
   // mid-cycle.
   const ownsEntryRef = useRef(false);
-  // Timeout handle for a deferred history.back() that hasn't run yet — lets
-  // an immediate effect re-run cancel it and re-adopt the entry.
-  const pendingBackRef = useRef(null);
   const onCloseRef = useRef(onClose);
 
   // Keep the latest callback without re-running (and re-pushing history
@@ -96,12 +106,21 @@ const useBackButtonClose = (isActive, onClose) => {
       instanceIdRef.current = ++nextInstanceId;
     }
 
-    if (pendingBackRef.current) {
-      // StrictMode remount: the entry we pushed last cycle is still the
-      // current top one (its back() never ran) — cancel the deferred
-      // consumption and keep owning it instead of pushing a duplicate.
-      clearTimeout(pendingBackRef.current);
-      pendingBackRef.current = null;
+    // Take over a pending (not yet executed) history.back(): our own from a
+    // StrictMode remount, otherwise another modal's that closed in this
+    // same commit.
+    const mine = pendingBacks.findIndex(
+      (p) => p.ownerId === instanceIdRef.current,
+    );
+    const takeIdx = mine !== -1 ? mine : pendingBacks.length - 1;
+    if (takeIdx !== -1) {
+      const [pending] = pendingBacks.splice(takeIdx, 1);
+      clearTimeout(pending.timer);
+      if (pending.ownerId !== instanceIdRef.current) {
+        const seq = ++nextEntrySeq;
+        window.history.replaceState({ modalViewer: true, seq }, "");
+        myEntrySeqRef.current = seq;
+      }
       ownsEntryRef.current = true;
       if (!activeStack.includes(instanceIdRef.current)) {
         activeStack.push(instanceIdRef.current);
@@ -157,10 +176,13 @@ const useBackButtonClose = (isActive, onClose) => {
         // timeout simply fires. Either way the popstate it triggers lands
         // after our listener is gone, so it can't re-close anything.
         ownsEntryRef.current = false;
-        pendingBackRef.current = setTimeout(() => {
-          pendingBackRef.current = null;
+        const pending = { ownerId: instanceIdRef.current, timer: null };
+        pending.timer = setTimeout(() => {
+          const i = pendingBacks.indexOf(pending);
+          if (i !== -1) pendingBacks.splice(i, 1);
           window.history.back();
         }, 0);
+        pendingBacks.push(pending);
       }
     };
   }, [isActive]);

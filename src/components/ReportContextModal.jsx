@@ -6,6 +6,7 @@ import PostCard from "./PostCard";
 import TextWithLinks from "./TextWithLinks";
 import { dayKey, formatDayLabel, formatMessageTime } from "../utils/chatDate";
 import useBackButtonClose from "../hooks/useBackButtonClose";
+import ModalPortal from "./ModalPortal";
 
 const REASON_LABELS = {
   spam: "Spam",
@@ -228,13 +229,14 @@ const ReportContextModal = ({ report, onClose, onResolved }) => {
   const targetLabel = TARGET_TYPE_LABELS[report.targetType]?.toLowerCase();
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <ModalPortal>
+    <div className="fixed inset-0 z-50 flex items-stretch sm:items-center justify-center sm:p-4">
       <div
         className="absolute inset-0 bg-black/40 backdrop-blur-sm"
         onClick={onClose}
       />
 
-      <div className="relative bg-card rounded-2xl shadow-xl w-full max-w-2xl max-h-[88vh] flex flex-col border border-stroke">
+      <div className="relative bg-card sm:rounded-2xl shadow-xl w-full max-w-2xl flex flex-col sm:border border-stroke h-full sm:h-auto sm:max-h-[90dvh] max-sm:max-w-none max-sm:rounded-none max-sm:pt-[env(safe-area-inset-top)] max-sm:pb-[env(safe-area-inset-bottom)]">
         {/* Header */}
         <div className="flex items-start justify-between gap-3 px-5 py-4 border-b border-stroke shrink-0">
           <div className="min-w-0">
@@ -410,6 +412,7 @@ const ReportContextModal = ({ report, onClose, onResolved }) => {
         )}
       </div>
     </div>
+    </ModalPortal>
   );
 };
 

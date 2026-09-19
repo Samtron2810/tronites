@@ -2,6 +2,7 @@ import { useState } from "react";
 import { FiFileText, FiX } from "react-icons/fi";
 import api from "../services/api";
 import useBackButtonClose from "../hooks/useBackButtonClose";
+import ModalPortal from "./ModalPortal";
 
 // 3.1 — restricted-account recourse. Rendered from Login.jsx's restricted
 // panel. The account has no session (a restricted user can't log in), so
@@ -37,8 +38,9 @@ const AppealModal = ({ identifier: initialIdentifier, onClose }) => {
   };
 
   return (
+    <ModalPortal>
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 px-4">
-      <div className="bg-card rounded-2xl shadow-xl p-6 w-full max-w-sm max-h-[85vh] overflow-y-auto">
+      <div className="bg-card rounded-2xl shadow-xl p-6 w-full max-w-sm max-h-[90dvh] overflow-y-auto">
         <div className="flex items-start justify-between mb-4">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-primary-50 flex items-center justify-center shrink-0">
@@ -122,6 +124,7 @@ const AppealModal = ({ identifier: initialIdentifier, onClose }) => {
         )}
       </div>
     </div>
+    </ModalPortal>
   );
 };
 

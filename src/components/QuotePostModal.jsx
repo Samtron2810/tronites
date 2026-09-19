@@ -6,6 +6,7 @@ import QuotedPostPreview from "./QuotedPostPreview";
 import useBackButtonClose from "../hooks/useBackButtonClose";
 import { useAuth } from "../context/useAuth";
 import { getCharLimit } from "../utils/tierLimits";
+import ModalPortal from "./ModalPortal";
 
 // Trimmed-down composer compared to CreatePostModal — no image/video
 // picker, no privacy selector. A quote is always as visible as the
@@ -60,8 +61,9 @@ const QuotePostModal = ({ post, closeModal, onSubmit }) => {
   };
 
   return (
-    <div data-modal-layer className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[60] px-4">
-      <div className="bg-card w-full max-w-lg rounded-2xl shadow-xl overflow-hidden max-h-[90vh] flex flex-col">
+    <ModalPortal>
+    <div data-modal-layer className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-stretch sm:items-center justify-center z-[60] sm:px-4">
+      <div className="bg-card w-full max-w-lg sm:rounded-2xl shadow-xl overflow-hidden flex flex-col h-full sm:h-auto sm:max-h-[90dvh] max-sm:max-w-none max-sm:rounded-none max-sm:pt-[env(safe-area-inset-top)] max-sm:pb-[env(safe-area-inset-bottom)]">
         <div className="flex items-center justify-between px-5 py-4 border-b border-stroke">
           <h2 className="text-lg font-semibold text-ink">Quote post</h2>
           <button
@@ -123,6 +125,7 @@ const QuotePostModal = ({ post, closeModal, onSubmit }) => {
         </div>
       </div>
     </div>
+    </ModalPortal>
   );
 };
 

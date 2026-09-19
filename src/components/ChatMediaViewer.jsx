@@ -8,6 +8,7 @@ import {
 } from "react-icons/fa";
 import useBackButtonClose from "../hooks/useBackButtonClose";
 import { resizedImageUrl, IMAGE_SIZES } from "../utils/cloudinaryImage";
+import ModalPortal from "./ModalPortal";
 
 // Full-screen viewer for chat media, opened by tapping an image or a video
 // thumbnail inside ChatModal. Mirrors PostDetailModal's width behavior —
@@ -88,12 +89,13 @@ const ChatMediaViewer = ({
   if (!isVideo && !isImage) return null;
 
   return (
+    <ModalPortal>
     <div
-      className="fixed inset-0 z-60 bg-black/80 flex justify-center overflow-y-auto"
+      className="fixed inset-0 z-60 bg-black/80 flex justify-center overflow-y-auto overscroll-contain"
       onClick={onClose}
     >
       <div
-        className="bg-card w-full sm:max-w-3xl sm:rounded-2xl h-dvh flex flex-col"
+        className="bg-card w-full sm:max-w-3xl sm:rounded-2xl h-dvh flex flex-col max-sm:pt-[env(safe-area-inset-top)] max-sm:pb-[env(safe-area-inset-bottom)]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -215,6 +217,7 @@ const ChatMediaViewer = ({
         </div>
       </div>
     </div>
+    </ModalPortal>
   );
 };
 

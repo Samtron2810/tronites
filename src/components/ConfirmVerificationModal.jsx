@@ -57,7 +57,7 @@ const ConfirmVerificationModal = ({
   // confirm/cancel buttons past them.
   return createPortal(
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-70 px-4">
-      <div className="bg-card rounded-2xl shadow-xl p-6 w-full max-w-md max-h-[85vh] overflow-y-auto">
+      <div className="bg-card rounded-2xl shadow-xl p-6 w-full max-w-md max-h-[90dvh] overflow-y-auto">
         <div className="flex items-center gap-3 mb-3">
           <div
             className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"

@@ -23,6 +23,7 @@ import { resizedImageUrl, IMAGE_SIZES } from "../utils/cloudinaryImage";
 import { dayKey, formatDayLabel, formatMessageTime } from "../utils/chatDate";
 import useBackButtonClose from "../hooks/useBackButtonClose";
 import VerifiedBadge from "./VerifiedBadge";
+import ModalPortal from "./ModalPortal";
 
 // 63 -> "1:03", 7 -> "0:07" — used only for the static video-thumbnail's
 // duration badge; the full-screen viewer's native controls show timing
@@ -301,7 +302,8 @@ const ChatModal = ({
     : false;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <ModalPortal>
+    <div className="fixed inset-0 z-50 flex items-stretch sm:items-center justify-center sm:p-4">
       <div
         className="absolute inset-0 bg-black/40 backdrop-blur-sm"
         onClick={onClose}
@@ -309,7 +311,7 @@ const ChatModal = ({
 
       <div
         ref={panelRef}
-        className="relative bg-card rounded-2xl shadow-xl w-full max-w-2xl max-h-[88vh] overflow-hidden overflow-x-hidden flex flex-col border border-stroke"
+        className="relative bg-card sm:rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden overflow-x-hidden flex flex-col sm:border border-stroke h-full sm:h-auto sm:max-h-[90dvh] max-sm:max-w-none max-sm:rounded-none max-sm:pt-[env(safe-area-inset-top)] max-sm:pb-[env(safe-area-inset-bottom)]"
       >
         {/* Header */}
         <div className="flex items-center gap-3 px-4 py-3 border-b border-stroke">
@@ -1128,6 +1130,7 @@ const ChatModal = ({
         )}
       </div>
     </div>
+    </ModalPortal>
   );
 };
 

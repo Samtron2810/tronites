@@ -11,6 +11,7 @@ import api from "../services/api";
 import defaultAvatar from "../assets/defaultAvatar";
 import { resizedImageUrl, IMAGE_SIZES } from "../utils/cloudinaryImage";
 import useBackButtonClose from "../hooks/useBackButtonClose";
+import ModalPortal from "./ModalPortal";
 
 // Phase 7 (roadmap 3.6) — moderator notes + one-screen case history.
 // Opened from the moderation queue or the admin users panel; renders the
@@ -157,8 +158,9 @@ const CaseHistoryModal = ({ user, currentUserId, viewerRole, onClose }) => {
     !!target?.suspendedUntil && new Date(target.suspendedUntil) > new Date();
 
   return (
-    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 px-4">
-      <div className="bg-card rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
+    <ModalPortal>
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-stretch sm:items-center justify-center z-50 sm:px-4">
+      <div className="bg-card sm:rounded-2xl shadow-xl w-full max-w-2xl flex flex-col overflow-hidden h-full sm:h-auto sm:max-h-[90dvh] max-sm:max-w-none max-sm:rounded-none max-sm:pt-[env(safe-area-inset-top)] max-sm:pb-[env(safe-area-inset-bottom)]">
         {/* Header */}
         <div className="flex items-center gap-3 px-5 py-4 border-b border-stroke shrink-0">
           <img
@@ -377,6 +379,7 @@ const CaseHistoryModal = ({ user, currentUserId, viewerRole, onClose }) => {
         </div>
       </div>
     </div>
+    </ModalPortal>
   );
 };
 

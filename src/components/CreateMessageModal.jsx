@@ -9,6 +9,7 @@ import {
 import defaultAvatar from "../assets/defaultAvatar";
 import { resizedImageUrl, IMAGE_SIZES } from "../utils/cloudinaryImage";
 import useBackButtonClose from "../hooks/useBackButtonClose";
+import ModalPortal from "./ModalPortal";
 
 const ChatModal = ({
   isOpen,
@@ -41,10 +42,11 @@ const ChatModal = ({
     : false;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <ModalPortal>
+    <div className="fixed inset-0 z-50 flex items-stretch sm:items-center justify-center sm:p-4">
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
 
-      <div className="relative bg-card rounded-2xl shadow-lg w-full max-w-3xl max-h-[90vh] overflow-hidden overflow-x-hidden flex flex-col">
+      <div className="relative bg-card sm:rounded-2xl shadow-lg w-full max-w-3xl overflow-hidden overflow-x-hidden flex flex-col h-full sm:h-auto sm:max-h-[90dvh] max-sm:max-w-none max-sm:rounded-none max-sm:pt-[env(safe-area-inset-top)] max-sm:pb-[env(safe-area-inset-bottom)]">
         <div className="flex items-center gap-3 px-4 py-3 border-b">
           <button
             onClick={onClose}
@@ -208,6 +210,7 @@ const ChatModal = ({
         </div>
       </div>
     </div>
+    </ModalPortal>
   );
 };
 

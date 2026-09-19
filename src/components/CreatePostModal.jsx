@@ -18,6 +18,7 @@ import useBackButtonClose from "../hooks/useBackButtonClose";
 import { validateVideoFile } from "../services/videoUpload";
 import { useAuth } from "../context/useAuth";
 import { getCharLimit, canSchedule, canPostSubscribersOnly } from "../utils/tierLimits";
+import ModalPortal from "./ModalPortal";
 
 const MAX_IMAGES = 4;
 
@@ -201,8 +202,9 @@ const CreatePostModal = ({ closeModal, onSubmit, onSubmitVideo }) => {
   const gridClass = previews.length === 1 ? "grid-cols-1" : "grid-cols-2";
 
   return (
-    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 px-4">
-      <div className="bg-card w-full max-w-lg rounded-2xl shadow-xl overflow-hidden max-h-[90vh] flex flex-col">
+    <ModalPortal>
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-stretch sm:items-center justify-center z-50 sm:px-4">
+      <div className="bg-card w-full max-w-lg sm:rounded-2xl shadow-xl overflow-hidden flex flex-col h-full sm:h-auto sm:max-h-[90dvh] max-sm:max-w-none max-sm:rounded-none max-sm:pt-[env(safe-area-inset-top)] max-sm:pb-[env(safe-area-inset-bottom)]">
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-stroke">
           <h2 className="text-lg font-semibold text-ink">Create Post</h2>
@@ -490,6 +492,7 @@ const CreatePostModal = ({ closeModal, onSubmit, onSubmitVideo }) => {
         />
       )}
     </div>
+    </ModalPortal>
   );
 };
 

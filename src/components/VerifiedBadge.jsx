@@ -71,7 +71,7 @@ const VerifiedBadge = ({
           Portaling also escapes truncating/overflowing ancestors and keeps the
           overlay pinned to the real viewport.
           Responsive: bottom sheet with side gutters on phones (px-4, w-full),
-          centered dialog from sm up (sm:px-0, max-w-sm), capped max-h-[85vh]. */}
+          centered dialog from sm up (sm:px-0, max-w-sm), capped max-h-[90dvh]. */}
       {sheetOpen &&
         createPortal(
           <div
@@ -79,7 +79,7 @@ const VerifiedBadge = ({
             onClick={() => setSheetOpen(false)}
           >
             <div
-              className="bg-card rounded-t-2xl sm:rounded-2xl shadow-xl p-6 w-full max-w-sm max-h-[85vh] overflow-y-auto overscroll-contain wrap-break-word"
+              className="bg-card rounded-t-2xl sm:rounded-2xl shadow-xl p-6 max-sm:pb-[calc(1.5rem+env(safe-area-inset-bottom))] w-full max-w-sm max-h-[90dvh] overflow-y-auto overscroll-contain wrap-break-word"
               onClick={(e) => e.stopPropagation()}
               role="dialog"
               aria-modal="true"

@@ -37,6 +37,7 @@ import api from "../services/api";
 import useBackButtonClose from "../hooks/useBackButtonClose";
 import { canPromote, getPinnedLimit } from "../utils/tierLimits";
 import { hasPermission } from "../constants/permissions";
+import ModalPortal from "./ModalPortal";
 
 // Mirrors PostCard's own CTA_LABELS — promoted/campaign posts render a
 // CTA button here too (see the "CTA button" section below), not just
@@ -450,16 +451,17 @@ const PostDetailModal = ({
           onClose={() => setShowTipModal(false)}
         />
       )}
+      <ModalPortal>
       <div
-      className="fixed inset-0 z-50 bg-black/80 flex items-start min-h-full justify-center p-0 overflow-y-auto"
+      className="fixed inset-0 z-50 bg-black/80 flex items-start justify-center p-0 overflow-y-auto overscroll-contain"
       onClick={onClose}
     >
       <div
-        className="bg-card w-full sm:max-w-3xl sm:rounded-2xl my-auto min-h-screen sm:min-h-0"
+        className="bg-card w-full sm:max-w-3xl sm:rounded-2xl my-auto min-h-dvh sm:min-h-0 max-sm:pb-[env(safe-area-inset-bottom)]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="px-5 py-4 border-b border-stroke sticky top-0 bg-card z-10 sm:rounded-t-2xl">
+        <div className="px-5 py-4 max-sm:pt-[calc(1rem+env(safe-area-inset-top))] border-b border-stroke sticky top-0 bg-card z-10 sm:rounded-t-2xl">
           {/* Sponsored badge — mirrors PostCard's, shown when this post
               was paid-promoted and injected into the feed this modal was
               opened from. */}
@@ -1008,6 +1010,7 @@ const PostDetailModal = ({
         </div>
       </div>
     </div>
+    </ModalPortal>
     </>
   );
 };

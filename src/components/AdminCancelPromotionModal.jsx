@@ -2,6 +2,8 @@ import { useState } from "react";
 import { FiX, FiAlertTriangle, FiLoader, FiShield } from "react-icons/fi";
 import api from "../services/api";
 import toast from "react-hot-toast";
+import ModalPortal from "./ModalPortal";
+import useBackButtonClose from "../hooks/useBackButtonClose";
 
 // Moderator/admin force-cancel of a promotion — active or pending, any
 // owner. Self-contained like AdminPromotePostModal: owns its own API call,
@@ -16,6 +18,7 @@ const AdminCancelPromotionModal = ({
   onClose,
   onCancelled,
 }) => {
+  useBackButtonClose(true, onClose);
   const [submitting, setSubmitting] = useState(false);
 
   const handleConfirm = async () => {
@@ -36,6 +39,7 @@ const AdminCancelPromotionModal = ({
   };
 
   return (
+    <ModalPortal>
     <div data-modal-layer className="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4" onClick={onClose}>
       <div
         className="bg-card border border-stroke rounded-2xl w-full max-w-sm shadow-xl"
@@ -94,6 +98,7 @@ const AdminCancelPromotionModal = ({
         </div>
       </div>
     </div>
+    </ModalPortal>
   );
 };
 

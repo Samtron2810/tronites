@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { FiLogOut } from "react-icons/fi";
 import useBackButtonClose from "../hooks/useBackButtonClose";
+import ModalPortal from "./ModalPortal";
 
 const LogoutModal = ({ onConfirm, onCancel }) => {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -17,8 +18,9 @@ const LogoutModal = ({ onConfirm, onCancel }) => {
   };
 
   return (
+    <ModalPortal>
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 px-4">
-      <div className="bg-card rounded-2xl shadow-xl p-6 w-full max-w-sm">
+      <div className="bg-card rounded-2xl shadow-xl p-6 w-full max-w-sm max-h-[90dvh] overflow-y-auto">
         <div className="flex items-center gap-3 mb-3">
           <div className="w-9 h-9 rounded-xl bg-primary-50 flex items-center justify-center shrink-0">
             <FiLogOut className="text-primary-600" size={16} />
@@ -46,6 +48,7 @@ const LogoutModal = ({ onConfirm, onCancel }) => {
         </div>
       </div>
     </div>
+    </ModalPortal>
   );
 };
 

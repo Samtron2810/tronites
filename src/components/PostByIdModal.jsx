@@ -11,6 +11,7 @@ import PromotePostModal from "./PromotePostModal";
 import AdminPromotePostModal from "./AdminPromotePostModal";
 import AdminCancelPromotionModal from "./AdminCancelPromotionModal";
 import useBackButtonClose from "../hooks/useBackButtonClose";
+import ModalPortal from "./ModalPortal";
 
 // Opens an arbitrary post's own detail view by id, fetching it fresh
 // via GET /posts/:id rather than reusing whatever (possibly stale or
@@ -378,6 +379,7 @@ const PostByIdModal = ({
       )}
 
       {loadError && !loading && !post && (
+        <ModalPortal>
         <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center px-4">
           <div className="bg-card border border-stroke rounded-2xl shadow-xl p-6 w-full max-w-sm text-center">
             <p className="text-base font-semibold text-ink mb-1">
@@ -395,6 +397,7 @@ const PostByIdModal = ({
             </button>
           </div>
         </div>
+        </ModalPortal>
       )}
 
       {!loading && post && (

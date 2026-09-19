@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { FiSliders, FiX } from "react-icons/fi";
 import useBackButtonClose from "../hooks/useBackButtonClose";
+import ModalPortal from "./ModalPortal";
 
 // Local editable draft of the applied filters — Cancel discards edits,
 // Apply commits them back to Explore.jsx in one shot rather than firing
@@ -30,8 +31,9 @@ const SearchFiltersModal = ({ initialFilters, onApply, onCancel }) => {
   };
 
   return (
+    <ModalPortal>
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 px-4">
-      <div className="bg-card rounded-2xl shadow-xl p-6 w-full max-w-sm max-h-[85vh] overflow-y-auto">
+      <div className="bg-card rounded-2xl shadow-xl p-6 w-full max-w-sm max-h-[90dvh] overflow-y-auto">
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-primary-50 flex items-center justify-center shrink-0">
@@ -142,6 +144,7 @@ const SearchFiltersModal = ({ initialFilters, onApply, onCancel }) => {
         </div>
       </div>
     </div>
+    </ModalPortal>
   );
 };
 
