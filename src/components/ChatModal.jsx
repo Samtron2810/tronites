@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useRef, useState, useCallback } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import {
   FiArrowLeft,
   FiImage,
@@ -81,6 +81,7 @@ const ChatModal = ({
   scrollRef,
   messagesContainerRef,
   onMessagesScroll,
+  onJumpToMessage,
   // Fires when any media bubble's image/video finishes loading — Chat.jsx
   // re-anchors the thread to its bottom while the user is parked there,
   // since h-auto media grows the thread after it has been laid out.
@@ -171,33 +172,108 @@ const ChatModal = ({
   // this component (react-hooks/preserve-manual-memoization).
   const otherUserId = selectedChat?.otherUser?._id;
 
-  const handleSearch = useCallback(async (q) => {
-    setSearchQuery(q);
-    if (!q.trim()) { setSearchResults([]); return; }
-    setSearchLoading(true);
-    try {
-      if (!otherUserId) return;
-      const res = await api.get("/messages/search", {
-        params: { userId: otherUserId, q: q.trim(), limit: 20 },
-      });
-      setSearchResults(Array.isArray(res.data) ? res.data : (res.data?.messages || []));
-    } catch {
-      setSearchResults([]);
-    } finally {
-      setSearchLoading(false);
-    }
-  }, [otherUserId]);
+  const searchReqIdRef = useRef(0);
+  const [searchError, setSearchError] = useState(false);
+  const [searchNext, setSearchNext] = useState(null);
+  const [searchLoadingMore, setSearchLoadingMore] = useState(false);
 
-  // Debounce search
+  // Loading/results reset happen in the input handler (not the effect) so
+  // there's never a frame showing stale results or "No messages found"
+  // during the debounce window.
+  const handleSearchInput = (value) => {
+    searchReqIdRef.current++;
+    setSearchQuery(value);
+    setSearchError(false);
+    setSearchNext(null);
+    if (!value.trim()) {
+      setSearchResults([]);
+      setSearchLoading(false);
+    } else {
+      setSearchLoading(true);
+    }
+  };
+
   useEffect(() => {
-    const t = setTimeout(() => { if (searchQuery) handleSearch(searchQuery); }, 350);
-    return () => clearTimeout(t);
-  }, [searchQuery, handleSearch]);
+    const q = searchQuery.trim();
+    if (!showSearch || !q || !otherUserId) return;
+    let cancelled = false;
+    const t = setTimeout(async () => {
+      try {
+        const res = await api.get("/messages/search", {
+          params: { userId: otherUserId, q, limit: 20 },
+        });
+        if (cancelled) return;
+        setSearchResults(res.data?.messages || []);
+        setSearchNext(res.data?.hasMore ? res.data.nextCursor : null);
+        setSearchError(false);
+      } catch {
+        if (cancelled) return;
+        setSearchResults([]);
+        setSearchNext(null);
+        setSearchError(true);
+      } finally {
+        if (!cancelled) setSearchLoading(false);
+      }
+    }, 300);
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+    };
+  }, [searchQuery, showSearch, otherUserId]);
+
+  const loadMoreSearch = async () => {
+    if (!searchNext || searchLoadingMore) return;
+    const reqId = searchReqIdRef.current;
+    setSearchLoadingMore(true);
+    try {
+      const res = await api.get("/messages/search", {
+        params: {
+          userId: otherUserId,
+          q: searchQuery.trim(),
+          limit: 20,
+          afterTime: searchNext.afterTime,
+          afterId: searchNext.afterId,
+        },
+      });
+      if (reqId !== searchReqIdRef.current) return;
+      setSearchResults((prev) => [...prev, ...(res.data?.messages || [])]);
+      setSearchNext(res.data?.hasMore ? res.data.nextCursor : null);
+    } catch {
+      setSearchError(true);
+    } finally {
+      setSearchLoadingMore(false);
+    }
+  };
 
   const closeSearch = () => {
+    searchReqIdRef.current++;
     setShowSearch(false);
     setSearchQuery("");
     setSearchResults([]);
+    setSearchNext(null);
+    setSearchError(false);
+    setSearchLoading(false);
+  };
+
+  const renderHighlighted = (text, q) => {
+    const needle = q.trim();
+    if (!text || !needle) return text;
+    const lower = text.toLowerCase();
+    const n = needle.toLowerCase();
+    const out = [];
+    let i = 0;
+    let idx;
+    while ((idx = lower.indexOf(n, i)) !== -1) {
+      if (idx > i) out.push(text.slice(i, idx));
+      out.push(
+        <mark key={idx} className="bg-primary-200 text-ink rounded-sm px-0.5">
+          {text.slice(idx, idx + n.length)}
+        </mark>,
+      );
+      i = idx + n.length;
+    }
+    if (i < text.length) out.push(text.slice(i));
+    return out;
   };
 
   const clearLongPressTimer = () => {
@@ -395,12 +471,12 @@ const ChatModal = ({
               ref={searchInputRef}
               type="text"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => handleSearchInput(e.target.value)}
               placeholder="Search this conversation…"
               className="flex-1 bg-transparent text-sm text-ink placeholder:text-ink-muted outline-none"
             />
             {searchQuery && (
-              <button type="button" onClick={() => setSearchQuery("")} className="text-ink-muted hover:text-ink transition">
+              <button type="button" onClick={() => handleSearchInput("")} className="text-ink-muted hover:text-ink transition">
                 <FiX size={14} />
               </button>
             )}
@@ -410,34 +486,61 @@ const ChatModal = ({
           </div>
         )}
 
-        {/* Feature 7 — Search results overlay */}
-        {showSearch && (searchQuery.trim() || searchLoading) && (
-          <div className="absolute inset-0 top-[calc(3.25rem+2.75rem)] z-20 bg-card overflow-y-auto">
-            {searchLoading ? (
-              <div className="flex items-center justify-center py-10 text-ink-muted text-sm">Searching…</div>
-            ) : searchResults.length === 0 ? (
-              <div className="flex items-center justify-center py-10 text-ink-muted text-sm">No messages found</div>
-            ) : (
-              <ul className="divide-y divide-stroke">
-                {searchResults.map((msg) => (
-                  <li key={msg._id} className="px-4 py-3 hover:bg-surface cursor-pointer" onClick={closeSearch}>
-                    <p className="text-xs text-ink-muted mb-0.5">
-                      {msg.sender?._id === user._id ? "You" : activeUser?.name}
-                      {" · "}
-                      {new Date(msg.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                    </p>
-                    <p className="text-sm text-ink line-clamp-2">
-                      {msg.text || (msg.images?.length ? "📷 Photo" : msg.video ? "🎥 Video" : msg.voice ? "🎙 Voice note" : "")}
-                    </p>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        )}
-
         {/* Messages */}
         <div className="relative flex-1 min-h-0 flex flex-col">
+          {showSearch && searchQuery.trim() && (
+            <div className="absolute inset-0 z-20 bg-card overflow-y-auto">
+              {searchLoading ? (
+                <div className="flex items-center justify-center py-10 text-ink-muted text-sm">Searching…</div>
+              ) : searchError ? (
+                <div className="flex items-center justify-center py-10 text-ink-muted text-sm">Search failed. Try again.</div>
+              ) : searchResults.length === 0 ? (
+                <div className="flex items-center justify-center py-10 text-ink-muted text-sm">No messages found</div>
+              ) : (
+                <>
+                  <ul className="divide-y divide-stroke">
+                    {searchResults.map((msg) => (
+                      <li
+                        key={msg._id}
+                        className="px-4 py-3 hover:bg-surface cursor-pointer"
+                        onClick={() => {
+                          closeSearch();
+                          onJumpToMessage?.(msg._id);
+                        }}
+                      >
+                        <p className="text-xs text-ink-muted mb-0.5">
+                          {msg.sender?._id === user._id ? "You" : activeUser?.name}
+                          {" · "}
+                          {new Date(msg.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                        </p>
+                        <p className="text-sm text-ink line-clamp-2 break-words">
+                          {msg.text
+                            ? renderHighlighted(msg.text, searchQuery)
+                            : msg.images?.length || msg.image
+                              ? "📷 Photo"
+                              : msg.video?.url
+                                ? "🎥 Video"
+                                : msg.voice?.url
+                                  ? "🎙 Voice note"
+                                  : ""}
+                        </p>
+                      </li>
+                    ))}
+                  </ul>
+                  {searchNext && (
+                    <button
+                      type="button"
+                      onClick={loadMoreSearch}
+                      disabled={searchLoadingMore}
+                      className="w-full py-3 text-sm font-medium text-primary-600 hover:bg-surface transition disabled:opacity-50"
+                    >
+                      {searchLoadingMore ? "Loading…" : "Show more"}
+                    </button>
+                  )}
+                </>
+              )}
+            </div>
+          )}
           <div
             ref={messagesContainerRef}
             onScroll={onMessagesScroll}
@@ -520,6 +623,7 @@ const ChatModal = ({
                     </div>
                   )}
                   <div
+                    data-message-id={message._id}
                     className={`flex ${isMine ? "justify-end" : "justify-start"}`}
                   >
                     <div
