@@ -9,6 +9,7 @@ const Register = () => {
   const { register, user, loading } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [agreed, setAgreed] = useState(false);
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -37,6 +38,10 @@ const Register = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (isLoading) return;
+    if (!agreed) {
+      toast.error("Please confirm your age and accept the Terms to continue.");
+      return;
+    }
     setIsLoading(true);
     try {
       const res = await register(formData);
@@ -165,9 +170,31 @@ const Register = () => {
             </div>
             <p className="text-sm text-ink-muted -mt-2 pl-1">At least 10 characters.</p>
 
+            <label className="flex items-start gap-2.5 pl-1 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={agreed}
+                onChange={(e) => setAgreed(e.target.checked)}
+                required
+                className="mt-0.5 h-4 w-4 shrink-0 rounded border-stroke accent-primary-600"
+              />
+              <span className="text-sm text-ink-muted leading-snug">
+                I'm at least 13 years old (or the minimum age of digital consent
+                in my country) and I agree to the{" "}
+                <Link to="/terms" className="text-primary-600 hover:underline">
+                  Terms of Use
+                </Link>{" "}
+                and{" "}
+                <Link to="/privacy" className="text-primary-600 hover:underline">
+                  Privacy Policy
+                </Link>
+                .
+              </span>
+            </label>
+
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={isLoading || !agreed}
               className="w-full bg-primary-600 hover:bg-primary-800 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-xl text-base transition-all duration-200 shadow-sm hover:shadow-md"
             >
               {isLoading ? "Creating account..." : "Create Account"}
@@ -179,18 +206,6 @@ const Register = () => {
             <Link to="/login" className="text-primary-600 font-semibold hover:underline">
               Sign in
             </Link>
-          </p>
-
-          <p className="text-center text-ink-muted text-sm mt-8 leading-relaxed">
-            By creating an account, you agree to Tronites'{" "}
-            <Link to="/terms" className="text-primary-600 hover:underline">
-              Terms of Use
-            </Link>{" "}
-            and{" "}
-            <Link to="/privacy" className="text-primary-600 hover:underline">
-              Privacy Policy
-            </Link>
-            .
           </p>
         </div>
       </div>
