@@ -183,3 +183,17 @@ video::-webkit-media-controls-playback-rate-button {
 .animate-reaction-badge {
   animation: reaction-badge-pop 260ms ease-out;
 }
+
+/* Search "jump to message" — brief highlight on the target bubble. */
+@keyframes message-flash {
+  0%, 60% {
+    background-color: color-mix(in srgb, var(--color-primary-400) 28%, transparent);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+.animate-message-flash {
+  animation: message-flash 1.8s ease-out;
+  border-radius: 0.75rem;
+}
