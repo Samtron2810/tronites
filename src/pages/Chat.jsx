@@ -414,6 +414,62 @@ const Chat = () => {
     }
   };
 
+  // Search → jump: scrolls to (and flashes) a message, first paging in
+  // older history if the target isn't loaded yet. Pages use the same
+  // limit as loadOlderMessages so messagesPage stays consistent.
+  const handleJumpToMessage = async (messageId) => {
+    const flash = () => {
+      const el = messagesContainerRef.current?.querySelector(
+        `[data-message-id="${messageId}"]`,
+      );
+      if (!el) return false;
+      el.scrollIntoView({ block: "center", behavior: "smooth" });
+      el.classList.remove("animate-message-flash");
+      void el.offsetWidth;
+      el.classList.add("animate-message-flash");
+      setTimeout(() => el.classList.remove("animate-message-flash"), 1900);
+      return true;
+    };
+
+    if (flash() || !selectedChat) return;
+
+    let page = messagesPage;
+    let hasMore = messagesHasMore;
+    let older = [];
+    let found = false;
+    isPrependingOlder.current = true;
+    try {
+      while (hasMore && !found && page - messagesPage < 50) {
+        page += 1;
+        const res = await api.get(`/messages/${selectedChat.otherUser._id}`, {
+          params: { page, limit: 30 },
+        });
+        older = [...res.data.messages, ...older];
+        hasMore = res.data.hasMore;
+        found = res.data.messages.some((m) => m._id === messageId);
+      }
+      if (older.length) {
+        setMessages((prev) => {
+          const seen = new Set(prev.map((m) => m._id));
+          return [...older.filter((m) => !seen.has(m._id)), ...prev];
+        });
+        setMessagesPage(page);
+        setMessagesHasMore(hasMore);
+      }
+      if (found) {
+        // Two frames: one for React to commit the prepend, one for layout.
+        requestAnimationFrame(() => requestAnimationFrame(() => flash()));
+      }
+    } catch (e) {
+      console.error(e);
+      toast.error("Couldn't load that message.");
+    } finally {
+      requestAnimationFrame(() => {
+        isPrependingOlder.current = false;
+      });
+    }
+  };
+
   const handleMessagesScroll = () => {
     const container = messagesContainerRef.current;
     if (!container) return;
@@ -1577,6 +1633,7 @@ const Chat = () => {
           scrollRef={scrollRef}
           messagesContainerRef={messagesContainerRef}
           onMessagesScroll={handleMessagesScroll}
+          onJumpToMessage={handleJumpToMessage}
           onMediaLoaded={handleChatMediaLoaded}
           showScrollToBottom={showScrollToBottom}
           newMessagesBelowCount={newMessagesBelowCount}
