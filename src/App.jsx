@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, useNavigate, useLocation } from "react-ro
 import { useEffect } from "react";
 import { useAuth } from "./context/useAuth";
 import Navbar from "./components/Navbar";
+import PublicNavbar from "./components/PublicNavbar";
 import SplashScreen from "./components/SplashScreen";
 import InstallPrompt from "./components/InstallPrompt";
 import UpdateToast from "./components/UpdateToast";
@@ -99,6 +100,7 @@ const AppContent = () => {
   return (
     <>
       {user && user.username && !isLandingPage && <Navbar />}
+      {!user && !isLandingPage && <PublicNavbar />}
       <Suspense fallback={<RouteFallback />}>
         <Routes>
           {/* Public */}

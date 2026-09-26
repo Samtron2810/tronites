@@ -1,5 +1,6 @@
 import { useEffect } from "react";
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, useLocation } from "react-router-dom";
+import PublicNavbar from "./components/PublicNavbar";
 import Landing from "./pages/Landing";
 import PublicProfile from "./pages/PublicProfile";
 import PublicPostView from "./pages/PublicPostView";
@@ -57,19 +58,26 @@ const HardRedirect = () => {
 // branch of those routes in App.jsx never applies here; only their
 // public component is relevant, and it's registered under its own path
 // below like every other page in this file.
-const PublicApp = () => (
-  <Routes>
-    <Route path="/" element={<Landing />} />
-    <Route path="/u/:username" element={<PublicProfile />} />
-    <Route path="/post/:id" element={<PublicPostView />} />
-    <Route path="/hashtag/:tag" element={<PublicHashtag />} />
-    <Route path="/explore" element={<PublicExplore />} />
-    <Route path="/help" element={<HelpSupport />} />
-    <Route path="/tiers" element={<Tiers />} />
-    <Route path="/privacy" element={<PrivacyPolicy />} />
-    <Route path="/terms" element={<TermsOfUse />} />
-    <Route path="*" element={<HardRedirect />} />
-  </Routes>
-);
+const PublicApp = () => {
+  const { pathname } = useLocation();
+
+  return (
+    <>
+      {pathname !== "/" && <PublicNavbar />}
+      <Routes>
+        <Route path="/" element={<Landing />} />
+        <Route path="/u/:username" element={<PublicProfile />} />
+        <Route path="/post/:id" element={<PublicPostView />} />
+        <Route path="/hashtag/:tag" element={<PublicHashtag />} />
+        <Route path="/explore" element={<PublicExplore />} />
+        <Route path="/help" element={<HelpSupport />} />
+        <Route path="/tiers" element={<Tiers />} />
+        <Route path="/privacy" element={<PrivacyPolicy />} />
+        <Route path="/terms" element={<TermsOfUse />} />
+        <Route path="*" element={<HardRedirect />} />
+      </Routes>
+    </>
+  );
+};
 
 export default PublicApp;

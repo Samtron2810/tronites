@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/useAuth";
 import SeoHead from "../components/SeoHead";
+import PublicNavbar from "../components/PublicNavbar";
 import { buildOrganizationJsonLd } from "../hooks/useSeoMeta";
 import {
   FiArrowUpRight,
@@ -53,52 +54,8 @@ const Landing = () => {
         })}
       />
 
-      {/* ── top bar ─────────────────────────────────────────────── */}
-      <header className="relative z-10 max-w-6xl mx-auto px-5 sm:px-8 pt-6 flex items-center justify-between">
-        <Link to="/" className="flex items-center gap-2.5">
-          <img src="/tronite-logo.png" alt="Tronites" className="h-9 w-auto" />
-          <span className="font-bold text-lg tracking-tight">
-            Tron<span className="text-[#9fe1cb]">ites</span>
-          </span>
-        </Link>
-        <nav className="flex items-center gap-2 sm:gap-4 text-sm font-medium">
-          <Link
-            to="/help"
-            className="hidden sm:inline text-[#c9d8d1] hover:text-white transition"
-          >
-            Help
-          </Link>
-          <Link
-            to="/tiers"
-            className="hidden sm:inline text-[#c9d8d1] hover:text-white transition"
-          >
-            Tiers
-          </Link>
-          {user ? (
-            <Link
-              to="/home"
-              className="px-4 py-2 rounded-full bg-[#1d9e75] text-[#04342c] font-semibold hover:bg-[#9fe1cb] transition"
-            >
-              Go to feed
-            </Link>
-          ) : (
-            <>
-              <Link
-                to="/login"
-                className="px-3 py-2 text-[#c9d8d1] hover:text-white transition"
-              >
-                Log in
-              </Link>
-              <Link
-                to="/signup"
-                className="px-4 py-2 rounded-full bg-[#1d9e75] text-[#04342c] font-semibold hover:bg-[#9fe1cb] transition"
-              >
-                Join free
-              </Link>
-            </>
-          )}
-        </nav>
-      </header>
+      {/* Shared across every anonymous/public page. */}
+      <PublicNavbar />
 
       {/* ── hero ────────────────────────────────────────────────── */}
       <section className="relative">

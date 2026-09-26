@@ -1,10 +1,10 @@
 {
   "redirects": [
-    { "source": "/sitemap.xml", "destination": "https://api.tronites.com/sitemap.xml", "permanent": false },
-    { "source": "/sitemap-static.xml", "destination": "https://api.tronites.com/sitemap-static.xml", "permanent": false },
-    { "source": "/sitemap-profiles.xml", "destination": "https://api.tronites.com/sitemap-profiles.xml", "permanent": false },
-    { "source": "/sitemap-posts.xml", "destination": "https://api.tronites.com/sitemap-posts.xml", "permanent": false },
-    { "source": "/sitemap-hashtags.xml", "destination": "https://api.tronites.com/sitemap-hashtags.xml", "permanent": false }
+    { "source": "/sitemap.xml", "destination": "https://tronites-backend.onrender.com/sitemap.xml", "permanent": false },
+    { "source": "/sitemap-static.xml", "destination": "https://tronites-backend.onrender.com/sitemap-static.xml", "permanent": false },
+    { "source": "/sitemap-profiles.xml", "destination": "https://tronites-backend.onrender.com/sitemap-profiles.xml", "permanent": false },
+    { "source": "/sitemap-posts.xml", "destination": "https://tronites-backend.onrender.com/sitemap-posts.xml", "permanent": false },
+    { "source": "/sitemap-hashtags.xml", "destination": "https://tronites-backend.onrender.com/sitemap-hashtags.xml", "permanent": false }
   ],
   "rewrites": [
     { "source": "/", "destination": "/api/ssr" },
