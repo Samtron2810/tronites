@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { useAuth } from "../context/useAuth";
+import AuthHomeLink from "../components/AuthHomeLink";
 import api from "../services/api";
 import { FiMail, FiArrowLeft } from "react-icons/fi";
 
@@ -73,11 +74,8 @@ const ForgotPassword = () => {
       {/* Right panel */}
       <div className="flex-1 flex items-center justify-center px-6 py-12">
         <div className="w-full max-w-sm">
-          <div className="lg:hidden mb-8 text-center">
-            <span className="text-ink font-bold text-4xl">
-              Tron<span className="text-primary-600">ites</span>
-            </span>
-          </div>
+
+          <AuthHomeLink />
 
           <h2 className="text-3xl font-bold text-ink mb-1">
             Forgot your password?

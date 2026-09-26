@@ -76,6 +76,15 @@ const AppContent = () => {
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const isLandingPage = pathname === "/";
+  const authOnlyPaths = new Set([
+    "/login",
+    "/signup",
+    "/verify-otp",
+    "/forgot-password",
+    "/reset-password",
+  ]);
+  const shouldShowPublicNavbar =
+    !user && !isLandingPage && !authOnlyPaths.has(pathname);
 
   // Give AuthContext a handle to useNavigate so logout() and force-logout
   // can push to /login imperatively instead of relying on ProtectedRoute's
@@ -100,7 +109,7 @@ const AppContent = () => {
   return (
     <>
       {user && user.username && !isLandingPage && <Navbar />}
-      {!user && !isLandingPage && <PublicNavbar />}
+      {shouldShowPublicNavbar && <PublicNavbar />}
       <Suspense fallback={<RouteFallback />}>
         <Routes>
           {/* Public */}

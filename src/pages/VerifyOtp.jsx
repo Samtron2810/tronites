@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import api from "../services/api";
 import { useAuth } from "../context/useAuth";
+import AuthHomeLink from "../components/AuthHomeLink";
 import { FiMail, FiRefreshCw } from "react-icons/fi";
 
 const VerifyOtp = () => {
@@ -76,6 +77,10 @@ const VerifyOtp = () => {
   return (
     <div className="min-h-screen app-bg flex items-center justify-center px-6">
       <div className="w-full max-w-sm">
+        <div className="text-center">
+          <AuthHomeLink />
+        </div>
+
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-primary-100 mb-4">
             <FiMail className="text-primary-600 text-3xl" />

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { useAuth } from "../context/useAuth";
+import AuthHomeLink from "../components/AuthHomeLink";
 import api from "../services/api";
 import {
   FiLock,
@@ -124,11 +125,8 @@ const ResetPassword = () => {
       {/* Right panel */}
       <div className="flex-1 flex items-center justify-center px-6 py-12">
         <div className="w-full max-w-sm">
-          <div className="lg:hidden mb-8 text-center">
-            <span className="text-ink font-bold text-4xl">
-              Tron<span className="text-primary-600">ites</span>
-            </span>
-          </div>
+
+          <AuthHomeLink />
 
           <div className="text-center mb-6">
             <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-primary-100 mb-4">
