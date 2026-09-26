@@ -3,8 +3,8 @@ import { Link } from "react-router-dom";
 const AuthHomeLink = () => (
   <Link
     to="/"
-    className="inline-flex items-center gap-2 mb-6"
-    aria-label="Go to Tronites homepage"
+    className="inline-flex items-center gap-2 mb-6 lg:hidden"
+    aria-label="Back to Tronites homepage"
   >
     <img
       src="/tronite-logo.png"

@@ -71,9 +71,13 @@ const Register = () => {
     <div className="min-h-screen app-bg flex">
       {/* Left panel */}
       <div className="hidden lg:flex w-1/2 bg-primary-600 flex-col justify-between p-12">
-        <span className="text-white font-bold text-5xl tracking-tight">
+        <Link
+          to="/"
+          className="inline-flex items-center gap-2 self-start text-white font-bold text-5xl tracking-tight"
+          aria-label="Back to Tronites homepage"
+        >
           Tron<span className="text-primary-200">ites</span>
-        </span>
+        </Link>
         <div>
           <p className="text-primary-100 text-4xl font-bold leading-tight max-w-xs">
             Your voice. Your community.
