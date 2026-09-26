@@ -26,7 +26,10 @@ const Register = () => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     if (name === "firstName" || name === "lastName") {
-      setFormData({ ...formData, [name]: value.replace(NAME_STRIP_PATTERN, "") });
+      setFormData({
+        ...formData,
+        [name]: value.replace(NAME_STRIP_PATTERN, ""),
+      });
       return;
     }
     setFormData({ ...formData, [name]: value });
@@ -58,7 +61,11 @@ const Register = () => {
       sessionStorage.setItem("otp:register:challengeId", res.challengeId);
       sessionStorage.setItem("otp:register:email", res.email);
       navigate("/verify-otp", {
-        state: { challengeId: res.challengeId, email: res.email, duplicate: res._duplicate },
+        state: {
+          challengeId: res.challengeId,
+          email: res.email,
+          duplicate: res._duplicate,
+        },
       });
     } catch (error) {
       toast.error(error.response?.data?.message || "Registration failed");
@@ -73,7 +80,7 @@ const Register = () => {
       <div className="hidden lg:flex w-1/2 bg-primary-600 flex-col justify-between p-12">
         <Link
           to="/"
-          className="inline-flex items-center gap-2 self-start text-white font-bold text-5xl tracking-tight"
+          className="inline-flex items-center self-start text-white font-bold text-5xl tracking-tight"
           aria-label="Back to Tronites homepage"
         >
           Tron<span className="text-primary-200">ites</span>
@@ -96,11 +103,12 @@ const Register = () => {
       {/* Right panel */}
       <div className="flex-1 flex items-center justify-center px-6 py-12">
         <div className="w-full max-w-sm">
-
           <AuthHomeLink />
 
           <h2 className="text-3xl font-bold text-ink mb-1">Create account</h2>
-          <p className="text-ink-muted text-base mb-8">Join the community today.</p>
+          <p className="text-ink-muted text-base mb-8">
+            Join the community today.
+          </p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="flex gap-3">
@@ -170,7 +178,9 @@ const Register = () => {
                 {showPassword ? <FiEyeOff size={15} /> : <FiEye size={15} />}
               </button>
             </div>
-            <p className="text-sm text-ink-muted -mt-2 pl-1">At least 10 characters.</p>
+            <p className="text-sm text-ink-muted -mt-2 pl-1">
+              At least 10 characters.
+            </p>
 
             <label className="flex items-start gap-2.5 pl-1 cursor-pointer select-none">
               <input
@@ -187,7 +197,10 @@ const Register = () => {
                   Terms of Use
                 </Link>{" "}
                 and{" "}
-                <Link to="/privacy" className="text-primary-600 hover:underline">
+                <Link
+                  to="/privacy"
+                  className="text-primary-600 hover:underline"
+                >
                   Privacy Policy
                 </Link>
                 .
@@ -205,7 +218,10 @@ const Register = () => {
 
           <p className="text-center text-ink-muted text-base mt-6">
             Already have an account?{" "}
-            <Link to="/login" className="text-primary-600 font-semibold hover:underline">
+            <Link
+              to="/login"
+              className="text-primary-600 font-semibold hover:underline"
+            >
               Sign in
             </Link>
           </p>

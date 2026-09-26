@@ -3,17 +3,10 @@ import { Link } from "react-router-dom";
 const AuthHomeLink = () => (
   <Link
     to="/"
-    className="inline-flex items-center gap-2 mb-6 lg:hidden"
-    aria-label="Back to Tronites homepage"
+    className="mb-6 inline-flex items-center text-sm font-medium text-ink-muted transition hover:text-primary-600 lg:hidden"
   >
-    <img
-      src="/tronite-logo.png"
-      alt=""
-      className="h-10 w-auto object-contain"
-    />
-    <span className="text-xl font-bold text-ink">
-      Tron<span className="text-primary-600">ites</span>
-    </span>
+    <span aria-hidden="true">←</span>
+    <span className="ml-1.5">Back to homepage</span>
   </Link>
 );
 

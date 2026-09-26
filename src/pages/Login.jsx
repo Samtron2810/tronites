@@ -50,7 +50,7 @@ const Login = () => {
       <div className="hidden lg:flex w-1/2 bg-primary-600 flex-col justify-between p-12">
         <Link
           to="/"
-          className="inline-flex items-center gap-2 self-start text-white font-bold text-5xl tracking-tight"
+          className="inline-flex items-center self-start text-white font-bold text-5xl tracking-tight"
           aria-label="Back to Tronites homepage"
         >
           Tron<span className="text-primary-200">ites</span>
@@ -74,7 +74,6 @@ const Login = () => {
       {/* Right panel */}
       <div className="flex-1 flex items-center justify-center px-6 py-12">
         <div className="w-full max-w-sm">
-
           <AuthHomeLink />
 
           <h2 className="text-3xl font-bold text-ink mb-1">Sign in</h2>
