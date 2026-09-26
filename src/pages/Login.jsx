@@ -22,7 +22,7 @@ const Login = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
 
   useEffect(() => {
-    if (!loading && user) navigate("/");
+    if (!loading && user) navigate("/home");
   }, [loading, user, navigate]);
 
   const handleSubmit = async (e) => {

@@ -1,11 +1,13 @@
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/useAuth";
+import SeoHead from "../components/SeoHead";
 
 const NotFound = () => {
   const { user } = useAuth();
 
   return (
     <div className="min-h-screen app-bg flex items-center justify-center px-4">
+      <SeoHead title="Page Not Found" robots="noindex, nofollow" />
       <div className="bg-card rounded-2xl shadow-sm border border-stroke p-8 max-w-md w-full text-center">
         <p className="text-7xl font-black text-primary-400 mb-2">404</p>
         <h1 className="text-2xl font-bold text-ink">Page not found</h1>
@@ -13,10 +15,10 @@ const NotFound = () => {
           The page you're looking for doesn't exist or may have moved.
         </p>
         <Link
-          to={user ? "/" : "/login"}
+          to={user ? "/home" : "/"}
           className="inline-block mt-6 px-5 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-800 text-white font-semibold text-base transition-all duration-200 shadow-sm hover:shadow-md"
         >
-          {user ? "Back to feed" : "Back to login"}
+          {user ? "Back to feed" : "Back to Tronites"}
         </Link>
       </div>
     </div>

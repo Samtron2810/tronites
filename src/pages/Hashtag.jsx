@@ -126,7 +126,7 @@ const Hashtag = () => {
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
             <Link
-              to="/"
+              to="/home"
               className="text-ink-muted hover:text-ink transition p-2 rounded-lg hover:bg-surface shrink-0"
             >
               <FiArrowLeft size={18} />

@@ -16,6 +16,8 @@ import VerifiedBadge from "../components/VerifiedBadge";
 import ShareMenu from "../components/ShareMenu";
 import api from "../services/api";
 import { useAuth } from "../context/useAuth";
+import SeoHead from "../components/SeoHead";
+import { truncateForDescription } from "../hooks/useSeoMeta";
 
 // ─── Metric block ─────────────────────────────────────────────────────────
 const Metric = ({ value, label, icon: Icon, className = "" }) => (
@@ -65,6 +67,7 @@ const MediaKit = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
+        <SeoHead title="Media Kit" robots="noindex, nofollow" />
         <FaSpinner size={22} className="animate-spin text-primary-500" />
       </div>
     );
@@ -73,6 +76,7 @@ const MediaKit = () => {
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-6">
+        <SeoHead title="Media Kit" robots="noindex, nofollow" />
         <p className="text-ink-muted text-sm">{error}</p>
       </div>
     );
@@ -99,6 +103,17 @@ const MediaKit = () => {
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-6 space-y-5">
+      <SeoHead
+        title={`${creator.name}'s Media Kit`}
+        description={truncateForDescription(
+          creator.bio
+            ? `${creator.name} (@${creator.username}) on Tronites — ${creator.bio}`
+            : `View ${creator.name}'s (@${creator.username}) creator media kit, reach and engagement stats on Tronites.`,
+        )}
+        canonical={`/media-kit/${creatorId}`}
+        image={creator.profilePic}
+        ogType="profile"
+      />
       {/* header row: back + share */}
       <div className="flex items-center justify-between">
         <button

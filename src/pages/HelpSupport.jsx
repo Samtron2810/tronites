@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import MainLayout from "../layouts/MainLayout";
+import { useAuth } from "../context/useAuth";
+import SeoHead from "../components/SeoHead";
 import {
   FiChevronDown,
   FiMail,
@@ -211,6 +213,7 @@ const FaqItem = ({ q, a, forceOpen = false }) => {
 
 const HelpSupport = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [query, setQuery] = useState("");
   const needle = query.trim().toLowerCase();
 
@@ -229,12 +232,17 @@ const HelpSupport = () => {
     if (window.history.length > 1) {
       navigate(-1);
     } else {
-      navigate("/");
+      navigate(user ? "/home" : "/");
     }
   };
 
   return (
     <MainLayout>
+      <SeoHead
+        title="Help & Support"
+        description="Answers to common questions about accounts, privacy, verification, creator tiers, and using Tronites."
+        canonical="/help"
+      />
       <button
         onClick={handleBack}
         className="inline-flex items-center gap-1.5 text-base font-medium text-ink-muted hover:text-ink mb-4 transition"

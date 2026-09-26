@@ -38,12 +38,12 @@ const PaystackReturnHandler = () => {
 
     if (!ref && !campaignId) {
       toast.error("No payment reference found.");
-      navigate(user?._id ? `/profile/${user._id}` : "/", { replace: true });
+      navigate(user?._id ? `/profile/${user._id}` : "/home", { replace: true });
       return;
     }
 
     const verify = async () => {
-      const home = user?._id ? `/profile/${user._id}` : "/";
+      const home = user?._id ? `/profile/${user._id}` : "/home";
 
       try {
         if (flow === "tip") {
@@ -54,7 +54,7 @@ const PaystackReturnHandler = () => {
           );
           // Navigate back — we don't know which creator without parsing the
           // reference, so land on home feed. The creator is notified in-app.
-          navigate("/", { replace: true });
+          navigate("/home", { replace: true });
           return;
         }
 
@@ -64,7 +64,7 @@ const PaystackReturnHandler = () => {
             "Subscribed! You now have access to subscriber-only posts. 🎉",
             { duration: 5000 },
           );
-          navigate("/", { replace: true });
+          navigate("/home", { replace: true });
           return;
         }
 

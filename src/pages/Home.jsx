@@ -2,6 +2,7 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
 import MainLayout from "../layouts/MainLayout";
+import SeoHead from "../components/SeoHead";
 import CreatePost from "../components/CreatePost";
 import PostCard from "../components/PostCard";
 import PostSkeleton from "../components/PostSkeleton";
@@ -218,6 +219,7 @@ const Home = () => {
 
   return (
     <MainLayout>
+      <SeoHead title="Home" robots="noindex, nofollow" />
       <div className="space-y-4">
         <CreatePost
           fetchPosts={() => {

@@ -14,7 +14,7 @@ const ChooseUsername = () => {
   // If the user already has a username they should use Settings to change
   // it, not this onboarding page (which skips the cooldown warning UX).
   useEffect(() => {
-    if (user?.username) navigate("/", { replace: true });
+    if (user?.username) navigate("/home", { replace: true });
   }, [user, navigate]);
 
   const [username, setUsername] = useState("");
@@ -64,7 +64,7 @@ const ChooseUsername = () => {
       });
       updateUser({ username: res.data.user.username });
       toast.success("Username set!");
-      navigate("/");
+      navigate("/home");
     } catch (error) {
       const msg = error.response?.data?.message || "Failed to set username";
       toast.error(msg);

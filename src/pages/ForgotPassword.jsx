@@ -13,7 +13,7 @@ const ForgotPassword = () => {
 
   // Already signed in — nothing to recover.
   useEffect(() => {
-    if (!loading && user) navigate("/");
+    if (!loading && user) navigate("/home");
   }, [loading, user, navigate]);
 
   const handleSubmit = async (e) => {

@@ -2,6 +2,7 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 
 import { Toaster } from "react-hot-toast";
+import { HelmetProvider } from "react-helmet-async";
 
 import App from "./App";
 import ErrorBoundary from "./components/ErrorBoundary";
@@ -34,42 +35,44 @@ registerServiceWorker();
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
-    <ThemeProvider>
-      <AuthProvider>
-        <SocketProvider>
-          <Toaster
-            position="top-center"
-            toastOptions={{
-              style: {
-                background: "var(--color-primary-900)",
-                color: "var(--color-primary-100)",
-                borderRadius: "12px",
-                border: "1px solid rgba(159, 225, 203, 0.2)",
-                fontSize: "14px",
-                fontWeight: 500,
-              },
-              success: {
+    <HelmetProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <SocketProvider>
+            <Toaster
+              position="top-center"
+              toastOptions={{
                 style: {
-                  background: "var(--color-primary-600)",
-                  color: "#fff",
+                  background: "var(--color-primary-900)",
+                  color: "var(--color-primary-100)",
+                  borderRadius: "12px",
+                  border: "1px solid rgba(159, 225, 203, 0.2)",
+                  fontSize: "14px",
+                  fontWeight: 500,
                 },
-                iconTheme: {
-                  primary: "#fff",
-                  secondary: "var(--color-primary-600)",
+                success: {
+                  style: {
+                    background: "var(--color-primary-600)",
+                    color: "#fff",
+                  },
+                  iconTheme: {
+                    primary: "#fff",
+                    secondary: "var(--color-primary-600)",
+                  },
                 },
-              },
-              error: {
-                style: { background: "#dc2626", color: "#fff" },
-                iconTheme: { primary: "#fff", secondary: "#dc2626" },
-              },
-            }}
-          />
+                error: {
+                  style: { background: "#dc2626", color: "#fff" },
+                  iconTheme: { primary: "#fff", secondary: "#dc2626" },
+                },
+              }}
+            />
 
-          <ErrorBoundary>
-            <App />
-          </ErrorBoundary>
-        </SocketProvider>
-      </AuthProvider>
-    </ThemeProvider>
+            <ErrorBoundary>
+              <App />
+            </ErrorBoundary>
+          </SocketProvider>
+        </AuthProvider>
+      </ThemeProvider>
+    </HelmetProvider>
   </React.StrictMode>,
 );

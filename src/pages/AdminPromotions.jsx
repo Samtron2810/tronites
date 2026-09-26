@@ -230,7 +230,7 @@ const AdminPromotions = () => {
   }, [canManage, page, hasMore, isLoadingMore, loading, search, statusFilter, fetchPromotions]);
 
   if (user && !canManage) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/home" replace />;
   }
 
   const handleExtend = async (postId, days) => {

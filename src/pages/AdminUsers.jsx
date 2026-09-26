@@ -577,7 +577,7 @@ const AdminUsers = () => {
   // just avoids rendering a role-management UI that would only ever
   // error.
   if (user && !isAdmin) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/home" replace />;
   }
 
   const handleRoleChange = async (targetId, newRole) => {

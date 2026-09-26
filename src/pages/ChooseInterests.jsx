@@ -50,7 +50,7 @@ const ChooseInterests = () => {
     try {
       await api.put("/users/interests", { interests: selected });
       updateUser?.({ interests: selected });
-      navigate("/", { replace: true });
+      navigate("/home", { replace: true });
     } catch {
       toast.error("Couldn't save interests. Try again.");
     } finally {
@@ -58,7 +58,7 @@ const ChooseInterests = () => {
     }
   };
 
-  const handleSkip = () => navigate("/", { replace: true });
+  const handleSkip = () => navigate("/home", { replace: true });
 
   return (
     <div className="min-h-screen app-bg flex items-center justify-center px-4 py-10">

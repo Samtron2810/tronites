@@ -1,5 +1,5 @@
 import { lazy, Suspense } from "react";
-import { BrowserRouter, Routes, Route, useNavigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useNavigate, useLocation } from "react-router-dom";
 import { useEffect } from "react";
 import { useAuth } from "./context/useAuth";
 import Navbar from "./components/Navbar";
@@ -8,15 +8,16 @@ import InstallPrompt from "./components/InstallPrompt";
 import UpdateToast from "./components/UpdateToast";
 import { subscribeToPushNavigation } from "./services/pwaUpdate";
 
-// Home is kept as a static import — it's the landing page for every
-// logged-in user, so lazy-loading it would trade the current single
-// up-front bundle for an extra network round-trip on the single most
-// common page load. Every other route is only reached by navigating
-// there, so splitting them out is a straightforward win: the person
-// downloads Chat's code only if they open Chat, Settings' only if they
-// open Settings, and so on.
-import Home from "./pages/Home";
+// Landing is kept as a static import — it's the page every logged-out
+// visitor and every crawler hits first, so lazy-loading it would trade
+// the current single up-front bundle for an extra network round-trip on
+// the single most common cold load. Home (the authenticated feed) is
+// only reached by navigating there after login, so it's lazy instead —
+// see the reasoning this comment replaced, which applied to Home when
+// it lived at "/".
+import Landing from "./pages/Landing";
 
+const Home = lazy(() => import("./pages/Home"));
 const Login = lazy(() => import("./pages/Login"));
 const Register = lazy(() => import("./pages/Register"));
 const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
@@ -28,7 +29,10 @@ const FollowersList = lazy(() => import("./pages/FollowersList"));
 const VerifyOtp = lazy(() => import("./pages/VerifyOtp"));
 const ChooseUsername = lazy(() => import("./pages/ChooseUsername"));
 const ChooseInterests = lazy(() => import("./pages/ChooseInterests"));
-const UsernameRedirect = lazy(() => import("./pages/UsernameRedirect"));
+const PublicProfile = lazy(() => import("./pages/PublicProfile"));
+const PublicPostView = lazy(() => import("./pages/PublicPostView"));
+const PublicHashtag = lazy(() => import("./pages/PublicHashtag"));
+const PublicExplore = lazy(() => import("./pages/PublicExplore"));
 const Hashtag = lazy(() => import("./pages/Hashtag"));
 const Bookmarks = lazy(() => import("./pages/Bookmarks"));
 const Notifications = lazy(() => import("./pages/Notifications"));
@@ -69,6 +73,8 @@ const RouteFallback = () => (
 const AppContent = () => {
   const { user, loading, registerNavigateToLogin } = useAuth();
   const navigate = useNavigate();
+  const { pathname } = useLocation();
+  const isLandingPage = pathname === "/";
 
   // Give AuthContext a handle to useNavigate so logout() and force-logout
   // can push to /login imperatively instead of relying on ProtectedRoute's
@@ -92,10 +98,11 @@ const AppContent = () => {
 
   return (
     <>
-      {user && user.username && <Navbar />}
+      {user && user.username && !isLandingPage && <Navbar />}
       <Suspense fallback={<RouteFallback />}>
         <Routes>
           {/* Public */}
+          <Route path="/" element={<Landing />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Register />} />
           <Route path="/verify-otp" element={<VerifyOtp />} />
@@ -129,10 +136,12 @@ const AppContent = () => {
           />
 
           <Route
-            path="/"
+            path="/home"
             element={
               <ProtectedRoute>
-                <Home />
+                <Suspense fallback={<RouteFallback />}>
+                  <Home />
+                </Suspense>
               </ProtectedRoute>
             }
           />
@@ -149,9 +158,13 @@ const AppContent = () => {
           <Route
             path="/explore"
             element={
-              <ProtectedRoute>
-                <Explore />
-              </ProtectedRoute>
+              user ? (
+                <ProtectedRoute>
+                  <Explore />
+                </ProtectedRoute>
+              ) : (
+                <PublicExplore />
+              )
             }
           />
 
@@ -165,13 +178,20 @@ const AppContent = () => {
           />
 
           {/* A single post's own detail view, linkable from anywhere
-              that only knows the post's id (notifications, etc.). */}
+              that only knows the post's id (notifications, etc.).
+              Public for anonymous visitors (plan §4.1) via a separate
+              read-only page — PostView/PostByIdModal assume a live
+              session throughout, so they stay the logged-in path. */}
           <Route
             path="/post/:id"
             element={
-              <ProtectedRoute>
-                <PostView />
-              </ProtectedRoute>
+              user ? (
+                <ProtectedRoute>
+                  <PostView />
+                </ProtectedRoute>
+              ) : (
+                <PublicPostView />
+              )
             }
           />
 
@@ -193,21 +213,22 @@ const AppContent = () => {
             }
           />
 
-          <Route
-            path="/u/:username"
-            element={
-              <ProtectedRoute>
-                <UsernameRedirect />
-              </ProtectedRoute>
-            }
-          />
+          {/* Public — canonical username profile URL (SEO plan §4.1).
+              Not wrapped in ProtectedRoute: PublicProfile fetches via the
+              public API and degrades to login prompts for interactive
+              actions on its own. */}
+          <Route path="/u/:username" element={<PublicProfile />} />
 
           <Route
             path="/hashtag/:tag"
             element={
-              <ProtectedRoute>
-                <Hashtag />
-              </ProtectedRoute>
+              user ? (
+                <ProtectedRoute>
+                  <Hashtag />
+                </ProtectedRoute>
+              ) : (
+                <PublicHashtag />
+              )
             }
           />
 
@@ -340,25 +361,13 @@ const AppContent = () => {
           {/* Public — brands and viewers can view a creator's media kit */}
           <Route path="/media-kit/:creatorId" element={<MediaKit />} />
 
-          <Route
-            path="/help"
-            element={
-              <ProtectedRoute>
-                <HelpSupport />
-              </ProtectedRoute>
-            }
-          />
+          {/* Public — static FAQ content, no auth dependency */}
+          <Route path="/help" element={<HelpSupport />} />
 
-          {/* Tiers & benefits — readable by every logged-in user, since it
-              explains all badge types (not just the one they hold). */}
-          <Route
-            path="/tiers"
-            element={
-              <ProtectedRoute>
-                <Tiers />
-              </ProtectedRoute>
-            }
-          />
+          {/* Public — tiers & benefits, readable by anyone deciding whether
+              to sign up, not just logged-in users. Explains all badge
+              types (not just the visitor's own). */}
+          <Route path="/tiers" element={<Tiers />} />
 
           {/* Catch-all — must stay last */}
           <Route path="*" element={<NotFound />} />

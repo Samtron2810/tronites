@@ -821,7 +821,7 @@ const ModerationQueue = () => {
   // Guard client-side too — the endpoints already 403 non-moderators,
   // this just avoids rendering a queue UI that would only ever error.
   if (user && !isModerator) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/home" replace />;
   }
 
   const handleResolve = async (reportId, resolveStatus, note) => {

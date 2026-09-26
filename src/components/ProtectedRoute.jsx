@@ -61,7 +61,7 @@ const ProtectedRoute = ({
 
 
   if (requireRole && !requireRole.includes(user.role)) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/home" replace />;
   }
 
   // Permission-gated pages (audit log) - mirrors requirePermission.js resolution:
@@ -76,7 +76,7 @@ const ProtectedRoute = ({
     user.role !== "admin" &&
     !(user.permissions || []).includes(requirePermission)
   ) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/home" replace />;
   }
   return children;
 };

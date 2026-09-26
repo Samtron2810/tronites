@@ -32,7 +32,7 @@ const Register = () => {
   };
 
   useEffect(() => {
-    if (!loading && user) navigate("/");
+    if (!loading && user) navigate("/home");
   }, [loading, user, navigate]);
 
   const handleSubmit = async (e) => {

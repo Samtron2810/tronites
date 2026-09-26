@@ -60,7 +60,7 @@ const Navbar = () => {
   return (
     <nav className="sticky top-0 z-50 bg-card/90 backdrop-blur-md border-b border-stroke py-2">
       <div className="mx-auto flex max-w-5xl items-center justify-between  px-4 sm:px-6 h-14">
-        <Link to="/" className="flex items-center gap-2 shrink-0">
+        <Link to="/home" className="flex items-center gap-2 shrink-0">
           <img
             src="/tronite-logo.png"
             alt="Tronites"
@@ -72,7 +72,7 @@ const Navbar = () => {
         </Link>
 
         <div className="flex items-center gap-1">
-          <NavLink to="/" icon={FaHome} label="Feed" />
+          <NavLink to="/home" icon={FaHome} label="Feed" />
           <NavLink to="/explore" icon={FaCompass} label="Explore" />
           <NavLink
             to="/chat"

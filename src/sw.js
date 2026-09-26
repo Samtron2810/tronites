@@ -16,9 +16,22 @@ import { CacheableResponsePlugin } from "workbox-cacheable-response";
 precacheAndRoute(self.__WB_MANIFEST);
 cleanupOutdatedCaches();
 
-// SPA navigation fallback: any non-API navigation that isn't already
-// precached (deep link, refresh on a client-side route) resolves to the
-// precached index.html instead of a network 404 when offline.
+// SPA navigation fallback: any non-API, non-public-SSR navigation that
+// isn't already precached (deep link, refresh on a client-side route)
+// resolves to the precached index.html instead of a network 404 when
+// offline.
+//
+// The public-route patterns below are also denylisted, matching
+// server/render.jsx's isPublicSsrPath. Without this, a visitor with this
+// service worker active — most likely a returning or PWA-installed user,
+// since first-time visitors haven't registered it yet — who opens a
+// public profile/post/hashtag/explore/landing link would silently get
+// this handler's cached CSR app shell instead of the server's actual
+// SSR'd response for that URL: same eventual content once the client
+// bundle loads and fetches, but with none of the SSR benefit (correct
+// meta tags in the initial HTML, no loading-state flash) for that
+// request. Crawlers are unaffected either way — they never run service
+// workers — so this only matters for a real person's browser.
 registerRoute(
   new NavigationRoute(
     async ({ event }) => {
@@ -28,7 +41,20 @@ registerRoute(
         return self.caches.match("/index.html");
       }
     },
-    { denylist: [/^\/api\//] },
+    {
+      denylist: [
+        /^\/api\//,
+        /^\/$/,
+        /^\/u\/[^/]+$/,
+        /^\/post\/[^/]+$/,
+        /^\/hashtag\/[^/]+$/,
+        /^\/explore$/,
+        /^\/help$/,
+        /^\/tiers$/,
+        /^\/privacy$/,
+        /^\/terms$/,
+      ],
+    },
   ),
 );
 
@@ -162,7 +188,7 @@ self.addEventListener("push", (event) => {
 // push doesn't spawn a duplicate tab when the app is already open.
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
-  const targetUrl = event.notification.data?.url || "/";
+  const targetUrl = event.notification.data?.url || "/home";
 
   event.waitUntil(
     (async () => {

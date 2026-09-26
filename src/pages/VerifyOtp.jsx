@@ -30,7 +30,7 @@ const VerifyOtp = () => {
   // Bug 7 fix: redirect already-logged-in users away (matches guard on
   // Login, Register, ForgotPassword, ResetPassword).
   useEffect(() => {
-    if (!authLoading && user) navigate("/", { replace: true });
+    if (!authLoading && user) navigate("/home", { replace: true });
   }, [authLoading, user, navigate]);
 
   // If there's nothing to verify (cold URL open, old bookmark, stale

@@ -1,0 +1,26 @@
+User-agent: *
+Allow: /
+
+Disallow: /login
+Disallow: /signup
+Disallow: /verify-otp
+Disallow: /forgot-password
+Disallow: /reset-password
+Disallow: /choose-username
+Disallow: /choose-interests
+Disallow: /notifications
+Disallow: /chat
+Disallow: /bookmarks
+Disallow: /settings
+Disallow: /moderation
+Disallow: /admin/
+Disallow: /creator-dashboard
+Disallow: /scheduled-posts
+Disallow: /paystack-return
+Disallow: /my-promotions
+Disallow: /campaigns
+Disallow: /creator-earnings
+Disallow: /connections/
+Disallow: /profile/
+
+Sitemap: https://tronites.com/sitemap.xml

@@ -300,7 +300,7 @@ const MyPromotions = () => {
         {/* Header */}
         <div className="flex items-center gap-3">
           <button
-            onClick={() => window.history.length > 1 ? navigate(-1) : navigate("/")}
+            onClick={() => window.history.length > 1 ? navigate(-1) : navigate("/home")}
             className="p-2 rounded-xl text-ink-muted hover:bg-surface hover:text-ink transition"
           >
             <FiArrowLeft size={18} />

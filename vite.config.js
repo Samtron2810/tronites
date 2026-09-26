@@ -4,6 +4,29 @@ import { VitePWA } from 'vite-plugin-pwa'
 
 // https://vite.dev/config/
 export default defineConfig({
+  build: {
+    rollupOptions: {
+      // The default index.html entry covers the whole authenticated app
+      // (main.jsx) exactly as before. entry-client.jsx is a second,
+      // separate entry for SSR hydration of the 9 public routes only
+      // (see that file's own comment for why it can't just be main.jsx)
+      // — added here purely so Vite bundles and content-hashes it the
+      // same way it does every other asset; server/renderShell.js reads
+      // the resulting hashed filename from the build manifest (see
+      // manifest: true below) rather than hardcoding a path, since the
+      // hash changes on every build.
+      input: {
+        main: 'index.html',
+        'entry-client': 'src/entry-client.jsx',
+      },
+    },
+    // Needed for renderShell.js to look up entry-client's actual
+    // content-hashed output filename after build — without this, Vite
+    // still builds the file but there is no reliable way outside the
+    // build process itself to know what dist/assets/entry-client-*.js
+    // ended up being called.
+    manifest: true,
+  },
   plugins: [
     react(),
     VitePWA({

@@ -625,7 +625,7 @@ const CampaignManager = () => {
       <div className="space-y-5">
         {/* Header */}
         <div className="flex items-center gap-3">
-          <button onClick={() => window.history.length > 1 ? navigate(-1) : navigate("/")} className="p-2 rounded-xl text-ink-muted hover:bg-surface hover:text-ink transition">
+          <button onClick={() => window.history.length > 1 ? navigate(-1) : navigate("/home")} className="p-2 rounded-xl text-ink-muted hover:bg-surface hover:text-ink transition">
             <FiArrowLeft size={18} />
           </button>
           <div className="flex-1">

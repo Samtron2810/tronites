@@ -2,6 +2,7 @@ import { Link, useNavigate } from "react-router-dom";
 import MainLayout from "../layouts/MainLayout";
 import { useAuth } from "../context/useAuth";
 import { FiArrowLeft } from "react-icons/fi";
+import SeoHead from "../components/SeoHead";
 
 const LAST_UPDATED = "September 20, 2026";
 
@@ -27,12 +28,17 @@ const PrivacyPolicy = () => {
     if (window.history.length > 1) {
       navigate(-1);
     } else {
-      navigate(user ? "/" : "/login");
+      navigate(user ? "/home" : "/");
     }
   };
 
   return (
     <MainLayout>
+      <SeoHead
+        title="Privacy Policy"
+        description="How Tronites collects, uses, and protects your personal information."
+        canonical="/privacy"
+      />
       <button
         onClick={handleBack}
         className="inline-flex items-center gap-1.5 text-base font-medium text-ink-muted hover:text-ink mb-4 transition"

@@ -2,6 +2,7 @@ import { Link, useNavigate } from "react-router-dom";
 import MainLayout from "../layouts/MainLayout";
 import BadgeSeal from "../components/BadgeSeal";
 import { useAuth } from "../context/useAuth";
+import SeoHead from "../components/SeoHead";
 import { getActiveTier } from "../utils/tierLimits";
 import {
   TIER_INFO,
@@ -90,9 +91,14 @@ const Tiers = () => {
 
   return (
     <MainLayout>
+      <SeoHead
+        title="Tiers & Benefits"
+        description="Compare Tronites account tiers — verification badges, creator monetization, scheduling, and other benefits by tier."
+        canonical="/tiers"
+      />
       <button
         onClick={() =>
-          window.history.length > 1 ? navigate(-1) : navigate("/")
+          window.history.length > 1 ? navigate(-1) : navigate(user ? "/home" : "/")
         }
         className="inline-flex items-center gap-1.5 text-base font-medium text-ink-muted hover:text-ink mb-4 transition"
       >

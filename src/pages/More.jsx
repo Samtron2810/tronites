@@ -270,7 +270,7 @@ const More = () => {
     <MainLayout>
       <button
         onClick={() =>
-          window.history.length > 1 ? navigate(-1) : navigate("/")
+          window.history.length > 1 ? navigate(-1) : navigate("/home")
         }
         className="inline-flex items-center gap-1.5 text-base font-medium text-ink-muted hover:text-ink mb-4 transition"
       >
