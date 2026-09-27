@@ -47,26 +47,26 @@ const Login = () => {
   return (
     <div className="min-h-screen app-bg flex">
       {/* Left panel */}
-      <div className="hidden lg:flex w-1/2 bg-primary-600 flex-col justify-between p-12">
+      <div className="hidden lg:flex w-1/2 bg-[#0f6e56] flex-col justify-between p-12">
         <Link
           to="/"
           className="inline-flex items-center self-start text-white font-bold text-5xl tracking-tight"
           aria-label="Back to Tronites homepage"
         >
-          Tron<span className="text-primary-200">ites</span>
+          Tron<span className="text-[#9fe1cb]">ites</span>
         </Link>
         <div>
-          <p className="text-primary-100 text-4xl font-bold leading-tight max-w-xs">
+          <p className="text-[#e1f5ee] text-4xl font-bold leading-tight max-w-xs">
             Connect with your community.
           </p>
-          <p className="text-primary-200 mt-4 text-lg leading-relaxed max-w-sm">
+          <p className="text-[#9fe1cb] mt-4 text-lg leading-relaxed max-w-sm">
             Share posts, follow people, and stay in the loop with what matters
             to you.
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-primary-400" />
-          <div className="w-8 h-8 rounded-full bg-primary-200" />
+          <div className="w-8 h-8 rounded-full bg-[#1d9e75]" />
+          <div className="w-8 h-8 rounded-full bg-[#9fe1cb]" />
           <div className="w-8 h-8 rounded-full bg-white/30" />
         </div>
       </div>

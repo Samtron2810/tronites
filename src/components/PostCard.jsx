@@ -1505,11 +1505,13 @@ const PostCard = ({
           </>
         )}
 
-        {/* CTA button — rendered on any post carrying a ctaType (promoted
-            post or campaign post), regardless of who's viewing it. Click
-            is its own tracked event (recordCtaClick), separate from
-            promotionClicks (whole-card) and organic engagement. */}
-        {ctaType && CTA_LABELS[ctaType] && (
+        {/* CTA button — rendered only while the promotion is still active.
+            ctaType/destinationUrl are stamped at promote-time but aren't
+            cleared until an admin cancels an expired run (adminCancelPromotion),
+            so gate on isCurrentlyPromoted too or the button outlives the
+            promotion. Click is its own tracked event (recordCtaClick),
+            separate from promotionClicks (whole-card) and organic engagement. */}
+        {isCurrentlyPromoted && ctaType && CTA_LABELS[ctaType] && (
           <button
             onClick={handleCtaClick}
             disabled={ctaClicking}

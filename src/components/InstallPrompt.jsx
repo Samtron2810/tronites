@@ -35,7 +35,7 @@ const InstallPrompt = () => {
         }
       `}</style>
 
-      <div className="bg-primary-900 text-white rounded-2xl shadow-2xl shadow-black/30 p-4 flex items-center gap-3">
+      <div className="bg-[#04342c] text-white rounded-2xl shadow-2xl shadow-black/30 p-4 flex items-center gap-3">
         <div className="w-12 h-12 rounded-[14px] bg-white/10 border border-white/15 flex items-center justify-center shrink-0 overflow-hidden">
           <img src="/pwa-192.png" alt="" className="w-9 h-9 object-contain" />
         </div>
@@ -60,7 +60,7 @@ const InstallPrompt = () => {
           <button
             onClick={handleInstall}
             disabled={installing}
-            className="shrink-0 px-3.5 py-2 rounded-xl bg-white text-primary-900 text-sm font-semibold hover:bg-white/90 transition disabled:opacity-60"
+            className="shrink-0 px-3.5 py-2 rounded-xl bg-white text-[#04342c] text-sm font-semibold hover:bg-white/90 transition disabled:opacity-60"
           >
             {installing ? "…" : "Install"}
           </button>
