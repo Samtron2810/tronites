@@ -30,6 +30,11 @@ export const PERMISSION_OPTIONS = [
     hint: "Review, approve, and deny verification badge applications",
   },
   {
+    value: "send_broadcasts",
+    label: "Send email broadcasts",
+    hint: "Email users in bulk from More → Email broadcast",
+  },
+  {
     value: "manage_roles",
     label: "Manage roles",
     hint: "Admin-only for now — no runtime gate consumes this yet",

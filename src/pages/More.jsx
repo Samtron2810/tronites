@@ -20,6 +20,7 @@ import {
   FaBolt,
   FaUserShield,
   FaClipboardList,
+  FaEnvelopeOpenText,
 } from "react-icons/fa";
 import { useAuth } from "../context/useAuth";
 import api from "../services/api";
@@ -254,6 +255,14 @@ const More = () => {
           label: "Manage roles",
           description: "Promote moderators, grant permissions and badges.",
           href: "/admin/users",
+        }]
+      : []),
+    ...(hasPermission(user, "send_broadcasts")
+      ? [{
+          icon: FaEnvelopeOpenText,
+          label: "Email broadcast",
+          description: "Send an email to groups of users or one person.",
+          href: "/admin/broadcast",
         }]
       : []),
     ...(user?.role === "admin" || user?.permissions?.includes("view_audit_log")

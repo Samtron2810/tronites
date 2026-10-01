@@ -42,6 +42,8 @@ const ACTION_LABELS = {
   post_promotion_cancelled: "Promotion cancelled",
   moderator_note_added: "Note added",
   moderator_note_deleted: "Note deleted",
+  email_broadcast_created: "Email broadcast sent",
+  email_broadcast_cancelled: "Email broadcast cancelled",
 };
 
 const ACTION_TONE = {

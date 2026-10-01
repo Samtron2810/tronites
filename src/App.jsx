@@ -54,6 +54,7 @@ const NotFound = lazy(() => import("./pages/NotFound"));
 const PaystackReturnHandler = lazy(() => import("./components/PaystackReturnHandler"));
 const MyPromotions = lazy(() => import("./pages/MyPromotions"));
 const AdminPromotions = lazy(() => import("./pages/AdminPromotions"));
+const AdminBroadcast = lazy(() => import("./pages/AdminBroadcast"));
 const CampaignManager = lazy(() => import("./pages/CampaignManager"));
 const CreatorEarnings = lazy(() => import("./pages/CreatorEarnings"));
 const MediaKit = lazy(() => import("./pages/MediaKit"));
@@ -293,6 +294,15 @@ const AppContent = () => {
             element={
               <ProtectedRoute requireRole={["moderator", "admin"]} requirePermission="view_audit_log">
                 <AdminAuditLog />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/admin/broadcast"
+            element={
+              <ProtectedRoute requireRole={["moderator", "admin"]} requirePermission="send_broadcasts">
+                <AdminBroadcast />
               </ProtectedRoute>
             }
           />

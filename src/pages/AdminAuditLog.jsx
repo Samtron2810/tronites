@@ -36,6 +36,8 @@ const ACTION_OPTIONS = [
   { value: "user_auto_banned", label: "Auto-bans" },
   { value: "moderator_note_added", label: "Moderator notes added" },
   { value: "moderator_note_deleted", label: "Moderator notes deleted" },
+  { value: "email_broadcast_created", label: "Email broadcasts sent" },
+  { value: "email_broadcast_cancelled", label: "Email broadcasts cancelled" },
 ];
 
 const TARGET_OPTIONS = [
@@ -45,6 +47,7 @@ const TARGET_OPTIONS = [
   { value: "comment", label: "Comments" },
   { value: "message", label: "Messages" },
   { value: "report", label: "Reports" },
+  { value: "campaign", label: "Email campaigns" },
 ];
 
 const ACTION_LABELS = Object.fromEntries(
@@ -287,6 +290,23 @@ const DetailCell = ({ log }) => {
           {d.previousSource && (
             <span className="text-ink-muted"> · was {d.previousSource}</span>
           )}
+        </span>
+      );
+    case "email_broadcast_created":
+      return (
+        <span>
+          {d.recipientCount} recipient{d.recipientCount === 1 ? "" : "s"}
+          <span className="text-ink-muted">
+            {" · "}
+            {[...(d.groups || []), ...(d.userIds ? [`${d.userIds} selected`] : [])].join(", ")}
+            {d.type === "critical" ? " · critical" : ""}
+          </span>
+        </span>
+      );
+    case "email_broadcast_cancelled":
+      return (
+        <span>
+          Stopped after {d.sentCount ?? 0} of {d.recipientCount ?? 0} sent
         </span>
       );
     // Phase 7 - moderator notes. The note body IS the point of these
