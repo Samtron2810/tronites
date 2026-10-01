@@ -369,7 +369,7 @@ const AdminBroadcast = () => {
   const [testing, setTesting] = useState(false);
 
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState([]);
+  const [results, setResults] = useState(null);
   const bodyRef = useRef(null);
 
   // Live recipient count + quota (debounced).
@@ -427,7 +427,7 @@ const AdminBroadcast = () => {
     let cancelled = false;
     const t = setTimeout(async () => {
       if (query.trim().length < 2) {
-        if (!cancelled) setResults([]);
+        if (!cancelled) setResults(null);
         return;
       }
       try {
@@ -436,7 +436,7 @@ const AdminBroadcast = () => {
         });
         if (!cancelled) setResults(res.data.users || []);
       } catch {
-        if (!cancelled) setResults([]);
+        if (!cancelled) setResults(null);
       }
     }, 300);
     return () => {
@@ -457,7 +457,7 @@ const AdminBroadcast = () => {
       prev.some((p) => p._id === u._id) || prev.length >= 50 ? prev : [...prev, u],
     );
     setQuery("");
-    setResults([]);
+    setResults(null);
   };
 
   const wrapSelection = (before, after = before) => {
@@ -480,6 +480,23 @@ const AdminBroadcast = () => {
   const overQuota = quota ? count > quota.available : false;
   const contentOk = subject.trim() && body.trim() && ctaOk;
   const canSend = Boolean(contentOk && count > 0 && !overQuota && !previewLoading);
+  const blockedReason = canSend
+    ? ""
+    : !groups.length && !picked.length
+      ? query.trim()
+        ? "Tap the matching user in the search results to add them."
+        : "Choose who receives this."
+      : count === 0 && !previewLoading
+        ? "No active recipients match this audience."
+        : !subject.trim()
+          ? "Add a subject."
+          : !body.trim()
+            ? "Write a message."
+            : !ctaOk
+              ? "Fix the button label/link."
+              : overQuota
+                ? "Not enough sends left today."
+                : "";
 
   const audienceLabels = useMemo(
     () =>
@@ -624,10 +641,16 @@ const AdminBroadcast = () => {
                   <input
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && results?.length) {
+                        e.preventDefault();
+                        addUser(results[0]);
+                      }
+                    }}
                     placeholder="Search name, username or email"
                     className={`${inputCls} pl-10`}
                   />
-                  {results.length > 0 && (
+                  {results?.length > 0 && (
                     <ul className="absolute z-20 left-0 right-0 mt-1.5 bg-card border border-stroke rounded-xl shadow-xl overflow-hidden">
                       {results.map((u) => (
                         <li key={u._id}>
@@ -646,6 +669,16 @@ const AdminBroadcast = () => {
                     </ul>
                   )}
                 </div>
+                {results && results.length === 0 && (
+                  <p className="text-sm text-amber-700 mt-2">
+                    No active user matches "{query.trim()}". Only existing, non-banned accounts can be emailed.
+                  </p>
+                )}
+                {!picked.length && !results && (
+                  <p className="text-xs text-ink-muted mt-2">
+                    Type 2+ characters, then tap a result (or press Enter) to add it.
+                  </p>
+                )}
               </div>
             </div>
           </Step>
@@ -765,6 +798,9 @@ const AdminBroadcast = () => {
                 ) : null}
                 Reaches {count.toLocaleString()} {count === 1 ? "person" : "people"}
               </p>
+              {blockedReason && (
+                <p className="text-xs text-amber-700 mt-0.5">{blockedReason}</p>
+              )}
               {quota && (
                 <div className="mt-1.5">
                   <div className="h-1.5 rounded-full bg-surface overflow-hidden">
