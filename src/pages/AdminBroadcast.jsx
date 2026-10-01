@@ -64,8 +64,8 @@ const Chip = ({ active, onClick, children }) => (
 );
 
 const Step = ({ n, title, sub, children }) => (
-  <section className="bg-card border border-stroke rounded-2xl overflow-hidden">
-    <header className="flex items-center gap-3 px-5 py-4 border-b border-stroke">
+  <section className="bg-card border border-stroke rounded-2xl">
+    <header className="flex items-center gap-3 px-5 py-4 border-b border-stroke rounded-t-2xl">
       <span className="w-7 h-7 rounded-full bg-primary-100 text-primary-600 text-sm font-bold flex items-center justify-center shrink-0">
         {n}
       </span>
