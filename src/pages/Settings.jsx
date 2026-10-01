@@ -265,6 +265,32 @@ const Settings = () => {
     }
   };
 
+  // Announcement emails (admin broadcasts). Opted in unless unsubscribed.
+  const [marketingEmails, setMarketingEmailsState] = useState(
+    () => user?.marketingEmails !== false
+  );
+  const [savingEmails, setSavingEmails] = useState(false);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- mirrors the async-updated user object into editable local state; without it a saved preference would flip back until a refetch.
+    setMarketingEmailsState(user?.marketingEmails !== false);
+  }, [user?.marketingEmails]);
+
+  const handleToggleMarketingEmails = async (value) => {
+    if (savingEmails) return;
+    setMarketingEmailsState(value);
+    setSavingEmails(true);
+    try {
+      await api.put("/users/email-preferences", { marketingEmails: value });
+      updateUser?.({ marketingEmails: value });
+      toast.success(value ? "Announcement emails on." : "Announcement emails off.");
+    } catch {
+      setMarketingEmailsState(!value);
+      toast.error("Couldn't update setting. Try again.");
+    } finally {
+      setSavingEmails(false);
+    }
+  };
+
   const handleChangeVisibility = async (value) => {
     if (value === visibility || saving) return;
     const previous = visibility;
@@ -464,6 +490,32 @@ const Settings = () => {
         >
           <div className="py-4">
             <PushNotificationsSection embedded />
+          </div>
+          <div className="px-5 py-4 border-t border-stroke flex items-center justify-between gap-4">
+            <div>
+              <p className="text-sm font-medium text-ink">Announcement emails</p>
+              <p className="text-xs text-ink-muted mt-0.5">
+                News and updates from the Tronites team. Important account and
+                security notices are always sent.
+              </p>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={marketingEmails}
+              aria-label="Announcement emails"
+              onClick={() => handleToggleMarketingEmails(!marketingEmails)}
+              disabled={savingEmails}
+              className={`relative shrink-0 w-11 h-6 rounded-full transition-colors duration-200 ${
+                marketingEmails ? "bg-primary-600" : "bg-stroke"
+              } disabled:opacity-60`}
+            >
+              <span
+                className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200 ${
+                  marketingEmails ? "translate-x-5" : "translate-x-0"
+                }`}
+              />
+            </button>
           </div>
         </AccordionItem>
 
