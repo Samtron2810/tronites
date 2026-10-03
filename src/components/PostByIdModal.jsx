@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import toast from "react-hot-toast";
 import api from "../services/api";
 import ChangeAudienceModal from "./ChangeAudienceModal";
+import { emitPostPatch, subscribePostPatch } from "../utils/postSync";
 import { useAuth } from "../context/useAuth";
 import { useSocket } from "../context/useSocket";
 import PostDetailModal from "./PostDetailModal";
@@ -63,6 +64,16 @@ const PostByIdModal = ({
   useBackButtonClose(
     isOpen && Boolean(loadError && !loading && !post),
     onClose,
+  );
+
+  // Apply owner changes made on another surface showing this same post
+  // (e.g. the feed card behind this modal).
+  useEffect(
+    () =>
+      subscribePostPatch(post?._id, (patch) => {
+        setPost((p) => (p ? { ...p, ...patch } : p));
+      }),
+    [post?._id],
   );
 
   const fetchPost = useCallback(async (id) => {
@@ -263,6 +274,12 @@ const PostByIdModal = ({
         privacy: next,
         ...(next !== "public" ? { repostsCount: res.data.repostsCount ?? 0, isReposted: false } : {}),
       }));
+      emitPostPatch(post._id, {
+        privacy: next,
+        ...(next !== "public"
+          ? { repostsCount: res.data.repostsCount ?? 0, isReposted: false }
+          : {}),
+      });
       setShowAudienceModal(false);
       toast.success("Audience updated.");
     } catch (e) {
@@ -277,6 +294,7 @@ const PostByIdModal = ({
     try {
       await api.put(`/posts/${post._id}/comments`, { commentsDisabled: next });
       setPost((p) => ({ ...p, commentsDisabled: next }));
+      emitPostPatch(post._id, { commentsDisabled: next });
       toast.success(next ? "Commenting turned off." : "Commenting turned on.");
     } catch (e) {
       console.error(e);

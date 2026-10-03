@@ -35,6 +35,7 @@ import api from "../services/api";
 import { useAuth } from "../context/useAuth";
 import DeletePostModal from "./DeletePostModal";
 import ChangeAudienceModal from "./ChangeAudienceModal";
+import { emitPostPatch, subscribePostPatch } from "../utils/postSync";
 import ReportModal from "./ReportModal";
 import QuotePostModal from "./QuotePostModal";
 import QuotedPostPreview from "./QuotedPostPreview";
@@ -643,6 +644,21 @@ const PostCard = ({
     }
   };
 
+  // Mirror owner changes made on another surface showing this same post.
+  useEffect(
+    () =>
+      subscribePostPatch(postId, (patch) => {
+        if ("commentsDisabled" in patch) {
+          setCommentsOff(Boolean(patch.commentsDisabled));
+          if (patch.commentsDisabled) setShowComments(false);
+        }
+        if ("privacy" in patch) setPrivacy(patch.privacy || "public");
+        if ("repostsCount" in patch) setRepostCount(patch.repostsCount);
+        if ("isReposted" in patch) setReposted(Boolean(patch.isReposted));
+      }),
+    [postId],
+  );
+
   const handleToggleComments = async () => {
     if (isTogglingComments) return;
     const next = !commentsOff;
@@ -651,6 +667,7 @@ const PostCard = ({
       await api.put(`/posts/${postId}/comments`, { commentsDisabled: next });
       setCommentsOff(next);
       if (next) setShowComments(false);
+      emitPostPatch(postId, { commentsDisabled: next });
       toast.success(next ? "Commenting turned off." : "Commenting turned on.");
     } catch (e) {
       console.error(e);
@@ -669,6 +686,12 @@ const PostCard = ({
         setRepostCount(res.data.repostsCount ?? 0);
         setReposted(false);
       }
+      emitPostPatch(postId, {
+        privacy: next,
+        ...(next !== "public"
+          ? { repostsCount: res.data.repostsCount ?? 0, isReposted: false }
+          : {}),
+      });
       setShowAudienceModal(false);
       toast.success("Audience updated.");
     } catch (e) {
