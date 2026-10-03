@@ -1754,7 +1754,8 @@ const PostCard = ({
               postId={postId}
               initialCommentCount={commentCount}
               onCommentCountChange={setCommentCount}
-              commentsDisabled={commentsOff}
+              commentsDisabled={commentsOff && !isOwner}
+              ownerCommentsOff={commentsOff && isOwner}
             />
           </div>
         )}

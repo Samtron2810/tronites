@@ -39,6 +39,9 @@ const CommentsPanel = ({
   // Author switched commenting off: existing comments stay readable, but the
   // composer and every Reply affordance are replaced/hidden.
   commentsDisabled = false,
+  // True when the viewer is the author and commenting is off for everyone
+  // else: composer stays usable, with a small reminder above it.
+  ownerCommentsOff = false,
 }) => {
   const { user: currentUser } = useAuth();
   const { socket } = useSocket();
@@ -719,6 +722,12 @@ const CommentsPanel = ({
       )}
 
       {/* Composer */}
+      {ownerCommentsOff && !isCommentingOff && (
+        <div className="flex items-center gap-2 text-xs text-ink-muted">
+          <FaCommentSlash size={11} className="shrink-0" />
+          <span>Commenting is off for everyone else. Only you can comment.</span>
+        </div>
+      )}
       {isCommentingOff ? (
         <div className="flex items-center gap-2.5 rounded-xl border border-dashed border-stroke bg-surface px-3.5 py-3 text-sm text-ink-muted">
           <FaCommentSlash size={14} className="shrink-0" />

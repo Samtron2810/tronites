@@ -1032,7 +1032,8 @@ const PostDetailModal = ({
             postId={postId}
             initialCommentCount={commentCount}
             onCommentCountChange={onCommentCountChange}
-            commentsDisabled={commentsDisabled}
+            commentsDisabled={commentsDisabled && !isOwner}
+            ownerCommentsOff={commentsDisabled && isOwner}
             highlightCommentId={highlightCommentId}
             highlightParentId={highlightParentId}
           />
