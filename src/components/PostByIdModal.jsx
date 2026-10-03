@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import toast from "react-hot-toast";
 import api from "../services/api";
+import ChangeAudienceModal from "./ChangeAudienceModal";
 import { useAuth } from "../context/useAuth";
 import { useSocket } from "../context/useSocket";
 import PostDetailModal from "./PostDetailModal";
@@ -253,6 +254,22 @@ const PostByIdModal = ({
   };
 
   const [isTogglingComments, setIsTogglingComments] = useState(false);
+  const [showAudienceModal, setShowAudienceModal] = useState(false);
+  const handleChangeAudience = async (next) => {
+    try {
+      const res = await api.put(`/posts/${post._id}/privacy`, { privacy: next });
+      setPost((p) => ({
+        ...p,
+        privacy: next,
+        ...(next !== "public" ? { repostsCount: res.data.repostsCount ?? 0, isReposted: false } : {}),
+      }));
+      setShowAudienceModal(false);
+      toast.success("Audience updated.");
+    } catch (e) {
+      console.error(e);
+      toast.error(e.response?.data?.message || "Couldn't update the audience. Try again.");
+    }
+  };
   const handleToggleComments = async () => {
     if (isTogglingComments || !post) return;
     const next = !post.commentsDisabled;
@@ -463,6 +480,7 @@ const PostByIdModal = ({
           onCopy={handleCopy}
           commentsDisabled={Boolean(post.commentsDisabled)}
           onToggleComments={handleToggleComments}
+          onChangeAudience={() => setShowAudienceModal(true)}
           isTogglingComments={isTogglingComments}
           onEdit={() => {}}
           onDelete={() => setShowDeleteModal(true)}
@@ -473,6 +491,15 @@ const PostByIdModal = ({
           highlightParentId={highlightParentId}
           ctaType={post.ctaType}
           destinationUrl={post.destinationUrl}
+        />
+      )}
+      {showAudienceModal && post && (
+        <ChangeAudienceModal
+          currentPrivacy={post.privacy || "public"}
+          repostCount={post.repostsCount || 0}
+          isPromoted={Boolean(post.promotedUntil && new Date(post.promotedUntil) > new Date())}
+          onConfirm={handleChangeAudience}
+          onCancel={() => setShowAudienceModal(false)}
         />
       )}
     </>

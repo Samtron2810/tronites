@@ -17,7 +17,7 @@ import {
   FaQuoteRight,
   FaCommentSlash,
 } from "react-icons/fa";
-import { FiFlag, FiUsers, FiLock, FiZap, FiExternalLink, FiAlertTriangle } from "react-icons/fi";
+import { FiFlag, FiGlobe, FiUsers, FiLock, FiZap, FiExternalLink, FiAlertTriangle } from "react-icons/fi";
 
 const CTA_LABELS = {
   learn_more: "Learn More",
@@ -34,6 +34,7 @@ import toast from "react-hot-toast";
 import api from "../services/api";
 import { useAuth } from "../context/useAuth";
 import DeletePostModal from "./DeletePostModal";
+import ChangeAudienceModal from "./ChangeAudienceModal";
 import ReportModal from "./ReportModal";
 import QuotePostModal from "./QuotePostModal";
 import QuotedPostPreview from "./QuotedPostPreview";
@@ -81,7 +82,7 @@ const PostCard = ({
   // nothing).
   verifications,
   time,
-  privacy,
+  privacy: privacyProp,
   text,
   images,
   video,
@@ -200,6 +201,15 @@ const PostCard = ({
   const [commentsOff, setCommentsOff] = useState(Boolean(commentsDisabled));
   const [syncedCommentsDisabled, setSyncedCommentsDisabled] = useState(Boolean(commentsDisabled));
   const [isTogglingComments, setIsTogglingComments] = useState(false);
+  // Local audience so the owner's change reflects instantly; re-syncs when
+  // the parent passes a different prop (feed refetch / cache refresh).
+  const [privacy, setPrivacy] = useState(privacyProp || "public");
+  const [syncedPrivacy, setSyncedPrivacy] = useState(privacyProp || "public");
+  const [showAudienceModal, setShowAudienceModal] = useState(false);
+  if ((privacyProp || "public") !== syncedPrivacy) {
+    setSyncedPrivacy(privacyProp || "public");
+    setPrivacy(privacyProp || "public");
+  }
   if (Boolean(commentsDisabled) !== syncedCommentsDisabled) {
     setSyncedCommentsDisabled(Boolean(commentsDisabled));
     setCommentsOff(Boolean(commentsDisabled));
@@ -651,6 +661,24 @@ const PostCard = ({
     }
   };
 
+  const handleChangeAudience = async (next) => {
+    try {
+      const res = await api.put(`/posts/${postId}/privacy`, { privacy: next });
+      setPrivacy(next);
+      setSyncedPrivacy(next);
+      if (next !== "public") {
+        // Backend dropped every repost/quote edge when leaving public.
+        setRepostCount(res.data.repostsCount ?? 0);
+        setReposted(false);
+      }
+      setShowAudienceModal(false);
+      toast.success("Audience updated.");
+    } catch (e) {
+      console.error(e);
+      toast.error(e.response?.data?.message || "Couldn't update the audience. Try again.");
+    }
+  };
+
   const handleCopyPost = async () => {
     setMenuOpen(false);
     try {
@@ -975,6 +1003,16 @@ const PostCard = ({
         />
       )}
 
+      {showAudienceModal && (
+        <ChangeAudienceModal
+          currentPrivacy={privacy}
+          repostCount={repostCount}
+          isPromoted={isCurrentlyPromoted}
+          onConfirm={handleChangeAudience}
+          onCancel={() => setShowAudienceModal(false)}
+        />
+      )}
+
       <PostDetailModal
         isOpen={isDetailOpen}
         onClose={() => setIsDetailOpen(false)}
@@ -997,6 +1035,10 @@ const PostCard = ({
         commentsDisabled={commentsOff}
         onToggleComments={handleToggleComments}
         isTogglingComments={isTogglingComments}
+        onChangeAudience={() => {
+          setIsDetailOpen(false);
+          setShowAudienceModal(true);
+        }}
         postId={postId}
         liked={liked}
         likeCount={likeCount}
@@ -1264,6 +1306,16 @@ const PostCard = ({
                         <span className="font-medium">Edit post</span>
                       </button>
                     )}
+                    <button
+                      onClick={() => {
+                        setMenuOpen(false);
+                        setShowAudienceModal(true);
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-2.5 text-base text-ink hover:bg-primary-50 transition"
+                    >
+                      <FiGlobe className="text-primary-600" size={13} />
+                      <span className="font-medium">Change audience</span>
+                    </button>
                     {/* Turn commenting on/off — owner only */}
                     <button
                       onClick={() => {

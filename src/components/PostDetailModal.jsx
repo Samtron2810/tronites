@@ -20,7 +20,7 @@ import {
   FaThumbtack,
   FaCommentSlash,
 } from "react-icons/fa";
-import { FiFlag, FiUsers, FiLock, FiZap, FiExternalLink, FiAlertTriangle } from "react-icons/fi";
+import { FiFlag, FiGlobe, FiUsers, FiLock, FiZap, FiExternalLink, FiAlertTriangle } from "react-icons/fi";
 import toast from "react-hot-toast";
 import defaultAvatar from "../assets/defaultAvatar";
 import LazyImage from "./LazyImage";
@@ -102,6 +102,8 @@ const PostDetailModal = ({
   commentsDisabled = false,
   onToggleComments,
   isTogglingComments = false,
+  // Opens the owner's audience editor (owned by the caller). Menu item hidden if absent.
+  onChangeAudience,
   postId,
   // Like
   liked,
@@ -618,6 +620,18 @@ const PostDetailModal = ({
                           >
                             <FaPen className="text-primary-600" size={13} />
                             <span className="font-medium">Edit post</span>
+                          </button>
+                        )}
+                        {onChangeAudience && (
+                          <button
+                            onClick={() => {
+                              setMenuOpen(false);
+                              onChangeAudience();
+                            }}
+                            className="w-full flex items-center gap-3 px-4 py-2.5 text-base text-ink hover:bg-primary-50 transition"
+                          >
+                            <FiGlobe className="text-primary-600" size={13} />
+                            <span className="font-medium">Change audience</span>
                           </button>
                         )}
                         {onToggleComments && (
