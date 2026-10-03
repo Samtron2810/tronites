@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { Link } from "react-router-dom";
-import { FaHeart, FaRegHeart } from "react-icons/fa";
+import { FaHeart, FaRegHeart, FaCommentSlash } from "react-icons/fa";
 import toast from "react-hot-toast";
 import api from "../services/api";
 import { useAuth } from "../context/useAuth";
@@ -36,6 +36,9 @@ const CommentsPanel = ({
   // thread must be expanded and loaded before the reply row exists.
   highlightCommentId,
   highlightParentId,
+  // Author switched commenting off: existing comments stay readable, but the
+  // composer and every Reply affordance are replaced/hidden.
+  commentsDisabled = false,
 }) => {
   const { user: currentUser } = useAuth();
   const { socket } = useSocket();
@@ -46,6 +49,10 @@ const CommentsPanel = ({
 
   const [commentText, setCommentText] = useState("");
   const [isCommentSending, setIsCommentSending] = useState(false);
+  // Set when the server rejects a comment with COMMENTS_DISABLED (the author
+  // turned comments off after this view loaded) so the UI flips without a refetch.
+  const [serverCommentsOff, setServerCommentsOff] = useState(false);
+  const isCommentingOff = commentsDisabled || serverCommentsOff;
   const [commentDeletingId, setCommentDeletingId] = useState(null);
 
   const [reportTarget, setReportTarget] = useState(null);
@@ -162,7 +169,13 @@ const CommentsPanel = ({
       setComments((prev) => prev.filter((c) => c._id !== tempId));
       setCommentCount((prev) => Math.max(0, prev - 1));
       setCommentText(text); // restore so the user doesn't retype
-      toast.error("Couldn't post your comment. Try again.");
+      if (e.response?.data?.code === "COMMENTS_DISABLED") {
+        setCommentText("");
+        setServerCommentsOff(true);
+        toast.error("Comments are turned off for this post.");
+      } else {
+        toast.error("Couldn't post your comment. Try again.");
+      }
     } finally {
       setIsCommentSending(false);
     }
@@ -363,7 +376,14 @@ const CommentsPanel = ({
       }));
       setReplyText(text);
       setReplyingTo(parentCommentId);
-      toast.error("Couldn't post your reply. Try again.");
+      if (e.response?.data?.code === "COMMENTS_DISABLED") {
+        setReplyText("");
+        setReplyingTo(null);
+        setServerCommentsOff(true);
+        toast.error("Comments are turned off for this post.");
+      } else {
+        toast.error("Couldn't post your reply. Try again.");
+      }
     } finally {
       setIsReplySending(false);
     }
@@ -699,6 +719,12 @@ const CommentsPanel = ({
       )}
 
       {/* Composer */}
+      {isCommentingOff ? (
+        <div className="flex items-center gap-2.5 rounded-xl border border-dashed border-stroke bg-surface px-3.5 py-3 text-sm text-ink-muted">
+          <FaCommentSlash size={14} className="shrink-0" />
+          <span>The author has turned off commenting on this post.</span>
+        </div>
+      ) : (
       <div className="flex gap-2 relative">
         <div className="flex-1 relative">
           <input
@@ -729,6 +755,7 @@ const CommentsPanel = ({
           {isCommentSending ? "..." : "Post"}
         </button>
       </div>
+      )}
 
       {/* List */}
       {loadingComments && (
@@ -799,12 +826,14 @@ const CommentsPanel = ({
                 )}
                 {c.likesCount > 0 && <span>{c.likesCount}</span>}
               </button>
+              {!isCommentingOff && (
               <button
                 onClick={() => openReplyComposer(c._id)}
                 className="text-sm text-ink-muted hover:text-primary-600 transition font-medium"
               >
                 Reply
               </button>
+              )}
               {c.repliesCount > 0 && (
                 <button
                   onClick={() => toggleReplies(c._id)}
@@ -821,7 +850,7 @@ const CommentsPanel = ({
                 itself and "Reply" on any of its replies (§3.5). Either
                 path sets replyingTo to this comment's id, so the new
                 reply always lands here, flat, never nested. */}
-            {replyingTo === c._id && (
+            {!isCommentingOff && replyingTo === c._id && (
               <div className="flex gap-2 mt-2 relative">
                 <div className="flex-1 relative">
                   <input
@@ -930,6 +959,7 @@ const CommentsPanel = ({
                             comment's id (c._id), prefilled with
                             @username, so it posts flat rather than
                             nested (§3.5/§6). */}
+                        {!isCommentingOff && (
                         <button
                           onClick={() =>
                             openReplyComposer(c._id, r.user.username)
@@ -938,6 +968,7 @@ const CommentsPanel = ({
                         >
                           Reply
                         </button>
+                        )}
                       </div>
                     </div>
                   ))}

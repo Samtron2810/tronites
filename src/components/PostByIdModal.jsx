@@ -252,6 +252,23 @@ const PostByIdModal = ({
     }
   };
 
+  const [isTogglingComments, setIsTogglingComments] = useState(false);
+  const handleToggleComments = async () => {
+    if (isTogglingComments || !post) return;
+    const next = !post.commentsDisabled;
+    setIsTogglingComments(true);
+    try {
+      await api.put(`/posts/${post._id}/comments`, { commentsDisabled: next });
+      setPost((p) => ({ ...p, commentsDisabled: next }));
+      toast.success(next ? "Commenting turned off." : "Commenting turned on.");
+    } catch (e) {
+      console.error(e);
+      toast.error(e.response?.data?.message || "Couldn't update comment settings. Try again.");
+    } finally {
+      setIsTogglingComments(false);
+    }
+  };
+
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(post?.text || "");
@@ -444,6 +461,9 @@ const PostByIdModal = ({
           onAdminPromote={() => setShowAdminPromoteModal(true)}
           onAdminCancelPromotion={() => setShowAdminCancelModal(true)}
           onCopy={handleCopy}
+          commentsDisabled={Boolean(post.commentsDisabled)}
+          onToggleComments={handleToggleComments}
+          isTogglingComments={isTogglingComments}
           onEdit={() => {}}
           onDelete={() => setShowDeleteModal(true)}
           onReport={() => setReportTarget({ type: "post" })}

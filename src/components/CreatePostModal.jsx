@@ -11,6 +11,7 @@ import {
   FiClock,
 } from "react-icons/fi";
 import { FaStar } from "react-icons/fa";
+import { FiMessageSquare } from "react-icons/fi";
 import useMentionAutocomplete from "../hooks/useMentionAutocomplete";
 import MentionSuggestions from "./MentionSuggestions";
 import ConfirmDiscardModal from "./ConfirmDiscardModal";
@@ -53,6 +54,8 @@ const CreatePostModal = ({ closeModal, onSubmit, onSubmitVideo }) => {
   const charLimit = getCharLimit(user);
   const nearLimit = charLimit - text.length <= 20;
   const [privacy, setPrivacy] = useState("public");
+  // Author can switch commenting off before posting (also togglable later from the post menu).
+  const [commentsDisabled, setCommentsDisabled] = useState(false);
   const [images, setImages] = useState([]); // File[]
   const [previews, setPreviews] = useState([]); // objectURL[]
   const [scheduledFor, setScheduledFor] = useState("");
@@ -192,9 +195,9 @@ const CreatePostModal = ({ closeModal, onSubmit, onSubmitVideo }) => {
     }
 
     if (videoFile) {
-      onSubmitVideo({ text, videoFile, privacy, scheduledFor: scheduledFor || null });
+      onSubmitVideo({ text, videoFile, privacy, commentsDisabled, scheduledFor: scheduledFor || null });
     } else {
-      onSubmit({ text, images, altTexts, privacy, scheduledFor: scheduledFor || null });
+      onSubmit({ text, images, altTexts, privacy, commentsDisabled, scheduledFor: scheduledFor || null });
     }
     closeModal();
   };
@@ -281,6 +284,23 @@ const CreatePostModal = ({ closeModal, onSubmit, onSubmitVideo }) => {
                 ))}
               </select>
             </label>
+
+            {/* Comment switch — sits beside the audience picker */}
+            <button
+              type="button"
+              role="switch"
+              aria-checked={!commentsDisabled}
+              onClick={() => setCommentsDisabled((v) => !v)}
+              title={commentsDisabled ? "Comments are off" : "Comments are on"}
+              className={`ml-auto flex items-center gap-2 rounded-lg border px-2.5 py-1.5 text-base font-medium transition ${
+                commentsDisabled
+                  ? "border-red-200 bg-red-50 text-red-600"
+                  : "border-stroke bg-surface text-ink-sub hover:border-primary-600"
+              }`}
+            >
+              <FiMessageSquare size={15} className={commentsDisabled ? "text-red-500" : "text-primary-600"} />
+              <span>{commentsDisabled ? "Comments off" : "Comments on"}</span>
+            </button>
           </div>
 
           {/* Image previews — carousel grid with alt text support */}

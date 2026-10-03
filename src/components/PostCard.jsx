@@ -15,6 +15,7 @@ import {
   FaRetweet,
   FaThumbtack,
   FaQuoteRight,
+  FaCommentSlash,
 } from "react-icons/fa";
 import { FiFlag, FiUsers, FiLock, FiZap, FiExternalLink, FiAlertTriangle } from "react-icons/fi";
 
@@ -86,6 +87,9 @@ const PostCard = ({
   video,
   likes,
   commentsCount,
+  // Author-controlled switch: true = new comments/replies are blocked.
+  // Missing (legacy posts) reads as false.
+  commentsDisabled = false,
   reposts,
   isLiked,
   isBookmarked,
@@ -191,6 +195,15 @@ const PostCard = ({
   const [syncedIsLiked, setSyncedIsLiked] = useState(isLiked);
   const [syncedLikes, setSyncedLikes] = useState(likes);
   const [syncedCommentsCount, setSyncedCommentsCount] = useState(commentsCount);
+  // Local copy so the owner's toggle reflects instantly; re-syncs when the
+  // parent passes a different prop (feed refetch / cache refresh).
+  const [commentsOff, setCommentsOff] = useState(Boolean(commentsDisabled));
+  const [syncedCommentsDisabled, setSyncedCommentsDisabled] = useState(Boolean(commentsDisabled));
+  const [isTogglingComments, setIsTogglingComments] = useState(false);
+  if (Boolean(commentsDisabled) !== syncedCommentsDisabled) {
+    setSyncedCommentsDisabled(Boolean(commentsDisabled));
+    setCommentsOff(Boolean(commentsDisabled));
+  }
   const [syncedIsBookmarked, setSyncedIsBookmarked] = useState(isBookmarked);
   const [syncedIsReposted, setSyncedIsReposted] = useState(isReposted);
   const [syncedReposts, setSyncedReposts] = useState(reposts);
@@ -620,6 +633,24 @@ const PostCard = ({
     }
   };
 
+  const handleToggleComments = async () => {
+    if (isTogglingComments) return;
+    const next = !commentsOff;
+    setIsTogglingComments(true);
+    try {
+      await api.put(`/posts/${postId}/comments`, { commentsDisabled: next });
+      setCommentsOff(next);
+      setSyncedCommentsDisabled(next);
+      if (next) setShowComments(false);
+      toast.success(next ? "Commenting turned off." : "Commenting turned on.");
+    } catch (e) {
+      console.error(e);
+      toast.error(e.response?.data?.message || "Couldn't update comment settings. Try again.");
+    } finally {
+      setIsTogglingComments(false);
+    }
+  };
+
   const handleCopyPost = async () => {
     setMenuOpen(false);
     try {
@@ -963,6 +994,9 @@ const PostCard = ({
         postVideo={postVideo}
         commentCount={commentCount}
         onCommentCountChange={setCommentCount}
+        commentsDisabled={commentsOff}
+        onToggleComments={handleToggleComments}
+        isTogglingComments={isTogglingComments}
         postId={postId}
         liked={liked}
         likeCount={likeCount}
@@ -1230,6 +1264,24 @@ const PostCard = ({
                         <span className="font-medium">Edit post</span>
                       </button>
                     )}
+                    {/* Turn commenting on/off — owner only */}
+                    <button
+                      onClick={() => {
+                        setMenuOpen(false);
+                        handleToggleComments();
+                      }}
+                      disabled={isTogglingComments}
+                      className="w-full flex items-center gap-3 px-4 py-2.5 text-base text-ink hover:bg-primary-50 transition disabled:opacity-50"
+                    >
+                      {commentsOff ? (
+                        <FaRegComment className="text-primary-600" size={13} />
+                      ) : (
+                        <FaCommentSlash className="text-primary-600" size={13} />
+                      )}
+                      <span className="font-medium">
+                        {commentsOff ? "Turn on commenting" : "Turn off commenting"}
+                      </span>
+                    </button>
                     <button
                       onClick={() => {
                         setShowDeleteModal(true);
@@ -1560,9 +1612,14 @@ const PostCard = ({
 
           <button
             onClick={() => setShowComments(!showComments)}
-            className="flex items-center gap-1.5 text-base text-ink-muted hover:text-primary-600 transition"
+            title={commentsOff ? "Comments are turned off" : undefined}
+            className={`flex items-center gap-1.5 text-base transition ${
+              commentsOff
+                ? "text-ink-muted/60 hover:text-ink-muted"
+                : "text-ink-muted hover:text-primary-600"
+            }`}
           >
-            <FaRegComment size={15} />
+            {commentsOff ? <FaCommentSlash size={15} /> : <FaRegComment size={15} />}
             <span>{commentCount}</span>
           </button>
 
@@ -1697,6 +1754,7 @@ const PostCard = ({
               postId={postId}
               initialCommentCount={commentCount}
               onCommentCountChange={setCommentCount}
+              commentsDisabled={commentsOff}
             />
           </div>
         )}

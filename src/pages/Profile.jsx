@@ -752,6 +752,7 @@ const Profile = () => {
               video={pinnedPost.video}
               likes={pinnedPost.likesCount}
               commentsCount={pinnedPost.commentsCount}
+              commentsDisabled={pinnedPost.commentsDisabled}
               reposts={pinnedPost.repostsCount}
               isLiked={pinnedPost.isLiked}
               isBookmarked={pinnedPost.isBookmarked}
@@ -805,6 +806,7 @@ const Profile = () => {
             video={post.video}
             likes={post.likesCount}
             commentsCount={post.commentsCount}
+            commentsDisabled={post.commentsDisabled}
             reposts={post.repostsCount}
             isLiked={post.isLiked}
             isBookmarked={post.isBookmarked}

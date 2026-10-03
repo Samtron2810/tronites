@@ -18,6 +18,7 @@ import {
   FaRetweet,
   FaQuoteRight,
   FaThumbtack,
+  FaCommentSlash,
 } from "react-icons/fa";
 import { FiFlag, FiUsers, FiLock, FiZap, FiExternalLink, FiAlertTriangle } from "react-icons/fi";
 import toast from "react-hot-toast";
@@ -96,6 +97,11 @@ const PostDetailModal = ({
   postVideo,
   commentCount,
   onCommentCountChange,
+  // Owner's commenting switch (true = new comments blocked). onToggleComments
+  // is only wired by callers that can persist it; the menu item is hidden otherwise.
+  commentsDisabled = false,
+  onToggleComments,
+  isTogglingComments = false,
   postId,
   // Like
   liked,
@@ -614,6 +620,25 @@ const PostDetailModal = ({
                             <span className="font-medium">Edit post</span>
                           </button>
                         )}
+                        {onToggleComments && (
+                          <button
+                            onClick={() => {
+                              setMenuOpen(false);
+                              onToggleComments();
+                            }}
+                            disabled={isTogglingComments}
+                            className="w-full flex items-center gap-3 px-4 py-2.5 text-base text-ink hover:bg-primary-50 transition disabled:opacity-50"
+                          >
+                            {commentsDisabled ? (
+                              <FaRegComment className="text-primary-600" size={13} />
+                            ) : (
+                              <FaCommentSlash className="text-primary-600" size={13} />
+                            )}
+                            <span className="font-medium">
+                              {commentsDisabled ? "Turn on commenting" : "Turn off commenting"}
+                            </span>
+                          </button>
+                        )}
                         <button
                           onClick={() => {
                             setMenuOpen(false);
@@ -886,8 +911,11 @@ const PostDetailModal = ({
             )}
           </div>
 
-          <div className="flex items-center gap-1.5 text-base text-ink-muted">
-            <FaRegComment size={15} />
+          <div
+            className={`flex items-center gap-1.5 text-base ${commentsDisabled ? "text-ink-muted/60" : "text-ink-muted"}`}
+            title={commentsDisabled ? "Comments are turned off" : undefined}
+          >
+            {commentsDisabled ? <FaCommentSlash size={15} /> : <FaRegComment size={15} />}
             <span>{commentCount}</span>
           </div>
 
@@ -1004,6 +1032,7 @@ const PostDetailModal = ({
             postId={postId}
             initialCommentCount={commentCount}
             onCommentCountChange={onCommentCountChange}
+            commentsDisabled={commentsDisabled}
             highlightCommentId={highlightCommentId}
             highlightParentId={highlightParentId}
           />

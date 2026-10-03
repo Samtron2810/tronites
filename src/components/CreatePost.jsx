@@ -20,7 +20,7 @@ const CreatePost = ({ fetchPosts }) => {
   //
   // scheduledFor is passed directly in the POST /posts body so the backend
   // creates the post in a hidden state from the start — no two-step approach.
-  const handleSubmit = async ({ text, images, altTexts = [], privacy, scheduledFor }) => {
+  const handleSubmit = async ({ text, images, altTexts = [], privacy, scheduledFor, commentsDisabled = false }) => {
     const isScheduled = !!scheduledFor;
     const toastId = toast.loading(isScheduled ? "Scheduling…" : "Posting…");
     try {
@@ -46,12 +46,14 @@ const CreatePost = ({ fetchPosts }) => {
           text,
           images: imagePayload,
           privacy,
+          commentsDisabled,
           ...(scheduledForISO ? { scheduledFor: scheduledForISO } : {}),
         });
       } else {
         await api.post("/posts", {
           text,
           privacy,
+          commentsDisabled,
           ...(scheduledForISO ? { scheduledFor: scheduledForISO } : {}),
         });
       }
@@ -96,7 +98,7 @@ const CreatePost = ({ fetchPosts }) => {
   // modal has already closed by the time this runs; upload + eager
   // transform (server-side trim to 30s) happen here with toast progress,
   // so the user is free to browse/post again while it finishes.
-  const handleSubmitVideo = async ({ text, videoFile, privacy, scheduledFor }) => {
+  const handleSubmitVideo = async ({ text, videoFile, privacy, scheduledFor, commentsDisabled = false }) => {
     const isScheduled = !!scheduledFor;
     const toastId = toast.loading("Uploading video… 0%");
     try {
@@ -118,6 +120,7 @@ const CreatePost = ({ fetchPosts }) => {
         text,
         video,
         privacy,
+        commentsDisabled,
         ...(scheduledForISO ? { scheduledFor: scheduledForISO } : {}),
       });
 

@@ -45,6 +45,7 @@ const toPostCardProps = (post) => ({
   video: post.video,
   likes: post.likesCount,
   commentsCount: post.commentsCount,
+  commentsDisabled: post.commentsDisabled,
   isLiked: false,
   isBookmarked: false,
   edited: post.edited,
