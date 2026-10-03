@@ -133,12 +133,14 @@ const PromotionRow = ({ promo, onCancelClick, onExtend }) => {
       </div>
 
       <div className="flex gap-2 pt-1 relative">
-        <button
-          onClick={() => onCancelClick(promo)}
-          className="flex-1 py-2 rounded-xl border border-red-200 text-red-600 text-xs font-semibold hover:bg-red-50 transition"
-        >
-          {promo.status === "pending" ? "Cancel pending" : "End promotion"}
-        </button>
+        {promo.status !== "expired" && (
+          <button
+            onClick={() => onCancelClick(promo)}
+            className="flex-1 py-2 rounded-xl border border-red-200 text-red-600 text-xs font-semibold hover:bg-red-50 transition"
+          >
+            {promo.status === "pending" ? "Cancel pending" : "End promotion"}
+          </button>
+        )}
         {promo.status === "active" && (
           <>
             <button
