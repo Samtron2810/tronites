@@ -650,7 +650,6 @@ const PostCard = ({
     try {
       await api.put(`/posts/${postId}/comments`, { commentsDisabled: next });
       setCommentsOff(next);
-      setSyncedCommentsDisabled(next);
       if (next) setShowComments(false);
       toast.success(next ? "Commenting turned off." : "Commenting turned on.");
     } catch (e) {
@@ -665,7 +664,6 @@ const PostCard = ({
     try {
       const res = await api.put(`/posts/${postId}/privacy`, { privacy: next });
       setPrivacy(next);
-      setSyncedPrivacy(next);
       if (next !== "public") {
         // Backend dropped every repost/quote edge when leaving public.
         setRepostCount(res.data.repostsCount ?? 0);
