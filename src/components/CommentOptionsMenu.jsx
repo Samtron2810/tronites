@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { FaEllipsisV, FaTrash, FaRegCopy } from "react-icons/fa";
 import { FiFlag } from "react-icons/fi";
 import toast from "react-hot-toast";
+import FloatingMenu from "./FloatingMenu";
 
 // Same open/outside-click/dropdown-style pattern as PostCard's own post
 // options menu (FaEllipsisV trigger, absolute-positioned card).
@@ -55,10 +56,7 @@ const CommentOptionsMenu = ({ isOwner, text, onReport, onDelete }) => {
       </button>
 
       {open && (
-        <div
-          ref={menuRef}
-          className="absolute right-0 mt-1 w-36 bg-card rounded-lg shadow-lg border border-stroke z-40 py-1"
-        >
+        <FloatingMenu open anchorRef={triggerRef} menuRef={menuRef} align="right" className="w-36 rounded-lg py-1">
           <button
             onClick={handleCopy}
             className="w-full flex items-center gap-2.5 px-3.5 py-2 text-sm text-ink-sub hover:bg-surface transition"
@@ -90,7 +88,7 @@ const CommentOptionsMenu = ({ isOwner, text, onReport, onDelete }) => {
               <span className="font-medium">Report</span>
             </button>
           )}
-        </div>
+        </FloatingMenu>
       )}
     </div>
   );

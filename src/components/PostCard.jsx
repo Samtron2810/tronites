@@ -65,6 +65,7 @@ import AdminCancelPromotionModal from "./AdminCancelPromotionModal";
 import { hasPermission } from "../constants/permissions";
 import TipModal from "./TipModal";
 import SubscriberOnlyGate from "./SubscriberOnlyGate";
+import FloatingMenu from "./FloatingMenu";
 
 // Post age at render time — wrapped behind a helper (same reasoning as
 // cooldownRemainingMs in utils/cooldown.js) so the render path doesn't
@@ -1258,11 +1259,7 @@ const PostCard = ({
             </button>
 
             {menuOpen && (
-              <div
-                ref={menuRef}
-                onClick={(e) => e.stopPropagation()}
-                className="absolute right-0 mt-2 w-44 bg-card rounded-lg shadow-lg border border-stroke z-40 py-1"
-              >
+              <FloatingMenu open anchorRef={triggerRef} menuRef={menuRef} align="right" offset={8} className="w-44 rounded-lg py-1">
                 <button
                   onClick={handleCopyPost}
                   className="w-full flex items-center gap-3 px-4 py-2.5 text-base text-ink-sub hover:bg-surface transition"
@@ -1406,7 +1403,7 @@ const PostCard = ({
                     </button>
                   </>
                 )}
-              </div>
+              </FloatingMenu>
             )}
           </div>
         </div>
@@ -1733,11 +1730,7 @@ const PostCard = ({
             </button>
 
             {repostMenuOpen && (
-              <div
-                ref={repostMenuRef}
-                onClick={(e) => e.stopPropagation()}
-                className="absolute left-0 bottom-full mb-2 w-40 bg-card rounded-lg shadow-lg border border-stroke z-40 py-1"
-              >
+              <FloatingMenu open anchorRef={repostTriggerRef} menuRef={repostMenuRef} align="left" offset={8} className="w-40 rounded-lg py-1">
                 <button
                   onClick={handleRepost}
                   disabled={isReposting}
@@ -1763,7 +1756,7 @@ const PostCard = ({
                     <span className="font-medium">Quote</span>
                   </button>
                 )}
-              </div>
+              </FloatingMenu>
             )}
           </div>
 

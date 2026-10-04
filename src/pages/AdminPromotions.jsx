@@ -10,6 +10,7 @@ import toast from "react-hot-toast";
 import { useAuth } from "../context/useAuth";
 import { hasPermission } from "../constants/permissions";
 import AdminCancelPromotionModal from "../components/AdminCancelPromotionModal";
+import FloatingMenu from "../components/FloatingMenu";
 
 const STATUS_TABS = [
   { value: "", label: "All" },
@@ -39,11 +40,11 @@ const StatusBadge = ({ status }) => {
   );
 };
 
-const ExtendPopover = ({ onExtend, onClose }) => {
+const ExtendPopover = ({ onExtend, onClose, anchorRef }) => {
   const [days, setDays] = useState(7);
   const [submitting, setSubmitting] = useState(false);
   return (
-    <div className="absolute right-0 top-full mt-2 z-20 bg-card border border-stroke rounded-xl shadow-xl p-3 w-56" onClick={(e) => e.stopPropagation()}>
+    <FloatingMenu open anchorRef={anchorRef} onClose={onClose} align="right" className="rounded-xl shadow-xl p-3 w-56">
       <p className="text-xs font-semibold text-ink mb-2">Extend by</p>
       <div className="flex items-center gap-2 mb-3">
         <input
@@ -72,7 +73,7 @@ const ExtendPopover = ({ onExtend, onClose }) => {
           {submitting ? "…" : "Extend"}
         </button>
       </div>
-    </div>
+    </FloatingMenu>
   );
 };
 
@@ -81,6 +82,7 @@ const PromotionRow = ({ promo, onCancelClick, onExtend }) => {
   const expiry = promo.promotedUntil ? new Date(promo.promotedUntil) : null;
   const tierCls = TIER_COLORS[promo.promotionTier] || "";
   const [showExtend, setShowExtend] = useState(false);
+  const extendBtnRef = useRef(null);
 
   return (
     <div className="bg-card border border-stroke rounded-2xl p-4 space-y-3">
@@ -144,6 +146,7 @@ const PromotionRow = ({ promo, onCancelClick, onExtend }) => {
         {promo.status === "active" && (
           <>
             <button
+              ref={extendBtnRef}
               onClick={() => setShowExtend((v) => !v)}
               className="flex-1 py-2 rounded-xl bg-primary-600 hover:bg-primary-700 text-white text-xs font-semibold transition"
             >
@@ -151,6 +154,7 @@ const PromotionRow = ({ promo, onCancelClick, onExtend }) => {
             </button>
             {showExtend && (
               <ExtendPopover
+                anchorRef={extendBtnRef}
                 onClose={() => setShowExtend(false)}
                 onExtend={async (days) => {
                   await onExtend(promo._id, days);

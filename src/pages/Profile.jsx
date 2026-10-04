@@ -24,6 +24,7 @@ import {
 } from "react-icons/fi";
 import { FaHeart, FaStar, FaIdCard } from "react-icons/fa";
 import BlockUserModal from "../components/BlockUserModal";
+import FloatingMenu from "../components/FloatingMenu";
 import defaultAvatar from "../assets/defaultAvatar";
 import { resizedImageUrl, IMAGE_SIZES } from "../utils/cloudinaryImage";
 import ReportModal from "../components/ReportModal";
@@ -77,6 +78,7 @@ const Profile = () => {
   const [iBlockedThem, setIBlockedThem] = useState(false);
   const [theyBlockedMe, setTheyBlockedMe] = useState(false);
   const [showOptionsMenu, setShowOptionsMenu] = useState(false);
+  const optionsBtnRef = useRef(null);
   const [showBlockModal, setShowBlockModal] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
@@ -481,6 +483,7 @@ const Profile = () => {
 
                 {/* More options — dropdown for monetization actions (tip/sub) and moderation */}
                 <button
+                  ref={optionsBtnRef}
                   onClick={() => setShowOptionsMenu((v) => !v)}
                   className="p-2 rounded-xl border border-stroke text-ink-muted hover:text-ink hover:bg-surface transition"
                   aria-label="More options"
@@ -489,12 +492,13 @@ const Profile = () => {
                 </button>
 
                 {showOptionsMenu && (
-                  <>
-                    <div
-                      className="fixed inset-0 z-10"
-                      onClick={() => setShowOptionsMenu(false)}
-                    />
-                    <div className="absolute top-full right-0 mt-1 w-44 bg-card border border-stroke rounded-xl shadow-lg z-20 overflow-hidden">
+                  <FloatingMenu
+                    open
+                    anchorRef={optionsBtnRef}
+                    onClose={() => setShowOptionsMenu(false)}
+                    align="right"
+                    className="w-44 rounded-xl overflow-hidden"
+                  >
                       {/* Monetization options for creator profiles */}
                       {isCreator(profile) && (
                         <>
@@ -555,8 +559,7 @@ const Profile = () => {
                         <FiSlash size={14} />
                         {iBlockedThem ? "Unblock user" : "Block user"}
                       </button>
-                    </div>
-                  </>
+                  </FloatingMenu>
                 )}
               </div>
             )}

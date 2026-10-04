@@ -23,6 +23,7 @@ import {
   FiEyeOff,
   FiFileText,
 } from "react-icons/fi";
+import FloatingMenu from "../components/FloatingMenu";
 
 const ROLE_TABS = [
   { value: "", label: "All" },
@@ -56,18 +57,6 @@ const AccountActionsMenu = ({
   const menuRef = useRef(null);
   const [menuOpen, setMenuOpen] = useState(false);
 
-  // Close the actions menu on outside click (PostCard's pattern).
-  useEffect(() => {
-    if (!menuOpen) return;
-    const handleClickOutside = (event) => {
-      if (menuRef.current && !menuRef.current.contains(event.target)) {
-        setMenuOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [menuOpen]);
-
   // Close the menu when the viewport crosses the md breakpoint. The tools
   // cluster renders twice (md+ row and the small-screen expanded block),
   // each mount with its OWN open state — when a DevTools responsive drag,
@@ -82,8 +71,9 @@ const AccountActionsMenu = ({
   }, []);
 
   return (
-    <div className="relative" ref={menuRef}>
+    <div className="relative">
       <button
+        ref={menuRef}
         onClick={() => setMenuOpen((o) => !o)}
         className="p-1.5 rounded-lg text-ink-muted hover:text-ink hover:bg-surface transition"
         title="Account actions"
@@ -97,7 +87,7 @@ const AccountActionsMenu = ({
           row's left edge and widen the page, which is what made every fixed
           overlay on it look shifted/overflowing. */}
       {menuOpen && (
-        <div className="absolute right-0 mt-2 w-52 max-w-[calc(100vw-2.5rem)] bg-card rounded-lg shadow-lg border border-stroke z-40 py-1">
+        <FloatingMenu open anchorRef={menuRef} onClose={() => setMenuOpen(false)} align="right" className="w-52 max-w-[calc(100vw-2.5rem)] rounded-lg py-1">
           {/* Phase 7 — Moderator notes + one-screen case history. */}
           <button
             onClick={() => {
@@ -205,7 +195,7 @@ const AccountActionsMenu = ({
                 )}
               </>
             ))}
-        </div>
+        </FloatingMenu>
       )}
     </div>
   );
@@ -930,10 +920,7 @@ Enter a reason (optional):`,
           </button>
 
           {roleMenuOpen && (
-            <div
-              ref={roleMenuRef}
-              className="absolute left-0 top-full mt-1 w-44 max-w-[calc(100vw-2.5rem)] bg-card rounded-xl shadow-lg border border-stroke z-40 py-1"
-            >
+            <FloatingMenu open anchorRef={roleTriggerRef} menuRef={roleMenuRef} align="left" className="w-44 max-w-[calc(100vw-2.5rem)] rounded-xl py-1">
               {ROLE_TABS.map((tab) => (
                 <button
                   key={tab.value}
@@ -951,7 +938,7 @@ Enter a reason (optional):`,
                   {roleFilter === tab.value && <FiCheck size={15} />}
                 </button>
               ))}
-            </div>
+            </FloatingMenu>
           )}
         </div>
 

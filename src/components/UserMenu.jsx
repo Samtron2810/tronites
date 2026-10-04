@@ -16,6 +16,7 @@ import defaultAvatar from "../assets/defaultAvatar";
 import { resizedImageUrl, IMAGE_SIZES } from "../utils/cloudinaryImage";
 import { useTheme } from "../context/useTheme";
 import { hasPermission } from "../constants/permissions";
+import FloatingMenu from "./FloatingMenu";
 
 const UserMenu = ({ user, onLogoutClick }) => {
   const { theme, toggleTheme } = useTheme();
@@ -169,10 +170,7 @@ const UserMenu = ({ user, onLogoutClick }) => {
 
       {/* Dropdown Menu */}
       {isOpen && (
-        <div
-          ref={menuRef}
-          className="absolute right-0 mt-2 w-56 bg-card rounded-lg shadow-lg border border-stroke z-40 py-1"
-        >
+        <FloatingMenu open anchorRef={triggerRef} menuRef={menuRef} align="right" offset={8} className="w-56 rounded-lg py-1">
           {menuItems.map((item, index) => {
             const Icon = item.icon;
             const isLastItem = index === menuItems.length - 1;
@@ -213,7 +211,7 @@ const UserMenu = ({ user, onLogoutClick }) => {
               </div>
             );
           })}
-        </div>
+        </FloatingMenu>
       )}
     </div>
   );

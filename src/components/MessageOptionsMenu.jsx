@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { FaEllipsisV, FaTrash } from "react-icons/fa";
 import { FiFlag } from "react-icons/fi";
+import FloatingMenu from "./FloatingMenu";
 
 // Message-level options menu for the chat modal. Report and Delete were
 // previously two bare icon buttons sitting beside every message bubble;
@@ -48,10 +49,7 @@ const MessageOptionsMenu = ({
       </button>
 
       {open && (
-        <div
-          ref={menuRef}
-          className={`absolute ${anchor === "left" ? "left-0" : "right-0"} mt-1 w-36 bg-card rounded-lg shadow-lg border border-stroke z-40 py-1`}
-        >
+        <FloatingMenu open anchorRef={triggerRef} menuRef={menuRef} align={anchor === "left" ? "left" : "right"} className="w-36 rounded-lg py-1">
           {isMine ? (
             <button
               onClick={() => {
@@ -75,7 +73,7 @@ const MessageOptionsMenu = ({
               <span className="font-medium">Report</span>
             </button>
           )}
-        </div>
+        </FloatingMenu>
       )}
     </div>
   );

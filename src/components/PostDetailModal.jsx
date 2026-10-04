@@ -39,6 +39,7 @@ import useBackButtonClose from "../hooks/useBackButtonClose";
 import { canPromote, getPinnedLimit } from "../utils/tierLimits";
 import { hasPermission } from "../constants/permissions";
 import ModalPortal from "./ModalPortal";
+import FloatingMenu from "./FloatingMenu";
 
 // Mirrors PostCard's own CTA_LABELS — promoted/campaign posts render a
 // CTA button here too (see the "CTA button" section below), not just
@@ -551,10 +552,7 @@ const PostDetailModal = ({
                 </button>
 
                 {menuOpen && (
-                  <div
-                    ref={menuRef}
-                    className="absolute right-0 mt-2 w-44 bg-card rounded-lg shadow-lg border border-stroke z-40 py-1"
-                  >
+                  <FloatingMenu open anchorRef={triggerRef} menuRef={menuRef} align="right" offset={8} className="w-44 rounded-lg py-1">
                     <button
                       onClick={() => {
                         setMenuOpen(false);
@@ -704,7 +702,7 @@ const PostDetailModal = ({
                         </button>
                       </>
                     )}
-                  </div>
+                  </FloatingMenu>
                 )}
               </div>
               <button
@@ -963,10 +961,7 @@ const PostDetailModal = ({
               </button>
 
               {repostMenuOpen && (
-                <div
-                  ref={repostMenuRef}
-                  className="absolute left-0 bottom-full mb-2 w-40 bg-card rounded-lg shadow-lg border border-stroke z-40 py-1"
-                >
+                <FloatingMenu open anchorRef={repostTriggerRef} menuRef={repostMenuRef} align="left" offset={8} className="w-40 rounded-lg py-1">
                   <button
                     onClick={() => {
                       setRepostMenuOpen(false);
@@ -993,7 +988,7 @@ const PostDetailModal = ({
                     <FaQuoteRight className="text-ink-muted" size={13} />
                     <span className="font-medium">Quote</span>
                   </button>
-                </div>
+                </FloatingMenu>
               )}
             </div>
           )}

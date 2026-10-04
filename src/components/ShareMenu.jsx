@@ -8,6 +8,7 @@ import {
   FaEnvelope,
 } from "react-icons/fa6";
 import toast from "react-hot-toast";
+import FloatingMenu from "./FloatingMenu";
 
 // Same open/outside-click/dropdown-style pattern as CommentOptionsMenu /
 // PostCard's options menu. On devices with the native OS share sheet
@@ -105,10 +106,7 @@ const ShareMenu = ({ url, title, text, className = "" }) => {
       </button>
 
       {open && !canNativeShare && (
-        <div
-          ref={menuRef}
-          className="absolute right-0 mt-1 w-44 bg-card rounded-lg shadow-lg border border-stroke z-40 py-1"
-        >
+        <FloatingMenu open anchorRef={triggerRef} menuRef={menuRef} align="right" className="w-44 rounded-lg py-1">
           <button
             onClick={handleCopy}
             className="w-full flex items-center gap-2 px-3 py-2 text-xs text-ink hover:bg-surface transition text-left"
@@ -130,7 +128,7 @@ const ShareMenu = ({ url, title, text, className = "" }) => {
               {label}
             </a>
           ))}
-        </div>
+        </FloatingMenu>
       )}
     </div>
   );

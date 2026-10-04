@@ -26,6 +26,7 @@ import {
 import { HiOutlineSparkles } from "react-icons/hi2";
 import defaultAvatar from "../assets/defaultAvatar";
 import { resizedImageUrl, IMAGE_SIZES } from "../utils/cloudinaryImage";
+import FloatingMenu from "../components/FloatingMenu";
 
 const EMPTY_FILTERS = {
   from: "",
@@ -849,10 +850,7 @@ const Explore = () => {
             </button>
 
             {searchDropdownOpen && (
-              <div
-                ref={searchMenuRef}
-                className="absolute left-0 right-0 top-full mt-1 bg-card rounded-xl shadow-lg border border-stroke z-40 py-1"
-              >
+              <FloatingMenu open anchorRef={searchTriggerRef} menuRef={searchMenuRef} matchWidth align="left" className="rounded-xl py-1">
                 {SEARCH_TYPE_OPTIONS.map((option) => (
                   <button
                     key={option.value}
@@ -867,7 +865,7 @@ const Explore = () => {
                     {searchType === option.value && <FiCheck size={15} />}
                   </button>
                 ))}
-              </div>
+              </FloatingMenu>
             )}
           </div>
 
