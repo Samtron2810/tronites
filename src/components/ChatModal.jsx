@@ -9,6 +9,7 @@ import {
   FiSearch,
   FiCornerUpLeft,
 } from "react-icons/fi";
+import { Link, useNavigate } from "react-router-dom";
 import api from "../services/api";
 import ChatMediaViewer from "./ChatMediaViewer";
 import VoiceNotePlayer from "./VoiceNotePlayer";
@@ -118,6 +119,7 @@ const ChatModal = ({
   // Mobile back button closes the conversation modal; UI closes consume
   // the pushed history entry so history stays balanced (see the hook).
   useBackButtonClose(isOpen, onClose);
+  const navigate = useNavigate();
   const [now, setNow] = useState(() => Date.now());
   // Message currently being reported via ReportModal (null when closed).
   // Only other users' bubbles expose the flag trigger.
@@ -373,6 +375,26 @@ const ChatModal = ({
 
   if (!isOpen || !selectedChat) return null;
   const activeUser = selectedChat.otherUser;
+  // Close the modal first so useBackButtonClose can consume its synthetic
+  // history entry (deferred history.back()), THEN navigate — otherwise that
+  // back() would pop the profile route we just pushed. Modified clicks
+  // (new tab) fall through to the plain href.
+  const goToProfile = (e) => {
+    if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    const id = activeUser?._id;
+    if (!id) return;
+    e.preventDefault();
+    let done = false;
+    const go = () => {
+      if (done) return;
+      done = true;
+      window.removeEventListener("popstate", go);
+      navigate(`/profile/${id}`);
+    };
+    window.addEventListener("popstate", go);
+    setTimeout(go, 300);
+    onClose();
+  };
   const activeIsOnline = activeUser
     ? onlineUsers.includes(activeUser._id)
     : false;
@@ -416,9 +438,13 @@ const ChatModal = ({
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1 min-w-0">
               <span className="flex items-center gap-1 min-w-0">
-                <span className="text-base font-semibold text-ink truncate">
+                <Link
+                  to={`/profile/${activeUser?._id}`}
+                  onClick={goToProfile}
+                  className="text-base font-semibold text-ink truncate hover:text-primary-600 hover:underline underline-offset-2 transition-colors"
+                >
                   {activeUser?.name}
-                </span>
+                </Link>
                 <VerifiedBadge verifications={activeUser?.verifications} size="sm" className="shrink-0" />
               </span>
               {activeUser?.username && (

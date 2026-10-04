@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from "react";
-import { Navigate } from "react-router-dom";
+import { Navigate, Link } from "react-router-dom";
 import toast from "react-hot-toast";
 import MainLayout from "../layouts/MainLayout";
 import api from "../services/api";
@@ -363,7 +363,12 @@ const RoleRow = ({
         />
         <div className="min-w-0">
           <p className="text-base font-semibold text-ink truncate flex items-center gap-1.5">
-            {target.name}
+            <Link
+              to={`/profile/${target._id}`}
+              className="truncate hover:text-primary-700 hover:underline underline-offset-2 transition-colors"
+            >
+              {target.name}
+            </Link>
             {target.isVerified && (
               <VerifiedBadge verifications={target.verifications} size="sm" />
             )}
@@ -371,7 +376,14 @@ const RoleRow = ({
               <span className="text-sm text-ink-muted font-normal">(you)</span>
             )}
           </p>
-          <p className="text-sm text-ink-muted truncate">{target.email}</p>
+          <p className="text-sm text-ink-muted truncate">
+            <Link
+              to={`/profile/${target._id}`}
+              className="hover:text-primary-700 hover:underline underline-offset-2 transition-colors"
+            >
+              {target.email}
+            </Link>
+          </p>
         </div>
       </div>
 
