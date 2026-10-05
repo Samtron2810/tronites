@@ -878,8 +878,8 @@ const PostCard = ({
           }
         }
       },
-      // Pauses once less than a quarter of the video is visible.
-      { threshold: 0.25 },
+      // Pauses once less than 40% of the video is visible.
+      { threshold: 0.4 },
     );
     observer.observe(videoEl);
     return () => observer.disconnect();
