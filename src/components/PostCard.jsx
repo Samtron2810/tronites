@@ -870,11 +870,18 @@ const PostCard = ({
     const videoEl = videoRef.current;
     if (!videoEl || !postVideo?.url) return;
 
+    let visible = true;
     const observer = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
-          if (!entry.isIntersecting && !videoEl.paused) {
-            videoEl.pause();
+          // isIntersecting stays true for ANY overlap, so compare the ratio
+          // against the threshold or the 40% cut-off never actually triggers.
+          visible = entry.isIntersecting && entry.intersectionRatio >= 0.4;
+          if (!visible) {
+            if (!videoEl.paused) videoEl.pause();
+            // The video keeps keyboard focus after the user clicked it, so
+            // Space would still toggle playback off-screen. Drop focus.
+            if (document.activeElement === videoEl) videoEl.blur();
           }
         }
       },
@@ -882,7 +889,18 @@ const PostCard = ({
       { threshold: 0.4 },
     );
     observer.observe(videoEl);
-    return () => observer.disconnect();
+
+    // Safety net for anything else that starts playback off-screen
+    // (media keys, stray focus): pause it straight away.
+    const onPlay = () => {
+      if (!visible) videoEl.pause();
+    };
+    videoEl.addEventListener("play", onPlay);
+
+    return () => {
+      observer.disconnect();
+      videoEl.removeEventListener("play", onPlay);
+    };
   }, [postVideo?.url]);
 
   // Impression tracking — fires once per mount for promoted posts when
