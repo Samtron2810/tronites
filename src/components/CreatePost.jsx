@@ -7,7 +7,7 @@ import { resizedImageUrl, IMAGE_SIZES } from "../utils/cloudinaryImage";
 import api from "../services/api";
 import compressImage from "../utils/compressImage";
 import { uploadToCloudinary } from "../services/cloudinary";
-import { uploadVideoToCloudinary, MAX_VIDEO_DURATION_SECONDS } from "../services/videoUpload";
+import { uploadVideoToCloudinary, MAX_VIDEO_DURATION_SECONDS, formatVideoLimit } from "../services/videoUpload";
 import { retryWithBackoff } from "../utils/retry";
 
 const CreatePost = ({ fetchPosts }) => {
@@ -97,7 +97,7 @@ const CreatePost = ({ fetchPosts }) => {
 
   // Background video post submission — mirrors handleSubmit above. The
   // modal has already closed by the time this runs; upload + eager
-  // transform (server-side trim to 30s) happen here with toast progress,
+  // transform (server-side trim to the max duration) happen here with toast progress,
   // so the user is free to browse/post again while it finishes.
   const handleSubmitVideo = async ({ text, videoFile, privacy, scheduledFor, commentsDisabled = false }) => {
     const isScheduled = !!scheduledFor;
@@ -172,7 +172,7 @@ const CreatePost = ({ fetchPosts }) => {
         // we know, after the fact, whether the eager transform actually
         // cut anything.
         toast.success(
-          `Video posted — trimmed to the first ${MAX_VIDEO_DURATION_SECONDS}s`,
+          `Video posted — trimmed to the first ${formatVideoLimit()}`,
           { id: toastId, icon: "✂️", duration: 4000 },
         );
         api.invalidate("/posts/search");

@@ -16,7 +16,7 @@ import useMentionAutocomplete from "../hooks/useMentionAutocomplete";
 import MentionSuggestions from "./MentionSuggestions";
 import ConfirmDiscardModal from "./ConfirmDiscardModal";
 import useBackButtonClose from "../hooks/useBackButtonClose";
-import { validateVideoFile } from "../services/videoUpload";
+import { validateVideoFile, formatVideoLimit } from "../services/videoUpload";
 import { useAuth } from "../context/useAuth";
 import { getCharLimit, canSchedule, canPostSubscribersOnly } from "../utils/tierLimits";
 import ModalPortal from "./ModalPortal";
@@ -358,10 +358,10 @@ const CreatePostModal = ({ closeModal, onSubmit, onSubmitVideo }) => {
             </div>
           )}
 
-          {/* an instruction that displays when a video is selected, saying a video of more than 30 seconds will be trimmed to 30 seconds */}
+          {/* an instruction that displays when a video is selected, saying a video longer than the max duration (1 minute) will be trimmed to it */}
           {videoFile && (
             <p className="text-sm text-ink-muted">
-              Note: Videos longer than 30 seconds will be trimmed to 30 seconds.
+              Note: Videos longer than {formatVideoLimit()} will be trimmed to {formatVideoLimit()}.
             </p>
           )}
           {/* Video preview — local blob when the browser can decode it;

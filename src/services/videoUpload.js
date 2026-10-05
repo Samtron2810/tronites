@@ -13,7 +13,13 @@ import api from "./api";
 import { retryWithBackoff, isTransientError } from "../utils/retry";
 
 export const MAX_VIDEO_SIZE_BYTES = 100 * 1024 * 1024; // 100MB
-export const MAX_VIDEO_DURATION_SECONDS = 30;
+export const MAX_VIDEO_DURATION_SECONDS = 60; // must match MAX_VIDEO_DURATION_SECONDS in postController.js
+
+// 60 -> "1 minute", 90 -> "90 seconds" (used in UI copy so it follows the constant)
+export const formatVideoLimit = (secs = MAX_VIDEO_DURATION_SECONDS) =>
+  secs % 60 === 0
+    ? `${secs / 60} minute${secs === 60 ? "" : "s"}`
+    : `${secs} seconds`;
 const ALLOWED_FORMATS = ["mp4", "mov", "webm", "avi", "mkv"];
 
 // Returns an error message string if the file is unacceptable, or null if
@@ -23,7 +29,7 @@ const ALLOWED_FORMATS = ["mp4", "mov", "webm", "avi", "mkv"];
 // probing reject valid files inconsistently. Cloudinary decodes and
 // transcodes server-side regardless of source codec, so we upload
 // first and let its eager transform (f_mp4,vc_h264) be the real
-// gatekeeper — trimming to 30s and normalizing format in the same step.
+// gatekeeper — trimming to the max duration and normalizing format in the same step.
 export const validateVideoFile = (file) => {
   if (!file) return "No file selected";
 
