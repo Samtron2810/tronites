@@ -1,5 +1,5 @@
 import { lazy, Suspense } from "react";
-import { BrowserRouter, Routes, Route, useNavigate, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
 import { useEffect } from "react";
 import { useAuth } from "./context/useAuth";
 import Navbar from "./components/Navbar";
@@ -72,6 +72,18 @@ const RouteFallback = () => (
   </div>
 );
 
+// "/" is the marketing landing page — only for visitors with no session.
+// A logged-in user (including a cold start from the PWA's start_url "/")
+// goes straight to the feed. `user` is seeded synchronously from the cached
+// snapshot, so there is no flash of the landing page; users who haven't
+// picked a username are then routed on by ProtectedRoute.
+const RootRoute = () => {
+  const { user, loading } = useAuth();
+  if (loading) return null; // AppContent shows the splash while loading
+  if (user) return <Navigate to="/home" replace />;
+  return <Landing />;
+};
+
 const AppContent = () => {
   const { user, loading, registerNavigateToLogin } = useAuth();
   const navigate = useNavigate();
@@ -114,7 +126,7 @@ const AppContent = () => {
       <Suspense fallback={<RouteFallback />}>
         <Routes>
           {/* Public */}
-          <Route path="/" element={<Landing />} />
+          <Route path="/" element={<RootRoute />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Register />} />
           <Route path="/verify-otp" element={<VerifyOtp />} />
