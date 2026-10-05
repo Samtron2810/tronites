@@ -10,6 +10,7 @@
 // events, which drive the custom progress bar in CreatePostModal.
 
 import api from "./api";
+import { retryWithBackoff, isTransientError } from "../utils/retry";
 
 export const MAX_VIDEO_SIZE_BYTES = 100 * 1024 * 1024; // 100MB
 export const MAX_VIDEO_DURATION_SECONDS = 30;
@@ -42,155 +43,127 @@ export const validateVideoFile = (file) => {
   return null;
 };
 
-// Uploads the file to Cloudinary and resolves with the finished asset:
-// { publicId, url, durationSeconds }. `url` is the eager-transformed MP4
-// (trimmed to 30s, h264/mp4, auto quality) — ready to serve as-is.
+// Chunked + resumable upload core shared by the post and chat flows.
+// The file is sent in 6MB chunks (Cloudinary's X-Unique-Upload-Id /
+// Content-Range protocol), so a dropped connection only re-sends the
+// current chunk instead of the whole video. Every network step retries
+// with backoff and pauses while the device is offline.
 //
-// onProgress, if provided, is called with a 0–100 integer as bytes are
-// sent. Note the request doesn't resolve until Cloudinary has ALSO
-// finished the synchronous eager transformation, so 100% means "bytes
-// sent" — the caller shows its own "processing" state for the final
-// transformation stretch.
-export const uploadVideoToCloudinary = async ({ file, onProgress }) => {
-  // 1. Get the signed upload params from our backend.
-  const { data: config } = await api.post("/posts/signature/video");
-  const { signature, timestamp, apiKey, cloudName, folder, eager } = config;
+// onProgress(0-100) fires as bytes are confirmed; onStatus(msg|null) reports
+// "retrying…" / "waiting for connection…" so the caller can keep its toast
+// honest. The final chunk's response carries the synchronous eager result.
+const CHUNK_SIZE = 6 * 1024 * 1024; // Cloudinary minimum chunk is 5MB
+const CHUNK_TIMEOUT_MS = 5 * 60 * 1000; // last chunk also runs the eager transform
+const RETRY_BUDGET_MS = 40 * 60 * 1000; // signature stays valid ~1h
 
-  // 2. Upload directly to Cloudinary. The FormData keys must exactly
-  // match the signed params (timestamp, folder, eager) — any extra
-  // signed-relevant param would fail Cloudinary's signature check.
-  const formData = new FormData();
-  formData.append("file", file);
-  formData.append("api_key", apiKey);
-  formData.append("timestamp", timestamp);
-  formData.append("folder", folder);
-  formData.append("eager", eager);
-  formData.append("signature", signature);
-
-  const response = await new Promise((resolve, reject) => {
+const sendChunk = ({ url, formData, uploadId, start, end, total, onBytes }) =>
+  new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
-    xhr.open(
-      "POST",
-      `https://api.cloudinary.com/v1_1/${cloudName}/video/upload`,
-    );
-
-    xhr.upload.onprogress = (event) => {
-      if (event.lengthComputable && onProgress) {
-        onProgress(Math.round((event.loaded / event.total) * 100));
-      }
+    xhr.open("POST", url);
+    xhr.timeout = CHUNK_TIMEOUT_MS;
+    if (total !== null) {
+      xhr.setRequestHeader("X-Unique-Upload-Id", uploadId);
+      xhr.setRequestHeader("Content-Range", `bytes ${start}-${end - 1}/${total}`);
+    }
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) onBytes(e.loaded);
     };
-
     xhr.onload = () => {
-      let body;
+      let body = null;
       try {
         body = JSON.parse(xhr.responseText);
       } catch {
-        reject(new Error("Unexpected response from Cloudinary"));
-        return;
+        /* handled below */
       }
-      if (xhr.status >= 200 && xhr.status < 300) {
-        resolve(body);
-      } else {
-        // Cloudinary error bodies carry a human-readable `error.message`.
-        reject(
-          new Error(body?.error?.message || "Video upload failed — try again"),
-        );
-      }
+      if (xhr.status >= 200 && xhr.status < 300 && body) return resolve(body);
+      const err = new Error(
+        body?.error?.message || "Video upload failed — try again",
+      );
+      err.status = xhr.status;
+      reject(err);
     };
     xhr.onerror = () =>
       reject(new Error("Network error during upload — check your connection"));
+    xhr.ontimeout = () => reject(new Error("Upload timed out"));
     xhr.onabort = () => reject(new Error("Upload cancelled"));
-
     xhr.send(formData);
   });
 
-  // 3. Extract the transformed asset. With synchronous eager the response
-  // contains an `eager` array whose [0] is the trimmed MP4; fall back to
-  // the raw secure_url if eager is somehow missing (still playable, just
-  // untrimmed).
-  const eagerUrl = response.eager?.[0]?.secure_url;
-  const url = eagerUrl || response.secure_url;
+const uploadVideoCore = async ({ file, signaturePath, onProgress, onStatus }) => {
+  const retryOpts = {
+    maxElapsedMs: RETRY_BUDGET_MS,
+    shouldRetry: isTransientError,
+    onRetry: () => onStatus?.("Connection issue — retrying…"),
+    onWaitingForNetwork: () => onStatus?.("Waiting for connection…"),
+  };
 
-  if (!response.public_id || !url) {
-    throw new Error("Upload succeeded but the response was incomplete");
+  // 1. Signed params from our backend (Render can cold-start, so a generous timeout).
+  const { data: config } = await retryWithBackoff(
+    () => api.post(signaturePath, undefined, { timeout: 60000 }),
+    retryOpts,
+  );
+  const { signature, timestamp, apiKey, cloudName, folder, eager } = config;
+  onStatus?.(null);
+
+  const url = `https://api.cloudinary.com/v1_1/${cloudName}/video/upload`;
+  const buildForm = (blob) => {
+    // Keys must exactly match the signed params (timestamp, folder, eager).
+    const fd = new FormData();
+    fd.append("file", blob, file.name);
+    fd.append("api_key", apiKey);
+    fd.append("timestamp", timestamp);
+    fd.append("folder", folder);
+    fd.append("eager", eager);
+    fd.append("signature", signature);
+    return fd;
+  };
+
+  const total = file.size;
+  const uploadId = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  const chunked = total > CHUNK_SIZE;
+  let response = null;
+  let confirmed = 0;
+
+  for (let start = 0; start < total; start += CHUNK_SIZE) {
+    const end = Math.min(start + CHUNK_SIZE, total);
+    const blob = chunked ? file.slice(start, end) : file;
+    response = await retryWithBackoff(
+      () =>
+        sendChunk({
+          url,
+          formData: buildForm(blob),
+          uploadId,
+          start,
+          end,
+          total: chunked ? total : null,
+          onBytes: (loaded) =>
+            onProgress?.(
+              Math.min(100, Math.round(((confirmed + loaded) / total) * 100)),
+            ),
+        }),
+      retryOpts,
+    );
+    confirmed = end;
+    onStatus?.(null);
   }
 
+  // 3. Extract the transformed asset (eager[0] = trimmed MP4; fall back to raw).
+  const eagerUrl = response?.eager?.[0]?.secure_url;
+  const assetUrl = eagerUrl || response?.secure_url;
+  if (!response?.public_id || !assetUrl) {
+    throw new Error("Upload succeeded but the response was incomplete");
+  }
   return {
     publicId: response.public_id,
-    url,
+    url: assetUrl,
     durationSeconds: response.duration ?? null,
   };
 };
 
-// Chat-video variant of the uploader above. Identical flow, but the signed
-// params come from POST /messages/signature/video (which signs a dedicated
-// `tronites_message_videos` folder) and the finished message is created
-// afterwards via POST /messages/:userId/video. The signature/user-ownership
-// far in the upload matches the post flow — everything message-specific
-// lives in the Chat page that calls this.
-export const uploadVideoMessageToCloudinary = async ({ file, onProgress }) => {
-  // 1. Get the signed upload params from our backend (dedicated folder).
-  const { data: config } = await api.post("/messages/signature/video");
-  const { signature, timestamp, apiKey, cloudName, folder, eager } = config;
+// Post videos → { publicId, url, durationSeconds }
+export const uploadVideoToCloudinary = ({ file, onProgress, onStatus }) =>
+  uploadVideoCore({ file, signaturePath: "/posts/signature/video", onProgress, onStatus });
 
-  // 2. Upload directly to Cloudinary. The FormData keys must exactly
-  // match the signed params (timestamp, folder, eager) — any extra
-  // signed-relevant param would fail Cloudinary's signature check.
-  const formData = new FormData();
-  formData.append("file", file);
-  formData.append("api_key", apiKey);
-  formData.append("timestamp", timestamp);
-  formData.append("folder", folder);
-  formData.append("eager", eager);
-  formData.append("signature", signature);
-
-  const response = await new Promise((resolve, reject) => {
-    const xhr = new XMLHttpRequest();
-    xhr.open(
-      "POST",
-      `https://api.cloudinary.com/v1_1/${cloudName}/video/upload`,
-    );
-
-    xhr.upload.onprogress = (event) => {
-      if (event.lengthComputable && onProgress) {
-        onProgress(Math.round((event.loaded / event.total) * 100));
-      }
-    };
-
-    xhr.onload = () => {
-      let body;
-      try {
-        body = JSON.parse(xhr.responseText);
-      } catch {
-        reject(new Error("Unexpected response from Cloudinary"));
-        return;
-      }
-      if (xhr.status >= 200 && xhr.status < 300) {
-        resolve(body);
-      } else {
-        reject(
-          new Error(body?.error?.message || "Video upload failed — try again"),
-        );
-      }
-    };
-    xhr.onerror = () =>
-      reject(new Error("Network error during upload — check your connection"));
-    xhr.onabort = () => reject(new Error("Upload cancelled"));
-
-    xhr.send(formData);
-  });
-
-  // 3. Extract the transformed asset — same eager fallback as posts above.
-  const eagerUrl = response.eager?.[0]?.secure_url;
-  const url = eagerUrl || response.secure_url;
-
-  if (!response.public_id || !url) {
-    throw new Error("Upload succeeded but the response was incomplete");
-  }
-
-  return {
-    publicId: response.public_id,
-    url,
-    durationSeconds: response.duration ?? null,
-  };
-};
+// Chat videos — same flow, dedicated signed folder.
+export const uploadVideoMessageToCloudinary = ({ file, onProgress, onStatus }) =>
+  uploadVideoCore({ file, signaturePath: "/messages/signature/video", onProgress, onStatus });

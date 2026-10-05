@@ -112,8 +112,15 @@ registerRoute(
 // a long-lived cache is safe and saves real bandwidth on repeat views —
 // this is what makes previously-seen images/video posters load instantly
 // offline instead of showing a broken-image icon.
+// Video/audio element requests are excluded: they use Range requests, and
+// replaying a cached full 200 response to a Range request breaks playback
+// (esp. Safari/iOS). The browser handles those natively.
 registerRoute(
-  ({ url }) => url.hostname === "res.cloudinary.com",
+  ({ url, request }) =>
+    url.hostname === "res.cloudinary.com" &&
+    request.destination !== "video" &&
+    request.destination !== "audio" &&
+    !request.headers.has("range"),
   new CacheFirst({
     cacheName: "tronites-media-cache",
     plugins: [

@@ -8,6 +8,7 @@ import api from "../services/api";
 import compressImage from "../utils/compressImage";
 import { uploadToCloudinary } from "../services/cloudinary";
 import { uploadVideoToCloudinary, MAX_VIDEO_DURATION_SECONDS } from "../services/videoUpload";
+import { retryWithBackoff } from "../utils/retry";
 
 const CreatePost = ({ fetchPosts }) => {
   const [openModal, setOpenModal] = useState(false);
@@ -101,14 +102,29 @@ const CreatePost = ({ fetchPosts }) => {
   const handleSubmitVideo = async ({ text, videoFile, privacy, scheduledFor, commentsDisabled = false }) => {
     const isScheduled = !!scheduledFor;
     const toastId = toast.loading("Uploading video… 0%");
+    // Keep the tab from being closed silently mid-upload.
+    const warnOnLeave = (e) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", warnOnLeave);
     try {
+      let pct = 0;
+      let status = null;
+      const render = () =>
+        toast.loading(
+          status || (pct >= 100 ? "Processing video…" : `Uploading video… ${pct}%`),
+          { id: toastId },
+        );
       const video = await uploadVideoToCloudinary({
         file: videoFile,
-        onProgress: (pct) => {
-          toast.loading(
-            pct >= 100 ? "Processing video…" : `Uploading video… ${pct}%`,
-            { id: toastId },
-          );
+        onProgress: (p) => {
+          pct = p;
+          render();
+        },
+        onStatus: (msg) => {
+          status = msg;
+          render();
         },
       });
 
@@ -116,13 +132,36 @@ const CreatePost = ({ fetchPosts }) => {
         ? new Date(scheduledFor).toISOString()
         : undefined;
 
-      await api.post("/posts/video", {
-        text,
-        video,
-        privacy,
-        commentsDisabled,
-        ...(scheduledForISO ? { scheduledFor: scheduledForISO } : {}),
-      });
+      // Video is already on Cloudinary — never re-upload it for a failed
+      // post-create call. The backend de-duplicates on video.publicId, so
+      // retrying this request is safe even if an earlier attempt landed.
+      status = "Finishing your post…";
+      render();
+      await retryWithBackoff(
+        () =>
+          api.post(
+            "/posts/video",
+            {
+              text,
+              video,
+              privacy,
+              commentsDisabled,
+              ...(scheduledForISO ? { scheduledFor: scheduledForISO } : {}),
+            },
+            { timeout: 60000 },
+          ),
+        {
+          maxElapsedMs: 40 * 60 * 1000,
+          onRetry: () => {
+            status = "Connection issue — retrying…";
+            render();
+          },
+          onWaitingForNetwork: () => {
+            status = "Waiting for connection…";
+            render();
+          },
+        },
+      );
 
       if (isScheduled) {
         toast.success("Video scheduled!", { id: toastId });
@@ -150,6 +189,8 @@ const CreatePost = ({ fetchPosts }) => {
           "Couldn't post your video",
         { id: toastId },
       );
+    } finally {
+      window.removeEventListener("beforeunload", warnOnLeave);
     }
   };
 
