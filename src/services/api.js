@@ -10,17 +10,18 @@ if (!baseURL) {
   baseURL = "http://localhost:5000/api";
 }
 
-// Short default timeout — every request through this instance is plain
+// 30s default timeout — every request through this instance is plain
 // JSON (auth, feed, posts, etc). Image/video bytes never travel through
 // here: uploadToCloudinary (cloudinary.js) and uploadVideoToCloudinary
 // (videoUpload.js) both go straight to Cloudinary via their own
 // fetch/XHR calls, so there's no large-payload request on this instance
-// that would need a long timeout. A hung GET/POST should fail fast
-// rather than leave the UI spinning for 3 minutes.
+// that would need a long timeout. 30s (up from 15s) leaves room for a
+// Render cold start; warmUpBackend() below usually removes the cold start
+// before the first real request is made.
 const api = axios.create({
   baseURL,
   withCredentials: true,
-  timeout: 15000,
+  timeout: 30000,
   timeoutErrorMessage: "Request timed out. Please try again.",
 });
 
@@ -90,6 +91,30 @@ api.interceptors.response.use(
     }
   },
 );
+
+// Fire-and-forget wake-up call, made as soon as the app loads. The backend
+// (Render) spins down when idle; the first request after that can take
+// 30-60s. Hitting the public liveness endpoint (mounted at the server root,
+// not under /api) starts the boot immediately, in parallel with React
+// mounting, so the real requests (auth/me, feed, comments) land on a warm
+// server. no-cors: we never read the response, so CORS is irrelevant and
+// nothing can throw into app code. Safe to call more than once.
+let warmedUp = false;
+export const warmUpBackend = () => {
+  if (warmedUp || typeof fetch === "undefined") return;
+  warmedUp = true;
+  try {
+    const { origin } = new URL(baseURL, window.location.origin);
+    fetch(`${origin}/health/live`, {
+      method: "GET",
+      mode: "no-cors",
+      cache: "no-store",
+      credentials: "omit",
+    }).catch(() => {});
+  } catch {
+    /* never block startup on a warm-up */
+  }
+};
 
 // getCached — see caching-spec.md §4. Only for first-page/first-load
 // GETs; "load more" / cursor / offset>0 calls must keep using plain

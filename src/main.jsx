@@ -12,8 +12,11 @@ import { AuthProvider } from "./context/AuthContext";
 import { SocketProvider } from "./context/SocketContext";
 import { ThemeProvider } from "./context/ThemeContext";
 import { registerServiceWorker } from "./services/pwaUpdate";
+import { warmUpBackend } from "./services/api";
 
 registerServiceWorker();
+// Wake the (possibly idle) backend now, before any real request needs it.
+warmUpBackend();
 
 
 // Apply the saved theme before first paint to avoid a flash of the wrong
