@@ -1,4 +1,9 @@
 {
+  "functions": {
+    "api/ssr.js": {
+      "includeFiles": "dist/**"
+    }
+  },
   "redirects": [
     { "source": "/sitemap.xml", "destination": "https://tronites-backend.onrender.com/sitemap.xml", "permanent": false },
     { "source": "/sitemap-static.xml", "destination": "https://tronites-backend.onrender.com/sitemap-static.xml", "permanent": false },
