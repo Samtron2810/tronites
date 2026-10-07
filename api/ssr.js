@@ -18,8 +18,26 @@
 //   like today.
 import fs from "node:fs";
 import path from "node:path";
-import { renderPublicApp, isPublicSsrPath } from "../server/render.jsx";
-import { renderShell } from "../server/renderShell.js";
+
+// Load the SSR bundle that `vite build --ssr` emits into dist-ssr/ (see the
+// "build" script in package.json). Never import server/render.jsx directly:
+// Vercel's Node runtime cannot load .jsx, and a failing top-level import
+// kills the function at cold start (500 FUNCTION_INVOCATION_FAILED) before
+// any try/catch can run. Dynamic + cached so a bad bundle degrades to the
+// static shell instead of a 500.
+let ssrModulePromise = null;
+const loadSsr = () => {
+  if (!ssrModulePromise) {
+    ssrModulePromise = Promise.all([
+      import("../dist-ssr/render.js"),
+      import("../server/renderShell.js"),
+    ]).catch((err) => {
+      ssrModulePromise = null;
+      throw err;
+    });
+  }
+  return ssrModulePromise;
+};
 
 const DIST_DIR = path.resolve(process.cwd(), "dist");
 
@@ -33,11 +51,16 @@ export default async function handler(req, res) {
   const url = new URL(req.url, `http://${req.headers.host}`);
   const hasSessionCookie = /(?:^|;\s*)token=/.test(req.headers.cookie || "");
 
-  if (hasSessionCookie || !isPublicSsrPath(url.pathname)) {
+  if (hasSessionCookie) {
     return serveStaticShell(res);
   }
 
   try {
+    const [{ renderPublicApp, isPublicSsrPath }, { renderShell }] =
+      await loadSsr();
+    if (!isPublicSsrPath(url.pathname)) {
+      return serveStaticShell(res);
+    }
     const { appHtml, headTags, initialData } = await renderPublicApp(url.pathname);
     const page = renderShell({ appHtml, headTags, initialData });
 
