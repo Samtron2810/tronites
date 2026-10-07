@@ -168,7 +168,24 @@ const useBackButtonClose = (isActive, onClose) => {
       window.removeEventListener("popstate", handlePopState);
       const i = activeStack.indexOf(instanceIdRef.current);
       if (i !== -1) activeStack.splice(i, 1);
-      if (ownsEntryRef.current) {
+      // Bail out if our synthetic entry is no longer the current top of
+      // history — e.g. a <Link> inside the modal (profile name, @mention,
+      // #hashtag, an embedded post) navigated the app elsewhere, which
+      // unmounts us WITHOUT ever going through popstate. That push (or
+      // replace) already put a different entry on top of — or in place
+      // of — ours. Blindly calling history.back() here (as if we'd been
+      // closed via the X button) would pop/undo THAT navigation instead
+      // of consuming our own entry, bouncing the user straight back to
+      // this modal and, on every further click, stacking one more
+      // never-consumed synthetic entry — each requiring its own extra
+      // press of the close button to unwind. If our entry already isn't
+      // on top, there's nothing safe to clean up: either it was replaced
+      // (already gone) or something now sits above it (and popping that
+      // would fight real navigation) — so leave history alone.
+      const top = window.history.state;
+      const stillOnTop =
+        top && top.modalViewer === true && top.seq === myEntrySeqRef.current;
+      if (ownsEntryRef.current && stillOnTop) {
         // Closed through the UI, not by going back — consume the entry we
         // pushed. Deferred one macrotask so a StrictMode remount of this
         // same effect (which always follows this cleanup synchronously)
@@ -183,6 +200,8 @@ const useBackButtonClose = (isActive, onClose) => {
           window.history.back();
         }, 0);
         pendingBacks.push(pending);
+      } else {
+        ownsEntryRef.current = false;
       }
     };
   }, [isActive]);

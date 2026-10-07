@@ -43,7 +43,7 @@ const TextWithLinks = ({ text, className = "", linkClassName = "" }) => {
         if (part.startsWith("#")) {
           const tag = part.slice(1).toLowerCase();
           return (
-            <Link key={i} to={`/hashtag/${tag}`} className={linkClass}>
+            <Link key={i} to={`/hashtag/${tag}`} replace className={linkClass}>
               {part}
             </Link>
           );
@@ -51,7 +51,7 @@ const TextWithLinks = ({ text, className = "", linkClassName = "" }) => {
         if (part.startsWith("@")) {
           const uname = part.slice(1).toLowerCase();
           return (
-            <Link key={i} to={`/u/${uname}`} className={linkClass}>
+            <Link key={i} to={`/u/${uname}`} replace className={linkClass}>
               {part}
             </Link>
           );

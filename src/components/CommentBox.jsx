@@ -58,7 +58,7 @@ const CommentRow = ({
           : ""
       } ${item.pending ? "opacity-60" : ""}`}
     >
-      <Link to={`/profile/${item.user._id}`} className="shrink-0">
+      <Link to={`/profile/${item.user._id}`} replace className="shrink-0">
         <img
           src={
             resizedImageUrl(item.user.profilePic, IMAGE_SIZES.avatarSmall) ||
@@ -73,6 +73,7 @@ const CommentRow = ({
         <div className="flex items-center gap-1 min-w-0">
           <Link
             to={`/profile/${item.user._id}`}
+            replace
             className="truncate text-[13px] font-semibold text-ink-muted hover:text-ink transition"
           >
             {item.user.name}

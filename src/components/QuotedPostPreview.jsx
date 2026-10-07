@@ -50,6 +50,7 @@ const QuotedPostPreview = ({ post }) => {
           <span className="flex items-center gap-1 min-w-0">
             <Link
               to={`/profile/${post.user?._id}`}
+              replace
               onClick={(e) => e.stopPropagation()}
               className="text-sm font-semibold text-ink hover:text-primary-600 transition truncate"
             >

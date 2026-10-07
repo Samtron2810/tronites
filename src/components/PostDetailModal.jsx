@@ -497,6 +497,7 @@ const PostDetailModal = ({
                   <span className="flex items-center gap-1.5">
                     <Link
                       to={`/profile/${userId}`}
+                      replace
                       className="text-base font-semibold text-ink hover:text-primary-600 transition"
                     >
                       {name}
