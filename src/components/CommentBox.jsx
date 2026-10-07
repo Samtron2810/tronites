@@ -12,6 +12,122 @@ import TextWithLinks from "./TextWithLinks";
 import useMentionAutocomplete from "../hooks/useMentionAutocomplete";
 import MentionSuggestions from "./MentionSuggestions";
 import VerifiedBadge from "./VerifiedBadge";
+import defaultAvatar from "../assets/defaultAvatar";
+import { resizedImageUrl, IMAGE_SIZES } from "../utils/cloudinaryImage";
+
+const timeAgo = (value) => {
+  const t = new Date(value).getTime();
+  if (!t) return "";
+  const s = Math.max(0, Math.floor((Date.now() - t) / 1000));
+  if (s < 60) return "now";
+  const m = Math.floor(s / 60);
+  if (m < 60) return `${m}m`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h`;
+  const d = Math.floor(h / 24);
+  if (d < 7) return `${d}d`;
+  const w = Math.floor(d / 7);
+  if (w < 5) return `${w}w`;
+  return new Date(t).toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+  });
+};
+
+// One comment/reply row, TikTok-style: avatar | name + text + meta line |
+// heart column pinned to the right edge. Used for both top-level comments
+// (size "lg") and replies (size "sm") so the two can never drift apart.
+const CommentRow = ({
+  item,
+  size,
+  isHighlighted,
+  isOwner,
+  likeBusy,
+  onLike,
+  onReply,
+  onDelete,
+  onReport,
+}) => {
+  const avatarCls = size === "lg" ? "w-9 h-9" : "w-6 h-6";
+  return (
+    <div
+      data-comment-id={item._id}
+      className={`flex items-start gap-3 rounded-xl transition ${
+        isHighlighted
+          ? "bg-primary-50 ring-2 ring-primary-300 -mx-2 px-2 py-1.5"
+          : ""
+      } ${item.pending ? "opacity-60" : ""}`}
+    >
+      <Link to={`/profile/${item.user._id}`} className="shrink-0">
+        <img
+          src={
+            resizedImageUrl(item.user.profilePic, IMAGE_SIZES.avatarSmall) ||
+            defaultAvatar
+          }
+          alt=""
+          className={`${avatarCls} rounded-full object-cover bg-surface`}
+        />
+      </Link>
+
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-1 min-w-0">
+          <Link
+            to={`/profile/${item.user._id}`}
+            className="truncate text-[13px] font-semibold text-ink-muted hover:text-ink transition"
+          >
+            {item.user.name}
+          </Link>
+          <VerifiedBadge verifications={item.user.verifications} size="sm" />
+          {isOwner && (
+            <span className="shrink-0 rounded px-1 text-[10px] font-semibold leading-4 bg-primary-50 text-primary-600">
+              You
+            </span>
+          )}
+        </div>
+
+        <p className="mt-0.5 break-words text-[15px] leading-snug text-ink">
+          <TextWithLinks text={item.text} />
+        </p>
+
+        <div className="mt-1 flex items-center gap-4 text-xs text-ink-muted">
+          <span>{item.pending ? "Sending…" : timeAgo(item.createdAt)}</span>
+          {onReply && (
+            <button
+              onClick={onReply}
+              className="font-semibold hover:text-ink transition"
+            >
+              Reply
+            </button>
+          )}
+          <CommentOptionsMenu
+            isOwner={isOwner}
+            text={item.text}
+            onDelete={onDelete}
+            onReport={onReport}
+          />
+        </div>
+      </div>
+
+      <button
+        onClick={onLike}
+        disabled={likeBusy}
+        aria-label={item.isLiked ? "Unlike comment" : "Like comment"}
+        className={`shrink-0 w-9 pt-1 flex flex-col items-center gap-0.5 transition active:scale-110 disabled:opacity-50 ${
+          item.isLiked ? "text-red-500" : "text-ink-muted hover:text-red-500"
+        }`}
+      >
+        {item.isLiked ? <FaHeart size={16} /> : <FaRegHeart size={16} />}
+        <span
+          className={`text-xs leading-none ${
+            item.likesCount > 0 ? "" : "invisible"
+          }`}
+        >
+          {item.likesCount > 0 ? item.likesCount : 0}
+        </span>
+      </button>
+    </div>
+  );
+};
 
 // Extracted from PostCard.jsx (was previously inline there) so the same
 // comment list/composer/reply implementation can mount in two places:
@@ -777,90 +893,31 @@ const CommentsPanel = ({
         </p>
       )}
 
-      <div className="space-y-3" ref={containerRef}>
+      <div className="space-y-5" ref={containerRef}>
         {visibleComments.map((c) => (
-          <div
-            key={c._id}
-            data-comment-id={c._id}
-            className={`rounded-xl px-3 py-2.5 transition ${
-              highlightedCommentId === c._id
-                ? "bg-primary-50 ring-2 ring-primary-300"
-                : "bg-surface"
-            } ${c.pending ? "opacity-60" : ""}`}
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1">
-                <Link
-                  to={`/profile/${c.user._id}`}
-                  className="text-sm font-semibold text-ink hover:text-primary-600 transition"
-                >
-                  {c.user.name}
-                </Link>
-                <VerifiedBadge verifications={c.user.verifications} size="sm" />
-                {c.user.username && (
-                  <span className="text-[11px] text-ink-muted">
-                    @{c.user.username}
-                  </span>
-                )}
-              </div>
-              <CommentOptionsMenu
-                isOwner={c.user._id === currentUser?._id}
-                text={c.text}
-                onDelete={() =>
-                  setDeleteCommentTarget({ type: "comment", id: c._id })
-                }
-                onReport={() =>
-                  setReportTarget({ type: "comment", id: c._id })
-                }
-              />
-            </div>
-            <p className="text-sm text-ink-sub mt-0.5">
-              <TextWithLinks text={c.text} />
-            </p>
-
-            <div className="flex items-center gap-3 mt-1.5">
-              <button
-                onClick={() => handleCommentLike(c._id, null)}
-                disabled={commentLikingId === c._id}
-                className={`flex items-center gap-1 text-sm transition disabled:opacity-50 ${
-                  c.isLiked
-                    ? "text-red-500"
-                    : "text-ink-muted hover:text-red-500"
-                }`}
-              >
-                {c.isLiked ? (
-                  <FaHeart size={10} />
-                ) : (
-                  <FaRegHeart size={10} />
-                )}
-                {c.likesCount > 0 && <span>{c.likesCount}</span>}
-              </button>
-              {!isCommentingOff && (
-              <button
-                onClick={() => openReplyComposer(c._id)}
-                className="text-sm text-ink-muted hover:text-primary-600 transition font-medium"
-              >
-                Reply
-              </button>
-              )}
-              {c.repliesCount > 0 && (
-                <button
-                  onClick={() => toggleReplies(c._id)}
-                  className="text-sm text-primary-600 font-medium hover:underline"
-                >
-                  {openReplies[c._id]
-                    ? "Hide replies"
-                    : `View ${c.repliesCount} ${c.repliesCount === 1 ? "reply" : "replies"}`}
-                </button>
-              )}
-            </div>
+          <div key={c._id}>
+            <CommentRow
+              item={c}
+              size="lg"
+              isHighlighted={highlightedCommentId === c._id}
+              isOwner={c.user._id === currentUser?._id}
+              likeBusy={commentLikingId === c._id}
+              onLike={() => handleCommentLike(c._id, null)}
+              onReply={
+                isCommentingOff ? null : () => openReplyComposer(c._id)
+              }
+              onDelete={() =>
+                setDeleteCommentTarget({ type: "comment", id: c._id })
+              }
+              onReport={() => setReportTarget({ type: "comment", id: c._id })}
+            />
 
             {/* Reply input — shared by both "Reply" on the comment
                 itself and "Reply" on any of its replies (§3.5). Either
                 path sets replyingTo to this comment's id, so the new
                 reply always lands here, flat, never nested. */}
             {!isCommentingOff && replyingTo === c._id && (
-              <div className="flex gap-2 mt-2 relative">
+              <div className="flex gap-2 mt-3 ml-12 relative">
                 <div className="flex-1 relative">
                   <input
                     ref={replyInputRef}
@@ -893,93 +950,52 @@ const CommentsPanel = ({
               </div>
             )}
 
-            {/* Reply thread — flat, one level, all replies under this
-                comment sit in the same list at the same indent
-                regardless of which reply prompted them. */}
+            {c.repliesCount > 0 && (
+              <button
+                onClick={() => toggleReplies(c._id)}
+                className="mt-2 ml-12 flex items-center gap-2 text-xs font-semibold text-ink-muted hover:text-ink transition"
+              >
+                <span className="h-px w-6 bg-stroke" />
+                {openReplies[c._id]
+                  ? "Hide replies"
+                  : `View ${c.repliesCount} ${c.repliesCount === 1 ? "reply" : "replies"}`}
+              </button>
+            )}
+
+            {/* Reply thread — flat, one level. Indented past the parent
+                avatar only on the left, so every heart column still ends
+                at the same right edge as the top-level ones. */}
             {openReplies[c._id] && (
-              <div className="mt-2 pl-3 border-l-2 border-stroke space-y-2">
+              <div className="mt-3 ml-12 space-y-4">
                 {loadingReplies[c._id] && (
-                  <p className="text-sm text-ink-muted">
-                    Loading replies...
-                  </p>
+                  <p className="text-sm text-ink-muted">Loading replies...</p>
                 )}
                 {!loadingReplies[c._id] &&
                   (repliesByComment[c._id] || []).map((r) => (
-                    <div
+                    <CommentRow
                       key={r._id}
-                      data-comment-id={r._id}
-                      className={`rounded-lg px-3 py-2 transition ${
-                        highlightedCommentId === r._id
-                          ? "bg-primary-50 ring-2 ring-primary-300"
-                          : "bg-card"
-                      } ${r.pending ? "opacity-60" : ""}`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-1">
-                          <Link
-                            to={`/profile/${r.user._id}`}
-                            className="text-sm font-semibold text-ink hover:text-primary-600 transition"
-                          >
-                            {r.user.name}
-                          </Link>
-                          <VerifiedBadge verifications={r.user.verifications} size="sm" />
-                          {r.user.username && (
-                            <span className="text-[11px] text-ink-muted">
-                              @{r.user.username}
-                            </span>
-                          )}
-                        </div>
-                        <CommentOptionsMenu
-                          isOwner={r.user._id === currentUser?._id}
-                          text={r.text}
-                          onDelete={() =>
-                            setDeleteCommentTarget({
-                              type: "reply",
-                              id: r._id,
-                              parentCommentId: c._id,
-                            })
-                          }
-                          onReport={() =>
-                            setReportTarget({ type: "reply", id: r._id })
-                          }
-                        />
-                      </div>
-                      <p className="text-sm text-ink-sub mt-0.5">
-                        <TextWithLinks text={r.text} />
-                      </p>
-                      <div className="flex items-center gap-3 mt-1.5">
-                        <button
-                          onClick={() => handleCommentLike(r._id, c._id)}
-                          disabled={commentLikingId === r._id}
-                          className={`flex items-center gap-1 text-sm transition disabled:opacity-50 ${
-                            r.isLiked
-                              ? "text-red-500"
-                              : "text-ink-muted hover:text-red-500"
-                          }`}
-                        >
-                          {r.isLiked ? (
-                            <FaHeart size={10} />
-                          ) : (
-                            <FaRegHeart size={10} />
-                          )}
-                          {r.likesCount > 0 && <span>{r.likesCount}</span>}
-                        </button>
-                        {/* Reply-to-a-reply — still targets the parent
-                            comment's id (c._id), prefilled with
-                            @username, so it posts flat rather than
-                            nested (§3.5/§6). */}
-                        {!isCommentingOff && (
-                        <button
-                          onClick={() =>
-                            openReplyComposer(c._id, r.user.username)
-                          }
-                          className="text-sm text-ink-muted hover:text-primary-600 transition font-medium"
-                        >
-                          Reply
-                        </button>
-                        )}
-                      </div>
-                    </div>
+                      item={r}
+                      size="sm"
+                      isHighlighted={highlightedCommentId === r._id}
+                      isOwner={r.user._id === currentUser?._id}
+                      likeBusy={commentLikingId === r._id}
+                      onLike={() => handleCommentLike(r._id, c._id)}
+                      onReply={
+                        isCommentingOff
+                          ? null
+                          : () => openReplyComposer(c._id, r.user.username)
+                      }
+                      onDelete={() =>
+                        setDeleteCommentTarget({
+                          type: "reply",
+                          id: r._id,
+                          parentCommentId: c._id,
+                        })
+                      }
+                      onReport={() =>
+                        setReportTarget({ type: "reply", id: r._id })
+                      }
+                    />
                   ))}
               </div>
             )}
