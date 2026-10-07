@@ -1,7 +1,7 @@
 {
   "functions": {
     "api/ssr.js": {
-      "includeFiles": "dist/**"
+      "includeFiles": "{dist,dist-ssr}/**"
     }
   },
   "redirects": [
