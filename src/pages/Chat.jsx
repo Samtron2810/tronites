@@ -84,7 +84,7 @@ const Chat = () => {
   const [requestInfo, setRequestInfo] = useState(null); // gating state for the open thread
   const [selectedChat, setSelectedChat] = useState(null);
   const [messages, setMessages] = useState([]);
-  const [messagesPage, setMessagesPage] = useState(1);
+  const [messagesCursor, setMessagesCursor] = useState(null);
   const [messagesHasMore, setMessagesHasMore] = useState(false);
   const [isLoadingOlderMessages, setIsLoadingOlderMessages] = useState(false);
   const [messageText, setMessageText] = useState("");
@@ -340,10 +340,10 @@ const Chat = () => {
       // and marks the thread's messages as read as a side effect of
       // this GET.
       const res = await api.get(`/messages/${otherUser._id}`, {
-        params: { page: 1, limit: 30 },
+        params: { cursor: "start", limit: 30 },
       });
       setMessages(res.data.messages);
-      setMessagesPage(1);
+      setMessagesCursor(res.data.nextCursor ?? null);
       setMessagesHasMore(res.data.hasMore);
       setRequestInfo(res.data.requestInfo || null);
       setSelectedChat({
@@ -384,18 +384,17 @@ const Chat = () => {
   };
 
   const loadOlderMessages = async () => {
-    if (isLoadingOlderMessages || !messagesHasMore || !selectedChat) return;
+    if (isLoadingOlderMessages || !messagesHasMore || !messagesCursor || !selectedChat) return;
     const container = messagesContainerRef.current;
     const prevScrollHeight = container?.scrollHeight || 0;
     isPrependingOlder.current = true;
     try {
       setIsLoadingOlderMessages(true);
-      const nextPage = messagesPage + 1;
       const res = await api.get(`/messages/${selectedChat.otherUser._id}`, {
-        params: { page: nextPage, limit: 30 },
+        params: { cursor: messagesCursor, limit: 30 },
       });
       setMessages((prev) => [...res.data.messages, ...prev]);
-      setMessagesPage(nextPage);
+      setMessagesCursor(res.data.nextCursor ?? null);
       setMessagesHasMore(res.data.hasMore);
       // Restore scroll position so prepending older messages doesn't
       // jump the view — wait a tick for the DOM to grow first.
@@ -416,7 +415,7 @@ const Chat = () => {
 
   // Search → jump: scrolls to (and flashes) a message, first paging in
   // older history if the target isn't loaded yet. Pages use the same
-  // limit as loadOlderMessages so messagesPage stays consistent.
+  // limit as loadOlderMessages so messagesCursor stays consistent.
   const handleJumpToMessage = async (messageId) => {
     const flash = () => {
       const el = messagesContainerRef.current?.querySelector(
@@ -433,19 +432,21 @@ const Chat = () => {
 
     if (flash() || !selectedChat) return;
 
-    let page = messagesPage;
+    let cursor = messagesCursor;
+    let steps = 0;
     let hasMore = messagesHasMore;
     let older = [];
     let found = false;
     isPrependingOlder.current = true;
     try {
-      while (hasMore && !found && page - messagesPage < 50) {
-        page += 1;
+      while (hasMore && !found && cursor && steps < 50) {
+        steps += 1;
         const res = await api.get(`/messages/${selectedChat.otherUser._id}`, {
-          params: { page, limit: 30 },
+          params: { cursor, limit: 30 },
         });
         older = [...res.data.messages, ...older];
         hasMore = res.data.hasMore;
+        cursor = res.data.nextCursor ?? null;
         found = res.data.messages.some((m) => m._id === messageId);
       }
       if (older.length) {
@@ -453,7 +454,7 @@ const Chat = () => {
           const seen = new Set(prev.map((m) => m._id));
           return [...older.filter((m) => !seen.has(m._id)), ...prev];
         });
-        setMessagesPage(page);
+        setMessagesCursor(cursor);
         setMessagesHasMore(hasMore);
       }
       if (found) {

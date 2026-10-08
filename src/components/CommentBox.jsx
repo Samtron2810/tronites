@@ -34,8 +34,9 @@ const timeAgo = (value) => {
   });
 };
 
-// One comment/reply row, TikTok-style: avatar | name + text + meta line |
-// heart column pinned to the right edge. Used for both top-level comments
+// One comment/reply row, TikTok-style: avatar | name + text + meta line,
+// with the heart pinned to the right edge on the same line as the comment
+// text (not the commenter's name). Used for both top-level comments
 // (size "lg") and replies (size "sm") so the two can never drift apart.
 const CommentRow = ({
   item,
@@ -86,9 +87,36 @@ const CommentRow = ({
           )}
         </div>
 
-        <p className="mt-0.5 break-words text-[15px] leading-snug text-ink">
-          <TextWithLinks text={item.text} />
-        </p>
+        {/* The heart is absolutely positioned inside this wrapper so it
+            lines up with the first line of the comment text itself,
+            whatever height the name row above happens to be. It doesn't
+            add to the row's height, and the text reserves room (pr-11)
+            so long comments wrap before reaching it. */}
+        <div className="relative mt-0.5">
+          <p className="wrap-break-word pr-11 text-[15px] leading-snug text-ink">
+            <TextWithLinks text={item.text} />
+          </p>
+
+          <button
+            onClick={onLike}
+            disabled={likeBusy}
+            aria-label={item.isLiked ? "Unlike comment" : "Like comment"}
+            className={`absolute right-0 top-0 w-9 pt-0.5 flex flex-col items-center gap-0.5 transition active:scale-110 disabled:opacity-50 ${
+              item.isLiked
+                ? "text-red-500"
+                : "text-ink-muted hover:text-red-500"
+            }`}
+          >
+            {item.isLiked ? <FaHeart size={16} /> : <FaRegHeart size={16} />}
+            <span
+              className={`text-xs leading-none ${
+                item.likesCount > 0 ? "" : "invisible"
+              }`}
+            >
+              {item.likesCount > 0 ? item.likesCount : 0}
+            </span>
+          </button>
+        </div>
 
         <div className="mt-1 flex items-center gap-4 text-xs text-ink-muted">
           <span>{item.pending ? "Sending…" : timeAgo(item.createdAt)}</span>
@@ -108,24 +136,6 @@ const CommentRow = ({
           />
         </div>
       </div>
-
-      <button
-        onClick={onLike}
-        disabled={likeBusy}
-        aria-label={item.isLiked ? "Unlike comment" : "Like comment"}
-        className={`shrink-0 w-9 pt-1 flex flex-col items-center gap-0.5 transition active:scale-110 disabled:opacity-50 ${
-          item.isLiked ? "text-red-500" : "text-ink-muted hover:text-red-500"
-        }`}
-      >
-        {item.isLiked ? <FaHeart size={16} /> : <FaRegHeart size={16} />}
-        <span
-          className={`text-xs leading-none ${
-            item.likesCount > 0 ? "" : "invisible"
-          }`}
-        >
-          {item.likesCount > 0 ? item.likesCount : 0}
-        </span>
-      </button>
     </div>
   );
 };
@@ -217,7 +227,10 @@ const CommentsPanel = ({
   const fetchComments = async () => {
     try {
       setLoadingComments(true);
-      const res = await api.getCached(`/comments/${postId}`, { ttlMs: 60_000, revalidate: true });
+      const res = await api.getCached(`/comments/${postId}`, {
+        ttlMs: 60_000,
+        revalidate: true,
+      });
       setComments(res.data);
     } catch (e) {
       console.error(e);
@@ -362,7 +375,11 @@ const CommentsPanel = ({
       setComments((prev) => {
         if (prev.some((c) => c._id === commentId)) return prev;
         const restored = [...prev];
-        restored.splice(Math.max(0, removedIndex), 0, prevComments[removedIndex]);
+        restored.splice(
+          Math.max(0, removedIndex),
+          0,
+          prevComments[removedIndex],
+        );
         return restored;
       });
       if (prevReplies) {
@@ -538,7 +555,11 @@ const CommentsPanel = ({
         const current = prev[parentCommentId] || [];
         if (current.some((r) => r._id === replyId)) return prev;
         const restored = [...current];
-        restored.splice(Math.max(0, removedIndex), 0, prevReplies[removedIndex]);
+        restored.splice(
+          Math.max(0, removedIndex),
+          0,
+          prevReplies[removedIndex],
+        );
         return { ...prev, [parentCommentId]: restored };
       });
       setComments((prev) =>
@@ -842,7 +863,9 @@ const CommentsPanel = ({
       {ownerCommentsOff && !isCommentingOff && (
         <div className="flex items-center gap-2 text-xs text-ink-muted">
           <FaCommentSlash size={11} className="shrink-0" />
-          <span>Commenting is off for everyone else. Only you can comment.</span>
+          <span>
+            Commenting is off for everyone else. Only you can comment.
+          </span>
         </div>
       )}
       {isCommentingOff ? (
@@ -851,36 +874,36 @@ const CommentsPanel = ({
           <span>The author has turned off commenting on this post.</span>
         </div>
       ) : (
-      <div className="flex gap-2 relative">
-        <div className="flex-1 relative">
-          <input
-            ref={commentInputRef}
-            value={commentText}
-            onChange={handleCommentTextChange}
-            onBlur={commentMention.closeSuggestions}
-            placeholder="Write a comment..."
-            onKeyDown={(e) =>
-              e.key === "Enter" &&
-              !commentMention.showSuggestions &&
-              handleAddComment()
-            }
-            className="w-full border border-stroke rounded-xl px-3 py-2 text-base text-ink placeholder:text-ink-muted outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100 transition"
-          />
-          {commentMention.showSuggestions && (
-            <MentionSuggestions
-              suggestions={commentMention.suggestions}
-              onSelect={handleSelectCommentMention}
+        <div className="flex gap-2 relative">
+          <div className="flex-1 relative">
+            <input
+              ref={commentInputRef}
+              value={commentText}
+              onChange={handleCommentTextChange}
+              onBlur={commentMention.closeSuggestions}
+              placeholder="Write a comment..."
+              onKeyDown={(e) =>
+                e.key === "Enter" &&
+                !commentMention.showSuggestions &&
+                handleAddComment()
+              }
+              className="w-full border border-stroke rounded-xl px-3 py-2 text-base text-ink placeholder:text-ink-muted outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100 transition"
             />
-          )}
+            {commentMention.showSuggestions && (
+              <MentionSuggestions
+                suggestions={commentMention.suggestions}
+                onSelect={handleSelectCommentMention}
+              />
+            )}
+          </div>
+          <button
+            onClick={handleAddComment}
+            disabled={!commentText.trim() || isCommentSending}
+            className="px-4 py-2 rounded-xl text-base font-medium text-white bg-primary-600 hover:bg-primary-800 disabled:opacity-50 disabled:cursor-not-allowed transition"
+          >
+            {isCommentSending ? "..." : "Post"}
+          </button>
         </div>
-        <button
-          onClick={handleAddComment}
-          disabled={!commentText.trim() || isCommentSending}
-          className="px-4 py-2 rounded-xl text-base font-medium text-white bg-primary-600 hover:bg-primary-800 disabled:opacity-50 disabled:cursor-not-allowed transition"
-        >
-          {isCommentSending ? "..." : "Post"}
-        </button>
-      </div>
       )}
 
       {/* List */}
@@ -904,9 +927,7 @@ const CommentsPanel = ({
               isOwner={c.user._id === currentUser?._id}
               likeBusy={commentLikingId === c._id}
               onLike={() => handleCommentLike(c._id, null)}
-              onReply={
-                isCommentingOff ? null : () => openReplyComposer(c._id)
-              }
+              onReply={isCommentingOff ? null : () => openReplyComposer(c._id)}
               onDelete={() =>
                 setDeleteCommentTarget({ type: "comment", id: c._id })
               }

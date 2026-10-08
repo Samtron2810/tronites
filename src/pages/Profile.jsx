@@ -607,18 +607,23 @@ const Profile = () => {
           </div>
 
           {/* Name + bio */}
-          <h1 className="text-2xl font-bold text-ink flex items-center gap-2">
+          {/* Inline (not flex) so long names wrap — a bare text node in a flex
+              row can't break inside a long word and was clipped by the
+              card's overflow-hidden. The badge flows after the last word. */}
+          <h1 className="text-2xl font-bold text-ink break-words">
             {profile.name}
-            <VerifiedBadge verifications={profile.verifications} size="lg" />
+            <span className="ml-2 inline-flex shrink-0 align-middle">
+              <VerifiedBadge verifications={profile.verifications} size="lg" />
+            </span>
           </h1>
           {profile.username && (
-            <p className="text-base text-ink-muted -mt-0.5">
+            <p className="text-base text-ink-muted -mt-0.5 break-all">
               @{profile.username}
             </p>
           )}
 
           {profile.bio && (
-            <p className="text-base text-ink-sub mt-1">{profile.bio}</p>
+            <p className="text-base text-ink-sub mt-1 break-words">{profile.bio}</p>
           )}
 
           {/* Feature 8 — Account age / join date badge */}

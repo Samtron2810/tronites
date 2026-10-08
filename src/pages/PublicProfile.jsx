@@ -206,13 +206,15 @@ const PublicProfile = () => {
             className="h-20 w-20 sm:h-24 sm:w-24 rounded-full object-cover border border-stroke shrink-0"
           />
           <div className="min-w-0 flex-1 pt-1">
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <h1 className="font-bold text-lg text-ink truncate">
-                {profile.name}
-              </h1>
-              <VerifiedBadge verifications={profile.verifications} size={16} />
-            </div>
-            <p className="text-ink-muted text-sm">@{profile.username}</p>
+            {/* Inline (not flex + truncate) so long names wrap instead of
+                being cut off; the badge flows after the last word. */}
+            <h1 className="font-bold text-lg text-ink break-words">
+              {profile.name}
+              <span className="ml-1.5 inline-flex shrink-0 align-middle">
+                <VerifiedBadge verifications={profile.verifications} size={16} />
+              </span>
+            </h1>
+            <p className="text-ink-muted text-sm break-all">@{profile.username}</p>
           </div>
         </div>
 

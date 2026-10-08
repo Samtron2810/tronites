@@ -139,7 +139,7 @@ const Notifications = () => {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [page, setPage] = useState(1);
+  const [cursor, setCursor] = useState(null);
   const [hasMore, setHasMore] = useState(false);
   const loadPausedUntilRef = useRef(0);
   const { socket } = useSocket();
@@ -152,12 +152,12 @@ const Notifications = () => {
     if (!silent) setLoading(true);
     try {
       const res = await api.getCached("/notifications", {
-        params: { page: 1, limit: 20 },
+        params: { cursor: "start", limit: 20 },
         ttlMs: 30_000,
         revalidate: true,
       });
       setNotifications(res.data.notifications);
-      setPage(res.data.currentPage);
+      setCursor(res.data.nextCursor ?? null);
       setHasMore(res.data.hasMore);
       // Only fire the PUT when there's actually something unread —
       // stops the wasteful mark-read call on every visit (§7).
@@ -198,12 +198,12 @@ const Notifications = () => {
   useRefetchOnFocus(() => fetchFirstPage({ silent: true }));
 
   const loadMore = async () => {
-    if (loadingMore || !hasMore || Date.now() <= loadPausedUntilRef.current) return;
+    if (loadingMore || !hasMore || !cursor || Date.now() <= loadPausedUntilRef.current) return;
     setLoadingMore(true);
     try {
-      const res = await api.get("/notifications", { params: { page: page + 1, limit: 20 } });
+      const res = await api.get("/notifications", { params: { cursor, limit: 20 } });
       setNotifications((prev) => [...prev, ...res.data.notifications]);
-      setPage(res.data.currentPage);
+      setCursor(res.data.nextCursor ?? null);
       setHasMore(res.data.hasMore);
     } catch (e) {
       console.error(e);
