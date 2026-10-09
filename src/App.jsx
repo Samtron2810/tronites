@@ -7,6 +7,7 @@ import PublicNavbar from "./components/PublicNavbar";
 import SplashScreen from "./components/SplashScreen";
 import InstallPrompt from "./components/InstallPrompt";
 import UpdateToast from "./components/UpdateToast";
+import ComplianceGate from "./components/ComplianceGate";
 import { subscribeToPushNavigation } from "./services/pwaUpdate";
 
 // Landing is kept as a static import — it's the page every logged-out
@@ -412,6 +413,8 @@ const AppContent = () => {
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Suspense>
+
+      {user && <ComplianceGate />}
 
       {user && user.username && (
         <>
