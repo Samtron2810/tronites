@@ -714,6 +714,30 @@ const Settings = () => {
               <span className="flex-1">Terms of Use</span>
               <FiChevronDown size={14} className="text-ink-muted -rotate-90" />
             </Link>
+            <Link
+              to="/guidelines"
+              className="flex items-center gap-3 px-5 py-3.5 text-sm text-ink hover:bg-surface transition"
+            >
+              <FiUsers size={15} className="text-primary-600" />
+              <span className="flex-1">Community Guidelines</span>
+              <FiChevronDown size={14} className="text-ink-muted -rotate-90" />
+            </Link>
+            <Link
+              to="/refunds"
+              className="flex items-center gap-3 px-5 py-3.5 text-sm text-ink hover:bg-surface transition"
+            >
+              <FiFileText size={15} className="text-primary-600" />
+              <span className="flex-1">Refunds & Cancellations</span>
+              <FiChevronDown size={14} className="text-ink-muted -rotate-90" />
+            </Link>
+            <Link
+              to="/copyright"
+              className="flex items-center gap-3 px-5 py-3.5 text-sm text-ink hover:bg-surface transition"
+            >
+              <FiShield size={15} className="text-primary-600" />
+              <span className="flex-1">Copyright & Takedowns</span>
+              <FiChevronDown size={14} className="text-ink-muted -rotate-90" />
+            </Link>
           </div>
         </AccordionItem>
 

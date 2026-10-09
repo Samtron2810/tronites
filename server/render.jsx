@@ -24,6 +24,9 @@ const PUBLIC_SSR_PATTERNS = [
   /^\/tiers$/,
   /^\/privacy$/,
   /^\/terms$/,
+  /^\/refunds$/,
+  /^\/copyright$/,
+  /^\/guidelines$/,
 ];
 
 // Used by server/index.js to decide whether a given request path should

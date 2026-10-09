@@ -9,6 +9,7 @@ import { SocketProvider } from "./context/SocketContext";
 import { ThemeProvider } from "./context/ThemeContext";
 import { SsrDataContext } from "./hooks/useSsrInitialData";
 import { registerServiceWorker } from "./services/pwaUpdate";
+import "./fonts";
 import "./index.css";
 
 // Separate from main.jsx on purpose. main.jsx calls createRoot(...).render(...),

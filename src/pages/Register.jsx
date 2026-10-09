@@ -1,9 +1,43 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { useAuth } from "../context/useAuth";
 import AuthHomeLink from "../components/AuthHomeLink";
-import { FiUser, FiMail, FiLock, FiEye, FiEyeOff } from "react-icons/fi";
+import {
+  FiUser,
+  FiMail,
+  FiLock,
+  FiEye,
+  FiEyeOff,
+  FiCalendar,
+} from "react-icons/fi";
+import { MIN_SIGNUP_AGE } from "../constants/legal";
+
+const pad = (n) => String(n).padStart(2, "0");
+const toIsoDate = (d) =>
+  `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+
+// Whole years between a YYYY-MM-DD string and today, using the local
+// calendar date. Returns null for an empty or impossible date. The server
+// re-checks everything; this is only for instant feedback.
+const ageFromIso = (iso) => {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || "");
+  if (!m) return null;
+  const [y, mo, d] = [Number(m[1]), Number(m[2]), Number(m[3])];
+  const dob = new Date(y, mo - 1, d);
+  if (dob.getFullYear() !== y || dob.getMonth() !== mo - 1 || dob.getDate() !== d) {
+    return null;
+  }
+  const now = new Date();
+  let age = now.getFullYear() - y;
+  if (
+    now.getMonth() < mo - 1 ||
+    (now.getMonth() === mo - 1 && now.getDate() < d)
+  ) {
+    age -= 1;
+  }
+  return age;
+};
 
 const Register = () => {
   const navigate = useNavigate();
@@ -11,12 +45,20 @@ const Register = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [agreed, setAgreed] = useState(false);
+  const [marketingOptIn, setMarketingOptIn] = useState(false);
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
     email: "",
     password: "",
+    dateOfBirth: "",
   });
+
+  const maxDob = useMemo(() => toIsoDate(new Date()), []);
+  const age = ageFromIso(formData.dateOfBirth);
+  const dobTooYoung = age !== null && age < MIN_SIGNUP_AGE;
+  const dobInvalid =
+    formData.dateOfBirth !== "" && (age === null || age < 0 || age > 120);
 
   // Strips characters the backend would reject anyway (digits, most
   // symbols) as the user types. Allows Unicode letters/marks plus
@@ -42,13 +84,27 @@ const Register = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (isLoading) return;
+    if (dobInvalid || age === null) {
+      toast.error("Please enter a valid date of birth.");
+      return;
+    }
+    if (dobTooYoung) {
+      toast.error(
+        `You must be at least ${MIN_SIGNUP_AGE} years old to create a Tronites account.`,
+      );
+      return;
+    }
     if (!agreed) {
-      toast.error("Please confirm your age and accept the Terms to continue.");
+      toast.error("Please accept the Terms of Use and Privacy Policy to continue.");
       return;
     }
     setIsLoading(true);
     try {
-      const res = await register(formData);
+      const res = await register({
+        ...formData,
+        acceptTerms: true,
+        marketingOptIn,
+      });
       toast.success(res.message || "OTP sent to your email");
       // challengeId is an opaque, server-issued, single-use handle — not
       // the email itself, and not a security control on its own. It just
@@ -118,6 +174,7 @@ const Register = () => {
                   type="text"
                   name="firstName"
                   placeholder="First Name"
+                  autoComplete="given-name"
                   value={formData.firstName}
                   onChange={handleChange}
                   required
@@ -133,6 +190,7 @@ const Register = () => {
                   type="text"
                   name="lastName"
                   placeholder="Last Name"
+                  autoComplete="family-name"
                   value={formData.lastName}
                   onChange={handleChange}
                   required
@@ -151,11 +209,55 @@ const Register = () => {
                 type="email"
                 name="email"
                 placeholder="Email"
+                autoComplete="email"
                 value={formData.email}
                 onChange={handleChange}
                 required
                 className="w-full pl-9 pr-4 py-3 rounded-xl border border-stroke bg-card text-ink text-base placeholder:text-ink-muted outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100 transition"
               />
+            </div>
+
+            <div>
+              <label
+                htmlFor="dateOfBirth"
+                className="block text-sm font-medium text-ink mb-1.5 pl-1"
+              >
+                Date of birth
+              </label>
+              <div className="relative">
+                <FiCalendar className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted text-base pointer-events-none" />
+                <input
+                  id="dateOfBirth"
+                  type="date"
+                  name="dateOfBirth"
+                  autoComplete="bday"
+                  value={formData.dateOfBirth}
+                  onChange={handleChange}
+                  required
+                  min="1900-01-01"
+                  max={maxDob}
+                  aria-invalid={dobTooYoung || dobInvalid}
+                  aria-describedby="dob-help"
+                  className={`w-full pl-9 pr-4 py-3 rounded-xl border bg-card text-ink text-base outline-none focus:ring-2 transition ${
+                    dobTooYoung || dobInvalid
+                      ? "border-red-500 focus:border-red-500 focus:ring-red-100"
+                      : "border-stroke focus:border-primary-600 focus:ring-primary-100"
+                  }`}
+                />
+              </div>
+              <p
+                id="dob-help"
+                role={dobTooYoung || dobInvalid ? "alert" : undefined}
+                className={`text-sm mt-1.5 pl-1 ${
+                  dobTooYoung || dobInvalid ? "text-red-600" : "text-ink-muted"
+                }`}
+              >
+                {dobTooYoung
+                  ? `You must be at least ${MIN_SIGNUP_AGE} to create a Tronites account.`
+                  : dobInvalid
+                    ? "Enter a valid date of birth."
+                    : "Used only to check you're old enough. It's never shown on your profile."}
+              </p>
             </div>
 
             <div className="relative">
@@ -164,6 +266,7 @@ const Register = () => {
                 type={showPassword ? "text" : "password"}
                 name="password"
                 placeholder="Password"
+                autoComplete="new-password"
                 value={formData.password}
                 onChange={handleChange}
                 required
@@ -173,6 +276,7 @@ const Register = () => {
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
+                aria-label={showPassword ? "Hide password" : "Show password"}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-muted hover:text-ink transition"
               >
                 {showPassword ? <FiEyeOff size={15} /> : <FiEye size={15} />}
@@ -191,14 +295,20 @@ const Register = () => {
                 className="mt-0.5 h-4 w-4 shrink-0 rounded border-stroke accent-primary-600"
               />
               <span className="text-sm text-ink-muted leading-snug">
-                I'm at least 13 years old (or the minimum age of digital consent
-                in my country) and I agree to the{" "}
-                <Link to="/terms" className="text-primary-600 hover:underline">
+                I agree to the{" "}
+                <Link
+                  to="/terms"
+                  target="_blank"
+                  rel="noopener"
+                  className="text-primary-600 hover:underline"
+                >
                   Terms of Use
                 </Link>{" "}
                 and{" "}
                 <Link
                   to="/privacy"
+                  target="_blank"
+                  rel="noopener"
                   className="text-primary-600 hover:underline"
                 >
                   Privacy Policy
@@ -207,9 +317,22 @@ const Register = () => {
               </span>
             </label>
 
+            <label className="flex items-start gap-2.5 pl-1 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={marketingOptIn}
+                onChange={(e) => setMarketingOptIn(e.target.checked)}
+                className="mt-0.5 h-4 w-4 shrink-0 rounded border-stroke accent-primary-600"
+              />
+              <span className="text-sm text-ink-muted leading-snug">
+                Email me product news and announcements (optional — you can
+                unsubscribe any time).
+              </span>
+            </label>
+
             <button
               type="submit"
-              disabled={isLoading || !agreed}
+              disabled={isLoading || !agreed || dobTooYoung || dobInvalid}
               className="w-full bg-primary-600 hover:bg-primary-800 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-xl text-base transition-all duration-200 shadow-sm hover:shadow-md"
             >
               {isLoading ? "Creating account..." : "Create Account"}

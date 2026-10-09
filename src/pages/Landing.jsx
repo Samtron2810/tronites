@@ -158,7 +158,7 @@ const Landing = () => {
       <footer className="bg-[#04342c] text-[#8fa79c] text-sm">
         <div className="max-w-6xl mx-auto px-5 sm:px-8 py-10 flex flex-wrap items-center justify-between gap-4">
           <span>© {new Date().getFullYear()} Tronites</span>
-          <div className="flex items-center gap-6">
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
             <Link to="/help" className="hover:text-white transition">
               Help
             </Link>
@@ -167,6 +167,15 @@ const Landing = () => {
             </Link>
             <Link to="/terms" className="hover:text-white transition">
               Terms
+            </Link>
+            <Link to="/guidelines" className="hover:text-white transition">
+              Guidelines
+            </Link>
+            <Link to="/refunds" className="hover:text-white transition">
+              Refunds
+            </Link>
+            <Link to="/copyright" className="hover:text-white transition">
+              Copyright
             </Link>
           </div>
         </div>

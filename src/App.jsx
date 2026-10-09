@@ -50,6 +50,9 @@ const HelpSupport = lazy(() => import("./pages/HelpSupport"));
 const Tiers = lazy(() => import("./pages/Tiers"));
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 const TermsOfUse = lazy(() => import("./pages/TermsOfUse"));
+const RefundPolicy = lazy(() => import("./pages/RefundPolicy"));
+const CopyrightPolicy = lazy(() => import("./pages/CopyrightPolicy"));
+const CommunityGuidelines = lazy(() => import("./pages/CommunityGuidelines"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const PaystackReturnHandler = lazy(() => import("./components/PaystackReturnHandler"));
 const MyPromotions = lazy(() => import("./pages/MyPromotions"));
@@ -137,6 +140,9 @@ const AppContent = () => {
               links) as well as from within the app */}
           <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route path="/terms" element={<TermsOfUse />} />
+          <Route path="/refunds" element={<RefundPolicy />} />
+          <Route path="/copyright" element={<CopyrightPolicy />} />
+          <Route path="/guidelines" element={<CommunityGuidelines />} />
 
           {/* Protected */}
           <Route

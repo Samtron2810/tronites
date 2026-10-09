@@ -21,6 +21,9 @@
     { "source": "/tiers", "destination": "/api/ssr" },
     { "source": "/privacy", "destination": "/api/ssr" },
     { "source": "/terms", "destination": "/api/ssr" },
+    { "source": "/refunds", "destination": "/api/ssr" },
+    { "source": "/copyright", "destination": "/api/ssr" },
+    { "source": "/guidelines", "destination": "/api/ssr" },
     { "source": "/(.*)", "destination": "/" }
   ]
 }

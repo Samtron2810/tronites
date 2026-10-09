@@ -6,6 +6,7 @@ import { HelmetProvider } from "react-helmet-async";
 
 import App from "./App";
 import ErrorBoundary from "./components/ErrorBoundary";
+import "./fonts";
 import "./index.css";
 
 import { AuthProvider } from "./context/AuthContext";

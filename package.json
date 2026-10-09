@@ -12,6 +12,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@fontsource/dm-sans": "^5.3.0",
     "@tailwindcss/postcss": "^4.2.1",
     "axios": "^1.20.0",
     "framer-motion": "^12.37.0",

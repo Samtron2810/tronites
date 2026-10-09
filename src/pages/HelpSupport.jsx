@@ -327,6 +327,27 @@ const HelpSupport = () => {
             <FiShield size={14} className="text-primary-600" />
             Terms of Use
           </Link>
+          <Link
+            to="/guidelines"
+            className="flex items-center gap-2 px-3 py-2.5 rounded-xl border border-stroke text-base text-ink hover:bg-surface transition"
+          >
+            <FiUserX size={14} className="text-primary-600" />
+            Community Guidelines
+          </Link>
+          <Link
+            to="/refunds"
+            className="flex items-center gap-2 px-3 py-2.5 rounded-xl border border-stroke text-base text-ink hover:bg-surface transition"
+          >
+            <FiCreditCard size={14} className="text-primary-600" />
+            Refunds &amp; Cancellations
+          </Link>
+          <Link
+            to="/copyright"
+            className="flex items-center gap-2 px-3 py-2.5 rounded-xl border border-stroke text-base text-ink hover:bg-surface transition"
+          >
+            <FiFlag size={14} className="text-primary-600" />
+            Copyright &amp; Takedowns
+          </Link>
           <a
             href="mailto:support@tronites.com?subject=Tronites%20issue%20report"
             className="flex items-center gap-2 px-3 py-2.5 rounded-xl border border-stroke text-base text-ink hover:bg-surface transition"

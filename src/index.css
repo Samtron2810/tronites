@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+/* DM Sans @font-face rules are imported in src/fonts.js (self-hosted). */
+
 /* Enables the `dark:` variant in Tailwind v4, driven by the `.dark` class
    on <html> (toggled by ThemeContext). */
 @custom-variant dark (&:where(.dark, .dark *));

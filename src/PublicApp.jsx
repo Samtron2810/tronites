@@ -10,6 +10,9 @@ import HelpSupport from "./pages/HelpSupport";
 import Tiers from "./pages/Tiers";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfUse from "./pages/TermsOfUse";
+import RefundPolicy from "./pages/RefundPolicy";
+import CopyrightPolicy from "./pages/CopyrightPolicy";
+import CommunityGuidelines from "./pages/CommunityGuidelines";
 
 // Any path this file doesn't know about (login, signup, /home, every
 // authenticated route) forces a full page load instead of trying to
@@ -74,6 +77,9 @@ const PublicApp = () => {
         <Route path="/tiers" element={<Tiers />} />
         <Route path="/privacy" element={<PrivacyPolicy />} />
         <Route path="/terms" element={<TermsOfUse />} />
+        <Route path="/refunds" element={<RefundPolicy />} />
+        <Route path="/copyright" element={<CopyrightPolicy />} />
+        <Route path="/guidelines" element={<CommunityGuidelines />} />
         <Route path="*" element={<HardRedirect />} />
       </Routes>
     </>
