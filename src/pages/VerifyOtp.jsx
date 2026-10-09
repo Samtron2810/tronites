@@ -16,10 +16,16 @@ const VerifyOtp = () => {
   // state — doesn't strand someone mid-flow. Namespaced keys prevent
   // collision with the reset-password flow which uses its own keys.
   const [challengeId] = useState(
-    () => location.state?.challengeId || sessionStorage.getItem("otp:register:challengeId") || "",
+    () =>
+      location.state?.challengeId ||
+      sessionStorage.getItem("otp:register:challengeId") ||
+      "",
   );
   const [email] = useState(
-    () => location.state?.email || sessionStorage.getItem("otp:register:email") || "",
+    () =>
+      location.state?.email ||
+      sessionStorage.getItem("otp:register:email") ||
+      "",
   );
   // _duplicate flag from the server (via router state): the email was
   // already registered. No real OTP was sent; show a helpful sign-in hint.
@@ -77,6 +83,27 @@ const VerifyOtp = () => {
   return (
     <div className="min-h-screen app-bg flex items-center justify-center px-6">
       <div className="w-full max-w-sm">
+        <div className="mb-5 flex items-center justify-between gap-3">
+          <Link
+            to="/login"
+            className="text-sm font-medium text-ink-muted hover:text-primary-700 transition"
+          >
+            ← Back to login
+          </Link>
+
+          <button
+            type="button"
+            onClick={() => {
+              sessionStorage.removeItem("otp:register:challengeId");
+              sessionStorage.removeItem("otp:register:email");
+              navigate("/signup", { replace: true });
+            }}
+            className="text-sm font-medium text-ink-muted hover:text-primary-700 transition"
+          >
+            Cancel
+          </button>
+        </div>
+
         <div className="text-center">
           <AuthHomeLink />
         </div>
@@ -89,19 +116,29 @@ const VerifyOtp = () => {
           <p className="text-ink-muted text-base mt-1">
             We sent a 6-digit code to
           </p>
-          <p className="text-ink font-semibold text-base mt-0.5 break-all">{email}</p>
+          <p className="text-ink font-semibold text-base mt-0.5 break-all">
+            {email}
+          </p>
         </div>
 
         {isDuplicate && (
           <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
-            <p className="text-sm font-semibold text-amber-700 mb-0.5">This email is already registered</p>
+            <p className="text-sm font-semibold text-amber-700 mb-0.5">
+              This email is already registered
+            </p>
             <p className="text-sm text-amber-600 leading-relaxed">
               No code was sent. You can{" "}
-              <Link to="/login" className="font-semibold underline hover:text-amber-800">
+              <Link
+                to="/login"
+                className="font-semibold underline hover:text-amber-800"
+              >
                 sign in
               </Link>{" "}
               or{" "}
-              <Link to="/forgot-password" className="font-semibold underline hover:text-amber-800">
+              <Link
+                to="/forgot-password"
+                className="font-semibold underline hover:text-amber-800"
+              >
                 reset your password
               </Link>{" "}
               instead.
@@ -134,7 +171,10 @@ const VerifyOtp = () => {
             disabled={resendLoading}
             className="w-full flex items-center justify-center gap-2 text-ink-sub border border-stroke rounded-xl py-2.5 text-base font-medium hover:bg-surface transition disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <FiRefreshCw className={resendLoading ? "animate-spin" : ""} size={14} />
+            <FiRefreshCw
+              className={resendLoading ? "animate-spin" : ""}
+              size={14}
+            />
             {resendLoading ? "Resending..." : "Resend OTP"}
           </button>
         </div>
