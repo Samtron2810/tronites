@@ -5,8 +5,62 @@
 // mid-scroll or mid-compose. The app surfaces "Update available" (see
 // App.jsx) and only calls applyUpdate() on an explicit tap.
 
+const UPDATE_PROMPT_COOLDOWN_MS = 12 * 60 * 60 * 1000; // 12 hours
+const UPDATE_PROMPT_DELAY_MS = 15 * 1000; // wait a bit after load
+const UPDATE_PROMPT_KEY = "tronites:lastUpdatePromptAt";
+
 let waitingWorker = null;
 let onUpdateAvailable = null;
+let promptTimer = null;
+
+const readLastPromptAt = () => {
+  try {
+    const raw = Number(localStorage.getItem(UPDATE_PROMPT_KEY) || "0");
+    return Number.isFinite(raw) ? raw : 0;
+  } catch {
+    return 0;
+  }
+};
+
+const writeLastPromptAt = (timestamp = Date.now()) => {
+  try {
+    localStorage.setItem(UPDATE_PROMPT_KEY, String(timestamp));
+  } catch {
+    // ignore quota/private browsing issues and keep the app usable
+  }
+};
+
+const canPromptForUpdate = () => {
+  const now = Date.now();
+  return now - readLastPromptAt() > UPDATE_PROMPT_COOLDOWN_MS;
+};
+
+const scheduleUpdatePrompt = () => {
+  if (!onUpdateAvailable || !canPromptForUpdate()) return;
+
+  if (promptTimer) {
+    clearTimeout(promptTimer);
+  }
+
+  promptTimer = setTimeout(() => {
+    if (document.visibilityState === "hidden") {
+      const resumePrompt = () => {
+        if (document.visibilityState !== "hidden") {
+          document.removeEventListener("visibilitychange", resumePrompt);
+          scheduleUpdatePrompt();
+        }
+      };
+      document.addEventListener("visibilitychange", resumePrompt, {
+        once: true,
+      });
+      return;
+    }
+
+    if (!canPromptForUpdate()) return;
+    writeLastPromptAt();
+    onUpdateAvailable();
+  }, UPDATE_PROMPT_DELAY_MS);
+};
 
 export const registerServiceWorker = () => {
   if (!("serviceWorker" in navigator)) return;
@@ -27,7 +81,7 @@ export const registerServiceWorker = () => {
       // to future 'updatefound' events.
       if (registration.waiting) {
         waitingWorker = registration.waiting;
-        onUpdateAvailable?.();
+        scheduleUpdatePrompt();
       }
 
       registration.addEventListener("updatefound", () => {
@@ -43,7 +97,7 @@ export const registerServiceWorker = () => {
             // UPDATE, not the first-ever install — first install has no
             // existing controller and shouldn't prompt anything.
             waitingWorker = newWorker;
-            onUpdateAvailable?.();
+            scheduleUpdatePrompt();
           }
         });
       });
@@ -72,6 +126,7 @@ export const subscribeToUpdates = (callback) => {
 export const isUpdateAvailable = () => waitingWorker !== null;
 
 export const applyUpdate = () => {
+  writeLastPromptAt();
   waitingWorker?.postMessage({ type: "SKIP_WAITING" });
 };
 
