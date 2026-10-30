@@ -66,6 +66,7 @@ import { hasPermission } from "../constants/permissions";
 import TipModal from "./TipModal";
 import SubscriberOnlyGate from "./SubscriberOnlyGate";
 import FloatingMenu from "./FloatingMenu";
+import useExclusiveVideoPlayback from "../hooks/useExclusiveVideoPlayback";
 
 // Post age at render time — wrapped behind a helper (same reasoning as
 // cooldownRemainingMs in utils/cooldown.js) so the render path doesn't
@@ -861,6 +862,8 @@ const PostCard = ({
       socket.off("postUpdated", handlePostUpdated);
     };
   }, [socket, postId, currentUser?._id, isEditing]);
+
+  useExclusiveVideoPlayback(videoRef, postVideo?.url);
 
   // Auto-pause the video when it's scrolled out of view — an off-screen
   // playing video would otherwise keep blaring audio indefinitely. Only

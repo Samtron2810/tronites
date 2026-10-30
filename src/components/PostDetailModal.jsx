@@ -36,6 +36,7 @@ import { useSocket } from "../context/useSocket";
 import { useAuth } from "../context/useAuth";
 import api from "../services/api";
 import useBackButtonClose from "../hooks/useBackButtonClose";
+import useExclusiveVideoPlayback from "../hooks/useExclusiveVideoPlayback";
 import { canPromote, getPinnedLimit } from "../utils/tierLimits";
 import { hasPermission } from "../constants/permissions";
 import ModalPortal from "./ModalPortal";
@@ -213,6 +214,7 @@ const PostDetailModal = ({
   const [isVideoMuted, setIsVideoMuted] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const videoRef = useRef(null);
+  useExclusiveVideoPlayback(videoRef, postVideo?.url);
   const touchStartX = useRef(null);
   const menuRef = useRef(null);
   const triggerRef = useRef(null);
