@@ -438,6 +438,19 @@
     border-width: 1.5px;
   }
 
+  /* ── Inline links: amber underline ───────────────────────────────── */
+  .link-amber {
+    font-weight: 600;
+    color: inherit;
+    text-decoration: none;
+    border-bottom: 2px solid var(--color-accent);
+    transition: background-color 0.12s ease;
+  }
+  .link-amber:hover {
+    background-color: var(--color-accent);
+    color: #16140f;
+  }
+
   /* ── Labels, chips ───────────────────────────────────────────────── */
   .mono-label {
     font-family: var(--font-mono);

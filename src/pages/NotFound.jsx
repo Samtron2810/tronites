@@ -1,27 +1,32 @@
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/useAuth";
 import SeoHead from "../components/SeoHead";
+import { AuthCenter } from "../components/AuthLayout";
 
 const NotFound = () => {
   const { user } = useAuth();
 
   return (
-    <div className="min-h-screen app-bg flex items-center justify-center px-4">
+    <AuthCenter>
       <SeoHead title="Page Not Found" robots="noindex, nofollow" />
-      <div className="bg-card rounded-2xl shadow-sm border border-stroke p-8 max-w-md w-full text-center">
-        <p className="text-7xl font-black text-primary-400 mb-2">404</p>
-        <h1 className="text-2xl font-bold text-ink">Page not found</h1>
-        <p className="text-ink-muted text-base mt-2">
+      <div className="text-center">
+        <p className="font-display text-8xl font-extrabold leading-none tracking-[-0.05em] text-primary-600">
+          404
+        </p>
+        <h1 className="mt-3 text-2xl font-extrabold tracking-[-0.03em] text-ink">
+          Page not found
+        </h1>
+        <p className="mt-2 text-base text-ink-sub">
           The page you're looking for doesn't exist or may have moved.
         </p>
         <Link
           to={user ? "/home" : "/"}
-          className="inline-block mt-6 px-5 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-800 text-white font-semibold text-base transition-all duration-200 shadow-sm hover:shadow-md"
+          className="btn btn-primary btn-lg mt-6"
         >
           {user ? "Back to feed" : "Back to Tronites"}
         </Link>
       </div>
-    </div>
+    </AuthCenter>
   );
 };
 

@@ -82,7 +82,7 @@ const PublicPostView = () => {
           </p>
           <Link
             to="/"
-            className="px-5 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-800 text-white font-semibold text-sm transition"
+            className="btn btn-primary"
           >
             Back to Tronites
           </Link>
@@ -136,13 +136,13 @@ const PublicPostView = () => {
       <div className="mt-5 flex items-center gap-2.5">
         <button
           onClick={promptLogin}
-          className="flex-1 px-4 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-800 text-white font-semibold text-sm transition"
+          className="btn btn-primary flex-1"
         >
           {viewer ? "Reply" : "Log in to reply"}
         </button>
         <Link
           to={`/u/${post.user?.username}`}
-          className="px-4 py-2.5 rounded-xl border border-stroke hover:bg-surface text-ink font-semibold text-sm transition"
+          className="btn"
         >
           View profile
         </Link>

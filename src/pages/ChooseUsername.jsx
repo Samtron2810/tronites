@@ -1,3 +1,4 @@
+import { AuthCenter } from "../components/AuthLayout";
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
@@ -112,8 +113,7 @@ const ChooseUsername = () => {
   }[status];
 
   return (
-    <div className="min-h-screen app-bg flex items-center justify-center px-6">
-      <div className="w-full max-w-sm">
+    <AuthCenter>
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-primary-100 mb-4">
             <FiHash className="text-primary-600 text-3xl" />
@@ -124,7 +124,7 @@ const ChooseUsername = () => {
           </p>
         </div>
 
-        <div className="bg-card border border-stroke rounded-2xl p-6 shadow-sm space-y-4">
+        <div className="space-y-4">
           <div className="relative">
             <span className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-muted text-base font-medium">
               @
@@ -139,7 +139,7 @@ const ChooseUsername = () => {
               maxLength={20}
               autoFocus
               onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
-              className="w-full pl-8 pr-10 py-3 rounded-xl border border-stroke bg-surface text-ink text-base outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100 transition"
+              className="field pl-9 pr-10"
             />
             <span className="absolute right-3 top-1/2 -translate-y-1/2">
               {statusIcon}
@@ -151,7 +151,7 @@ const ChooseUsername = () => {
           <button
             onClick={handleSubmit}
             disabled={status !== "available" || submitting}
-            className="w-full bg-primary-600 hover:bg-primary-800 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-xl text-base transition-all duration-200 shadow-sm"
+            className="btn btn-primary btn-lg btn-block"
           >
             {submitting ? "Saving..." : "Continue"}
           </button>
@@ -165,8 +165,7 @@ const ChooseUsername = () => {
             {cancelling ? "Signing out..." : "Cancel and sign out"}
           </button>
         </div>
-      </div>
-    </div>
+    </AuthCenter>
   );
 };
 

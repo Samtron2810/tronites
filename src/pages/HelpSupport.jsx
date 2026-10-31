@@ -251,7 +251,7 @@ const HelpSupport = () => {
         Back
       </button>
 
-      <h1 className="text-2xl font-bold text-ink mb-1">Help & Support</h1>
+      <h1 className="display-md mb-1">Help & Support</h1>
       <p className="text-base text-ink-muted mb-6">
         Answers to common questions, and how to reach us if you need more help.
       </p>
@@ -266,12 +266,12 @@ const HelpSupport = () => {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search help topics…"
-          className="w-full pl-10 pr-4 py-3 rounded-xl border border-stroke bg-card text-ink text-base placeholder:text-ink-muted outline-none focus:border-primary-400 transition"
+          className="field pl-10 pr-4"
         />
       </div>
 
       {visibleSections.length === 0 && (
-        <section className="bg-card border border-stroke rounded-2xl p-5 mb-4">
+        <section className="card p-5 mb-4">
           <p className="text-base text-ink-muted">
             No help topics match "{query.trim()}". Try a different word, or{" "}
             <a
@@ -288,7 +288,7 @@ const HelpSupport = () => {
       {visibleSections.map((section) => (
         <section
           key={section.heading}
-          className="bg-card border border-stroke rounded-2xl p-5 mb-4"
+          className="card p-5 mb-4"
         >
           <h2 className="text-base font-semibold text-ink mb-1">
             {section.heading}
@@ -301,63 +301,63 @@ const HelpSupport = () => {
         </section>
       ))}
 
-      <section className="bg-card border border-stroke rounded-2xl p-5 mb-4">
+      <section className="card p-5 mb-4">
         <h2 className="text-base font-semibold text-ink mb-3">
           Quick links
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           <Link
             to="/privacy"
-            className="flex items-center gap-2 px-3 py-2.5 rounded-xl border border-stroke text-base text-ink hover:bg-surface transition"
+            className="card flex items-center gap-2 px-3 py-2.5 text-base text-ink transition hover:bg-sand"
           >
             <FiLock size={14} className="text-primary-600" />
             Privacy Policy
           </Link>
           <Link
             to="/tiers"
-            className="flex items-center gap-2 px-3 py-2.5 rounded-xl border border-stroke text-base text-ink hover:bg-surface transition"
+            className="card flex items-center gap-2 px-3 py-2.5 text-base text-ink transition hover:bg-sand"
           >
             <FiAward size={14} className="text-primary-600" />
             Tiers & benefits
           </Link>
           <Link
             to="/terms"
-            className="flex items-center gap-2 px-3 py-2.5 rounded-xl border border-stroke text-base text-ink hover:bg-surface transition"
+            className="card flex items-center gap-2 px-3 py-2.5 text-base text-ink transition hover:bg-sand"
           >
             <FiShield size={14} className="text-primary-600" />
             Terms of Use
           </Link>
           <Link
             to="/guidelines"
-            className="flex items-center gap-2 px-3 py-2.5 rounded-xl border border-stroke text-base text-ink hover:bg-surface transition"
+            className="card flex items-center gap-2 px-3 py-2.5 text-base text-ink transition hover:bg-sand"
           >
             <FiUserX size={14} className="text-primary-600" />
             Community Guidelines
           </Link>
           <Link
             to="/refunds"
-            className="flex items-center gap-2 px-3 py-2.5 rounded-xl border border-stroke text-base text-ink hover:bg-surface transition"
+            className="card flex items-center gap-2 px-3 py-2.5 text-base text-ink transition hover:bg-sand"
           >
             <FiCreditCard size={14} className="text-primary-600" />
             Refunds &amp; Cancellations
           </Link>
           <Link
             to="/copyright"
-            className="flex items-center gap-2 px-3 py-2.5 rounded-xl border border-stroke text-base text-ink hover:bg-surface transition"
+            className="card flex items-center gap-2 px-3 py-2.5 text-base text-ink transition hover:bg-sand"
           >
             <FiFlag size={14} className="text-primary-600" />
             Copyright &amp; Takedowns
           </Link>
           <a
             href="mailto:support@tronites.com?subject=Tronites%20issue%20report"
-            className="flex items-center gap-2 px-3 py-2.5 rounded-xl border border-stroke text-base text-ink hover:bg-surface transition"
+            className="card flex items-center gap-2 px-3 py-2.5 text-base text-ink transition hover:bg-sand"
           >
             <FiFlag size={14} className="text-primary-600" />
             Report an issue
           </a>
           <a
             href="mailto:support@tronites.com?subject=Payment%20or%20billing%20question&body=Payment%20reference%3A%20"
-            className="flex items-center gap-2 px-3 py-2.5 rounded-xl border border-stroke text-base text-ink hover:bg-surface transition"
+            className="card flex items-center gap-2 px-3 py-2.5 text-base text-ink transition hover:bg-sand"
           >
             <FiCreditCard size={14} className="text-primary-600" />
             Payment or billing help
@@ -365,7 +365,7 @@ const HelpSupport = () => {
         </div>
       </section>
 
-      <section className="bg-card border border-stroke rounded-2xl p-5">
+      <section className="card p-5">
         <h2 className="text-base font-semibold text-ink mb-1">
           Still need help?
         </h2>
@@ -374,7 +374,7 @@ const HelpSupport = () => {
         </p>
         <a
           href="mailto:support@tronites.com"
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-800 text-white text-base font-medium transition"
+          className="btn btn-primary"
         >
           <FiMail size={15} />
           Email support@tronites.com

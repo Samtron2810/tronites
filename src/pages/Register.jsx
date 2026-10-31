@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { useAuth } from "../context/useAuth";
-import AuthHomeLink from "../components/AuthHomeLink";
+import AuthLayout from "../components/AuthLayout";
 import {
   FiUser,
   FiMail,
@@ -99,11 +99,7 @@ const REUSE_WINDOW_MS = 4 * 60 * 1000; // OTP lives for 5 minutes
 let lastSend = null;
 
 const inputClass = (hasError, extra = "") =>
-  `w-full py-3 rounded-xl border bg-card text-ink text-base placeholder:text-ink-muted outline-none focus:ring-2 transition ${
-    hasError
-      ? "border-red-500 focus:border-red-500 focus:ring-red-100"
-      : "border-stroke focus:border-primary-600 focus:ring-primary-100"
-  } ${extra}`;
+  `field ${hasError ? "border-red-500" : ""} ${extra}`;
 
 const FieldError = ({ id, message }) =>
   message ? (
@@ -248,35 +244,11 @@ const Register = () => {
   };
 
   return (
-    <div className="min-h-screen app-bg flex">
-      {/* Left panel */}
-      <div className="hidden lg:flex w-1/2 bg-[#0f6e56] flex-col justify-between p-12">
-        <Link
-          to="/"
-          className="inline-flex items-center self-start text-white font-bold text-5xl tracking-tight"
-          aria-label="Back to Tronites homepage"
-        >
-          Tron<span className="text-[#9fe1cb]">ites</span>
-        </Link>
-        <div>
-          <p className="text-[#e1f5ee] text-4xl font-bold leading-tight max-w-xs">
-            Your voice. Your community.
-          </p>
-          <p className="text-[#9fe1cb] mt-4 text-lg leading-relaxed max-w-sm">
-            Join thousands already sharing moments, ideas, and conversations.
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-[#1d9e75]" />
-          <div className="w-8 h-8 rounded-full bg-[#9fe1cb]" />
-          <div className="w-8 h-8 rounded-full bg-white/30" />
-        </div>
-      </div>
-
-      {/* Right panel */}
-      <div className="flex-1 flex items-center justify-center px-6 py-12">
-        <div className="w-full max-w-sm">
-          <AuthHomeLink />
+    <AuthLayout
+      size="xl"
+      headline={<>Your voice. <br />Your people<span className="text-primary-600">.</span></>}
+      sub="Join thousands already sharing moments, ideas, and conversations."
+    >
 
           <h2 className="text-3xl font-bold text-ink mb-1">Create account</h2>
           <p className="text-ink-muted text-base mb-8">
@@ -300,7 +272,7 @@ const Register = () => {
                     maxLength={30}
                     aria-invalid={!!showError("firstName")}
                     aria-describedby="reg-firstName-error"
-                    className={inputClass(!!showError("firstName"), "pl-9 pr-4")}
+                    className={inputClass(!!showError("firstName"), "pl-10 pr-4")}
                   />
                 </div>
                 <FieldError
@@ -344,7 +316,7 @@ const Register = () => {
                   onBlur={() => markTouched("email")}
                   aria-invalid={!!showError("email")}
                   aria-describedby="reg-email-error"
-                  className={inputClass(!!showError("email"), "pl-9 pr-4")}
+                  className={inputClass(!!showError("email"), "pl-10 pr-4")}
                 />
               </div>
               <FieldError id="reg-email-error" message={showError("email")} />
@@ -371,7 +343,7 @@ const Register = () => {
                   max={maxDob}
                   aria-invalid={!!showError("dateOfBirth")}
                   aria-describedby="reg-dateOfBirth-error reg-dateOfBirth-help"
-                  className={inputClass(!!showError("dateOfBirth"), "pl-9 pr-4")}
+                  className={inputClass(!!showError("dateOfBirth"), "pl-10 pr-4")}
                 />
               </div>
               <FieldError
@@ -404,7 +376,7 @@ const Register = () => {
                   maxLength={128}
                   aria-invalid={!!showError("password")}
                   aria-describedby="reg-password-error reg-password-help"
-                  className={inputClass(!!showError("password"), "pl-9 pr-10")}
+                  className={inputClass(!!showError("password"), "pl-10 pr-10")}
                 />
                 <button
                   type="button"
@@ -438,7 +410,7 @@ const Register = () => {
                   onChange={(e) => setAgreed(e.target.checked)}
                   aria-invalid={!!(submitted && errors.agreed)}
                   aria-describedby="reg-agreed-error"
-                  className="mt-0.5 h-4 w-4 shrink-0 rounded border-stroke accent-primary-600"
+                  className="mt-0.5 h-4 w-4 shrink-0 accent-primary-600"
                 />
                 <span className="text-sm text-ink-muted leading-snug">
                   I agree to the{" "}
@@ -446,7 +418,7 @@ const Register = () => {
                     to="/terms"
                     target="_blank"
                     rel="noopener"
-                    className="text-primary-600 hover:underline"
+                    className="link-amber"
                   >
                     Terms of Use
                   </Link>{" "}
@@ -455,7 +427,7 @@ const Register = () => {
                     to="/privacy"
                     target="_blank"
                     rel="noopener"
-                    className="text-primary-600 hover:underline"
+                    className="link-amber"
                   >
                     Privacy Policy
                   </Link>
@@ -473,7 +445,7 @@ const Register = () => {
                 type="checkbox"
                 checked={marketingOptIn}
                 onChange={(e) => setMarketingOptIn(e.target.checked)}
-                className="mt-0.5 h-4 w-4 shrink-0 rounded border-stroke accent-primary-600"
+                className="mt-0.5 h-4 w-4 shrink-0 accent-primary-600"
               />
               <span className="text-sm text-ink-muted leading-snug">
                 Email me product news and announcements (optional — you can
@@ -485,7 +457,7 @@ const Register = () => {
               type="submit"
               disabled={isLoading}
               aria-busy={isLoading}
-              className="w-full bg-primary-600 hover:bg-primary-800 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-xl text-base transition-all duration-200 shadow-sm hover:shadow-md"
+              className="btn btn-primary btn-lg btn-block"
             >
               {isLoading ? "Creating account..." : "Create Account"}
             </button>
@@ -495,14 +467,12 @@ const Register = () => {
             Already have an account?{" "}
             <Link
               to="/login"
-              className="text-primary-600 font-semibold hover:underline"
+              className="link-amber"
             >
               Sign in
             </Link>
           </p>
-        </div>
-      </div>
-    </div>
+    </AuthLayout>
   );
 };
 

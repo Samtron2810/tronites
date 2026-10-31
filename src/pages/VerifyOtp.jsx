@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import api from "../services/api";
 import { useAuth } from "../context/useAuth";
-import AuthHomeLink from "../components/AuthHomeLink";
+import { AuthCenter } from "../components/AuthLayout";
 import { FiMail, FiRefreshCw } from "react-icons/fi";
 
 const VerifyOtp = () => {
@@ -81,12 +81,11 @@ const VerifyOtp = () => {
   };
 
   return (
-    <div className="min-h-screen app-bg flex items-center justify-center px-6">
-      <div className="w-full max-w-sm">
+    <AuthCenter>
         <div className="mb-5 flex items-center justify-between gap-3">
           <Link
             to="/login"
-            className="text-sm font-medium text-ink-muted hover:text-primary-700 transition"
+            className="text-sm font-medium text-ink-muted hover:text-ink transition"
           >
             ← Back to login
           </Link>
@@ -98,14 +97,10 @@ const VerifyOtp = () => {
               sessionStorage.removeItem("otp:register:email");
               navigate("/signup", { replace: true });
             }}
-            className="text-sm font-medium text-ink-muted hover:text-primary-700 transition"
+            className="text-sm font-medium text-ink-muted hover:text-ink transition"
           >
             Cancel
           </button>
-        </div>
-
-        <div className="text-center">
-          <AuthHomeLink />
         </div>
 
         <div className="text-center mb-8">
@@ -146,7 +141,7 @@ const VerifyOtp = () => {
           </div>
         )}
 
-        <div className="bg-card border border-stroke rounded-2xl p-6 shadow-sm space-y-4">
+        <div className="space-y-4">
           <input
             type="text"
             inputMode="numeric"
@@ -155,13 +150,13 @@ const VerifyOtp = () => {
             value={otp}
             onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
             maxLength={6}
-            className="w-full px-4 py-3 rounded-xl border border-stroke bg-surface text-ink text-base tracking-widest text-center placeholder:tracking-normal placeholder:text-ink-muted outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100 transition"
+            className="field px-4"
           />
 
           <button
             onClick={handleVerify}
             disabled={loading || otp.length < 6}
-            className="w-full bg-primary-600 hover:bg-primary-800 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-xl text-base transition-all duration-200 shadow-sm"
+            className="btn btn-primary btn-lg btn-block"
           >
             {loading ? "Verifying..." : "Verify"}
           </button>
@@ -169,7 +164,7 @@ const VerifyOtp = () => {
           <button
             onClick={handleResend}
             disabled={resendLoading}
-            className="w-full flex items-center justify-center gap-2 text-ink-sub border border-stroke rounded-xl py-2.5 text-base font-medium hover:bg-surface transition disabled:opacity-50 disabled:cursor-not-allowed"
+            className="btn btn-block"
           >
             <FiRefreshCw
               className={resendLoading ? "animate-spin" : ""}
@@ -178,8 +173,7 @@ const VerifyOtp = () => {
             {resendLoading ? "Resending..." : "Resend OTP"}
           </button>
         </div>
-      </div>
-    </div>
+    </AuthCenter>
   );
 };
 

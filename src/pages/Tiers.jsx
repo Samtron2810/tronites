@@ -15,9 +15,7 @@ import { FiArrowLeft, FiCheck, FiChevronRight } from "react-icons/fi";
 // visitors can compare every tier instead of only the one they hold.
 const TierCard = ({ info, features, isCurrent }) => (
   <div
-    className={`bg-card border rounded-2xl p-5 ${
-      isCurrent ? "border-primary-400 ring-2 ring-primary-100" : "border-stroke"
-    }`}
+    className={`card p-5 ${isCurrent ? "card-pop" : ""}`}
   >
     <div className="flex items-start gap-2.5">
       <BadgeSeal color={info.color} size={28} />
@@ -106,7 +104,7 @@ const Tiers = () => {
         Back
       </button>
 
-      <h1 className="text-2xl font-bold text-ink mb-1">Tiers & benefits</h1>
+      <h1 className="display-md mb-1">Tiers & benefits</h1>
       <p className="text-base text-ink-muted mb-5 leading-snug">
         Every verification badge and what it unlocks — you can read them all,
         not just the tier you're on today.
@@ -115,8 +113,7 @@ const Tiers = () => {
       {/* Your current tier — always visible so visitors see where they
           stand, while the matrix and cards below show the rest. */}
       <section
-        className="bg-card border rounded-2xl p-5 mb-6"
-        style={{ borderColor: `${currentInfo.color}55` }}
+        className="card card-pop mb-6 p-5"
       >
         <div className="flex items-center gap-3">
           <BadgeSeal color={currentInfo.color} size={30} />
@@ -162,7 +159,7 @@ const Tiers = () => {
         <p className="text-sm text-ink-muted mb-3">
           Compare every tier side by side. Your tier is highlighted.
         </p>
-        <div className="overflow-x-auto rounded-2xl border border-stroke bg-card">
+        <div className="card overflow-x-auto">
           <table className="w-full min-w-175 border-collapse text-sm">
             <thead>
               <tr>

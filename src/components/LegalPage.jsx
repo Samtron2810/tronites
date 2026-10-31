@@ -11,7 +11,7 @@ import {
 } from "../constants/legal";
 
 export const Section = ({ title, children }) => (
-  <section className="bg-card border border-stroke rounded-2xl p-5 mb-4">
+  <section className="card p-5 mb-4">
     <h2 className="text-base font-semibold text-ink mb-2">{title}</h2>
     <div className="text-base text-ink-muted leading-relaxed space-y-3">
       {children}
@@ -79,7 +79,7 @@ const LegalPage = ({ title, description, canonical, children }) => {
         Back
       </button>
 
-      <h1 className="text-2xl font-bold text-ink mb-1">{title}</h1>
+      <h1 className="display-md mb-1">{title}</h1>
       <p className="text-base text-ink-muted mb-6">
         Last updated: {LEGAL_LAST_UPDATED}
       </p>

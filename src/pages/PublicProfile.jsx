@@ -137,7 +137,7 @@ const PublicProfile = () => {
           </p>
           <Link
             to="/"
-            className="px-5 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-800 text-white font-semibold text-sm transition"
+            className="btn btn-primary"
           >
             Back to Tronites
           </Link>
@@ -194,7 +194,7 @@ const PublicProfile = () => {
       </button>
 
       {/* ── header ──────────────────────────────────────────────────── */}
-      <div className="bg-card border border-stroke rounded-2xl p-5 sm:p-6 mb-5">
+      <div className="card p-5 sm:p-6 mb-5">
         <div className="flex items-start gap-4">
           <img
             src={
@@ -208,7 +208,7 @@ const PublicProfile = () => {
           <div className="min-w-0 flex-1 pt-1">
             {/* Inline (not flex + truncate) so long names wrap instead of
                 being cut off; the badge flows after the last word. */}
-            <h1 className="font-bold text-lg text-ink break-words">
+            <h1 className="display-md break-words">
               {profile.name}
               <span className="ml-1.5 inline-flex shrink-0 align-middle">
                 <VerifiedBadge verifications={profile.verifications} size={16} />
@@ -245,13 +245,13 @@ const PublicProfile = () => {
           <div className="mt-5 flex gap-2.5">
             <button
               onClick={promptLogin}
-              className="flex-1 px-4 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-800 text-white font-semibold text-sm transition"
+              className="btn btn-primary flex-1"
             >
               {viewer ? "Follow" : "Log in to follow"}
             </button>
             <button
               onClick={promptLogin}
-              className="px-4 py-2.5 rounded-xl border border-stroke hover:bg-surface text-ink font-semibold text-sm transition"
+              className="btn"
             >
               Message
             </button>
@@ -260,7 +260,7 @@ const PublicProfile = () => {
         {isOwnProfile && (
           <Link
             to={`/profile/${viewer._id}`}
-            className="mt-5 block text-center px-4 py-2.5 rounded-xl border border-stroke hover:bg-surface text-ink font-semibold text-sm transition"
+            className="btn btn-block mt-5"
           >
             Go to your full profile
           </Link>
@@ -269,7 +269,7 @@ const PublicProfile = () => {
 
       {/* ── private account ─────────────────────────────────────────── */}
       {isPrivate && (
-        <div className="bg-card border border-stroke rounded-2xl p-8 flex flex-col items-center text-center">
+        <div className="card p-8 flex flex-col items-center text-center">
           <FiLock size={22} className="text-ink-muted mb-2" />
           <p className="text-ink font-semibold text-[15px]">
             This account is private
@@ -301,7 +301,7 @@ const PublicProfile = () => {
           )}
 
           {posts.length === 0 && pinnedPosts.length === 0 && (
-            <div className="bg-card border border-stroke rounded-2xl p-8 text-center">
+            <div className="card p-8 text-center">
               <p className="text-ink-muted text-sm">No public posts yet.</p>
             </div>
           )}
@@ -318,7 +318,7 @@ const PublicProfile = () => {
             <button
               onClick={loadMore}
               disabled={loadingMore}
-              className="w-full py-3 rounded-xl border border-stroke hover:bg-surface text-ink-muted font-medium text-sm transition disabled:opacity-60"
+              className="btn btn-block"
             >
               {loadingMore ? "Loading…" : "Load more"}
             </button>

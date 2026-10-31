@@ -2,8 +2,8 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { useAuth } from "../context/useAuth";
-import AuthHomeLink from "../components/AuthHomeLink";
-import { FiUser, FiLock, FiEye, FiEyeOff } from "react-icons/fi";
+import AuthLayout from "../components/AuthLayout";
+import { Button, Input, FieldLabel } from "../components/ui";
 import AppealModal from "../components/AppealModal";
 
 const Login = () => {
@@ -45,149 +45,123 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen app-bg flex">
-      {/* Left panel */}
-      <div className="hidden lg:flex w-1/2 bg-[#0f6e56] flex-col justify-between p-12">
-        <Link
-          to="/"
-          className="inline-flex items-center self-start text-white font-bold text-5xl tracking-tight"
-          aria-label="Back to Tronites homepage"
-        >
-          Tron<span className="text-[#9fe1cb]">ites</span>
-        </Link>
+    <AuthLayout
+      headline={
+        <>
+          Welcome <br />
+          back<span className="text-primary-600">.</span>
+        </>
+      }
+      sub="Your feed kept your seat warm."
+    >
+      <h2 className="mb-6 text-3xl font-extrabold tracking-[-0.03em] text-ink">
+        Sign in
+      </h2>
+
+      {(errorCode === "ACCOUNT_BANNED" ||
+        errorCode === "ACCOUNT_SUSPENDED") && (
+        <div className="mb-6 rounded-lg border-2 border-red-300 bg-red-50 px-4 py-3">
+          <p className="mb-0.5 text-base font-semibold text-red-600">
+            {errorCode === "ACCOUNT_BANNED"
+              ? "Account banned"
+              : "Account suspended"}
+          </p>
+          <p className="text-sm leading-relaxed text-red-500">
+            {errorCode === "ACCOUNT_BANNED"
+              ? "This account has been permanently banned and can no longer sign in."
+              : "This account is temporarily suspended. You can sign in again once the suspension ends."}
+          </p>
+          <button
+            type="button"
+            onClick={() => setShowAppealModal(true)}
+            className="mt-2 text-sm font-semibold text-red-600 transition hover:text-red-800 hover:underline"
+          >
+            Appeal this decision
+          </button>
+        </div>
+      )}
+
+      {showAppealModal && (
+        <AppealModal
+          identifier={formData.identifier}
+          onClose={() => setShowAppealModal(false)}
+        />
+      )}
+
+      <form onSubmit={handleSubmit} className="space-y-5">
         <div>
-          <p className="text-[#e1f5ee] text-4xl font-bold leading-tight max-w-xs">
-            Connect with your community.
-          </p>
-          <p className="text-[#9fe1cb] mt-4 text-lg leading-relaxed max-w-sm">
-            Share posts, follow people, and stay in the loop with what matters
-            to you.
-          </p>
+          <FieldLabel htmlFor="login-identifier">Email or username</FieldLabel>
+          <Input
+            id="login-identifier"
+            type="text"
+            name="identifier"
+            value={formData.identifier}
+            onChange={handleChange}
+            required
+            autoCapitalize="none"
+            autoComplete="username"
+          />
         </div>
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-[#1d9e75]" />
-          <div className="w-8 h-8 rounded-full bg-[#9fe1cb]" />
-          <div className="w-8 h-8 rounded-full bg-white/30" />
-        </div>
-      </div>
 
-      {/* Right panel */}
-      <div className="flex-1 flex items-center justify-center px-6 py-12">
-        <div className="w-full max-w-sm">
-          <AuthHomeLink />
-
-          <h2 className="text-3xl font-bold text-ink mb-1">Sign in</h2>
-          <p className="text-ink-muted text-base mb-6">
-            Welcome back. Good to see you.
-          </p>
-
-          {(errorCode === "ACCOUNT_BANNED" ||
-            errorCode === "ACCOUNT_SUSPENDED") && (
-            <div className="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3">
-              <p className="text-base font-semibold text-red-600 mb-0.5">
-                {errorCode === "ACCOUNT_BANNED"
-                  ? "Account banned"
-                  : "Account suspended"}
-              </p>
-              <p className="text-sm text-red-500 leading-relaxed">
-                {errorCode === "ACCOUNT_BANNED"
-                  ? "This account has been permanently banned and can no longer sign in."
-                  : "This account is temporarily suspended. You can sign in again once the suspension ends."}
-              </p>
-              <button
-                type="button"
-                onClick={() => setShowAppealModal(true)}
-                className="mt-2 text-sm font-semibold text-red-600 hover:text-red-800 hover:underline transition"
-              >
-                Appeal this decision
-              </button>
-            </div>
-          )}
-
-          {showAppealModal && (
-            <AppealModal
-              identifier={formData.identifier}
-              onClose={() => setShowAppealModal(false)}
-            />
-          )}
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="relative">
-              <FiUser className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted text-base" />
-              <input
-                type="text"
-                name="identifier"
-                placeholder="Email or username"
-                value={formData.identifier}
-                onChange={handleChange}
-                required
-                autoCapitalize="none"
-                className="w-full pl-9 pr-4 py-3 rounded-xl border border-stroke bg-card text-ink text-base placeholder:text-ink-muted outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100 transition"
-              />
-            </div>
-
-            <div className="relative">
-              <FiLock className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted text-base" />
-              <input
-                type={showPassword ? "text" : "password"}
-                name="password"
-                placeholder="Password"
-                value={formData.password}
-                onChange={handleChange}
-                required
-                className="w-full pl-9 pr-10 py-3 rounded-xl border border-stroke bg-card text-ink text-base placeholder:text-ink-muted outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100 transition"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-muted hover:text-ink transition"
-              >
-                {showPassword ? <FiEyeOff size={15} /> : <FiEye size={15} />}
-              </button>
-            </div>
-
-            <div className="flex justify-end -mt-1">
-              <Link
-                to="/forgot-password"
-                className="text-base font-medium text-primary-600 hover:text-primary-800 hover:underline transition"
-              >
-                Forgot password?
-              </Link>
-            </div>
-
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full bg-primary-600 hover:bg-primary-800 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-xl text-base transition-all duration-200 shadow-sm hover:shadow-md"
-            >
-              {isLoading ? "Signing in..." : "Sign in"}
-            </button>
-          </form>
-
-          <p className="text-center text-ink-muted text-base mt-6">
-            No account?{" "}
+        <div>
+          <div className="mb-1.5 flex items-baseline justify-between gap-3">
+            <label htmlFor="login-password" className="mono-label">
+              Password
+            </label>
             <Link
-              to="/signup"
-              className="text-primary-600 font-semibold hover:underline"
+              to="/forgot-password"
+              className="link-amber font-mono text-xs"
             >
-              Create one
+              Forgot it?
             </Link>
-          </p>
-
-          <p className="text-center text-ink-muted text-sm mt-8 leading-relaxed">
-            By continuing, you agree to Tronites'{" "}
-            <Link to="/terms" className="text-primary-600 hover:underline">
-              Terms of Use
-            </Link>{" "}
-            and{" "}
-            <Link to="/privacy" className="text-primary-600 hover:underline">
-              Privacy Policy
-            </Link>
-            .
-          </p>
+          </div>
+          <div className="relative">
+            <Input
+              id="login-password"
+              type={showPassword ? "text" : "password"}
+              name="password"
+              value={formData.password}
+              onChange={handleChange}
+              required
+              autoComplete="current-password"
+              className="pr-20"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              aria-label={showPassword ? "Hide password" : "Show password"}
+              aria-pressed={showPassword}
+              className="absolute right-2 top-1/2 -translate-y-1/2 rounded border-[1.5px] border-line bg-card px-2 py-1 font-mono text-[11px] font-medium uppercase tracking-wider text-ink transition hover:bg-sand"
+            >
+              {showPassword ? "Hide" : "Show"}
+            </button>
+          </div>
         </div>
+
+        <Button type="submit" size="lg" block loading={isLoading}>
+          {isLoading ? "Signing in..." : "Sign in"}
+        </Button>
+      </form>
+
+      <div className="mt-6 flex items-center justify-between gap-3 border-t-2 border-dashed border-line pt-4 text-sm">
+        <span className="text-ink-sub">New here?</span>
+        <Link to="/signup" className="link-amber">
+          Create an account
+        </Link>
       </div>
-    </div>
+
+      <p className="mt-6 text-center text-sm leading-relaxed text-ink-muted">
+        By continuing, you agree to Tronites'{" "}
+        <Link to="/terms" className="underline hover:text-ink">
+          Terms of Use
+        </Link>{" "}
+        and{" "}
+        <Link to="/privacy" className="underline hover:text-ink">
+          Privacy Policy
+        </Link>
+        .
+      </p>
+    </AuthLayout>
   );
 };
 

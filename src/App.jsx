@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { useAuth } from "./context/useAuth";
 import Navbar from "./components/Navbar";
 import PublicNavbar from "./components/PublicNavbar";
+import SiteFooter from "./components/SiteFooter";
 import SplashScreen from "./components/SplashScreen";
 import InstallPrompt from "./components/InstallPrompt";
 import UpdateToast from "./components/UpdateToast";
@@ -419,6 +420,7 @@ const AppContent = () => {
         </Routes>
       </Suspense>
       </div>
+      {shouldShowPublicNavbar && <SiteFooter />}
 
       {user && <ComplianceGate />}
 

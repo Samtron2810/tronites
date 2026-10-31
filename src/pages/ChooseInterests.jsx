@@ -1,3 +1,4 @@
+import { AuthCenter } from "../components/AuthLayout";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
@@ -61,14 +62,10 @@ const ChooseInterests = () => {
   const handleSkip = () => navigate("/home", { replace: true });
 
   return (
-    <div className="min-h-screen app-bg flex items-center justify-center px-4 py-10">
-      <div className="w-full max-w-lg">
+    <AuthCenter width="max-w-xl">
         {/* Header */}
         <div className="text-center mb-8">
-          <span className="text-ink font-bold text-4xl">
-            Tron<span className="text-primary-600">ites</span>
-          </span>
-          <h2 className="text-2xl font-bold text-ink mt-4 mb-1">
+          <h2 className="display-md mb-1">
             What are you into?
           </h2>
           <p className="text-ink-muted text-sm">
@@ -90,12 +87,12 @@ const ChooseInterests = () => {
                 type="button"
                 onClick={() => toggleTopic(topic.id)}
                 disabled={isDisabled}
-                className={`relative flex items-center gap-2.5 px-3 py-3 rounded-xl border text-left transition-all ${
+                className={`relative flex items-center gap-2.5 rounded-lg border-2 px-3 py-3 text-left transition ${
                   isSelected
-                    ? "bg-primary-50 border-primary-600 text-ink"
+                    ? "border-line bg-accent text-[#16140f] shadow-hard-sm"
                     : isDisabled
-                    ? "border-stroke text-ink-muted opacity-40 cursor-not-allowed"
-                    : "border-stroke text-ink hover:border-primary-400 hover:bg-surface"
+                    ? "cursor-not-allowed border-stroke text-ink-muted opacity-40"
+                    : "border-line text-ink hover:bg-sand"
                 }`}
               >
                 <span className="text-xl shrink-0">{topic.emoji}</span>
@@ -136,7 +133,7 @@ const ChooseInterests = () => {
             type="button"
             onClick={handleSubmit}
             disabled={submitting}
-            className="w-full flex items-center justify-center gap-2 bg-primary-600 hover:bg-primary-800 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-xl text-sm transition-all"
+            className="btn btn-primary btn-lg btn-block"
           >
             {submitting ? "Saving…" : (
               <>
@@ -153,8 +150,7 @@ const ChooseInterests = () => {
             Skip for now
           </button>
         </div>
-      </div>
-    </div>
+    </AuthCenter>
   );
 };
 

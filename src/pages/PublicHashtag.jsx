@@ -104,7 +104,7 @@ const PublicHashtag = () => {
         </button>
         <div className="flex items-center gap-2 min-w-0">
           <FiHash size={18} className="text-primary-600 shrink-0" />
-          <h1 className="font-bold text-lg text-ink truncate">{tag}</h1>
+          <h1 className="display-md truncate">{tag}</h1>
         </div>
       </div>
 
@@ -115,7 +115,7 @@ const PublicHashtag = () => {
       )}
 
       {!loading && error && (
-        <div className="bg-card border border-stroke rounded-2xl p-8 text-center">
+        <div className="card p-8 text-center">
           <p className="text-ink-muted text-sm">
             Something went wrong loading this hashtag. Try again shortly.
           </p>
@@ -123,7 +123,7 @@ const PublicHashtag = () => {
       )}
 
       {!loading && !error && posts.length === 0 && (
-        <div className="bg-card border border-stroke rounded-2xl p-8 text-center">
+        <div className="card p-8 text-center">
           <p className="text-ink-muted text-sm">No public posts tagged #{tag} yet.</p>
         </div>
       )}
@@ -137,7 +137,7 @@ const PublicHashtag = () => {
             <button
               onClick={loadMore}
               disabled={loadingMore}
-              className="w-full py-3 rounded-xl border border-stroke hover:bg-surface text-ink-muted font-medium text-sm transition disabled:opacity-60"
+              className="btn btn-block"
             >
               {loadingMore ? "Loading…" : "Load more"}
             </button>

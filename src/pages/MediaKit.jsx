@@ -140,7 +140,7 @@ const MediaKit = () => {
               <img
                 src={creator.profilePic}
                 alt={creator.name}
-                className="w-16 h-16 rounded-2xl object-cover shrink-0 border-2 border-stroke"
+                className="w-16 h-16 rounded-2xl object-cover shrink-0 border-2 border-line"
               />
             ) : (
               <div className="w-16 h-16 rounded-2xl bg-primary-100 flex items-center justify-center shrink-0 text-primary-600 text-2xl font-bold">
@@ -198,7 +198,7 @@ const MediaKit = () => {
       </div>
 
       {/* Reach metrics */}
-      <div className="bg-card border border-stroke rounded-2xl px-6 py-5">
+      <div className="card px-6 py-5">
         <h2 className="text-xs font-semibold text-ink-muted uppercase tracking-widest mb-4">
           Reach
         </h2>
@@ -241,7 +241,7 @@ const MediaKit = () => {
       </div>
 
       {/* Engagement */}
-      <div className="bg-card border border-stroke rounded-2xl px-6 py-5">
+      <div className="card px-6 py-5">
         <h2 className="text-xs font-semibold text-ink-muted uppercase tracking-widest mb-4">
           Engagement
         </h2>
@@ -276,7 +276,7 @@ const MediaKit = () => {
 
       {/* Subscription plan */}
       {subscriptionPlan && (
-        <div className="bg-card border border-stroke rounded-2xl px-6 py-5">
+        <div className="card px-6 py-5">
           <h2 className="text-xs font-semibold text-ink-muted uppercase tracking-widest mb-3">
             Subscription
           </h2>
@@ -301,7 +301,7 @@ const MediaKit = () => {
 
       {/* Top posts */}
       {topPosts?.length > 0 && (
-        <div className="bg-card border border-stroke rounded-2xl px-6 py-5 space-y-3">
+        <div className="card px-6 py-5 space-y-3">
           <h2 className="text-xs font-semibold text-ink-muted uppercase tracking-widest">
             Top posts (last 30 days)
           </h2>
@@ -343,7 +343,7 @@ const MediaKit = () => {
           </p>
           <Link
             to={`/chat?user=${creatorId}`}
-            className="inline-flex items-center gap-1.5 px-4 py-2 bg-primary-600 text-white text-xs font-semibold rounded-lg hover:bg-primary-700 transition"
+            className="btn btn-primary btn-sm"
           >
             <FaEnvelope size={11} />
             Send a message

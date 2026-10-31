@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { useAuth } from "../context/useAuth";
-import AuthHomeLink from "../components/AuthHomeLink";
+import AuthLayout from "../components/AuthLayout";
 import api from "../services/api";
 import { FiMail, FiArrowLeft } from "react-icons/fi";
 
@@ -49,37 +49,11 @@ const ForgotPassword = () => {
   };
 
   return (
-    <div className="min-h-screen app-bg flex">
-      {/* Left panel */}
-      <div className="hidden lg:flex w-1/2 bg-[#0f6e56] flex-col justify-between p-12">
-        <Link
-          to="/"
-          className="inline-flex items-center gap-2 self-start text-white font-bold text-3xl tracking-tight"
-          aria-label="Back to Tronites homepage"
-        >
-          Tron<span className="text-[#9fe1cb]">ites</span>
-        </Link>
-        <div>
-          <p className="text-[#e1f5ee] text-5xl font-bold leading-tight max-w-xs">
-            We'll get you back in.
-          </p>
-          <p className="text-[#9fe1cb] mt-4 text-lg leading-relaxed max-w-sm">
-            Enter your account email and we'll send you a code to reset your
-            password.
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-[#1d9e75]" />
-          <div className="w-8 h-8 rounded-full bg-[#9fe1cb]" />
-          <div className="w-8 h-8 rounded-full bg-white/30" />
-        </div>
-      </div>
-
-      {/* Right panel */}
-      <div className="flex-1 flex items-center justify-center px-6 py-12">
-        <div className="w-full max-w-sm">
-
-          <AuthHomeLink />
+    <AuthLayout
+      size="xl"
+      headline={<>We'll get you <br />back in<span className="text-primary-600">.</span></>}
+      sub="Enter your account email and we'll send you a code to reset your password."
+    >
 
           <h2 className="text-3xl font-bold text-ink mb-1">
             Forgot your password?
@@ -99,14 +73,14 @@ const ForgotPassword = () => {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 autoCapitalize="none"
-                className="w-full pl-9 pr-4 py-3 rounded-xl border border-stroke bg-card text-ink text-base placeholder:text-ink-muted outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100 transition"
+                className="field pl-10 pr-4"
               />
             </div>
 
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-primary-600 hover:bg-primary-800 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-xl text-base transition-all duration-200 shadow-sm hover:shadow-md"
+              className="btn btn-primary btn-lg btn-block"
             >
               {isLoading ? "Sending..." : "Send reset code"}
             </button>
@@ -115,15 +89,13 @@ const ForgotPassword = () => {
           <p className="text-center text-ink-muted text-base mt-6">
             <Link
               to="/login"
-              className="inline-flex items-center gap-1.5 text-primary-600 font-semibold hover:underline"
+              className="inline-flex items-center gap-1.5 link-amber"
             >
               <FiArrowLeft size={14} />
               Back to sign in
             </Link>
           </p>
-        </div>
-      </div>
-    </div>
+    </AuthLayout>
   );
 };
 

@@ -78,7 +78,7 @@ const PublicExplore = () => {
 
       <div className="flex items-center gap-2 mb-4">
         <FiCompass size={18} className="text-primary-600" />
-        <h1 className="font-bold text-lg text-ink">Explore</h1>
+        <h1 className="display-md">Explore</h1>
       </div>
 
       {loading && (
@@ -88,7 +88,7 @@ const PublicExplore = () => {
       )}
 
       {!loading && error && (
-        <div className="bg-card border border-stroke rounded-2xl p-8 text-center">
+        <div className="card p-8 text-center">
           <p className="text-ink-muted text-sm">
             Something went wrong loading Explore. Try again shortly.
           </p>
@@ -96,7 +96,7 @@ const PublicExplore = () => {
       )}
 
       {!loading && !error && posts.length === 0 && (
-        <div className="bg-card border border-stroke rounded-2xl p-8 text-center">
+        <div className="card p-8 text-center">
           <p className="text-ink-muted text-sm">Nothing trending yet — check back soon.</p>
         </div>
       )}
@@ -110,7 +110,7 @@ const PublicExplore = () => {
             <button
               onClick={loadMore}
               disabled={loadingMore}
-              className="w-full py-3 rounded-xl border border-stroke hover:bg-surface text-ink-muted font-medium text-sm transition disabled:opacity-60"
+              className="btn btn-block"
             >
               {loadingMore ? "Loading…" : "Load more"}
             </button>

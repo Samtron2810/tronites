@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { Routes, Route, useLocation } from "react-router-dom";
 import PublicNavbar from "./components/PublicNavbar";
+import SiteFooter from "./components/SiteFooter";
 import Landing from "./pages/Landing";
 import PublicProfile from "./pages/PublicProfile";
 import PublicPostView from "./pages/PublicPostView";
@@ -82,6 +83,7 @@ const PublicApp = () => {
         <Route path="/guidelines" element={<CommunityGuidelines />} />
         <Route path="*" element={<HardRedirect />} />
       </Routes>
+      {pathname !== "/" && <SiteFooter />}
     </>
   );
 };

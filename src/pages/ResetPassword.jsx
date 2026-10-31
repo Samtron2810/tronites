@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { useAuth } from "../context/useAuth";
-import AuthHomeLink from "../components/AuthHomeLink";
+import AuthLayout from "../components/AuthLayout";
 import api from "../services/api";
 import {
   FiLock,
@@ -101,36 +101,11 @@ const ResetPassword = () => {
   };
 
   return (
-    <div className="min-h-screen app-bg flex">
-      {/* Left panel */}
-      <div className="hidden lg:flex w-1/2 bg-[#0f6e56] flex-col justify-between p-12">
-        <Link
-          to="/"
-          className="inline-flex items-center gap-2 self-start text-white font-bold text-3xl tracking-tight"
-          aria-label="Back to Tronites homepage"
-        >
-          Tron<span className="text-[#9fe1cb]">ites</span>
-        </Link>
-        <div>
-          <p className="text-[#e1f5ee] text-5xl font-bold leading-tight max-w-xs">
-            Almost there.
-          </p>
-          <p className="text-[#9fe1cb] mt-4 text-lg leading-relaxed max-w-sm">
-            Enter the code we sent you, then choose a new password.
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-[#1d9e75]" />
-          <div className="w-8 h-8 rounded-full bg-[#9fe1cb]" />
-          <div className="w-8 h-8 rounded-full bg-white/30" />
-        </div>
-      </div>
-
-      {/* Right panel */}
-      <div className="flex-1 flex items-center justify-center px-6 py-12">
-        <div className="w-full max-w-sm">
-
-          <AuthHomeLink />
+    <AuthLayout
+      size="xl"
+      headline={<>Almost <br />there<span className="text-primary-600">.</span></>}
+      sub="Enter the code we sent you, then choose a new password."
+    >
 
           <div className="text-center mb-6">
             <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-primary-100 mb-4">
@@ -145,7 +120,7 @@ const ResetPassword = () => {
             </p>
           </div>
 
-          <div className="bg-card border border-stroke rounded-2xl p-6 shadow-sm space-y-4">
+          <div className="space-y-4">
             <input
               type="text"
               inputMode="numeric"
@@ -154,7 +129,7 @@ const ResetPassword = () => {
               value={otp}
               onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
               maxLength={6}
-              className="w-full px-4 py-3 rounded-xl border border-stroke bg-surface text-ink text-base tracking-widest text-center placeholder:tracking-normal placeholder:text-ink-muted outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100 transition"
+              className="field px-4"
             />
 
             <div className="relative">
@@ -166,7 +141,7 @@ const ResetPassword = () => {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 minLength={10}
-                className="w-full pl-9 pr-10 py-3 rounded-xl border border-stroke bg-surface text-ink text-base placeholder:text-ink-muted outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100 transition"
+                className="field pl-10 pr-10"
               />
               <button
                 type="button"
@@ -189,7 +164,7 @@ const ResetPassword = () => {
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
                 minLength={10}
-                className="w-full pl-9 pr-10 py-3 rounded-xl border border-stroke bg-surface text-ink text-base placeholder:text-ink-muted outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100 transition"
+                className="field pl-10 pr-10"
               />
               <button
                 type="button"
@@ -208,7 +183,7 @@ const ResetPassword = () => {
             <button
               onClick={handleSubmit}
               disabled={!canSubmit || isSubmitting}
-              className="w-full bg-primary-600 hover:bg-primary-800 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-xl text-base transition-all duration-200 shadow-sm"
+              className="btn btn-primary btn-lg btn-block"
             >
               {isSubmitting ? "Resetting..." : "Reset password"}
             </button>
@@ -216,7 +191,7 @@ const ResetPassword = () => {
             <button
               onClick={handleResend}
               disabled={isResending}
-              className="w-full flex items-center justify-center gap-2 text-ink-sub border border-stroke rounded-xl py-2.5 text-base font-medium hover:bg-surface transition disabled:opacity-50 disabled:cursor-not-allowed"
+              className="btn btn-block"
             >
               <FiRefreshCw
                 className={isResending ? "animate-spin" : ""}
@@ -229,15 +204,13 @@ const ResetPassword = () => {
           <p className="text-center text-ink-muted text-base mt-6">
             <Link
               to="/login"
-              className="inline-flex items-center gap-1.5 text-primary-600 font-semibold hover:underline"
+              className="inline-flex items-center gap-1.5 link-amber"
             >
               <FiArrowLeft size={14} />
               Back to sign in
             </Link>
           </p>
-        </div>
-      </div>
-    </div>
+    </AuthLayout>
   );
 };
 

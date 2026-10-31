@@ -36,7 +36,7 @@ const PublicPostCard = ({ post, onRequireLogin }) => {
   const author = post.repostedBy;
 
   return (
-    <div className="bg-card border border-stroke rounded-2xl p-4 sm:p-5">
+    <div className="card p-4 sm:p-5">
       {author && (
         <p className="text-xs text-ink-muted mb-2 flex items-center gap-1.5">
           <FiRepeat size={12} />
@@ -51,7 +51,7 @@ const PublicPostCard = ({ post, onRequireLogin }) => {
               : defaultAvatar
           }
           alt=""
-          className="h-10 w-10 rounded-full object-cover shrink-0"
+          className="h-10 w-10 rounded-lg border-2 border-line object-cover shrink-0"
         />
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5 flex-wrap">
