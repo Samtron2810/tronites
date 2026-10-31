@@ -18,8 +18,8 @@ const ReactionSummaryBar = ({ summary, myReaction, onToggle, justUpdated }) => {
             onClick={() => onToggle(emoji)}
             className={`flex items-center gap-1 text-xs rounded-full px-2 py-0.5 border transition ${
               mine
-                ? "bg-primary-100 border-primary-400 text-primary-800"
-                : "bg-surface border-stroke text-ink-sub hover:border-primary-200"
+                ? "bg-accent border-line text-[#16140f]"
+                : "bg-surface border-stroke text-ink-sub hover:border-line"
             } ${justUpdated === emoji ? "animate-reaction-badge" : ""}`}
           >
             <span className="text-sm leading-none">{emoji}</span>

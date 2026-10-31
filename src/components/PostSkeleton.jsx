@@ -1,17 +1,17 @@
 const PostSkeleton = () => (
-  <div className="bg-card border border-stroke rounded-2xl p-5 animate-pulse">
-    <div className="flex items-center gap-3 mb-4">
-      <div className="w-10 h-10 rounded-full bg-stroke shrink-0" />
+  <div className="animate-pulse border-b-2 border-line py-5">
+    <div className="mb-4 flex items-center gap-3">
+      <div className="h-10 w-10 shrink-0 rounded-lg bg-stroke" />
       <div className="flex-1 space-y-2">
-        <div className="h-3 bg-stroke rounded w-28" />
-        <div className="h-2.5 bg-stroke rounded w-16" />
+        <div className="h-3 w-28 rounded bg-stroke" />
+        <div className="h-2.5 w-16 rounded bg-stroke" />
       </div>
     </div>
-    <div className="space-y-2 mb-4">
-      <div className="h-2.5 bg-stroke rounded" />
-      <div className="h-2.5 bg-stroke rounded w-4/5" />
+    <div className="mb-4 space-y-2">
+      <div className="h-2.5 rounded bg-stroke" />
+      <div className="h-2.5 w-4/5 rounded bg-stroke" />
     </div>
-    <div className="h-48 bg-stroke rounded-xl" />
+    <div className="h-48 rounded-xl bg-stroke" />
   </div>
 );
 

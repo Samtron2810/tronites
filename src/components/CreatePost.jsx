@@ -11,6 +11,7 @@ import { uploadToCloudinary } from "../services/cloudinary";
 import { uploadVideoToCloudinary, MAX_VIDEO_DURATION_SECONDS, formatVideoLimit } from "../services/videoUpload";
 import { retryWithBackoff } from "../utils/retry";
 import { NEW_POST_EVENT } from "../constants/events";
+import { canSchedule } from "../utils/tierLimits";
 
 const CreatePost = ({ fetchPosts }) => {
   const [openModal, setOpenModal] = useState(false);
@@ -215,18 +216,59 @@ const CreatePost = ({ fetchPosts }) => {
 
   return (
     <>
-      <div className="bg-card border border-stroke rounded-2xl p-4">
-        <div className="flex items-center gap-3">
+      <div className="card card-pop p-4 sm:p-5">
+        <div className="flex gap-3">
           <img
             src={resizedImageUrl(user?.profilePic, IMAGE_SIZES.avatarSmall) || defaultAvatar}
-            alt="profile"
-            className="w-10 h-10 rounded-full object-cover ring-2 ring-primary-100 shrink-0"
+            alt=""
+            className="h-11 w-11 shrink-0 rounded-lg border-2 border-line object-cover"
           />
           <button
+            type="button"
             onClick={() => setOpenModal(true)}
-            className="flex-1 text-left px-4 py-2.5 rounded-xl border border-stroke text-ink-muted text-base bg-surface hover:border-primary-400 hover:bg-primary-50 transition cursor-text"
+            className="min-w-0 flex-1 cursor-text text-left"
+            aria-label="Write a new post"
           >
-            What's on your mind?
+            <span className="block truncate pt-2 text-lg text-ink-muted">
+              What's the word today?
+            </span>
+            <span aria-hidden="true" className="mt-3 block h-px bg-stroke" />
+            <span aria-hidden="true" className="mt-6 block h-px bg-stroke" />
+          </button>
+        </div>
+
+        <div className="mt-4 flex items-center justify-between gap-3">
+          <div className="flex flex-wrap gap-x-4 gap-y-1 font-mono text-[12px] uppercase tracking-wider text-ink-sub">
+            <button
+              type="button"
+              onClick={() => setOpenModal(true)}
+              className="transition hover:text-ink hover:underline"
+            >
+              + Photo
+            </button>
+            <button
+              type="button"
+              onClick={() => setOpenModal(true)}
+              className="transition hover:text-ink hover:underline"
+            >
+              + Video
+            </button>
+            {canSchedule(user) && (
+              <button
+                type="button"
+                onClick={() => setOpenModal(true)}
+                className="transition hover:text-ink hover:underline"
+              >
+                Schedule
+              </button>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={() => setOpenModal(true)}
+            className="btn btn-primary btn-sm shrink-0"
+          >
+            Post it
           </button>
         </div>
       </div>

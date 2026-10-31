@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { FaLock, FaStar } from "react-icons/fa";
+import { FaStar } from "react-icons/fa";
 import api from "../services/api";
 import SubscribeModal from "./SubscribeModal";
 
@@ -18,7 +18,7 @@ const SUBSCRIBED_CACHE = new Map();
 // GET /creator-monetization/subscribe/status/:creatorId — this unlocks
 // subscriber-only posts for paying subscribers (the old code hardcoded
 // them as never-subscribed and blurred every one).
-const SubscriberOnlyGate = ({ creator, isSubscribed, children }) => {
+const SubscriberOnlyGate = ({ creator, isSubscribed, onTip, children }) => {
   const [showModal, setShowModal] = useState(false);
   const [localSubscribed, setLocalSubscribed] = useState(isSubscribed);
 
@@ -55,32 +55,38 @@ const SubscriberOnlyGate = ({ creator, isSubscribed, children }) => {
 
   if (localSubscribed) return <>{children}</>;
 
+  // Locked: the post content is intentionally NOT rendered — only redacted
+  // placeholder bars — so nothing the server didn't unlock ever sits in the
+  // DOM, blurred or otherwise.
   return (
     <>
-      <div className="relative rounded-xl overflow-hidden">
-        {/* Blurred content preview */}
-        <div className="pointer-events-none select-none" style={{ filter: "blur(12px)", maxHeight: 160, overflow: "hidden" }}>
-          {children}
+      <div className="py-1">
+        <p className="sr-only">
+          Subscribers only. Subscribe to {creator?.name || "this creator"} to
+          unlock this post.
+        </p>
+        <div aria-hidden="true" className="space-y-2.5">
+          <div className="h-2.5 w-full rounded-sm bg-stroke" />
+          <div className="h-2.5 w-[88%] rounded-sm bg-stroke" />
+          <div className="h-2.5 w-[58%] rounded-sm bg-stroke" />
         </div>
-
-        {/* Lock overlay */}
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/40 backdrop-blur-[2px] px-6">
-          <div className="bg-card/90 backdrop-blur-sm border border-stroke rounded-2xl px-5 py-4 text-center max-w-xs shadow-xl">
-            <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center mx-auto mb-3">
-              <FaLock size={15} className="text-primary-600" />
-            </div>
-            <p className="text-sm font-semibold text-ink mb-1">Subscribers only</p>
-            <p className="text-xs text-ink-muted mb-4 leading-relaxed">
-              Subscribe to {creator?.name || "this creator"} to unlock this post.
-            </p>
+        <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2">
+          <button
+            onClick={() => setShowModal(true)}
+            className="btn btn-accent btn-sm"
+          >
+            <FaStar size={11} />
+            Subscribe to read
+          </button>
+          {onTip && (
             <button
-              onClick={() => setShowModal(true)}
-              className="inline-flex items-center gap-1.5 px-4 py-2 bg-primary-600 text-white text-xs font-semibold rounded-lg hover:bg-primary-700 transition"
+              type="button"
+              onClick={onTip}
+              className="font-mono text-xs text-ink-muted underline-offset-2 transition hover:text-ink hover:underline"
             >
-              <FaStar size={10} />
-              Subscribe
+              or send a tip
             </button>
-          </div>
+          )}
         </div>
       </div>
 

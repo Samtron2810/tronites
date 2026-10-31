@@ -8,16 +8,17 @@ import PostCard from "../components/PostCard";
 import PostSkeleton from "../components/PostSkeleton";
 import TrendingHashtagsWidget from "../components/TrendingHashtagsWidget";
 import RightRail from "../components/RightRail";
+import SegmentedControl from "../components/ui/SegmentedControl";
 import useMediaQuery from "../hooks/useMediaQuery";
 import api from "../services/api";
 import { useRefetchOnFocus } from "../hooks/useRefetchOnFocus";
 import { useSocket } from "../context/useSocket";
 import { HiOutlineSparkles } from "react-icons/hi2";
-import { FiClock, FiUsers } from "react-icons/fi";
+import { FiUsers } from "react-icons/fi";
 
 const TABS = [
-  { key: "forYou", label: "For You", icon: HiOutlineSparkles },
-  { key: "following", label: "Following", icon: FiClock },
+  { value: "forYou", label: "For you" },
+  { value: "following", label: "Following" },
 ];
 
 const Home = () => {
@@ -225,7 +226,21 @@ const Home = () => {
   return (
     <MainLayout rail={showRail ? <RightRail /> : null}>
       <SeoHead title="Home" robots="noindex, nofollow" />
-      <div className="space-y-4">
+      <div className="space-y-5">
+        <div className="flex items-end justify-between gap-3">
+          <h1 className="display-lg">
+            The
+            <br />
+            feed
+          </h1>
+          <SegmentedControl
+            label="Feed"
+            options={TABS}
+            value={tab}
+            onChange={handleTabChange}
+          />
+        </div>
+
         <CreatePost
           fetchPosts={() => {
             api.invalidateMany(["/posts/for-you", "/posts/feed", "/posts/hashtag/"]);
@@ -234,26 +249,6 @@ const Home = () => {
         />
 
         {!showRail && <TrendingHashtagsWidget />}
-
-        <div className="flex border-b border-stroke">
-          {TABS.map(({ key, label, icon: Icon }) => (
-            <button
-              key={key}
-              onClick={() => handleTabChange(key)}
-              className={`relative flex items-center gap-1.5 px-4 py-3 text-base font-semibold transition ${
-                tab === key
-                  ? "text-primary-600"
-                  : "text-ink-muted hover:text-ink"
-              }`}
-            >
-              <Icon size={16} />
-              {label}
-              {tab === key && (
-                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary-600 rounded-full" />
-              )}
-            </button>
-          ))}
-        </div>
 
         {loading && (
           <>
@@ -303,7 +298,7 @@ const Home = () => {
           ))}
 
         {!loading && current.posts.length === 0 && (
-          <div className="bg-card border border-stroke rounded-2xl p-10 text-center">
+          <div className="card card-dashed p-10 text-center">
             <p className="text-3xl mb-2">{tab === "forYou" ? "✨" : "👋"}</p>
             <h2 className="text-lg font-semibold text-ink">
               {tab === "forYou"
@@ -318,7 +313,7 @@ const Home = () => {
             <div className="flex flex-wrap items-center justify-center gap-3 mt-6">
               <Link
                 to="/explore"
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-primary-600 text-white text-sm font-medium hover:bg-primary-700 transition"
+                className="btn btn-primary"
               >
                 <FiUsers size={16} />
                 Explore users
@@ -327,7 +322,7 @@ const Home = () => {
                 <button
                   type="button"
                   onClick={() => setTab("forYou")}
-                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border border-stroke text-ink text-sm font-medium hover:bg-surface transition"
+                  className="btn"
                 >
                   <HiOutlineSparkles size={16} />
                   See For You
@@ -345,7 +340,51 @@ const Home = () => {
             </>
           )}
           {!current.hasMore && current.posts.length > 0 && (
-            <p className="text-sm text-ink-muted">You're all caught up</p>
+            <div className="card card-dashed mt-6 flex flex-col items-center gap-5 p-6 text-left sm:flex-row sm:p-8">
+              <svg
+                viewBox="0 0 96 80"
+                aria-hidden="true"
+                className="h-16 w-20 shrink-0"
+                fill="none"
+              >
+                <path
+                  d="M6 70c8-26 20-34 34-30"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeDasharray="4 5"
+                  strokeLinecap="round"
+                  className="text-ink"
+                />
+                <path
+                  d="M44 38 90 8 74 66 56 50 44 38Z"
+                  className="fill-accent stroke-line"
+                  strokeWidth="2.5"
+                  strokeLinejoin="round"
+                />
+                <path
+                  d="M56 50 90 8"
+                  className="stroke-line"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                />
+              </svg>
+              <div className="w-full">
+                <h2 className="text-2xl font-extrabold tracking-[-0.03em] text-ink">
+                  That's the end of the line.
+                </h2>
+                <p className="mt-1 text-sm text-ink-sub">
+                  Follow a few more people and this fills up fast.
+                </p>
+                <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-3">
+                  <Link to="/explore" className="btn btn-primary btn-sm">
+                    Find people
+                  </Link>
+                  <Link to="/explore?tab=trending" className="link-amber text-sm">
+                    Browse topics
+                  </Link>
+                </div>
+              </div>
+            </div>
           )}
         </div>
       </div>

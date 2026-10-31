@@ -1143,9 +1143,19 @@ const PostCard = ({
 
       <div
         ref={cardRef}
-        className="bg-card border border-stroke rounded-2xl p-5 transition hover:shadow-sm"
+        className={
+          isPromoted
+            ? "scope-ink rounded-xl border-2 border-line p-5"
+            : privacy === "subscribers"
+              ? "card shadow-hard-green overflow-hidden p-5"
+              : "border-b-2 border-line py-5"
+        }
         onClick={isPromoted && postId ? () => api.post(`/posts/promote/click/${postId}`).catch(() => {}) : undefined}
       >
+        {privacy === "subscribers" && !isPromoted && (
+          <div aria-hidden="true" className="hatch-bar -mx-5 -mt-5 mb-4" />
+        )}
+
         {/* "Reposted by X" header — only for plain reposts surfaced
             into a follower's feed (repostedBy is null for the
             reposter's own original post and for quotes, which get
@@ -1185,16 +1195,6 @@ const PostCard = ({
           </div>
         )}
 
-        {/* Sponsored badge — shown for paid-promoted posts injected into feed */}
-        {isPromoted && (
-          <div className="flex items-center gap-1.5 mb-3 -mt-1">
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary-50 border border-primary-100 text-[10.5px] font-semibold text-primary-600 tracking-wide">
-              <FiZap size={9} />
-              Sponsored
-            </span>
-          </div>
-        )}
-
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-start sm:items-center gap-3">
@@ -1204,7 +1204,7 @@ const PostCard = ({
                 defaultAvatar
               }
               alt="user"
-              className="w-10 h-10 rounded-full object-cover ring-2 ring-primary-100"
+              className="w-10 h-10 rounded-lg object-cover border-2 border-line"
             />
             <div>
               <div className="flex flex-col sm:flex-row sm:items-center gap-y-1 sm:gap-1.5">
@@ -1223,7 +1223,7 @@ const PostCard = ({
                   {/* show "You" if isowned */}
                   {isOwner && (
                     <span
-                      className="flex items-center gap-1 text-[11px] font-medium text-primary-600 bg-primary-50 px-1.5 py-0.5 rounded-full"
+                      className="chip px-1.5 py-0.5"
                       title="This is your post"
                     >
                       {" "}
@@ -1233,10 +1233,10 @@ const PostCard = ({
                 </span>
 
                 {username && (
-                  <span className="text-sm text-ink-muted">@{username}</span>
+                  <span className="font-mono text-[12px] text-ink-muted">@{username}</span>
                 )}
               </div>
-              <p className="flex items-center gap-1 text-sm text-ink-muted">
+              <p className="flex items-center gap-1 font-mono text-[12px] text-ink-muted">
                 {time}
                 {privacy === "followers" && (
                   <FiUsers
@@ -1265,7 +1265,20 @@ const PostCard = ({
               </p>
             </div>
           </div>
-          <div className="relative">
+          <div className="relative flex items-center gap-2">
+            {isPromoted ? (
+              <span className="chip chip-amber">
+                <FiZap size={10} />
+                Promoted
+              </span>
+            ) : (
+              privacy === "subscribers" && (
+                <span className="chip">
+                  <FiLock size={10} />
+                  Subscribers
+                </span>
+              )
+            )}
             <button
               ref={triggerRef}
               onClick={(e) => {
@@ -1434,7 +1447,7 @@ const PostCard = ({
         {isQuotePost && (
           <div className="ml-13 -mt-2.5 mb-4">
             <span
-              className="flex items-center gap-1 text-[11px] font-medium text-primary-600 bg-primary-50 px-1.5 py-0.5 rounded-full w-fit"
+              className="chip w-fit px-1.5 py-0.5"
               title="This post quotes another post"
             >
               <FaQuoteRight size={9} />
@@ -1453,7 +1466,7 @@ const PostCard = ({
               maxLength={editCharLimit}
               rows={3}
               autoFocus
-              className="w-full text-base text-ink-sub leading-relaxed border border-primary-200 rounded-xl p-3 outline-none focus:ring-2 focus:ring-primary-200 resize-none"
+              className="field resize-none text-base leading-relaxed"
             />
             <div className="flex items-center justify-between mt-2">
               <span
@@ -1472,7 +1485,7 @@ const PostCard = ({
                     handleEditCancel();
                   }}
                   disabled={isSavingEdit}
-                  className="text-sm font-medium text-ink-muted hover:text-ink px-3 py-1.5 rounded-lg transition disabled:opacity-50"
+                  className="btn btn-ghost btn-sm"
                 >
                   Cancel
                 </button>
@@ -1482,7 +1495,7 @@ const PostCard = ({
                     handleEditSave();
                   }}
                   disabled={isSavingEdit}
-                  className="text-sm font-semibold text-white bg-primary-600 hover:bg-primary-700 px-3 py-1.5 rounded-lg transition disabled:opacity-50"
+                  className="btn btn-primary btn-sm"
                 >
                   {isSavingEdit ? "Saving..." : "Save"}
                 </button>
@@ -1494,6 +1507,11 @@ const PostCard = ({
           <SubscriberOnlyGate
             creator={{ _id: userId, name, username, profilePic }}
             isSubscribed={privacy !== "subscribers" || isOwner}
+            onTip={
+              !isOwner && userId
+                ? () => setShowTipModal(true)
+                : undefined
+            }
           >
           <p
             onClick={openDetail}
@@ -1544,7 +1562,7 @@ const PostCard = ({
           </div>
         )}
         {postVideo?.status === "ready" && postVideo.url && (
-          <div className="mt-4 relative rounded-xl overflow-hidden bg-black">
+          <div className="mt-4 relative rounded-xl overflow-hidden border-2 border-line bg-black">
             <video
               ref={videoRef}
               src={`${postVideo.url}#t=0.1`}
@@ -1590,7 +1608,7 @@ const PostCard = ({
             its own carousel/arrows/dots untouched. */}
         {media.length === 1 && (
           <div
-            className="mt-4 relative rounded-xl overflow-hidden bg-surface cursor-pointer"
+            className="mt-4 relative rounded-xl overflow-hidden border-2 border-line bg-surface cursor-pointer"
             onClick={() => openDetail(0)}
           >
             <LazyImage
@@ -1604,7 +1622,7 @@ const PostCard = ({
 
         {media.length > 1 && (
           <div
-            className={`mt-4 grid gap-0.5 rounded-xl overflow-hidden h-50 ${
+            className={`mt-4 grid gap-0.5 rounded-xl overflow-hidden border-2 border-line h-50 ${
               media.length === 2 ? "grid-cols-2" : "grid-cols-2 grid-rows-2"
             }`}
           >
@@ -1658,7 +1676,7 @@ const PostCard = ({
           <button
             onClick={handleCtaClick}
             disabled={ctaClicking}
-            className="w-full mt-4 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold transition disabled:opacity-60 flex items-center justify-center gap-2"
+            className="btn btn-block mt-4"
           >
             {CTA_LABELS[ctaType]}
             <FiExternalLink size={13} />
@@ -1673,7 +1691,7 @@ const PostCard = ({
         />
 
         {/* Actions */}
-        <div className="flex items-center gap-5 mt-4 pt-4 border-t border-stroke">
+        <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 font-mono text-[13px]">
           <div className="relative">
             <button
               onClick={handleLikeClick}
@@ -1683,7 +1701,7 @@ const PostCard = ({
               onMouseEnter={handleLikeMouseEnter}
               onMouseLeave={handleLikeMouseLeave}
               disabled={isLiking}
-              className={`flex items-center gap-1.5 text-base transition ${
+              className={`flex items-center gap-1.5 text-[13px] transition ${
                 isLiking
                   ? "opacity-50 cursor-not-allowed"
                   : liked
@@ -1704,7 +1722,7 @@ const PostCard = ({
           <button
             onClick={() => setShowComments(!showComments)}
             title={commentsOff ? "Comments are turned off" : undefined}
-            className={`flex items-center gap-1.5 text-base transition ${
+            className={`flex items-center gap-1.5 text-[13px] transition ${
               commentsOff
                 ? "text-ink-muted/60 hover:text-ink-muted"
                 : "text-ink-muted hover:text-primary-600"
@@ -1738,7 +1756,7 @@ const PostCard = ({
               }}
               disabled={isReposting}
               title={reposted ? "Undo repost" : "Repost"}
-              className={`flex items-center gap-1.5 text-base transition ${
+              className={`flex items-center gap-1.5 text-[13px] transition ${
                 isReposting
                   ? "opacity-50 cursor-not-allowed"
                   : reposted
@@ -1797,17 +1815,17 @@ const PostCard = ({
                   setShowTipModal(true);
                 }}
                 title="Send a tip"
-                className="flex items-center gap-1.5 text-ink-muted hover:text-amber-500 transition text-base"
+                className="chip chip-amber transition hover:-translate-y-px"
               >
                 <svg
                   viewBox="0 0 20 20"
                   fill="currentColor"
-                  className="w-4 h-4"
+                  className="h-3 w-3"
                   aria-hidden="true"
                 >
                   <path d="M10 2a8 8 0 100 16A8 8 0 0010 2zm.75 11.5v.75a.75.75 0 01-1.5 0v-.75a2.25 2.25 0 01-1.856-2.2c0-1.034.7-1.907 1.856-2.194V7.75a.75.75 0 011.5 0v1.306c1.156.287 1.856 1.16 1.856 2.194a.75.75 0 01-1.5 0c0-.414-.374-.75-.856-.75s-.856.336-.856.75.374.75.856.75c1.156.287 1.856 1.16 1.856 2.194a2.25 2.25 0 01-1.856 2.2z" />
                 </svg>
-                <span className="text-sm">Tip</span>
+                <span>Tip</span>
               </button>
             );
           })()}
@@ -1816,7 +1834,7 @@ const PostCard = ({
             onClick={handleBookmark}
             disabled={isBookmarking}
             title={bookmarked ? "Remove from saved" : "Save post"}
-            className={`ml-auto flex items-center text-base transition ${
+            className={`ml-auto flex items-center text-[13px] transition ${
               isBookmarking
                 ? "opacity-50 cursor-not-allowed"
                 : bookmarked

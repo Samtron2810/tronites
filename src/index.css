@@ -554,6 +554,26 @@
     color: var(--color-surface);
   }
 
+  /* ── Dark "ink" surface for a subtree (promoted posts). Re-points the
+     colour tokens so every descendant using bg-surface/text-ink/etc.
+     adapts with no per-component changes. ─────────────────────────── */
+  .scope-ink {
+    --color-ink: #f4eee1;
+    --color-ink-sub: #d6cfbd;
+    --color-ink-muted: #a8a190;
+    --color-surface: #16140f;
+    --color-card: #1f1c15;
+    --color-sand: #2a261d;
+    --color-stroke: #3b3629;
+    --color-line: #f4eee1;
+    --hard-shadow: transparent;
+    color: var(--color-ink);
+    background-color: #16140f;
+  }
+  .dark .scope-ink {
+    background-color: #0c0b08;
+  }
+
   /* ── Subscribers-only hatch bar ──────────────────────────────────── */
   .hatch-bar {
     height: 0.875rem;
