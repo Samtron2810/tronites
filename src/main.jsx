@@ -45,14 +45,18 @@ ReactDOM.createRoot(document.getElementById("root")).render(
           <SocketProvider>
             <Toaster
               position="top-center"
+              containerStyle={{ top: "calc(env(safe-area-inset-top) + 12px)" }}
               toastOptions={{
+                duration: 3500,
                 style: {
-                  background: "var(--color-primary-900)",
-                  color: "var(--color-primary-100)",
-                  borderRadius: "12px",
-                  border: "1px solid rgba(159, 225, 203, 0.2)",
+                  background: "var(--color-ink)",
+                  color: "var(--color-surface)",
+                  borderRadius: "10px",
+                  border: "2px solid var(--color-line)",
+                  boxShadow: "3px 3px 0 0 var(--hard-shadow)",
                   fontSize: "14px",
-                  fontWeight: 500,
+                  fontWeight: 600,
+                  maxWidth: "min(92vw, 420px)",
                 },
                 success: {
                   style: {
@@ -65,8 +69,8 @@ ReactDOM.createRoot(document.getElementById("root")).render(
                   },
                 },
                 error: {
-                  style: { background: "#dc2626", color: "#fff" },
-                  iconTheme: { primary: "#fff", secondary: "#dc2626" },
+                  style: { background: "var(--color-red-600)", color: "#fff" },
+                  iconTheme: { primary: "#fff", secondary: "var(--color-red-600)" },
                 },
               }}
             />

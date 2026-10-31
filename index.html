@@ -2,6 +2,50 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <!-- Apply the saved theme before first paint (same rules as
+         ThemeProvider) so the splash and page never flash the wrong
+         palette. -->
+    <script>
+      (function () {
+        try {
+          var saved = localStorage.getItem("theme");
+          var dark =
+            saved === "dark" ||
+            (saved !== "light" &&
+              window.matchMedia &&
+              window.matchMedia("(prefers-color-scheme: dark)").matches);
+          if (dark) {
+            document.documentElement.classList.add("dark");
+            var m = document.querySelector('meta[name="theme-color"]');
+            if (m) m.setAttribute("content", "#14120e");
+          }
+        } catch (e) {}
+      })();
+    </script>
+    <style>
+      html { background-color: #f4eee1; }
+      html.dark { background-color: #14120e; }
+      #static-splash {
+        position: fixed; inset: 0; z-index: 9999;
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        background-color: #f4eee1; color: #16140f;
+      }
+      html.dark #static-splash { background-color: #14120e; color: #f4eee1; }
+      #static-splash img { height: 64px; width: auto; object-fit: contain; }
+      #static-splash .splash-word {
+        margin-top: 12px;
+        font-family: "Bricolage Grotesque", "DM Sans", system-ui, sans-serif;
+        font-weight: 800; font-size: 36px; letter-spacing: -0.04em; line-height: 1.1;
+      }
+      #static-splash .splash-bar {
+        margin-top: 16px; width: 64px; height: 6px; border-radius: 9999px; background: #f2b531;
+      }
+      #static-splash img, #static-splash .splash-word {
+        animation: staticSplashPulse 1.2s ease-in-out infinite;
+      }
+      #static-splash .splash-word { animation-delay: 0.15s; }
+      @keyframes staticSplashPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+    </style>
     <link rel="icon" type="image/png" href="/tronite-logo.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content" />
 
@@ -10,7 +54,7 @@
          only needs the static tags a plain HTML page can't get from
          the build plugin automatically. -->
     <link rel="manifest" href="/manifest.webmanifest" />
-    <meta name="theme-color" content="#04342c" />
+    <meta name="theme-color" content="#f4eee1" />
 
     <!-- iOS has no manifest support for install/standalone metadata —
          these three tags are what makes "Add to Home Screen" launch
@@ -35,56 +79,12 @@
          Fonts — see the Privacy Policy. -->
     <title>Tronites</title>
   </head>
-  <body style="background-color: #04342c">
+  <body>
     <div id="root">
-      <div
-        id="static-splash"
-        style="
-          position: fixed;
-          inset: 0;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          background-color: #04342c;
-          z-index: 9999;
-        "
-      >
-        <img
-          src="/tronite-logo.png"
-          alt="Tronites"
-          style="height: 64px; width: auto; object-fit: contain"
-        />
-        <span
-          style="
-            margin-top: 16px;
-            color: #ffffff;
-            font-family: &quot;DM Sans&quot;, sans-serif;
-            font-weight: 700;
-            font-size: 24px;
-            letter-spacing: -0.02em;
-          "
-        >
-          Tron<span style="color: #9fe1cb">ites</span>
-        </span>
-        <style>
-          #static-splash img,
-          #static-splash span {
-            animation: staticSplashPulse 1.2s ease-in-out infinite;
-          }
-          #static-splash span {
-            animation-delay: 0.15s;
-          }
-          @keyframes staticSplashPulse {
-            0%,
-            100% {
-              opacity: 1;
-            }
-            50% {
-              opacity: 0.6;
-            }
-          }
-        </style>
+      <div id="static-splash">
+        <img src="/tronite-logo.png" alt="Tronites" />
+        <span class="splash-word">tronites</span>
+        <span class="splash-bar"></span>
       </div>
     </div>
     <script type="module" src="/src/main.jsx"></script>

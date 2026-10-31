@@ -22,6 +22,10 @@ export const ThemeProvider = ({ children }) => {
   useEffect(() => {
     const root = document.documentElement;
     root.classList.toggle("dark", theme === "dark");
+    // Keep the browser/PWA chrome colour in step with the theme.
+    document
+      .querySelector('meta[name="theme-color"]')
+      ?.setAttribute("content", theme === "dark" ? "#14120e" : "#f4eee1");
     try {
       localStorage.setItem(STORAGE_KEY, theme);
     } catch {
