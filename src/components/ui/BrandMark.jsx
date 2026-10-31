@@ -4,7 +4,8 @@ import cx from "../../utils/cx";
 // public/tronite-logo.png — every place that renders <BrandMark /> follows.
 export const LOGO_SRC = "/tronite-logo.png";
 
-const BrandMark = ({ size = 32, wordmark = true, className }) => (
+// tone: "default" (ink text) | "light" (cream text, for dark backgrounds)
+const BrandMark = ({ size = 32, wordmark = true, tone = "default", className }) => (
   <span className={cx("inline-flex items-center gap-2", className)}>
     <img
       src={LOGO_SRC}
@@ -16,7 +17,10 @@ const BrandMark = ({ size = 32, wordmark = true, className }) => (
     />
     {wordmark && (
       <span
-        className="font-display font-extrabold leading-none tracking-[-0.04em] text-ink"
+        className={cx(
+          "font-display font-extrabold leading-none tracking-[-0.04em]",
+          tone === "light" ? "text-[#f4eee1]" : "text-ink",
+        )}
         style={{ fontSize: Math.round(size * 0.72) }}
       >
         tronites

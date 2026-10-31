@@ -91,6 +91,12 @@
   /* Colour of the offset "hard" shadows */
   --hard-shadow: #16140f;
   color-scheme: light;
+
+  /* App shell */
+  --sidebar-w: 16rem;
+  --bottom-bar-h: 4rem;
+  --sidebar-bg: #16140f;
+  --sidebar-line: #2e2a21;
 }
 
 /* Dark mode: warm ink-black surfaces, cream text, same brand hues.
@@ -100,6 +106,8 @@
   color-scheme: dark;
   --app-bg-color: #14120e;
   --hard-shadow: #000000;
+  --sidebar-bg: #0c0b08;
+  --sidebar-line: #2a261d;
 
   --color-primary-50: #10261c;
   --color-primary-100: #163326;
@@ -300,6 +308,17 @@
    PRIMITIVES (mirrored by React components in src/components/ui/)
    ═══════════════════════════════════════════════════════════════════════ */
 @layer components {
+  /* ── App shell offsets (see components/Navbar.jsx) ───────────────── */
+  .app-shell {
+    padding-bottom: calc(var(--bottom-bar-h) + env(safe-area-inset-bottom));
+  }
+  @media (min-width: 1024px) {
+    .app-shell {
+      padding-bottom: 0;
+      padding-left: var(--sidebar-w);
+    }
+  }
+
   /* ── Buttons ─────────────────────────────────────────────────────── */
   .btn {
     --btn-bg: var(--color-card);

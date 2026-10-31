@@ -26,7 +26,7 @@ const InstallPrompt = () => {
     <div
       role="dialog"
       aria-label="Install Tronites"
-      className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-sm z-40 animate-[slideUp_0.35s_ease-out]"
+      className="fixed bottom-[calc(var(--bottom-bar-h)+env(safe-area-inset-bottom)+1rem)] lg:bottom-6 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-sm z-40 animate-[slideUp_0.35s_ease-out]"
     >
       <style>{`
         @keyframes slideUp {

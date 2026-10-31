@@ -15,7 +15,7 @@ const UpdateToast = () => {
   if (!available) return null;
 
   return (
-    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-2rem)] max-w-sm">
+    <div className="fixed bottom-[calc(var(--bottom-bar-h)+env(safe-area-inset-bottom)+1rem)] lg:bottom-6 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-2rem)] max-w-sm">
       <div className="bg-card border border-stroke rounded-2xl shadow-xl p-3.5 flex items-center gap-3">
         <div className="w-9 h-9 rounded-xl bg-primary-600/10 flex items-center justify-center shrink-0">
           <FiRefreshCw className="text-primary-600" size={16} />

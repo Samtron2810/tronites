@@ -122,7 +122,7 @@ const FloatingMenu = ({
         overflowY: "auto",
         visibility: pos ? "visible" : "hidden",
       }}
-      className={`text-ink bg-card border border-stroke shadow-lg ${className}`}
+      className={`text-ink bg-card border-2 border-line shadow-hard-sm ${className}`}
     >
       {children}
     </div>,

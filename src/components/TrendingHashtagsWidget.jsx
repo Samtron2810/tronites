@@ -16,7 +16,9 @@ const getCached = (key) => {
   return entry.tags;
 };
 
-const TrendingHashtagsWidget = () => {
+// variant: "chips" (horizontal scroller, inline in the feed on small screens)
+//          "list"  (numbered "Trending now" list for the right rail)
+const TrendingHashtagsWidget = ({ variant = "chips" }) => {
   const { user } = useAuth();
   // Feature 4 — "near you" toggle. Default to location-aware when user has location set.
   const userLocation = user?.location || "";
@@ -62,73 +64,124 @@ const TrendingHashtagsWidget = () => {
 
   if (failed) return null;
 
+  const isList = variant === "list";
+
+  // Global / Near-you switch — only offered when the user has a location.
+  const scopeToggle = userLocation && (
+    <div className="seg">
+      <button
+        type="button"
+        aria-pressed={!nearMode}
+        onClick={() => setNearMode(false)}
+        className="seg-item flex items-center gap-1 px-2 py-1 text-[10px]"
+      >
+        <FiGlobe size={10} />
+        Global
+      </button>
+      <button
+        type="button"
+        aria-pressed={nearMode}
+        onClick={() => setNearMode(true)}
+        className="seg-item flex items-center gap-1 px-2 py-1 text-[10px]"
+      >
+        <FiMapPin size={10} />
+        Near you
+      </button>
+    </div>
+  );
+
+  const emptyNear =
+    nearMode && userLocation ? (
+      <p className="py-1 text-xs text-ink-muted">
+        No trending hashtags found near {userLocation}.
+      </p>
+    ) : null;
+
+  const locationLabel = nearMode && userLocation && (
+    <p className="mb-2 flex items-center gap-1 text-[11px] text-ink-muted">
+      <FiMapPin size={10} className="text-primary-600" />
+      {userLocation}
+    </p>
+  );
+
+  // ── Right-rail list: big green numerals, dotted dividers ───────────────
+  if (isList) {
+    return (
+      <section aria-label="Trending now">
+        <div className="flex items-center justify-between gap-2 border-b-2 border-line pb-2">
+          <h2 className="mono-label">
+            Trending now
+          </h2>
+          {scopeToggle}
+        </div>
+        {locationLabel && <div className="pt-2">{locationLabel}</div>}
+
+        {loading && tags === null ? (
+          <div className="space-y-3 pt-4">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="h-8 animate-pulse rounded bg-sand" />
+            ))}
+          </div>
+        ) : tags === null || tags.length === 0 ? (
+          emptyNear
+        ) : (
+          <ol className="border-b-2 border-line">
+            {tags.slice(0, 5).map(({ tag, postCount }, i) => (
+              <li key={tag} className="border-b border-dotted border-line/50 last:border-b-0">
+                <Link
+                  to={`/hashtag/${tag}`}
+                  className="group flex items-center gap-4 py-3"
+                >
+                  <span className="w-6 font-display text-3xl font-extrabold leading-none text-primary-600">
+                    {i + 1}
+                  </span>
+                  <span className="min-w-0 flex-1 truncate font-mono text-sm text-ink group-hover:underline">
+                    #{tag}
+                  </span>
+                  <span className="font-mono text-[11px] text-ink-muted">
+                    {postCount}
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ol>
+        )}
+      </section>
+    );
+  }
+
+  // ── Inline chips (tablet / phone) ──────────────────────────────────────
   return (
-    <div className="bg-card border border-stroke rounded-2xl px-4 py-3">
-      <div className="flex items-center justify-between mb-2.5">
+    <div className="card px-4 py-3">
+      <div className="mb-2.5 flex items-center justify-between">
         <div className="flex items-center gap-1.5">
           <FiTrendingUp size={14} className="text-primary-600" />
-          <h2 className="text-sm font-semibold text-ink-muted uppercase tracking-wide">
-            Trending
-          </h2>
+          <h2 className="mono-label">Trending</h2>
         </div>
-        {/* Feature 4 — toggle only shown when user has location set */}
-        {userLocation && (
-          <div className="flex items-center bg-surface rounded-lg p-0.5 border border-stroke">
-            <button
-              type="button"
-              onClick={() => setNearMode(false)}
-              className={`flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium transition ${
-                !nearMode ? "bg-card text-ink shadow-sm" : "text-ink-muted"
-              }`}
-            >
-              <FiGlobe size={10} />
-              Global
-            </button>
-            <button
-              type="button"
-              onClick={() => setNearMode(true)}
-              className={`flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium transition ${
-                nearMode ? "bg-card text-ink shadow-sm" : "text-ink-muted"
-              }`}
-            >
-              <FiMapPin size={10} />
-              Near you
-            </button>
-          </div>
-        )}
+        {scopeToggle}
       </div>
 
-      {/* Location label */}
-      {nearMode && userLocation && (
-        <p className="text-[11px] text-ink-muted mb-2 flex items-center gap-1">
-          <FiMapPin size={10} className="text-primary-600" />
-          {userLocation}
-        </p>
-      )}
+      {locationLabel}
 
       {loading && tags === null ? (
-        <div className="flex gap-2 overflow-x-auto no-scrollbar -mx-1 px-1 pb-0.5">
+        <div className="no-scrollbar -mx-1 flex gap-2 overflow-x-auto px-1 pb-0.5">
           {[...Array(5)].map((_, i) => (
-            <div key={i} className="shrink-0 h-7 w-20 rounded-full bg-surface animate-pulse" />
+            <div key={i} className="h-7 w-20 shrink-0 animate-pulse rounded bg-sand" />
           ))}
         </div>
       ) : tags === null || tags.length === 0 ? (
-        nearMode ? (
-          <p className="text-xs text-ink-muted py-1">
-            No trending hashtags found near {userLocation}.
-          </p>
-        ) : null
+        emptyNear
       ) : (
-        <div className="flex gap-2 overflow-x-auto no-scrollbar -mx-1 px-1 pb-0.5">
+        <div className="no-scrollbar -mx-1 flex gap-2 overflow-x-auto px-1 pb-0.5">
           {tags.map(({ tag, postCount }) => (
             <Link
               key={tag}
               to={`/hashtag/${tag}`}
-              className="shrink-0 flex items-center gap-1 pl-2.5 pr-3 py-1.5 rounded-full bg-primary-50 border border-primary-100 text-primary-700 hover:bg-primary-100 transition"
+              className="flex shrink-0 items-center gap-1 rounded border-[1.5px] border-line bg-surface py-1.5 pl-2 pr-2.5 text-ink transition hover:bg-accent hover:text-[#16140f]"
             >
               <FiHash size={12} className="shrink-0" />
-              <span className="text-sm font-semibold">{tag}</span>
-              <span className="text-xs text-primary-500">{postCount}</span>
+              <span className="font-mono text-[13px] font-medium">{tag}</span>
+              <span className="font-mono text-[11px] text-ink-muted">{postCount}</span>
             </Link>
           ))}
         </div>

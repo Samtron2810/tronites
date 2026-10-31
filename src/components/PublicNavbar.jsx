@@ -1,5 +1,9 @@
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/useAuth";
+import BrandMark from "./ui/BrandMark";
+
+const NAV_LINK =
+  "px-2 py-2 font-mono text-[12px] uppercase tracking-[0.08em] text-ink-sub transition hover:text-ink sm:px-3";
 
 /**
  * Lightweight navigation for public pages.
@@ -12,36 +16,36 @@ const PublicNavbar = () => {
   const { user } = useAuth();
 
   return (
-    <header className="sticky top-0 z-50 border-b border-[#2f5c4f] bg-[#04342c]/95 text-[#f3efe6] backdrop-blur-md">
-      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-8">
-        <Link to="/" className="flex shrink-0 items-center gap-2.5" aria-label="Tronites home">
-          <img src="/tronite-logo.png" alt="" className="h-9 w-auto" />
-          <span className="hidden text-lg font-bold tracking-tight sm:inline">
-            Tron<span className="text-[#9fe1cb]">ites</span>
-          </span>
+    <header className="sticky top-0 z-50 border-b-2 border-line bg-surface/95 backdrop-blur">
+      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-3 px-4 sm:px-8">
+        <Link to="/" className="flex shrink-0 items-center" aria-label="Tronites home">
+          <BrandMark size={34} />
         </Link>
 
-        <nav className="flex items-center gap-1 text-sm font-medium sm:gap-3" aria-label="Public navigation">
-          <Link to="/explore" className="px-2 py-2 text-[#c9d8d1] transition hover:text-white sm:px-3">
+        <nav className="flex items-center gap-0.5 sm:gap-2" aria-label="Public navigation">
+          <Link to="/explore" className={NAV_LINK}>
             Explore
           </Link>
-          <Link to="/help" className="hidden px-3 py-2 text-[#c9d8d1] transition hover:text-white sm:inline">
-            Help
-          </Link>
-          <Link to="/tiers" className="hidden px-3 py-2 text-[#c9d8d1] transition hover:text-white sm:inline">
+          <Link to="/tiers" className={`hidden md:inline ${NAV_LINK}`}>
             Tiers
+          </Link>
+          <Link to="/help" className={`hidden md:inline ${NAV_LINK}`}>
+            Help
           </Link>
 
           {user ? (
-            <Link to="/home" className="ml-1 rounded-full bg-[#1d9e75] px-4 py-2 font-semibold text-[#04342c] transition hover:bg-[#9fe1cb]">
+            <Link to="/home" className="btn btn-ink btn-sm ml-1">
               Go to feed
             </Link>
           ) : (
             <>
-              <Link to="/login" className="px-2 py-2 text-[#c9d8d1] transition hover:text-white sm:px-3">
+              <Link to="/login" className={NAV_LINK}>
                 Log in
               </Link>
-              <Link to="/signup" className="rounded-full bg-[#1d9e75] px-3 py-2 font-semibold text-[#04342c] transition hover:bg-[#9fe1cb] sm:px-4">
+              <Link
+                to="/signup"
+                className="btn btn-ink btn-sm ml-1 font-mono uppercase tracking-[0.08em]"
+              >
                 Join free
               </Link>
             </>

@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import CreatePostModal from "./CreatePostModal";
 import { useAuth } from "../context/useAuth";
@@ -9,10 +10,28 @@ import compressImage from "../utils/compressImage";
 import { uploadToCloudinary } from "../services/cloudinary";
 import { uploadVideoToCloudinary, MAX_VIDEO_DURATION_SECONDS, formatVideoLimit } from "../services/videoUpload";
 import { retryWithBackoff } from "../utils/retry";
+import { NEW_POST_EVENT } from "../constants/events";
 
 const CreatePost = ({ fetchPosts }) => {
   const [openModal, setOpenModal] = useState(false);
   const { user } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  // "New post" in the sidebar / bottom bar: either fires this event (already
+  // on Home) or routes here with { compose: true } in location state.
+  useEffect(() => {
+    const open = () => setOpenModal(true);
+    window.addEventListener(NEW_POST_EVENT, open);
+    return () => window.removeEventListener(NEW_POST_EVENT, open);
+  }, []);
+
+  useEffect(() => {
+    if (!location.state?.compose) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-shot open request from router state, cleared right after.
+    setOpenModal(true);
+    navigate(location.pathname, { replace: true, state: null });
+  }, [location.state, location.pathname, navigate]);
 
   // Background post submission for text/image posts — the modal closes
   // immediately and this runs the actual upload in the background so the

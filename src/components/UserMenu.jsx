@@ -10,15 +10,20 @@ import {
   FaSun,
   FaClipboardList,
   FaEllipsisH,
+  FaWallet,
 } from "react-icons/fa";
+import { FiChevronUp } from "react-icons/fi";
 import { FiZap } from "react-icons/fi";
 import defaultAvatar from "../assets/defaultAvatar";
 import { resizedImageUrl, IMAGE_SIZES } from "../utils/cloudinaryImage";
 import { useTheme } from "../context/useTheme";
 import { hasPermission } from "../constants/permissions";
+import { isCreator } from "../utils/creator";
 import FloatingMenu from "./FloatingMenu";
 
-const UserMenu = ({ user, onLogoutClick }) => {
+// variant: "avatar" (round avatar button — mobile top bar)
+//          "chip"   (full-width name + handle row — desktop sidebar footer)
+const UserMenu = ({ user, onLogoutClick, variant = "avatar" }) => {
   const { theme, toggleTheme } = useTheme();
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef(null);
@@ -58,6 +63,19 @@ const UserMenu = ({ user, onLogoutClick }) => {
       isLink: true,
       onClick: () => setIsOpen(false),
     },
+    // Earnings: creator-only, same gate as the /creator-earnings tile on
+    // the More page. Gives mobile (no sidebar) a path to it.
+    ...(isCreator(user)
+      ? [
+          {
+            icon: FaWallet,
+            label: "Earnings",
+            href: "/creator-earnings",
+            isLink: true,
+            onClick: () => setIsOpen(false),
+          },
+        ]
+      : []),
     {
       icon: theme === "dark" ? FaSun : FaMoon,
       label: theme === "dark" ? "Light mode" : "Dark mode",
@@ -149,28 +167,70 @@ const UserMenu = ({ user, onLogoutClick }) => {
     },
   ];
 
+  const avatarSrc =
+    resizedImageUrl(user.profilePic, IMAGE_SIZES.avatarTiny) || defaultAvatar;
+  const isChip = variant === "chip";
+
   return (
-    <div className="relative">
+    <div className={isChip ? "relative w-full" : "relative"}>
       {/* Trigger Button */}
-      <button
-        ref={triggerRef}
-        onClick={() => setIsOpen(!isOpen)}
-        className="ml-2 flex items-center justify-center w-12 h-12 rounded-full border-2 border-primary-600 text-ink-sub hover:text-ink hover:bg-primary-50 transition-all duration-200"
-        title="User menu"
-      >
-        <img
-          src={
-            resizedImageUrl(user.profilePic, IMAGE_SIZES.avatarTiny) ||
-            defaultAvatar
-          }
-          alt={user.name}
-          className="w-full h-full rounded-full object-cover"
-        />
-      </button>
+      {isChip ? (
+        <button
+          ref={triggerRef}
+          onClick={() => setIsOpen(!isOpen)}
+          aria-haspopup="menu"
+          aria-expanded={isOpen}
+          className="flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left text-[#f4eee1] transition hover:bg-white/5"
+          title="User menu"
+        >
+          <img
+            src={avatarSrc}
+            alt=""
+            className="h-9 w-9 shrink-0 rounded-lg border-2 border-[#f4eee1]/80 object-cover"
+          />
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-sm font-bold leading-tight">
+              {user.name}
+            </span>
+            <span className="block truncate font-mono text-[11px] text-[#f4eee1]/60">
+              @{user.username}
+            </span>
+          </span>
+          <FiChevronUp
+            size={16}
+            className={`shrink-0 text-[#f4eee1]/60 transition-transform ${
+              isOpen ? "" : "rotate-180"
+            }`}
+          />
+        </button>
+      ) : (
+        <button
+          ref={triggerRef}
+          onClick={() => setIsOpen(!isOpen)}
+          aria-haspopup="menu"
+          aria-expanded={isOpen}
+          className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-line transition hover:bg-sand"
+          title="User menu"
+        >
+          <img
+            src={avatarSrc}
+            alt={user.name}
+            className="h-full w-full rounded-full object-cover"
+          />
+        </button>
+      )}
 
       {/* Dropdown Menu */}
       {isOpen && (
-        <FloatingMenu open anchorRef={triggerRef} menuRef={menuRef} align="right" offset={8} className="w-56 rounded-lg py-1">
+        <FloatingMenu
+          open
+          anchorRef={triggerRef}
+          menuRef={menuRef}
+          align={isChip ? "left" : "right"}
+          placement={isChip ? "top" : "auto"}
+          offset={8}
+          className="w-60 rounded-xl py-1.5"
+        >
           {menuItems.map((item, index) => {
             const Icon = item.icon;
             const isLastItem = index === menuItems.length - 1;
@@ -180,24 +240,24 @@ const UserMenu = ({ user, onLogoutClick }) => {
 
             return (
               <div key={index}>
-                {addSeparator && <div className="h-px bg-stroke my-1" />}
+                {addSeparator && <div className="my-1 h-px bg-stroke" />}
 
                 {item.isLink ? (
                   <Link
                     to={item.href}
                     onClick={item.onClick}
-                    className="w-full flex items-center gap-3 px-4 py-2.5 text-base hover:bg-primary-50 transition"
+                    className="flex w-full items-center gap-3 px-4 py-2.5 text-base transition hover:bg-sand"
                   >
                     <Icon className="text-lg text-primary-600" />
-                    <span className="text-ink font-medium">{item.label}</span>
+                    <span className="font-medium text-ink">{item.label}</span>
                   </Link>
                 ) : (
                   <button
                     onClick={item.onClick}
-                    className={`w-full flex items-center gap-3 px-4 py-2.5 text-base transition ${
+                    className={`flex w-full items-center gap-3 px-4 py-2.5 text-base transition ${
                       item.isLogout
                         ? "text-red-600 hover:bg-red-50"
-                        : "hover:bg-primary-50"
+                        : "hover:bg-sand"
                     }`}
                   >
                     <Icon

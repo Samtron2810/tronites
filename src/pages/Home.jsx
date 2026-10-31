@@ -7,6 +7,8 @@ import CreatePost from "../components/CreatePost";
 import PostCard from "../components/PostCard";
 import PostSkeleton from "../components/PostSkeleton";
 import TrendingHashtagsWidget from "../components/TrendingHashtagsWidget";
+import RightRail from "../components/RightRail";
+import useMediaQuery from "../hooks/useMediaQuery";
 import api from "../services/api";
 import { useRefetchOnFocus } from "../hooks/useRefetchOnFocus";
 import { useSocket } from "../context/useSocket";
@@ -19,6 +21,9 @@ const TABS = [
 ];
 
 const Home = () => {
+  // Right rail only exists from xl up; below that Trending sits inline in
+  // the feed. Mounting just one keeps it to a single trending request.
+  const showRail = useMediaQuery("(min-width: 1280px)");
   const scrollKeyForTab = (t) => `home-scroll-${t}`;
 
   const [tab, setTab] = useState(() => {
@@ -218,7 +223,7 @@ const Home = () => {
   };
 
   return (
-    <MainLayout>
+    <MainLayout rail={showRail ? <RightRail /> : null}>
       <SeoHead title="Home" robots="noindex, nofollow" />
       <div className="space-y-4">
         <CreatePost
@@ -228,7 +233,7 @@ const Home = () => {
           }}
         />
 
-        <TrendingHashtagsWidget />
+        {!showRail && <TrendingHashtagsWidget />}
 
         <div className="flex border-b border-stroke">
           {TABS.map(({ key, label, icon: Icon }) => (

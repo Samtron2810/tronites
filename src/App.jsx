@@ -123,10 +123,15 @@ const AppContent = () => {
     return <SplashScreen />;
   }
 
+  // Logged-in app shell: left sidebar (lg+) / top + bottom bars (<lg).
+  // `.app-shell` (index.css) reserves the room they occupy.
+  const hasAppShell = Boolean(user && user.username && !isLandingPage);
+
   return (
     <>
-      {user && user.username && !isLandingPage && <Navbar />}
+      {hasAppShell && <Navbar />}
       {shouldShowPublicNavbar && <PublicNavbar />}
+      <div className={hasAppShell ? "app-shell" : undefined}>
       <Suspense fallback={<RouteFallback />}>
         <Routes>
           {/* Public */}
@@ -413,6 +418,7 @@ const AppContent = () => {
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Suspense>
+      </div>
 
       {user && <ComplianceGate />}
 
