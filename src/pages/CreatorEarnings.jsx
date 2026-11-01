@@ -58,27 +58,54 @@ const StatCard = ({ label, value, icon: Icon, accent = "primary" }) => {
 };
 
 // ─── Bank account form ───────────────────────────────────────────────────────
+// Bank comes from Paystack's list and the account holder name is resolved by
+// the bank — neither is typed by hand, so a typo can't reach a payout.
 const BankForm = ({ existing, onSaved }) => {
-  const [bankName, setBankName] = useState(existing?.bankName || "");
-  const [accountName, setAccountName] = useState(existing?.accountName || "");
-  const [accountNumber, setAccountNumber] = useState("");
+  const [banks, setBanks] = useState([]);
+  const [banksLoading, setBanksLoading] = useState(true);
   const [bankCode, setBankCode] = useState(existing?.bankCode || "");
+  const [accountNumber, setAccountNumber] = useState("");
+  const [resolving, setResolving] = useState(false);
+  const [resolvedName, setResolvedName] = useState("");
+  const [resolveError, setResolveError] = useState("");
   const [saving, setSaving] = useState(false);
 
+  useEffect(() => {
+    let cancelled = false;
+    api
+      .get("/creator-monetization/banks")
+      .then((r) => !cancelled && setBanks(r.data?.banks || []))
+      .catch(() => !cancelled && toast.error("Couldn't load the bank list."))
+      .finally(() => !cancelled && setBanksLoading(false));
+    return () => { cancelled = true; };
+  }, []);
+
+  // Look the account up as soon as a bank and 10 digits are present.
+  useEffect(() => {
+    setResolvedName("");
+    setResolveError("");
+    if (!bankCode || !/^\d{10}$/.test(accountNumber)) return;
+
+    let cancelled = false;
+    setResolving(true);
+    api
+      .post("/creator-monetization/bank-account/resolve", { accountNumber, bankCode })
+      .then((r) => !cancelled && setResolvedName(r.data?.accountName || ""))
+      .catch((e) =>
+        !cancelled &&
+        setResolveError(e.response?.data?.message || "Could not verify this account."),
+      )
+      .finally(() => !cancelled && setResolving(false));
+    return () => { cancelled = true; };
+  }, [bankCode, accountNumber]);
+
   const handleSave = async () => {
-    if (!bankName || !accountName || !accountNumber || !bankCode) {
-      toast.error("All fields are required.");
-      return;
-    }
+    if (!resolvedName) return;
     setSaving(true);
     try {
-      await api.post("/creator-monetization/bank-account", {
-        bankName,
-        accountName,
-        accountNumber,
-        bankCode,
-      });
+      await api.post("/creator-monetization/bank-account", { accountNumber, bankCode });
       toast.success("Bank account saved.");
+      setAccountNumber("");
       onSaved?.();
     } catch (e) {
       toast.error(e.response?.data?.message || "Could not save bank account.");
@@ -97,28 +124,50 @@ const BankForm = ({ existing, onSaved }) => {
         </div>
       )}
       <div className="grid grid-cols-1 gap-3">
-        {[
-          { label: "Bank name", val: bankName, set: setBankName, ph: "e.g. Zenith Bank" },
-          { label: "Account name", val: accountName, set: setAccountName, ph: "Exactly as on your bank account" },
-          { label: "Account number (10 digits)", val: accountNumber, set: setAccountNumber, ph: "0123456789", type: "tel", maxLength: 10 },
-          { label: "Bank code", val: bankCode, set: setBankCode, ph: "e.g. 057", maxLength: 6 },
-        ].map(({ label, val, set, ph, type = "text", maxLength }) => (
-          <div key={label}>
-            <label className="block text-xs text-ink-muted mb-1">{label}</label>
-            <input
-              type={type}
-              value={val}
-              onChange={(e) => set(e.target.value)}
-              placeholder={ph}
-              maxLength={maxLength}
-              className="field w-full py-2.5"
-            />
+        <div>
+          <label className="block text-xs text-ink-muted mb-1">Bank</label>
+          <select
+            value={bankCode}
+            onChange={(e) => setBankCode(e.target.value)}
+            disabled={banksLoading}
+            className="field w-full py-2.5"
+          >
+            <option value="">{banksLoading ? "Loading banks…" : "Select your bank"}</option>
+            {banks.map((b) => (
+              <option key={b.code} value={b.code}>{b.name}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="block text-xs text-ink-muted mb-1">Account number (10 digits)</label>
+          <input
+            type="tel"
+            inputMode="numeric"
+            value={accountNumber}
+            onChange={(e) => setAccountNumber(e.target.value.replace(/\D/g, "").slice(0, 10))}
+            placeholder="0123456789"
+            maxLength={10}
+            className="field w-full py-2.5"
+          />
+        </div>
+
+        {resolving && (
+          <p className="text-xs text-ink-muted flex items-center gap-2">
+            <FaSpinner size={11} className="animate-spin" /> Verifying account…
+          </p>
+        )}
+        {resolvedName && (
+          <div className="bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-xl px-3 py-2 text-xs text-green-700 dark:text-green-400">
+            <p className="text-[11px] uppercase tracking-wide opacity-70">Account name</p>
+            <p className="font-semibold text-sm">{resolvedName}</p>
+            <p className="mt-0.5">Make sure this is your account before saving.</p>
           </div>
-        ))}
+        )}
+        {resolveError && <p className="text-xs text-red-600">{resolveError}</p>}
       </div>
       <button
         onClick={handleSave}
-        disabled={saving}
+        disabled={saving || resolving || !resolvedName}
         className="btn btn-primary btn-block"
       >
         {saving ? <FaSpinner size={13} className="animate-spin" /> : null}
