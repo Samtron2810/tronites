@@ -159,7 +159,7 @@ const BusinessProfileSection = ({ isOwnProfile, businessProfile: initialProfile 
         )}
 
         {hasAnyData && (
-          <div className="bg-card border border-stroke rounded-2xl p-4 space-y-3">
+          <div className="card p-4 space-y-3">
             {form.category && (
               <span className="inline-block text-[11px] font-semibold px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
                 {form.category}
@@ -252,7 +252,7 @@ const BusinessProfileSection = ({ isOwnProfile, businessProfile: initialProfile 
 
   // ── Edit form ───────────────────────────────────────────────────────
   return (
-    <div className="bg-card border border-stroke rounded-2xl divide-y divide-stroke">
+    <div className="card divide-y divide-stroke">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3">
         <span className="text-sm font-bold text-ink">Edit business info</span>
@@ -266,7 +266,7 @@ const BusinessProfileSection = ({ isOwnProfile, businessProfile: initialProfile 
         <div className="space-y-1">
           <label className="text-xs font-semibold text-ink-muted">Business category</label>
           <input
-            className="w-full px-3 py-2 rounded-xl border border-stroke bg-surface text-sm text-ink focus:outline-none focus:border-primary-400 transition"
+            className="field py-2 w-full"
             placeholder="e.g. Restaurant, Fashion, Tech"
             value={form.category}
             onChange={(e) => set("category", e.target.value)}
@@ -277,11 +277,11 @@ const BusinessProfileSection = ({ isOwnProfile, businessProfile: initialProfile 
         {/* Address */}
         <div className="space-y-2">
           <label className="text-xs font-semibold text-ink-muted flex items-center gap-1.5"><FiMapPin size={11} />Address</label>
-          <input className="w-full px-3 py-2 rounded-xl border border-stroke bg-surface text-sm text-ink focus:outline-none focus:border-primary-400 transition" placeholder="Street address" value={form.address} onChange={(e) => set("address", e.target.value)} maxLength={200} />
+          <input className="field py-2 w-full" placeholder="Street address" value={form.address} onChange={(e) => set("address", e.target.value)} maxLength={200} />
           <div className="grid grid-cols-3 gap-2">
-            <input className="px-3 py-2 rounded-xl border border-stroke bg-surface text-sm text-ink focus:outline-none focus:border-primary-400 transition" placeholder="City" value={form.city} onChange={(e) => set("city", e.target.value)} maxLength={100} />
-            <input className="px-3 py-2 rounded-xl border border-stroke bg-surface text-sm text-ink focus:outline-none focus:border-primary-400 transition" placeholder="State" value={form.state} onChange={(e) => set("state", e.target.value)} maxLength={100} />
-            <input className="px-3 py-2 rounded-xl border border-stroke bg-surface text-sm text-ink focus:outline-none focus:border-primary-400 transition" placeholder="Country" value={form.country} onChange={(e) => set("country", e.target.value)} maxLength={100} />
+            <input className="field py-2" placeholder="City" value={form.city} onChange={(e) => set("city", e.target.value)} maxLength={100} />
+            <input className="field py-2" placeholder="State" value={form.state} onChange={(e) => set("state", e.target.value)} maxLength={100} />
+            <input className="field py-2" placeholder="Country" value={form.country} onChange={(e) => set("country", e.target.value)} maxLength={100} />
           </div>
         </div>
 
@@ -290,19 +290,19 @@ const BusinessProfileSection = ({ isOwnProfile, businessProfile: initialProfile 
           <label className="text-xs font-semibold text-ink-muted">Contact</label>
           <div className="flex items-center gap-2">
             <FiPhone size={14} className="text-ink-muted shrink-0" />
-            <input className="flex-1 px-3 py-2 rounded-xl border border-stroke bg-surface text-sm text-ink focus:outline-none focus:border-primary-400 transition" placeholder="Phone number" value={form.phone} onChange={(e) => set("phone", e.target.value)} maxLength={20} />
+            <input className="field py-2 flex-1" placeholder="Phone number" value={form.phone} onChange={(e) => set("phone", e.target.value)} maxLength={20} />
           </div>
           <div className="flex items-center gap-2">
             <FaWhatsapp size={15} className="text-emerald-500 shrink-0" />
-            <input className="flex-1 px-3 py-2 rounded-xl border border-stroke bg-surface text-sm text-ink focus:outline-none focus:border-primary-400 transition" placeholder="WhatsApp number (e.g. 2348012345678)" value={form.whatsapp} onChange={(e) => set("whatsapp", e.target.value)} maxLength={20} />
+            <input className="field py-2 flex-1" placeholder="WhatsApp number (e.g. 2348012345678)" value={form.whatsapp} onChange={(e) => set("whatsapp", e.target.value)} maxLength={20} />
           </div>
           <div className="flex items-center gap-2">
             <FiGlobe size={14} className="text-ink-muted shrink-0" />
-            <input className="flex-1 px-3 py-2 rounded-xl border border-stroke bg-surface text-sm text-ink focus:outline-none focus:border-primary-400 transition" placeholder="Website URL" value={form.website} onChange={(e) => set("website", e.target.value)} maxLength={255} />
+            <input className="field py-2 flex-1" placeholder="Website URL" value={form.website} onChange={(e) => set("website", e.target.value)} maxLength={255} />
           </div>
           <div className="flex items-center gap-2">
             <FiMail size={14} className="text-ink-muted shrink-0" />
-            <input className="flex-1 px-3 py-2 rounded-xl border border-stroke bg-surface text-sm text-ink focus:outline-none focus:border-primary-400 transition" placeholder="Business email" value={form.email} onChange={(e) => set("email", e.target.value)} maxLength={120} />
+            <input className="field py-2 flex-1" placeholder="Business email" value={form.email} onChange={(e) => set("email", e.target.value)} maxLength={120} />
           </div>
         </div>
 
@@ -361,13 +361,13 @@ const BusinessProfileSection = ({ isOwnProfile, businessProfile: initialProfile 
 
       {/* Save */}
       <div className="px-4 py-3 flex gap-2">
-        <button onClick={() => setEditing(false)} className="flex-1 py-2.5 rounded-xl border border-stroke text-sm font-semibold text-ink-sub hover:bg-surface transition">
+        <button onClick={() => setEditing(false)} className="btn flex-1">
           Cancel
         </button>
         <button
           onClick={handleSave}
           disabled={saving}
-          className="flex-1 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold transition disabled:opacity-50 flex items-center justify-center gap-2"
+          className="btn btn-primary flex-1"
         >
           {saving ? <><FiLoader size={14} className="animate-spin" />Saving…</> : <><FiCheck size={14} />Save changes</>}
         </button>

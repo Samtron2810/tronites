@@ -94,7 +94,7 @@ const FollowersList = () => {
     <MainLayout>
       <div className="bg-card rounded-2xl shadow-md p-2">
         {/* centerized Header */}
-        <h4 className="text-2xl font-bold text-ink mb-6 text-center">
+        <h4 className="display-md mb-6 text-center">
           {profileName}'s{" "}
           {activeTab === "followers" ? "Followers" : "Following"}
         </h4>
@@ -103,9 +103,9 @@ const FollowersList = () => {
         <div className="flex gap-4 mb-2 border-b">
           <button
             onClick={() => handleTabChange("followers")}
-            className={`px-6 py-2 font-semibold transition border-b-2 ${
+            className={`px-6 py-2 font-mono text-[13px] uppercase tracking-wider transition border-b-2 ${
               activeTab === "followers"
-                ? "text-primary-600 border-primary-600"
+                ? "text-ink border-accent"
                 : "text-ink-muted border-transparent hover:text-ink"
             }`}
           >
@@ -113,9 +113,9 @@ const FollowersList = () => {
           </button>
           <button
             onClick={() => handleTabChange("following")}
-            className={`px-6 py-2 font-semibold transition border-b-2 ${
+            className={`px-6 py-2 font-mono text-[13px] uppercase tracking-wider transition border-b-2 ${
               activeTab === "following"
-                ? "text-primary-600 border-primary-600"
+                ? "text-ink border-accent"
                 : "text-ink-muted border-transparent hover:text-ink"
             }`}
           >
@@ -143,7 +143,7 @@ const FollowersList = () => {
                     <img
                       src={resizedImageUrl(user.profilePic, IMAGE_SIZES.avatarSmall) || defaultAvatar}
                       alt={user.name}
-                      className="w-11 h-11 rounded-full object-cover ring-2 ring-primary-100"
+                      className="w-11 h-11 rounded-lg object-cover border-2 border-line"
                     />
                     <div className="min-w-0">
                       <h3 className="text-base font-semibold text-ink truncate flex items-center gap-1.5">

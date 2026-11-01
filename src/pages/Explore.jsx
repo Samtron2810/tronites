@@ -827,7 +827,7 @@ const Explore = () => {
         {/* Search-type dropdown + Trending tab — the four searchable
             surfaces live behind one dropdown (People is the default);
             Trending stays as its own button beside it. */}
-        <div className="bg-card border border-stroke rounded-2xl p-1 flex gap-1">
+        <div className="card p-1 flex gap-1">
           <div className="relative flex-1">
             <button
               ref={searchTriggerRef}
@@ -836,7 +836,7 @@ const Explore = () => {
               aria-expanded={searchDropdownOpen}
               className={`w-full flex items-center justify-center gap-1.5 text-base font-semibold py-2 rounded-xl transition whitespace-nowrap px-2 ${
                 SEARCH_TYPE_OPTIONS.some((t) => t.value === activeTab)
-                  ? "bg-primary-600 text-white"
+                  ? "bg-ink text-surface"
                   : "text-ink-muted hover:text-ink"
               }`}
             >
@@ -857,7 +857,7 @@ const Explore = () => {
                     onClick={() => handleSearchTypeChange(option.value)}
                     className={`w-full flex items-center justify-between gap-2 px-4 py-2 text-base transition ${
                       searchType === option.value
-                        ? "bg-primary-50 text-primary-700 font-semibold"
+                        ? "bg-sand text-ink font-semibold"
                         : "text-ink hover:bg-surface"
                     }`}
                   >
@@ -873,7 +873,7 @@ const Explore = () => {
             onClick={() => setActiveTab("trending")}
             className={`flex-1 flex items-center justify-center gap-1 text-base font-semibold py-2 rounded-xl transition whitespace-nowrap px-2 ${
               activeTab === "trending"
-                ? "bg-primary-600 text-white"
+                ? "bg-ink text-surface"
                 : "text-ink-muted hover:text-ink"
             }`}
           >
@@ -886,7 +886,7 @@ const Explore = () => {
             entirely rather than rendering a disabled input. */}
         {activeTab !== "trending" && (
           <div className="relative">
-            <div className="bg-card border border-stroke rounded-2xl px-4 py-3 flex items-center gap-3">
+            <div className="card px-4 py-3 flex items-center gap-3">
               <FiSearch className="text-ink-muted shrink-0" size={16} />
               <input
                 type="text"
@@ -919,7 +919,7 @@ const Explore = () => {
                 >
                   <FiSliders size={16} />
                   {activeFilterCount > 0 && (
-                    <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-primary-600 text-white text-[10px] font-bold flex items-center justify-center">
+                    <span className="absolute -top-1 -right-1 w-4 h-4 rounded bg-accent text-[#16140f] text-[10px] font-bold flex items-center justify-center">
                       {activeFilterCount}
                     </span>
                   )}
@@ -1007,7 +1007,7 @@ const Explore = () => {
                 return (
                   <div
                     key={user._id}
-                    className="bg-card border border-stroke rounded-2xl p-4 flex items-center justify-between gap-4"
+                    className="card p-4 flex items-center justify-between gap-4"
                   >
                     <Link
                       to={`/profile/${user._id}`}
@@ -1022,10 +1022,10 @@ const Explore = () => {
                             ) || defaultAvatar
                           }
                           alt={user.name}
-                          className="w-11 h-11 rounded-full object-cover ring-2 ring-primary-100"
+                          className="w-11 h-11 rounded-lg object-cover border-2 border-line"
                         />
                         <span
-                          className={`absolute bottom-0 right-0 block h-2.5 w-2.5 rounded-full border-2 border-white ${isOnline ? "bg-primary-400" : "bg-gray-300"}`}
+                          className={`absolute bottom-0 right-0 block h-2.5 w-2.5 rounded-full border-2 border-card ${isOnline ? "bg-primary-400" : "bg-gray-300"}`}
                           title={isOnline ? "Online" : "Offline"}
                         />
                       </div>
@@ -1059,8 +1059,8 @@ const Explore = () => {
                       disabled={followingId === user._id}
                       className={`shrink-0 px-4 py-1.5 rounded-xl text-sm font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed ${
                         isFollowing
-                          ? "bg-surface border border-stroke text-ink-sub hover:border-red-300 hover:text-red-500"
-                          : "bg-primary-600 text-white hover:bg-primary-800"
+                          ? "bg-ink text-surface border-2 border-line hover:bg-red-600 hover:text-white"
+                          : "bg-primary-600 text-white border-2 border-line hover:bg-primary-800"
                       }`}
                     >
                       {followingId === user._id
@@ -1263,7 +1263,7 @@ const Explore = () => {
             )}
 
             {!trendingLoading && trendingPosts.length === 0 && (
-              <div className="bg-card border border-stroke rounded-2xl p-10 text-center">
+              <div className="card p-10 text-center">
                 <p className="text-3xl mb-2">✨</p>
                 <h2 className="text-lg font-semibold text-ink">
                   Nothing trending yet

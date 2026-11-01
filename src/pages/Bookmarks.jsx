@@ -94,7 +94,7 @@ const Bookmarks = () => {
           </Link>
           <div className="flex items-center gap-2">
             <FaRegBookmark className="text-primary-600" size={16} />
-            <h1 className="text-xl font-bold text-ink">Saved posts</h1>
+            <h1 className="display-md">Saved posts</h1>
           </div>
         </div>
 
@@ -139,7 +139,7 @@ const Bookmarks = () => {
           ))}
 
         {!loading && posts.length === 0 && (
-          <div className="bg-card border border-stroke rounded-2xl p-10 text-center">
+          <div className="card p-10 text-center">
             <p className="text-3xl mb-2">🔖</p>
             <h2 className="text-lg font-semibold text-ink">
               No saved posts yet

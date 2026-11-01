@@ -223,7 +223,7 @@ const AccountIdentitySection = ({ embedded = false }) => {
 
   const outerClass = embedded
     ? "divide-y divide-stroke px-5"
-    : "bg-card border border-stroke rounded-2xl p-5 divide-y divide-stroke";
+    : "card p-5 divide-y divide-stroke";
 
   return (
     <section className={outerClass}>
@@ -255,7 +255,7 @@ const AccountIdentitySection = ({ embedded = false }) => {
                 placeholder="First name"
                 maxLength={30}
                 autoFocus
-                className="w-full px-3 py-2 rounded-xl border border-stroke bg-surface text-ink text-base outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100 transition"
+                className="field py-2"
               />
               <input
                 type="text"
@@ -263,14 +263,14 @@ const AccountIdentitySection = ({ embedded = false }) => {
                 onChange={(e) => setLastName(e.target.value)}
                 placeholder="Last name"
                 maxLength={30}
-                className="w-full px-3 py-2 rounded-xl border border-stroke bg-surface text-ink text-base outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100 transition"
+                className="field py-2"
               />
             </div>
             <div className="flex gap-2">
               <button
                 onClick={handleSaveName}
                 disabled={savingName}
-                className="px-3.5 py-1.5 rounded-lg bg-primary-600 hover:bg-primary-800 disabled:opacity-50 text-white text-sm font-medium transition"
+                className="btn btn-primary btn-sm"
               >
                 {savingName ? "Saving..." : "Save"}
               </button>
@@ -320,7 +320,7 @@ const AccountIdentitySection = ({ embedded = false }) => {
                 maxLength={20}
                 autoFocus
                 onKeyDown={(e) => e.key === "Enter" && handleSaveUsername()}
-                className="w-full pl-7 pr-8 py-2 rounded-xl border border-stroke bg-surface text-ink text-base outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100 transition"
+                className="field pl-7 pr-8 py-2"
               />
               <span className="absolute right-3 top-1/2 -translate-y-1/2">
                 {usernameStatusIcon}
@@ -343,7 +343,7 @@ const AccountIdentitySection = ({ embedded = false }) => {
               <button
                 onClick={handleSaveUsername}
                 disabled={status !== "available" || savingUsername}
-                className="px-3.5 py-1.5 rounded-lg bg-primary-600 hover:bg-primary-800 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-medium transition"
+                className="btn btn-primary btn-sm"
               >
                 {savingUsername ? "Saving..." : "Save"}
               </button>
@@ -387,7 +387,7 @@ const AccountIdentitySection = ({ embedded = false }) => {
                 maxLength={150}
                 rows={3}
                 autoFocus
-                className="w-full px-3 py-2 rounded-xl border border-stroke bg-surface text-ink text-base outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100 transition resize-none"
+                className="field py-2 resize-none"
               />
               <span className="absolute bottom-2 right-3 text-[11px] text-ink-muted pointer-events-none">
                 {bioText.length}/150
@@ -397,7 +397,7 @@ const AccountIdentitySection = ({ embedded = false }) => {
               <button
                 onClick={handleSaveBio}
                 disabled={savingBio}
-                className="px-3.5 py-1.5 rounded-lg bg-primary-600 hover:bg-primary-800 disabled:opacity-50 text-white text-sm font-medium transition"
+                className="btn btn-primary btn-sm"
               >
                 {savingBio ? "Saving..." : "Save"}
               </button>

@@ -391,9 +391,9 @@ const Profile = () => {
   return (
     <MainLayout>
       {/* Profile card */}
-      <div className="bg-card border border-stroke rounded-2xl overflow-hidden">
+      <div className="card overflow-hidden">
         {/* Cover strip */}
-        <div className="h-24 bg-linear-to-r from-primary-600 to-primary-400" />
+        <div className="h-24 border-b-2 border-line bg-accent bg-[repeating-linear-gradient(135deg,var(--color-line)_0_2px,transparent_2px_12px)]" />
 
         <div className="px-6 pb-6">
           {/* Avatar row — stacks below the avatar under 430px so the
@@ -408,7 +408,7 @@ const Profile = () => {
                   ) || defaultAvatar
                 }
                 alt="profile"
-                className={`w-20 h-20 rounded-2xl object-cover ring-4 ring-white shadow-sm ${uploading ? "opacity-50" : ""}`}
+                className={`w-20 h-20 rounded-2xl object-cover border-2 border-line shadow-hard-sm ${uploading ? "opacity-50" : ""}`}
               />
               {uploading && (
                 <div className="absolute inset-0 flex items-center justify-center">
@@ -418,7 +418,7 @@ const Profile = () => {
               {/* only show this if not own profile */}
               {!isOwnProfile && (
                 <span
-                  className={`absolute bottom-0 right-0 block h-4 w-4 rounded-full border-2 border-white ${isOnline ? "bg-primary-400" : "bg-gray-300"}`}
+                  className={`absolute bottom-0 right-0 block h-4 w-4 rounded-full border-2 border-card ${isOnline ? "bg-primary-400" : "bg-gray-300"}`}
                   title={isOnline ? "Online" : "Offline"}
                 />
               )}
@@ -440,7 +440,7 @@ const Profile = () => {
             {isOwnProfile && (
               <Link
                 to="/settings"
-                className="self-end p-2 rounded-xl border border-stroke text-ink-muted hover:text-ink hover:bg-surface transition min-[430px]:mt-10"
+                className="self-end p-2 rounded-lg border-2 border-line text-ink transition hover:bg-sand min-[430px]:mt-10"
                 aria-label="Settings"
                 title="Settings"
               >
@@ -455,8 +455,8 @@ const Profile = () => {
                   disabled={isFollowingLoading}
                   className={`px-2 py-2 rounded-xl text-base font-semibold transition disabled:opacity-50 ${
                     isFollowing
-                      ? "bg-surface border border-stroke text-ink-sub hover:border-red-300 hover:text-red-500"
-                      : "bg-primary-600 text-white hover:bg-primary-800"
+                      ? "bg-ink text-surface border-2 border-line hover:bg-red-600 hover:text-white"
+                      : "bg-primary-600 text-white border-2 border-line hover:bg-primary-800"
                   }`}
                 >
                   {isFollowingLoading
@@ -485,7 +485,7 @@ const Profile = () => {
                 <button
                   ref={optionsBtnRef}
                   onClick={() => setShowOptionsMenu((v) => !v)}
-                  className="p-2 rounded-xl border border-stroke text-ink-muted hover:text-ink hover:bg-surface transition"
+                  className="p-2 rounded-lg border-2 border-line text-ink transition hover:bg-sand"
                   aria-label="More options"
                 >
                   <FiMoreVertical size={16} />
@@ -610,7 +610,7 @@ const Profile = () => {
           {/* Inline (not flex) so long names wrap — a bare text node in a flex
               row can't break inside a long word and was clipped by the
               card's overflow-hidden. The badge flows after the last word. */}
-          <h1 className="text-2xl font-bold text-ink break-words">
+          <h1 className="font-display text-3xl font-extrabold tracking-[-0.03em] text-ink break-words">
             {profile.name}
             <span className="ml-2 inline-flex shrink-0 align-middle">
               <VerifiedBadge verifications={profile.verifications} size="lg" />
@@ -637,7 +637,7 @@ const Profile = () => {
                     <FiCalendar size={11} className="text-ink-muted" />
                     Joined {join.label}
                   </span>
-                  <span className="px-1.5 py-0.5 rounded-md bg-surface border border-stroke text-[10px] font-semibold text-ink-muted">
+                  <span className="chip px-1.5 py-0.5">
                     {join.age} old
                   </span>
                 </div>
@@ -660,7 +660,7 @@ const Profile = () => {
               </div>
               <Link
                 to={`/media-kit/${profile._id}`}
-                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold border border-stroke text-ink-muted hover:text-primary-600 hover:border-primary-300 transition"
+                className="chip transition hover:bg-accent hover:text-[#16140f]"
               >
                 <FaIdCard size={10} />
                 View media kit
@@ -675,7 +675,7 @@ const Profile = () => {
               <div className="mt-2">
                 <Link
                   to={`/media-kit/${profile._id}`}
-                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold border border-stroke text-ink-muted hover:text-primary-600 hover:border-primary-300 transition"
+                  className="chip transition hover:bg-accent hover:text-[#16140f]"
                 >
                   <FaIdCard size={10} />
                   My media kit
@@ -789,7 +789,7 @@ const Profile = () => {
       {/* Posts */}
       <div className="mt-4 space-y-4">
         {posts.length === 0 && (
-          <div className="bg-card border border-stroke rounded-2xl p-10 text-center">
+          <div className="card p-10 text-center">
             <p className="text-base text-ink-muted">No posts yet.</p>
           </div>
         )}

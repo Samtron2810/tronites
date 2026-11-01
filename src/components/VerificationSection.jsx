@@ -103,7 +103,7 @@ const StepEligibility = ({ checks, allMet, onProceed }) => (
       <h3 className="text-base font-semibold text-ink mb-0.5">Requirements</h3>
       <p className="text-sm text-ink-muted">All must be met before applying.</p>
     </div>
-    <div className="rounded-xl border border-stroke overflow-hidden divide-y divide-stroke">
+    <div className="card overflow-hidden divide-y divide-stroke">
       {checks.map((c) => (
         <div key={c.id} className="flex items-center gap-3 px-4 py-3">
           {c.ok ? (
@@ -121,7 +121,7 @@ const StepEligibility = ({ checks, allMet, onProceed }) => (
     {allMet && (
       <button
         onClick={onProceed}
-        className="w-full py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-sm font-semibold text-white transition flex items-center justify-center gap-1.5"
+        className="btn btn-primary btn-block"
       >
         Choose a badge <FiChevronRight size={16} />
       </button>
@@ -195,7 +195,7 @@ const StepType = ({ selectableTypes, disabledTypes, selectedType, onSelect, onNe
     <button
       onClick={onNext}
       disabled={!selectedType || !selectableTypes.includes(selectedType) || checking}
-      className="w-full py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-sm font-semibold text-white disabled:opacity-50 disabled:cursor-not-allowed transition flex items-center justify-center gap-1.5"
+      className="btn btn-primary btn-block"
     >
       {checking ? (
         <span className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
@@ -222,7 +222,7 @@ const StepPayment = ({ feeNgn, onInitiate, onBack, initiating, paid }) => {
         </div>
         <button
           onClick={() => onInitiate(true)}
-          className="w-full py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-sm font-semibold text-white transition flex items-center justify-center gap-1.5"
+          className="btn btn-primary btn-block"
         >
           Continue to application <FiChevronRight size={16} />
         </button>
@@ -242,7 +242,7 @@ const StepPayment = ({ feeNgn, onInitiate, onBack, initiating, paid }) => {
         </p>
       </div>
 
-      <div className="rounded-xl border border-stroke bg-surface p-4 space-y-3">
+      <div className="card card-sand p-4 space-y-3">
         <div className="flex items-center justify-between">
           <span className="text-sm text-ink-muted">Business badge application</span>
           <span className="text-sm font-semibold text-ink">
@@ -272,7 +272,7 @@ const StepPayment = ({ feeNgn, onInitiate, onBack, initiating, paid }) => {
       <button
         onClick={() => onInitiate(false)}
         disabled={initiating}
-        className="w-full py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-sm font-semibold text-white disabled:opacity-50 disabled:cursor-not-allowed transition flex items-center justify-center gap-1.5"
+        className="btn btn-primary btn-block"
       >
         <FiCreditCard size={15} />
         {initiating ? "Opening Paystack…" : `Pay ₦${feeNgn?.toLocaleString()} & continue`}
@@ -316,7 +316,7 @@ const StepDetails = ({ type, form, onChange, onNext, onBack }) => {
             onChange={(e) => onChange("entityName", e.target.value)}
             placeholder={type === "business" ? "e.g. Kabu Foods Ltd" : "e.g. Lagos State Government"}
             maxLength={120}
-            className="w-full border border-stroke rounded-xl px-3 py-2.5 text-sm text-ink outline-none focus:ring-2 focus:ring-primary-200 bg-card"
+            className="field py-2.5"
           />
           <p className="text-[12px] text-ink-muted mt-1">This name appears on your badge.</p>
         </div>
@@ -332,7 +332,7 @@ const StepDetails = ({ type, form, onChange, onNext, onBack }) => {
           onChange={(e) => onChange("legalName", e.target.value)}
           placeholder="Your full legal name"
           maxLength={120}
-          className="w-full border border-stroke rounded-xl px-3 py-2.5 text-sm text-ink outline-none focus:ring-2 focus:ring-primary-200 bg-card"
+          className="field py-2.5"
         />
       </div>
 
@@ -346,7 +346,7 @@ const StepDetails = ({ type, form, onChange, onNext, onBack }) => {
             value={form.dateOfBirth}
             onChange={(e) => onChange("dateOfBirth", e.target.value)}
             max={new Date().toISOString().split("T")[0]}
-            className="w-full border border-stroke rounded-xl px-3 py-2.5 text-sm text-ink outline-none focus:ring-2 focus:ring-primary-200 bg-card"
+            className="field py-2.5"
           />
         </div>
         <div>
@@ -359,7 +359,7 @@ const StepDetails = ({ type, form, onChange, onNext, onBack }) => {
             onChange={(e) => onChange("country", e.target.value)}
             placeholder="e.g. Nigeria"
             maxLength={80}
-            className="w-full border border-stroke rounded-xl px-3 py-2.5 text-sm text-ink outline-none focus:ring-2 focus:ring-primary-200 bg-card"
+            className="field py-2.5"
           />
         </div>
       </div>
@@ -371,7 +371,7 @@ const StepDetails = ({ type, form, onChange, onNext, onBack }) => {
         <select
           value={form.category}
           onChange={(e) => onChange("category", e.target.value)}
-          className="w-full border border-stroke rounded-xl px-3 py-2.5 text-sm text-ink outline-none focus:ring-2 focus:ring-primary-200 bg-card appearance-none"
+          className="field py-2.5 appearance-none"
         >
           <option value="">Select a category…</option>
           {CATEGORIES.map((c) => (
@@ -385,14 +385,14 @@ const StepDetails = ({ type, form, onChange, onNext, onBack }) => {
       <div className="flex gap-3 pt-1">
         <button
           onClick={onBack}
-          className="flex items-center gap-1 px-4 py-2.5 rounded-xl border border-stroke text-sm font-medium text-ink-sub hover:bg-surface transition"
+          className="btn"
         >
           <FiChevronLeft size={16} /> Back
         </button>
         <button
           onClick={onNext}
           disabled={!canProceed}
-          className="flex-1 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-sm font-semibold text-white disabled:opacity-50 disabled:cursor-not-allowed transition flex items-center justify-center gap-1.5"
+          className="btn btn-primary flex-1"
         >
           Continue <FiChevronRight size={16} />
         </button>
@@ -441,7 +441,7 @@ const StepStatement = ({ form, onChange, onSubmit, onBack, submitting }) => {
           placeholder={
             "Explain what makes this account authentic or notable.\n\nExamples:\n• I'm a music journalist with 5 years at Beats & Frequencies.\n• My brand \"Kabu Foods\" has been registered since 2020 with 12,000+ customers.\n• I'm a creator with 80k+ followers across platforms."
           }
-          className="w-full border border-stroke rounded-xl px-3 py-2.5 text-sm text-ink outline-none focus:ring-2 focus:ring-primary-200 bg-card resize-none"
+          className="field py-2.5 resize-none"
         />
         <p className="text-[12px] text-ink-muted mt-1 text-right">{form.statement.length}/1000</p>
       </div>
@@ -462,13 +462,13 @@ const StepStatement = ({ form, onChange, onSubmit, onBack, submitting }) => {
                 value={link}
                 onChange={(e) => updateLink(i, e.target.value)}
                 placeholder="https://example.com"
-                className="flex-1 border border-stroke rounded-xl px-3 py-2.5 text-sm text-ink outline-none focus:ring-2 focus:ring-primary-200 bg-card"
+                className="field flex-1 py-2.5"
               />
               {linkInputs.length > 1 && (
                 <button
                   type="button"
                   onClick={() => removeLink(i)}
-                  className="p-2.5 rounded-xl border border-stroke text-ink-muted hover:bg-surface hover:text-red-500 transition"
+                  className="p-2.5 rounded-lg border-2 border-line text-ink transition hover:bg-red-50 hover:text-red-600"
                 >
                   <FiX size={15} />
                 </button>
@@ -498,14 +498,14 @@ const StepStatement = ({ form, onChange, onSubmit, onBack, submitting }) => {
       <div className="flex gap-3 pt-1">
         <button
           onClick={onBack}
-          className="flex items-center gap-1 px-4 py-2.5 rounded-xl border border-stroke text-sm font-medium text-ink-sub hover:bg-surface transition"
+          className="btn"
         >
           <FiChevronLeft size={16} /> Back
         </button>
         <button
           onClick={onSubmit}
           disabled={form.statement.trim().length < 20 || submitting}
-          className="flex-1 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-sm font-semibold text-white disabled:opacity-50 disabled:cursor-not-allowed transition"
+          className="btn btn-primary flex-1"
         >
           {submitting ? "Submitting…" : "Submit application"}
         </button>
@@ -740,7 +740,7 @@ const VerificationSection = ({ embedded = false }) => {
     setView(fee?.requiresPayment ? "step-payment" : "step-type");
   };
 
-  const outerClass = embedded ? "p-5" : "bg-card border border-stroke rounded-2xl p-5 mt-4";
+  const outerClass = embedded ? "p-5" : "card p-5 mt-4";
   const Outer = embedded ? "div" : "section";
 
   return (

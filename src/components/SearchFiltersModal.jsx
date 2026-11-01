@@ -131,13 +131,13 @@ const SearchFiltersModal = ({ initialFilters, onApply, onCancel }) => {
           <button
             onClick={() => setDraft(emptyFilters)}
             disabled={activeCount === 0}
-            className="flex-1 text-sm font-semibold py-2.5 rounded-xl border border-stroke text-ink-sub hover:bg-surface transition disabled:opacity-40 disabled:cursor-not-allowed"
+            className="btn flex-1"
           >
             Clear
           </button>
           <button
             onClick={handleApply}
-            className="flex-1 text-sm font-semibold py-2.5 rounded-xl bg-primary-600 text-white hover:bg-primary-800 transition"
+            className="btn btn-primary flex-1"
           >
             Apply{activeCount > 0 ? ` (${activeCount})` : ""}
           </button>

@@ -25,7 +25,7 @@ const SearchHistoryPanel = ({
   if (history.length === 0 && savedSearches.length === 0) return null;
 
   return (
-    <div className="bg-card border border-stroke rounded-2xl divide-y divide-stroke overflow-hidden">
+    <div className="card divide-y divide-stroke overflow-hidden">
       {savedSearches.length > 0 && (
         <div className="p-3">
           <p className="text-sm font-semibold text-ink-sub px-1 mb-1.5">

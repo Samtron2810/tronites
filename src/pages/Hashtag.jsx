@@ -133,7 +133,7 @@ const Hashtag = () => {
             </Link>
             <div className="flex items-center gap-2 min-w-0">
               <FiHash className="text-primary-600 shrink-0" size={18} />
-              <h1 className="text-xl font-bold text-ink truncate">{tag}</h1>
+              <h1 className="display-md truncate">{tag}</h1>
             </div>
           </div>
 
@@ -146,8 +146,8 @@ const Hashtag = () => {
             disabled={!followLoaded || followBusy}
             className={`shrink-0 flex items-center gap-1.5 px-4 py-1.5 rounded-xl text-sm font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed ${
               isFollowingTag
-                ? "bg-surface border border-stroke text-ink-sub hover:border-red-300 hover:text-red-500"
-                : "bg-primary-600 text-white hover:bg-primary-800"
+                ? "bg-ink text-surface border-2 border-line hover:bg-red-600 hover:text-white"
+                : "bg-primary-600 text-white border-2 border-line hover:bg-primary-800"
             }`}
           >
             {isFollowingTag ? (
@@ -207,7 +207,7 @@ const Hashtag = () => {
           ))}
 
         {!loading && posts.length === 0 && (
-          <div className="bg-card border border-stroke rounded-2xl p-10 text-center">
+          <div className="card p-10 text-center">
             <div className="flex items-center justify-center mb-3">
               <div className="w-14 h-14 rounded-2xl bg-primary-50 flex items-center justify-center">
                 <FiHash className="text-primary-600" size={28} />
