@@ -19,7 +19,7 @@ import VerifiedBadge from "./VerifiedBadge";
 const QuotedPostPreview = ({ post }) => {
   if (!post) {
     return (
-      <div className="rounded-xl border border-stroke bg-surface p-3 text-sm text-ink-muted">
+      <div className="rounded-xl border-2 border-dashed border-line bg-surface p-3 text-sm text-ink-muted">
         This post is no longer available.
       </div>
     );
@@ -36,7 +36,7 @@ const QuotedPostPreview = ({ post }) => {
   const videoFailed = post.video?.status === "failed";
 
   return (
-    <div className="rounded-xl border border-stroke bg-surface p-3 hover:border-primary-200 transition">
+    <div className="rounded-xl border-2 border-line bg-surface p-3 transition hover:bg-sand">
       <div className="flex items-start sm:items-center gap-2 mb-1.5">
         <img
           src={
@@ -44,7 +44,7 @@ const QuotedPostPreview = ({ post }) => {
             defaultAvatar
           }
           alt="user"
-          className="w-6 h-6 rounded-full object-cover shrink-0"
+          className="w-6 h-6 rounded-md border-[1.5px] border-line object-cover shrink-0"
         />
         <div className="min-w-0 flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
           <span className="flex items-center gap-1 min-w-0">

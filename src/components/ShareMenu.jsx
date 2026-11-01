@@ -97,7 +97,7 @@ const ShareMenu = ({ url, title, text, className = "" }) => {
       <button
         ref={triggerRef}
         onClick={handleTrigger}
-        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-ink-muted hover:text-ink bg-surface border border-stroke rounded-full transition"
+        className="chip px-3 py-1.5 transition hover:bg-sand"
         title="Share"
         aria-label="Share"
       >

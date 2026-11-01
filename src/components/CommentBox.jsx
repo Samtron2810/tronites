@@ -66,7 +66,7 @@ const CommentRow = ({
             defaultAvatar
           }
           alt=""
-          className={`${avatarCls} rounded-full object-cover bg-surface`}
+          className={`${avatarCls} rounded-lg border-2 border-line object-cover bg-surface`}
         />
       </Link>
 
@@ -81,7 +81,7 @@ const CommentRow = ({
           </Link>
           <VerifiedBadge verifications={item.user.verifications} size="sm" />
           {isOwner && (
-            <span className="shrink-0 rounded px-1 text-[10px] font-semibold leading-4 bg-primary-50 text-primary-600">
+            <span className="shrink-0 rounded border-[1.5px] border-line bg-accent px-1 font-mono text-[10px] font-medium uppercase leading-4 text-[#16140f]">
               You
             </span>
           )}
@@ -118,7 +118,7 @@ const CommentRow = ({
           </button>
         </div>
 
-        <div className="mt-1 flex items-center gap-4 text-xs text-ink-muted">
+        <div className="mt-1 flex items-center gap-4 font-mono text-[11px] text-ink-muted">
           <span>{item.pending ? "Sending…" : timeAgo(item.createdAt)}</span>
           {onReply && (
             <button
@@ -887,7 +887,7 @@ const CommentsPanel = ({
                 !commentMention.showSuggestions &&
                 handleAddComment()
               }
-              className="w-full border border-stroke rounded-xl px-3 py-2 text-base text-ink placeholder:text-ink-muted outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100 transition"
+              className="field py-2"
             />
             {commentMention.showSuggestions && (
               <MentionSuggestions
@@ -899,7 +899,7 @@ const CommentsPanel = ({
           <button
             onClick={handleAddComment}
             disabled={!commentText.trim() || isCommentSending}
-            className="px-4 py-2 rounded-xl text-base font-medium text-white bg-primary-600 hover:bg-primary-800 disabled:opacity-50 disabled:cursor-not-allowed transition"
+            className="btn btn-primary"
           >
             {isCommentSending ? "..." : "Post"}
           </button>
@@ -953,7 +953,7 @@ const CommentsPanel = ({
                       !replyMention.showSuggestions &&
                       handleAddReply(c._id)
                     }
-                    className="w-full border border-stroke rounded-lg px-3 py-1.5 text-sm text-ink placeholder:text-ink-muted outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100 transition"
+                    className="field py-1.5"
                   />
                   {replyMention.showSuggestions && (
                     <MentionSuggestions
@@ -965,7 +965,7 @@ const CommentsPanel = ({
                 <button
                   onClick={() => handleAddReply(c._id)}
                   disabled={!replyText.trim() || isReplySending}
-                  className="px-3 py-1.5 rounded-lg text-sm font-medium text-white bg-primary-600 hover:bg-primary-800 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                  className="btn btn-primary btn-sm"
                 >
                   {isReplySending ? "..." : "Reply"}
                 </button>

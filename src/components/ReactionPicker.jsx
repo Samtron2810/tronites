@@ -111,7 +111,7 @@ const ReactionPicker = ({
         style={
           pos ? { left: pos.left, top: pos.top } : { visibility: "hidden" }
         }
-        className="fixed flex items-center gap-0.5 bg-card border border-stroke rounded-full shadow-lg px-1.5 py-1 z-50 animate-reaction-pop"
+        className="fixed flex items-center gap-0.5 bg-card border-2 border-line rounded-full shadow-hard-sm px-1.5 py-1 z-50 animate-reaction-pop"
       >
         {REACTION_EMOJIS.map((emoji, i) => (
           <button
@@ -135,7 +135,7 @@ const ReactionPicker = ({
       role="menu"
       className={`absolute bottom-full mb-2 ${
         align === "right" ? "right-0" : "left-0"
-      } flex items-center gap-0.5 bg-card border border-stroke rounded-full shadow-lg px-1.5 py-1 z-50 animate-reaction-pop`}
+      } flex items-center gap-0.5 bg-card border-2 border-line rounded-full shadow-hard-sm px-1.5 py-1 z-50 animate-reaction-pop`}
     >
       {REACTION_EMOJIS.map((emoji, i) => (
         <button

@@ -1,11 +1,11 @@
 const ProfileSkeleton = () => (
   <div className="min-h-screen app-bg">
     <div className="max-w-2xl mx-auto px-4 py-6 space-y-4">
-      <div className="bg-card border border-stroke rounded-2xl overflow-hidden animate-pulse">
+      <div className="card overflow-hidden animate-pulse">
         <div className="h-24 bg-stroke" />
         <div className="px-6 pb-6">
           <div className="flex items-end justify-between -mt-8 mb-4">
-            <div className="w-20 h-20 rounded-2xl bg-stroke ring-4 ring-white" />
+            <div className="w-20 h-20 rounded-2xl bg-stroke ring-4 ring-card" />
             <div className="w-24 h-9 bg-stroke rounded-xl mt-10" />
           </div>
           <div className="h-4 bg-stroke rounded w-36 mb-2" />
@@ -18,7 +18,7 @@ const ProfileSkeleton = () => (
         </div>
       </div>
       {[1, 2].map((i) => (
-        <div key={i} className="bg-card border border-stroke rounded-2xl p-5 animate-pulse">
+        <div key={i} className="card p-5 animate-pulse">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 rounded-full bg-stroke" />
             <div className="space-y-2 flex-1">

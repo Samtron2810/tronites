@@ -433,7 +433,7 @@ const PostByIdModal = ({
       {loadError && !loading && !post && (
         <ModalPortal>
         <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center px-4">
-          <div className="bg-card border border-stroke rounded-2xl shadow-xl p-6 w-full max-w-sm text-center">
+          <div className="card card-pop p-6 w-full max-w-sm text-center">
             <p className="text-base font-semibold text-ink mb-1">
               {loadError}
             </p>
@@ -443,7 +443,7 @@ const PostByIdModal = ({
             </p>
             <button
               onClick={onClose}
-              className="px-4 py-2 rounded-xl text-base font-medium text-white bg-primary-600 hover:bg-primary-800 transition"
+              className="btn btn-primary"
             >
               Go back
             </button>

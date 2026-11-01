@@ -468,19 +468,19 @@ const PostDetailModal = ({
       onClick={onClose}
     >
       <div
-        className="bg-card w-full sm:max-w-3xl sm:rounded-2xl my-auto min-h-dvh sm:min-h-0 max-sm:pb-[env(safe-area-inset-bottom)]"
+        className="bg-card w-full sm:max-w-3xl sm:rounded-2xl sm:border-2 sm:border-line sm:shadow-hard-lg my-auto min-h-dvh sm:min-h-0 max-sm:pb-[env(safe-area-inset-bottom)]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="px-5 py-4 max-sm:pt-[calc(1rem+env(safe-area-inset-top))] border-b border-stroke sticky top-0 bg-card z-10 sm:rounded-t-2xl">
+        <div className="px-5 py-4 max-sm:pt-[calc(1rem+env(safe-area-inset-top))] border-b-2 border-line sticky top-0 bg-card z-10 sm:rounded-t-2xl">
           {/* Sponsored badge — mirrors PostCard's, shown when this post
               was paid-promoted and injected into the feed this modal was
               opened from. */}
           {isPromoted && (
             <div className="flex items-center gap-1.5 mb-2">
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary-50 border border-primary-100 text-[10.5px] font-semibold text-primary-600 tracking-wide">
+              <span className="chip chip-amber">
                 <FiZap size={9} />
-                Sponsored
+                Promoted
               </span>
             </div>
           )}
@@ -489,7 +489,7 @@ const PostDetailModal = ({
               <img
                 src={resizedImageUrl(profilePic, IMAGE_SIZES.avatarSmall) || defaultAvatar}
                 alt="user"
-                className="w-10 h-10 rounded-full object-cover ring-2 ring-primary-100"
+                className="w-10 h-10 rounded-lg object-cover border-2 border-line"
               />
               <div>
                 <div className="flex flex-col sm:flex-row sm:items-center gap-y-1 sm:gap-1.5">
@@ -508,7 +508,7 @@ const PostDetailModal = ({
                     {/* show "You" if isowned */}
                     {isOwner && (
                       <span
-                        className="flex items-center gap-1 text-[11px] font-medium text-primary-600 bg-primary-50 px-1.5 py-0.5 rounded-full"
+                        className="chip px-1.5 py-0.5"
                         title="This is your post"
                       >
                         {" "}
@@ -518,10 +518,10 @@ const PostDetailModal = ({
                   </span>
 
                   {username && (
-                    <span className="text-sm text-ink-muted">@{username}</span>
+                    <span className="font-mono text-[12px] text-ink-muted">@{username}</span>
                   )}
                 </div>
-                <p className="flex items-center gap-1 text-sm text-ink-muted">
+                <p className="flex items-center gap-1 font-mono text-[12px] text-ink-muted">
                   {time}
                   {privacy === "followers" && (
                     <FiUsers
@@ -720,7 +720,7 @@ const PostDetailModal = ({
           {quoteOf && (
             <div className="ml-13 mt-1.5">
               <span
-                className="flex items-center gap-1 text-[11px] font-medium text-primary-600 bg-primary-50 px-1.5 py-0.5 rounded-full w-fit"
+                className="chip w-fit px-1.5 py-0.5"
                 title="This post quotes another post"
               >
                 <FaQuoteRight size={9} />
@@ -875,7 +875,7 @@ const PostDetailModal = ({
             <button
               onClick={handleCtaClick}
               disabled={ctaClicking}
-              className="w-full py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold transition disabled:opacity-60 flex items-center justify-center gap-2"
+              className="btn btn-block"
             >
               {CTA_LABELS[ctaType]}
               <FiExternalLink size={13} />
@@ -896,7 +896,7 @@ const PostDetailModal = ({
             />
           </div>
         )}
-        <div className="flex items-center gap-5 px-5 py-4 border-t border-stroke">
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-2 border-t-2 border-line px-5 py-4 font-mono text-[13px]">
           <div className="relative">
             <button
               onClick={onReact ? handleLikeClick : onLike}
@@ -906,7 +906,7 @@ const PostDetailModal = ({
               onMouseEnter={onReact ? handleLikeMouseEnter : undefined}
               onMouseLeave={onReact ? handleLikeMouseLeave : undefined}
               disabled={isLiking}
-              className={`flex items-center gap-1.5 text-base transition ${
+              className={`flex items-center gap-1.5 text-[13px] transition ${
                 isLiking
                   ? "opacity-50 cursor-not-allowed"
                   : liked
@@ -927,7 +927,7 @@ const PostDetailModal = ({
           </div>
 
           <div
-            className={`flex items-center gap-1.5 text-base ${commentsDisabled ? "text-ink-muted/60" : "text-ink-muted"}`}
+            className={`flex items-center gap-1.5 text-[13px] ${commentsDisabled ? "text-ink-muted/60" : "text-ink-muted"}`}
             title={commentsDisabled ? "Comments are turned off" : undefined}
           >
             {commentsDisabled ? <FaCommentSlash size={15} /> : <FaRegComment size={15} />}
@@ -951,7 +951,7 @@ const PostDetailModal = ({
                 }}
                 disabled={isReposting}
                 title={reposted ? "Undo repost" : "Repost"}
-                className={`flex items-center gap-1.5 text-base transition ${
+                className={`flex items-center gap-1.5 text-[13px] transition ${
                   isReposting
                     ? "opacity-50 cursor-not-allowed"
                     : reposted
@@ -1004,17 +1004,17 @@ const PostDetailModal = ({
                 setShowTipModal(true);
               }}
               title="Send a tip"
-              className="flex items-center gap-1.5 text-ink-muted hover:text-amber-500 transition text-base"
+              className="chip chip-amber transition hover:-translate-y-px"
             >
               <svg
                 viewBox="0 0 20 20"
                 fill="currentColor"
-                className="w-4 h-4"
+                className="h-3 w-3"
                 aria-hidden="true"
               >
                 <path d="M10 2a8 8 0 100 16A8 8 0 0010 2zm.75 11.5v.75a.75.75 0 01-1.5 0v-.75a2.25 2.25 0 01-1.856-2.2c0-1.034.7-1.907 1.856-2.194V7.75a.75.75 0 011.5 0v1.306c1.156.287 1.856 1.16 1.856 2.194a.75.75 0 01-1.5 0c0-.414-.374-.75-.856-.75s-.856.336-.856.75.374.75.856.75c1.156.287 1.856 1.16 1.856 2.194a2.25 2.25 0 01-1.856 2.2z" />
               </svg>
-              <span className="text-sm">Tip</span>
+              <span>Tip</span>
             </button>
           )}
 
@@ -1022,7 +1022,7 @@ const PostDetailModal = ({
             onClick={onBookmark}
             disabled={isBookmarking}
             title={bookmarked ? "Remove from saved" : "Save post"}
-            className={`ml-auto flex items-center text-base transition ${
+            className={`ml-auto flex items-center text-[13px] transition ${
               isBookmarking
                 ? "opacity-50 cursor-not-allowed"
                 : bookmarked

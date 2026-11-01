@@ -21,7 +21,7 @@ const MentionSuggestions = ({
     <div
       className={`absolute z-30 left-0 right-0 ${
         direction === "down" ? "top-full mt-1" : "bottom-full mb-1"
-      } bg-card border border-stroke rounded-xl shadow-lg overflow-hidden ${maxHeightClass} overflow-y-auto`}
+      } bg-card border-2 border-line rounded-xl shadow-hard-sm overflow-hidden ${maxHeightClass} overflow-y-auto`}
     >
       {suggestions.length === 0 && (
         <p className="px-3 py-2 text-sm text-ink-muted">No matches</p>
@@ -40,7 +40,7 @@ const MentionSuggestions = ({
           <img
             src={resizedImageUrl(u.profilePic, IMAGE_SIZES.avatarTiny) || defaultAvatar}
             alt={u.name}
-            className="w-6 h-6 rounded-full object-cover shrink-0"
+            className="w-6 h-6 rounded-md border-[1.5px] border-line object-cover shrink-0"
           />
           <div className="min-w-0">
             <p className="text-sm font-semibold text-ink truncate flex items-center gap-1">
