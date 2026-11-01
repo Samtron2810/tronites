@@ -298,7 +298,7 @@ const More = () => {
           <p className="text-xs font-bold text-ink-muted uppercase tracking-widest mb-2 px-1">
             ✦ Creator tools
           </p>
-          <div className="bg-card border border-stroke rounded-2xl divide-y divide-stroke overflow-hidden mb-5">
+          <div className="card divide-y divide-stroke overflow-hidden mb-5">
             {CREATOR_TILES.map((tile) => (
               <Tile key={tile.label} tile={tile} />
             ))}
@@ -332,12 +332,12 @@ const More = () => {
                 onClick={handleToggleCollab}
                 disabled={collabLoading}
                 className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
-                  user?.openToCollabs ? "bg-primary-600" : "bg-stroke"
+                  user?.openToCollabs ? "bg-primary-600 ring-2 ring-line" : "bg-sand ring-2 ring-line"
                 } ${collabLoading ? "opacity-50" : ""}`}
                 aria-label="Toggle open to collabs"
               >
                 <span
-                  className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white ring-2 ring-line transition-transform ${
                     user?.openToCollabs ? "translate-x-6" : "translate-x-1"
                   }`}
                 />
@@ -353,7 +353,7 @@ const More = () => {
           <p className="text-xs font-bold text-ink-muted uppercase tracking-widest mb-2 px-1">
             ✦ Business tools
           </p>
-          <div className="bg-card border border-stroke rounded-2xl divide-y divide-stroke overflow-hidden mb-5">
+          <div className="card divide-y divide-stroke overflow-hidden mb-5">
             {/* Media Kit */}
             <Tile
               tile={{
@@ -403,12 +403,12 @@ const More = () => {
                 onClick={handleToggleCollab}
                 disabled={collabLoading}
                 className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
-                  user?.openToCollabs ? "bg-primary-600" : "bg-stroke"
+                  user?.openToCollabs ? "bg-primary-600 ring-2 ring-line" : "bg-sand ring-2 ring-line"
                 } ${collabLoading ? "opacity-50" : ""}`}
                 aria-label="Toggle open to collabs"
               >
                 <span
-                  className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white ring-2 ring-line transition-transform ${
                     user?.openToCollabs ? "translate-x-6" : "translate-x-1"
                   }`}
                 />
@@ -424,7 +424,7 @@ const More = () => {
           <p className="text-xs font-bold text-ink-muted uppercase tracking-widest mb-2 px-1">
             ✦ Verified tools
           </p>
-          <div className="bg-card border border-stroke rounded-2xl divide-y divide-stroke overflow-hidden mb-5">
+          <div className="card divide-y divide-stroke overflow-hidden mb-5">
             <Tile tile={SCHEDULING_TILE} />
             {/* Pin a post — available to any verified tier with pinLimit > 0 */}
             {isVerified(user) && (
@@ -448,7 +448,7 @@ const More = () => {
           <p className="text-xs font-bold text-ink-muted uppercase tracking-widest mb-2 px-1">
             ✦ Staff tools
           </p>
-          <div className="bg-card border border-stroke rounded-2xl divide-y divide-stroke overflow-hidden mb-5">
+          <div className="card divide-y divide-stroke overflow-hidden mb-5">
             {STAFF_TILES.map((tile) => (
               <Tile key={tile.label} tile={tile} />
             ))}
@@ -460,7 +460,7 @@ const More = () => {
       <p className="text-xs font-bold text-ink-muted uppercase tracking-widest mb-2 px-1">
         General
       </p>
-      <div className="bg-card border border-stroke rounded-2xl divide-y divide-stroke overflow-hidden">
+      <div className="card divide-y divide-stroke overflow-hidden">
         {/* Dashboard locked tile for non-creators */}
         {!creator && (
           <div className="flex items-center gap-4 px-5 py-4 opacity-60 cursor-default">

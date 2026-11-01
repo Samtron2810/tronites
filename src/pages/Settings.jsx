@@ -437,7 +437,7 @@ const Settings = () => {
               type="button"
               onClick={handleSaveInterests}
               disabled={savingInterests}
-              className="px-4 py-2 rounded-xl bg-primary-600 text-white text-sm font-semibold hover:bg-primary-800 disabled:opacity-60 transition"
+              className="btn btn-primary"
             >
               {savingInterests ? "Saving…" : "Save interests"}
             </button>
@@ -465,13 +465,13 @@ const Settings = () => {
                 onChange={(e) => setLocation(e.target.value)}
                 placeholder="e.g. Lagos, London, New York"
                 maxLength={100}
-                className="flex-1 px-3 py-2.5 rounded-xl border border-stroke bg-surface text-sm text-ink placeholder:text-ink-muted outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100 transition"
+                className="field flex-1 py-2.5"
               />
               <button
                 type="button"
                 onClick={handleSaveLocation}
                 disabled={savingLocation}
-                className="px-4 py-2 rounded-xl bg-primary-600 text-white text-sm font-semibold hover:bg-primary-800 disabled:opacity-60 transition"
+                className="btn btn-primary"
               >
                 {savingLocation ? "…" : "Save"}
               </button>
@@ -507,11 +507,11 @@ const Settings = () => {
               onClick={() => handleToggleMarketingEmails(!marketingEmails)}
               disabled={savingEmails}
               className={`relative shrink-0 w-11 h-6 rounded-full transition-colors duration-200 ${
-                marketingEmails ? "bg-primary-600" : "bg-stroke"
+                marketingEmails ? "bg-primary-600 ring-2 ring-line" : "bg-sand ring-2 ring-line"
               } disabled:opacity-60`}
             >
               <span
-                className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200 ${
+                className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white ring-2 ring-line transition-transform duration-200 ${
                   marketingEmails ? "translate-x-5" : "translate-x-0"
                 }`}
               />
@@ -544,11 +544,11 @@ const Settings = () => {
                 onClick={() => handleToggleReadReceipts(!showReadReceipts)}
                 disabled={savingReceipts}
                 className={`relative shrink-0 w-11 h-6 rounded-full transition-colors duration-200 ${
-                  showReadReceipts ? "bg-primary-600" : "bg-stroke"
+                  showReadReceipts ? "bg-primary-600 ring-2 ring-line" : "bg-sand ring-2 ring-line"
                 } disabled:opacity-60`}
               >
                 <span
-                  className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200 ${
+                  className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white ring-2 ring-line transition-transform duration-200 ${
                     showReadReceipts ? "translate-x-5" : "translate-x-0"
                   }`}
                 />
@@ -617,7 +617,7 @@ const Settings = () => {
             <button
               type="button"
               onClick={toggleTheme}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-stroke text-sm font-medium text-ink hover:bg-surface transition"
+              className="btn"
             >
               {theme === "dark" ? <FiSun size={15} /> : <FiMoon size={15} />}
               {theme === "dark"
@@ -664,7 +664,7 @@ const Settings = () => {
             </p>
             <button
               onClick={() => setShowExportModal(true)}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-stroke text-sm font-medium text-ink hover:bg-surface transition"
+              className="btn"
             >
               <FiDownload size={15} />
               Download my data

@@ -57,7 +57,7 @@ const ConfirmVerificationModal = ({
   // confirm/cancel buttons past them.
   return createPortal(
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-70 px-4">
-      <div className="bg-card rounded-2xl shadow-xl p-6 w-full max-w-md max-h-[90dvh] overflow-y-auto">
+      <div className="bg-card rounded-2xl shadow-hard-lg p-6 w-full max-w-md max-h-[90dvh] overflow-y-auto border-2 border-line">
         <div className="flex items-center gap-3 mb-3">
           <div
             className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
@@ -138,7 +138,7 @@ const ConfirmVerificationModal = ({
                   onChange={(e) => setEntityName(e.target.value)}
                   placeholder="e.g. Kabu Foods Ltd"
                   maxLength={120}
-                  className="w-full border border-stroke rounded-xl px-3 py-2.5 text-base text-ink outline-none focus:ring-2 focus:ring-primary-200 bg-card"
+                  className="field w-full py-2.5"
                 />
                 <p className="text-sm text-ink-muted mt-1">
                   Shown on the badge detail sheet — this is the whole point of
@@ -168,7 +168,7 @@ const ConfirmVerificationModal = ({
               placeholder="e.g. entity no longer active"
               maxLength={500}
               rows={2}
-              className="w-full border border-stroke rounded-xl px-3 py-2.5 text-base text-ink outline-none focus:ring-2 focus:ring-primary-200 bg-card resize-none"
+              className="field w-full py-2.5 resize-none"
             />
           </div>
         )}
@@ -177,7 +177,7 @@ const ConfirmVerificationModal = ({
           <button
             onClick={onCancel}
             disabled={isSubmitting}
-            className="flex-1 px-4 py-2.5 rounded-xl border border-stroke text-base font-medium text-ink-sub hover:bg-surface disabled:opacity-50 disabled:cursor-not-allowed transition"
+            className="btn flex-1"
           >
             Cancel
           </button>

@@ -20,7 +20,7 @@ const LogoutModal = ({ onConfirm, onCancel }) => {
   return (
     <ModalPortal>
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 px-4">
-      <div className="bg-card rounded-2xl shadow-xl p-6 w-full max-w-sm max-h-[90dvh] overflow-y-auto">
+      <div className="bg-card rounded-2xl shadow-hard-lg p-6 w-full max-w-sm max-h-[90dvh] overflow-y-auto border-2 border-line">
         <div className="flex items-center gap-3 mb-3">
           <div className="w-9 h-9 rounded-xl bg-primary-50 flex items-center justify-center shrink-0">
             <FiLogOut className="text-primary-600" size={16} />
@@ -34,14 +34,14 @@ const LogoutModal = ({ onConfirm, onCancel }) => {
           <button
             onClick={onCancel}
             disabled={isLoggingOut}
-            className="flex-1 px-4 py-2.5 rounded-xl border border-stroke text-base font-medium text-ink-sub hover:bg-surface disabled:opacity-50 disabled:cursor-not-allowed transition"
+            className="btn flex-1"
           >
             Cancel
           </button>
           <button
             onClick={handleLogout}
             disabled={isLoggingOut}
-            className="flex-1 px-4 py-2.5 rounded-xl text-base font-semibold text-white bg-red-500 hover:bg-red-600 disabled:opacity-60 disabled:cursor-not-allowed transition"
+            className="btn btn-danger flex-1"
           >
             {isLoggingOut ? "Logging out..." : "Log Out"}
           </button>

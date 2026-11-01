@@ -53,12 +53,12 @@ const ExtendPopover = ({ onExtend, onClose, anchorRef }) => {
           max={30}
           value={days}
           onChange={(e) => setDays(Number(e.target.value))}
-          className="w-16 px-2 py-1.5 rounded-lg border border-stroke bg-surface text-sm text-ink"
+          className="field py-1.5"
         />
         <span className="text-xs text-ink-muted">day{days === 1 ? "" : "s"} (max 30)</span>
       </div>
       <div className="flex gap-2">
-        <button onClick={onClose} className="flex-1 py-1.5 rounded-lg border border-stroke text-xs font-semibold text-ink-sub hover:bg-surface transition">
+        <button onClick={onClose} className="btn btn-sm flex-1">
           Cancel
         </button>
         <button
@@ -68,7 +68,7 @@ const ExtendPopover = ({ onExtend, onClose, anchorRef }) => {
             await onExtend(days);
             setSubmitting(false);
           }}
-          className="flex-1 py-1.5 rounded-lg bg-primary-600 hover:bg-primary-700 text-white text-xs font-semibold transition disabled:opacity-50"
+          className="btn btn-primary btn-sm flex-1"
         >
           {submitting ? "…" : "Extend"}
         </button>
@@ -85,7 +85,7 @@ const PromotionRow = ({ promo, onCancelClick, onExtend }) => {
   const extendBtnRef = useRef(null);
 
   return (
-    <div className="bg-card border border-stroke rounded-2xl p-4 space-y-3">
+    <div className="card p-4 space-y-3">
       {/* Author */}
       {promo.author && (
         <div className="flex items-center gap-2 text-xs text-ink-muted">
@@ -148,7 +148,7 @@ const PromotionRow = ({ promo, onCancelClick, onExtend }) => {
             <button
               ref={extendBtnRef}
               onClick={() => setShowExtend((v) => !v)}
-              className="flex-1 py-2 rounded-xl bg-primary-600 hover:bg-primary-700 text-white text-xs font-semibold transition"
+              className="btn btn-primary flex-1"
             >
               Extend
             </button>
@@ -304,7 +304,7 @@ const AdminPromotions = () => {
             <p className="text-sm">Loading promotions…</p>
           </div>
         ) : promotions.length === 0 ? (
-          <div className="bg-card border border-stroke rounded-2xl p-12 text-center space-y-3">
+          <div className="card p-12 text-center space-y-3">
             <span className="text-4xl">⚡</span>
             <p className="font-semibold text-ink">No promotions found</p>
             <p className="text-sm text-ink-muted">Try a different search or filter.</p>

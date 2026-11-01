@@ -41,7 +41,7 @@ const ChangeAudienceModal = ({ currentPrivacy = "public", repostCount = 0, isPro
   return (
     <ModalPortal>
       <div data-modal-layer className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-end sm:items-center justify-center z-[60] sm:px-4">
-        <div className="bg-card w-full sm:max-w-sm rounded-t-3xl sm:rounded-2xl shadow-xl p-5 max-h-[90dvh] overflow-y-auto">
+        <div className="bg-card w-full sm:max-w-sm rounded-t-3xl sm:rounded-2xl shadow-hard-lg p-5 max-h-[90dvh] overflow-y-auto border-2 border-line">
           <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-stroke sm:hidden" />
           <h2 className="text-lg font-semibold text-ink">Who can see this post?</h2>
           <p className="text-sm text-ink-muted mt-0.5">Likes, comments and reactions stay with the post.</p>
@@ -60,7 +60,7 @@ const ChangeAudienceModal = ({ currentPrivacy = "public", repostCount = 0, isPro
                     active ? "border-primary-600 bg-primary-50 ring-2 ring-primary-100" : "border-stroke hover:bg-surface"
                   }`}
                 >
-                  <span className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${active ? "bg-primary-600 text-white" : "bg-surface text-ink-sub"}`}>
+                  <span className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${active ? "bg-ink text-surface" : "bg-surface text-ink-sub"}`}>
                     <Icon size={15} />
                   </span>
                   <span className="min-w-0 flex-1">
@@ -93,14 +93,14 @@ const ChangeAudienceModal = ({ currentPrivacy = "public", repostCount = 0, isPro
             <button
               onClick={onCancel}
               disabled={saving}
-              className="flex-1 px-4 py-2.5 rounded-xl border border-stroke text-base font-medium text-ink-sub hover:bg-surface disabled:opacity-50 transition"
+              className="btn flex-1"
             >
               Cancel
             </button>
             <button
               onClick={handleSave}
               disabled={saving || unchanged || blockedByPromotion}
-              className="flex-1 px-4 py-2.5 rounded-xl text-base font-semibold text-white bg-primary-600 hover:bg-primary-800 disabled:opacity-50 disabled:cursor-not-allowed transition"
+              className="btn btn-primary flex-1"
             >
               {saving ? "Saving..." : "Save"}
             </button>

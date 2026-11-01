@@ -215,14 +215,14 @@ const ReportCard = ({
             to={`/profile/${report.targetOwner?._id || report.targetOwner}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="shrink-0 flex items-center gap-1 text-sm font-medium text-primary-600 hover:text-primary-800 px-2.5 py-1.5 rounded-lg border border-stroke hover:bg-primary-50 transition"
+            className="btn btn-sm shrink-0"
           >
             View <FiExternalLink size={12} />
           </Link>
         ) : (
           <button
             onClick={() => onView(report)}
-            className="shrink-0 flex items-center gap-1 text-sm font-medium text-primary-600 hover:text-primary-800 px-2.5 py-1.5 rounded-lg border border-stroke hover:bg-primary-50 transition"
+            className="btn btn-sm shrink-0"
           >
             View <FiExternalLink size={12} />
           </button>
@@ -230,7 +230,7 @@ const ReportCard = ({
         {report.targetOwner?._id && (
           <button
             onClick={() => onCaseHistory(report)}
-            className="shrink-0 flex items-center gap-1 text-sm font-medium text-ink-sub hover:text-primary-700 px-2.5 py-1.5 rounded-lg border border-stroke hover:border-primary-300 hover:bg-primary-50 transition"
+            className="btn btn-sm shrink-0"
           >
             <FiFileText size={12} /> Case history
           </button>
@@ -257,7 +257,7 @@ const ReportCard = ({
                 rows={2}
                 autoFocus
                 placeholder="e.g. Repeated harassment — this is a formal warning"
-                className="w-full rounded-xl border border-stroke px-3 py-2 text-base text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-amber-300 resize-none"
+                className="field w-full py-2 resize-none"
               />
               <div className="flex gap-2">
                 <button
@@ -266,7 +266,7 @@ const ReportCard = ({
                     setWarnReason("");
                   }}
                   disabled={warning}
-                  className="px-3 py-1.5 rounded-lg text-sm font-medium text-ink-sub border border-stroke hover:bg-surface transition"
+                  className="btn btn-sm"
                 >
                   Cancel
                 </button>
@@ -286,13 +286,13 @@ const ReportCard = ({
                 onChange={(e) => setNote(e.target.value.slice(0, 500))}
                 placeholder="Optional note (visible only to moderators)"
                 rows={2}
-                className="w-full rounded-xl border border-stroke px-3 py-2 text-base text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-primary-300 resize-none"
+                className="field w-full py-2 resize-none"
               />
               <div className="flex gap-2">
                 <button
                   onClick={() => setShowNoteFor(null)}
                   disabled={resolving}
-                  className="px-3 py-1.5 rounded-lg text-sm font-medium text-ink-sub border border-stroke hover:bg-surface transition"
+                  className="btn btn-sm"
                 >
                   Cancel
                 </button>
@@ -313,13 +313,13 @@ const ReportCard = ({
             <div className="flex gap-2">
               <button
                 onClick={() => setShowNoteFor("actioned")}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold text-white bg-red-500 hover:bg-red-600 transition"
+                className="btn btn-danger btn-sm"
               >
                 <FiCheck size={13} /> Action
               </button>
               <button
                 onClick={() => setShowNoteFor("dismissed")}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold text-ink-sub border border-stroke hover:bg-surface transition"
+                className="btn btn-sm"
               >
                 <FiX size={13} /> Dismiss
               </button>
@@ -353,7 +353,7 @@ const ReportCard = ({
               </span>
               <button
                 onClick={() => onRequestRestriction(report, "unrestrict")}
-                className="text-sm font-semibold text-primary-700 border border-stroke hover:bg-primary-50 px-2.5 py-1 rounded-lg transition"
+                className="btn btn-sm"
               >
                 Restore access
               </button>
@@ -488,7 +488,7 @@ const VerificationRequestCard = ({ request, onResolve }) => {
             to={`/profile/${person._id}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="shrink-0 flex items-center gap-1 text-sm font-medium text-primary-600 hover:text-primary-800 px-2.5 py-1.5 rounded-lg border border-stroke hover:bg-primary-50 transition"
+            className="btn btn-sm shrink-0"
           >
             Profile <FiExternalLink size={12} />
           </Link>
@@ -504,13 +504,13 @@ const VerificationRequestCard = ({ request, onResolve }) => {
                 onChange={(e) => setNote(e.target.value.slice(0, 500))}
                 placeholder="Optional note (shown to the applicant if denied)"
                 rows={2}
-                className="w-full rounded-xl border border-stroke px-3 py-2 text-base text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-primary-300 resize-none"
+                className="field w-full py-2 resize-none"
               />
               <div className="flex gap-2">
                 <button
                   onClick={() => setShowDecisionFor(null)}
                   disabled={resolving}
-                  className="px-3 py-1.5 rounded-lg text-sm font-medium text-ink-sub border border-stroke hover:bg-surface transition"
+                  className="btn btn-sm"
                 >
                   Cancel
                 </button>
@@ -537,7 +537,7 @@ const VerificationRequestCard = ({ request, onResolve }) => {
               </button>
               <button
                 onClick={() => setShowDecisionFor("denied")}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold text-ink-sub border border-stroke hover:bg-surface transition"
+                className="btn btn-sm"
               >
                 <FiX size={13} /> Deny
               </button>
@@ -634,7 +634,7 @@ const AppealCard = ({ appeal, onResolve }) => {
             to={`/profile/${person._id}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="shrink-0 flex items-center gap-1 text-sm font-medium text-primary-600 hover:text-primary-800 px-2.5 py-1.5 rounded-lg border border-stroke hover:bg-primary-50 transition"
+            className="btn btn-sm shrink-0"
           >
             Profile <FiExternalLink size={12} />
           </Link>
@@ -650,13 +650,13 @@ const AppealCard = ({ appeal, onResolve }) => {
                 onChange={(e) => setNote(e.target.value.slice(0, 500))}
                 placeholder="Optional note (visible only to moderators)"
                 rows={2}
-                className="w-full rounded-xl border border-stroke px-3 py-2 text-base text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-primary-300 resize-none"
+                className="field w-full py-2 resize-none"
               />
               <div className="flex gap-2">
                 <button
                   onClick={() => setShowDecisionFor(null)}
                   disabled={resolving}
-                  className="px-3 py-1.5 rounded-lg text-sm font-medium text-ink-sub border border-stroke hover:bg-surface transition"
+                  className="btn btn-sm"
                 >
                   Cancel
                 </button>
@@ -683,7 +683,7 @@ const AppealCard = ({ appeal, onResolve }) => {
               </button>
               <button
                 onClick={() => setShowDecisionFor("denied")}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold text-ink-sub border border-stroke hover:bg-surface transition"
+                className="btn btn-sm"
               >
                 <FiX size={13} /> Deny
               </button>
@@ -1032,7 +1032,7 @@ const ModerationQueue = () => {
 
       {queueTab === "reports" ? (
         <>
-          <div className="flex gap-1 mb-5 bg-card border border-stroke rounded-xl p-1 w-fit">
+          <div className="card flex gap-1 mb-5 p-1 w-fit">
             {STATUS_TABS.map((tab) => (
               <button
                 key={tab.value}
@@ -1085,7 +1085,7 @@ const ModerationQueue = () => {
               <button
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={page <= 1}
-                className="px-3 py-1.5 rounded-lg text-base border border-stroke disabled:opacity-40 hover:bg-surface transition"
+                className="btn btn-sm"
               >
                 Previous
               </button>
@@ -1095,7 +1095,7 @@ const ModerationQueue = () => {
               <button
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                 disabled={page >= totalPages}
-                className="px-3 py-1.5 rounded-lg text-base border border-stroke disabled:opacity-40 hover:bg-surface transition"
+                className="btn btn-sm"
               >
                 Next
               </button>
@@ -1104,7 +1104,7 @@ const ModerationQueue = () => {
         </>
       ) : queueTab === "appeals" ? (
         <>
-          <div className="flex gap-1 mb-5 bg-card border border-stroke rounded-xl p-1 w-fit">
+          <div className="card flex gap-1 mb-5 p-1 w-fit">
             {APPEAL_STATUS_TABS.map((tab) => (
               <button
                 key={tab.value}
@@ -1145,7 +1145,7 @@ const ModerationQueue = () => {
               <button
                 onClick={() => setAppealPage((p) => Math.max(1, p - 1))}
                 disabled={appealPage <= 1}
-                className="px-3 py-1.5 rounded-lg text-base border border-stroke disabled:opacity-40 hover:bg-surface transition"
+                className="btn btn-sm"
               >
                 Previous
               </button>
@@ -1155,7 +1155,7 @@ const ModerationQueue = () => {
               <button
                 onClick={() => setAppealPage((p) => Math.min(appealTotalPages, p + 1))}
                 disabled={appealPage >= appealTotalPages}
-                className="px-3 py-1.5 rounded-lg text-base border border-stroke disabled:opacity-40 hover:bg-surface transition"
+                className="btn btn-sm"
               >
                 Next
               </button>
@@ -1164,7 +1164,7 @@ const ModerationQueue = () => {
         </>
       ) : (
         <>
-          <div className="flex gap-1 mb-5 bg-card border border-stroke rounded-xl p-1 w-fit">
+          <div className="card flex gap-1 mb-5 p-1 w-fit">
             {VERIFICATION_STATUS_TABS.map((t) => (
               <button
                 key={t.value}
@@ -1211,7 +1211,7 @@ const ModerationQueue = () => {
               <button
                 onClick={() => setVerificationPage((p) => Math.max(1, p - 1))}
                 disabled={verificationPage <= 1}
-                className="px-3 py-1.5 rounded-lg text-base border border-stroke disabled:opacity-40 hover:bg-surface transition"
+                className="btn btn-sm"
               >
                 Previous
               </button>
@@ -1221,7 +1221,7 @@ const ModerationQueue = () => {
               <button
                 onClick={() => setVerificationPage((p) => Math.min(verificationTotalPages, p + 1))}
                 disabled={verificationPage >= verificationTotalPages}
-                className="px-3 py-1.5 rounded-lg text-base border border-stroke disabled:opacity-40 hover:bg-surface transition"
+                className="btn btn-sm"
               >
                 Next
               </button>

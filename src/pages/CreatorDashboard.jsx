@@ -123,7 +123,7 @@ const BarChart = ({ data = [], labelKey, valueKey = "count", color = "#0f6e56" }
 // ─── Stat card ───────────────────────────────────────────────────────────────
 
 const StatCard = ({ icon: Icon, label, value, delta, sparkData, color = "#0f6e56", loading }) => (
-  <div className="bg-card border border-stroke rounded-2xl p-4 flex flex-col gap-2">
+  <div className="card p-4 flex flex-col gap-2">
     <div className="flex items-center justify-between">
       <div
         className="w-8 h-8 rounded-xl flex items-center justify-center"
@@ -313,7 +313,7 @@ const CreatorDashboard = () => {
 
       {/* ── Follower milestone ── */}
       {milestone && (
-        <div className="bg-card border border-stroke rounded-2xl p-4 mb-4">
+        <div className="card p-4 mb-4">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <FaTrophy size={14} className="text-amber-500" />
@@ -351,7 +351,7 @@ const CreatorDashboard = () => {
       </div>
 
       {/* ── Engagement chart ── */}
-      <div className="bg-card border border-stroke rounded-2xl p-4 mb-4">
+      <div className="card p-4 mb-4">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <FaChartLine size={13} className="text-primary-600" />
@@ -387,7 +387,7 @@ const CreatorDashboard = () => {
       </div>
 
       {/* ── Top posts ── */}
-      <div className="bg-card border border-stroke rounded-2xl p-4 mb-4">
+      <div className="card p-4 mb-4">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <FaFire size={13} className="text-orange-500" />
@@ -446,7 +446,7 @@ const CreatorDashboard = () => {
 
       {/* ── Posting cadence ── */}
       {cadence && (
-        <div className="bg-card border border-stroke rounded-2xl p-4 mb-4">
+        <div className="card p-4 mb-4">
           <div className="flex items-center gap-2 mb-4">
             <FaClock size={13} className="text-primary-600" />
             <span className="text-sm font-semibold text-ink">Posting cadence</span>
@@ -536,11 +536,11 @@ const BestTimeCard = () => {
   }, [fetch]);
   useRefetchOnFocus(() => fetch({ silent: true }));
 
-  if (loading) return <div className="h-20 bg-card border border-stroke rounded-2xl animate-pulse mb-4" />;
+  if (loading) return <div className="h-20 card animate-pulse mb-4" />;
   if (!data?.recommendation) return null;
 
   return (
-    <div className="bg-card border border-stroke rounded-2xl p-4 mb-4">
+    <div className="card p-4 mb-4">
       <div className="flex items-center gap-2 mb-2">
         <FaClock size={13} className="text-indigo-500" />
         <span className="text-sm font-semibold text-ink">Best time to post</span>
@@ -579,11 +579,11 @@ const TopFansCard = () => {
   }, [fetch]);
   useRefetchOnFocus(() => fetch({ silent: true }));
 
-  if (loading) return <div className="h-40 bg-card border border-stroke rounded-2xl animate-pulse mb-4" />;
+  if (loading) return <div className="h-40 card animate-pulse mb-4" />;
   if (!fans.length) return null;
 
   return (
-    <div className="bg-card border border-stroke rounded-2xl p-4 mb-4">
+    <div className="card p-4 mb-4">
       <div className="flex items-center gap-2 mb-3">
         <FaUsers size={13} className="text-primary-600" />
         <span className="text-sm font-semibold text-ink">Top fans this month</span>
@@ -638,13 +638,13 @@ const HashtagPerformanceCard = ({ days }) => {
   }, [fetch]);
   useRefetchOnFocus(() => fetch({ silent: true }));
 
-  if (loading) return <div className="h-32 bg-card border border-stroke rounded-2xl animate-pulse mb-4" />;
+  if (loading) return <div className="h-32 card animate-pulse mb-4" />;
   if (!tags.length) return null;
 
   const maxEng = Math.max(...tags.map((t) => t.avgEngagement), 1);
 
   return (
-    <div className="bg-card border border-stroke rounded-2xl p-4 mb-4">
+    <div className="card p-4 mb-4">
       <div className="flex items-center gap-2 mb-3">
         <span className="text-sm" style={{ color: "#0f6e56" }}>#</span>
         <span className="text-sm font-semibold text-ink">Hashtag performance</span>

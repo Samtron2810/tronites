@@ -45,7 +45,7 @@ const StatCard = ({ label, value, icon: Icon, accent = "primary" }) => {
     slate: "bg-surface text-ink-muted",
   };
   return (
-    <div className="bg-card border border-stroke rounded-2xl p-4 flex items-center gap-4">
+    <div className="card p-4 flex items-center gap-4">
       <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${accents[accent]}`}>
         <Icon size={17} />
       </div>
@@ -88,7 +88,7 @@ const BankForm = ({ existing, onSaved }) => {
   };
 
   return (
-    <div className="bg-card border border-stroke rounded-2xl p-5 space-y-4">
+    <div className="card p-5 space-y-4">
       <h3 className="font-semibold text-ink text-sm">Bank account for payouts</h3>
       {existing?.accountNumberLast4 && (
         <div className="bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-xl px-3 py-2 flex items-center gap-2 text-xs text-green-700 dark:text-green-400">
@@ -111,7 +111,7 @@ const BankForm = ({ existing, onSaved }) => {
               onChange={(e) => set(e.target.value)}
               placeholder={ph}
               maxLength={maxLength}
-              className="w-full px-3.5 py-2.5 bg-surface border border-stroke rounded-xl text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:border-primary-400 transition"
+              className="field w-full py-2.5"
             />
           </div>
         ))}
@@ -119,7 +119,7 @@ const BankForm = ({ existing, onSaved }) => {
       <button
         onClick={handleSave}
         disabled={saving}
-        className="w-full py-2.5 rounded-xl bg-primary-600 text-white text-sm font-semibold hover:bg-primary-700 transition disabled:opacity-50 flex items-center justify-center gap-2"
+        className="btn btn-primary btn-block"
       >
         {saving ? <FaSpinner size={13} className="animate-spin" /> : null}
         {saving ? "Saving…" : "Save bank account"}
@@ -157,7 +157,7 @@ const PayoutRequest = ({ availableKobo, minPayoutNgn, hasBankAccount, onRequeste
   };
 
   return (
-    <div className="bg-card border border-stroke rounded-2xl p-5 space-y-4">
+    <div className="card p-5 space-y-4">
       <h3 className="font-semibold text-ink text-sm flex items-center gap-2">
         <FaArrowDown size={13} className="text-primary-500" />
         Withdraw earnings
@@ -177,7 +177,7 @@ const PayoutRequest = ({ availableKobo, minPayoutNgn, hasBankAccount, onRequeste
             value={amountNgn}
             onChange={(e) => setAmountNgn(e.target.value)}
             placeholder={`Min ₦${minPayoutNgn}`}
-            className="w-full pl-8 pr-4 py-2.5 bg-surface border border-stroke rounded-xl text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:border-primary-400 transition"
+            className="field w-full pl-8 pr-4 py-2.5"
           />
         </div>
         <p className="text-xs text-ink-muted mt-1">
@@ -187,7 +187,7 @@ const PayoutRequest = ({ availableKobo, minPayoutNgn, hasBankAccount, onRequeste
       <button
         onClick={handleRequest}
         disabled={loading || !hasBankAccount || availableKobo === 0}
-        className="w-full py-2.5 rounded-xl bg-primary-600 text-white text-sm font-semibold hover:bg-primary-700 transition disabled:opacity-40 flex items-center justify-center gap-2"
+        className="btn btn-primary btn-block"
       >
         {loading ? <FaSpinner size={13} className="animate-spin" /> : null}
         {loading ? "Submitting…" : "Request payout"}
@@ -343,7 +343,7 @@ const CreatorEarnings = () => {
             <StatCard label="Active subscribers" value={subCount.toLocaleString()} icon={FaStar} accent="amber" />
             <StatCard label="Paid out" value={fmt(e.paidPayoutKobo || 0)} icon={FaCheckCircle} accent="slate" />
           </div>
-          <div className="bg-card border border-stroke rounded-2xl p-4 text-xs text-ink-muted space-y-1">
+          <div className="card p-4 text-xs text-ink-muted space-y-1">
             <p>Platform fee: <span className="text-ink font-medium">{e.platformFeePct || 10}%</span> deducted from gross earnings</p>
             <p>Net after fee: <span className="text-ink font-medium">{fmt(e.netEarnedKobo || 0)}</span></p>
             {(e.pendingPayoutKobo || 0) > 0 && (
@@ -376,7 +376,7 @@ const CreatorEarnings = () => {
               {tipsList.items.map((tip) => (
                 <div
                   key={tip._id}
-                  className="bg-card border border-stroke rounded-2xl px-4 py-3 flex items-center gap-3"
+                  className="card px-4 py-3 flex items-center gap-3"
                 >
                   {tip.sender ? (
                     <img
@@ -428,7 +428,7 @@ const CreatorEarnings = () => {
               {subsList.items.map((sub) => (
                 <div
                   key={sub._id}
-                  className="bg-card border border-stroke rounded-2xl px-4 py-3 flex items-center gap-3"
+                  className="card px-4 py-3 flex items-center gap-3"
                 >
                   <img
                     src={sub.subscriber?.profilePic || ""}
@@ -471,7 +471,7 @@ const CreatorEarnings = () => {
               {payoutHistory.map((p) => (
                 <div
                   key={p._id}
-                  className="bg-card border border-stroke rounded-2xl px-4 py-3 flex items-center gap-3"
+                  className="card px-4 py-3 flex items-center gap-3"
                 >
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
                     p.status === "paid" ? "bg-green-100 text-green-600" :

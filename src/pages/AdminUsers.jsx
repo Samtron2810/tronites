@@ -290,7 +290,7 @@ const RoleRow = ({
       <select
         value={target.role}
         onChange={handleChange}
-        className="text-sm border border-stroke rounded-lg px-2 py-1.5 text-ink bg-card outline-none focus:ring-2 focus:ring-primary-200 disabled:opacity-50"
+        className="field py-1.5 disabled:opacity-50"
       >
         <option value="user">user</option>
         <option value="moderator">moderator</option>
@@ -330,7 +330,7 @@ const RoleRow = ({
   );
 
   return (
-    <div className="bg-card border border-stroke rounded-2xl p-4 flex flex-wrap items-center justify-between gap-4">
+    <div className="card p-4 flex flex-wrap items-center justify-between gap-4">
       <div className="flex items-center gap-3 min-w-0">
         {/* Phase 6 — bulk-selection checkbox. Hidden for self/admin rows
             since the bulk endpoints can never target those anyway. */}
@@ -888,7 +888,7 @@ Enter a reason (optional):`,
         Grant or revoke moderator and admin access.
       </p>
 
-      <div className="bg-card border border-stroke rounded-2xl px-4 py-3 flex items-center gap-3 mb-3">
+      <div className="card px-4 py-3 flex items-center gap-3 mb-3">
         <FiSearch className="text-ink-muted shrink-0" size={16} />
         <input
           type="text"
@@ -947,7 +947,7 @@ Enter a reason (optional):`,
         <select
           value={sortBy}
           onChange={(e) => setSortBy(e.target.value)}
-          className="bg-card border border-stroke rounded-xl px-3 py-2 text-base text-ink outline-none focus:border-primary-500"
+          className="field py-2"
         >
           <option value="">Newest first</option>
           <option value="reportCount">Most reported</option>
@@ -969,13 +969,13 @@ Enter a reason (optional):`,
           </button>
           <button
             onClick={() => setPendingBulk({ mode: "ban" })}
-            className="px-3 py-1.5 rounded-lg text-sm font-semibold text-white bg-red-500 hover:bg-red-600 transition"
+            className="btn btn-danger btn-sm"
           >
             Ban…
           </button>
           <button
             onClick={() => setSelectedIds(new Set())}
-            className="ml-auto px-3 py-1.5 rounded-lg text-sm font-medium text-ink-sub border border-stroke hover:bg-surface transition"
+            className="btn btn-sm ml-auto"
           >
             Clear
           </button>

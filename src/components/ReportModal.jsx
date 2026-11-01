@@ -40,7 +40,7 @@ const ReportModal = ({ targetLabel, onConfirm, onCancel }) => {
   return (
     <ModalPortal>
     <div data-modal-layer className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[60] px-4">
-      <div className="bg-card rounded-2xl shadow-xl p-6 w-full max-w-sm max-h-[90dvh] overflow-y-auto">
+      <div className="bg-card rounded-2xl shadow-hard-lg p-6 w-full max-w-sm max-h-[90dvh] overflow-y-auto border-2 border-line">
         <div className="flex items-center gap-3 mb-4">
           <div className="w-9 h-9 rounded-xl bg-amber-50 flex items-center justify-center shrink-0">
             <FiFlag className="text-amber-500" size={16} />
@@ -81,7 +81,7 @@ const ReportModal = ({ targetLabel, onConfirm, onCancel }) => {
           onChange={(e) => setDetails(e.target.value.slice(0, 500))}
           placeholder="Add details (optional)"
           rows={3}
-          className="w-full rounded-xl border border-stroke px-3 py-2 text-base text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-primary-300 resize-none"
+          className="field w-full py-2 resize-none"
         />
         <p className="text-right text-sm text-ink-muted mt-1">{details.length}/500</p>
 
@@ -89,7 +89,7 @@ const ReportModal = ({ targetLabel, onConfirm, onCancel }) => {
           <button
             onClick={onCancel}
             disabled={submitting}
-            className="flex-1 px-4 py-2.5 rounded-xl border border-stroke text-base font-medium text-ink-sub hover:bg-surface disabled:opacity-50 disabled:cursor-not-allowed transition"
+            className="btn flex-1"
           >
             Cancel
           </button>

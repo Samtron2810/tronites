@@ -81,7 +81,7 @@ const PromotionRow = ({ promo, onResume, onCancel }) => {
   const tierCls = TIER_COLORS[promo.promotionTier] || "";
 
   return (
-    <div className="bg-card border border-stroke rounded-2xl p-4 space-y-3">
+    <div className="card p-4 space-y-3">
       {/* Top row */}
       <div className="flex items-start justify-between gap-3">
         <Link to={`/post/${promo._id}`} className="flex-1 min-w-0 text-sm text-ink leading-snug line-clamp-2 hover:text-primary-600 transition">
@@ -181,7 +181,7 @@ const PromotionRow = ({ promo, onResume, onCancel }) => {
           <button onClick={() => onCancel(promo._id)} className="flex-1 py-2 rounded-xl border border-red-200 text-red-600 text-xs font-semibold hover:bg-red-50 transition flex items-center justify-center gap-1.5">
             Cancel pending
           </button>
-          <button onClick={() => onResume(promo.promotionReference, promo._id)} className="flex-1 py-2 rounded-xl bg-primary-600 hover:bg-primary-700 text-white text-xs font-semibold transition flex items-center justify-center gap-1.5">
+          <button onClick={() => onResume(promo.promotionReference, promo._id)} className="btn btn-primary flex-1">
             <FiRefreshCw size={11} />Resume verification
           </button>
         </div>
@@ -218,7 +218,7 @@ const SummaryBar = ({ promotions }) => {
   return (
     <div className={`grid gap-3 ${hasCta ? "grid-cols-2 sm:grid-cols-4" : "grid-cols-3"}`}>
       {stats.map(({ icon: Icon, label, value, sub }) => (
-        <div key={label} className="bg-card border border-stroke rounded-2xl p-3 text-center">
+        <div key={label} className="card p-3 text-center">
           <Icon size={16} className="mx-auto text-primary-500 mb-1" />
           <p className="text-lg font-bold text-ink leading-none">{value}</p>
           <p className="text-[10px] text-ink-muted mt-0.5 font-medium">{label}</p>
@@ -317,7 +317,7 @@ const MyPromotions = () => {
             <p className="text-sm">Loading promotions…</p>
           </div>
         ) : promotions.length === 0 ? (
-          <div className="bg-card border border-stroke rounded-2xl p-12 text-center space-y-3">
+          <div className="card p-12 text-center space-y-3">
             <span className="text-4xl">⚡</span>
             <p className="font-semibold text-ink">No promotions yet</p>
             <p className="text-sm text-ink-muted">

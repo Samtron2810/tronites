@@ -18,7 +18,7 @@ class ErrorBoundary extends React.Component {
     if (this.state.hasError) {
       return (
         <div className="min-h-screen app-bg flex items-center justify-center px-6">
-          <div className="bg-card rounded-2xl shadow-lg p-8 max-w-lg text-center">
+          <div className="bg-card rounded-2xl shadow-hard-lg p-8 max-w-lg text-center border-2 border-line">
             <h1 className="text-3xl font-bold text-red-600 mb-3">
               Something went wrong
             </h1>

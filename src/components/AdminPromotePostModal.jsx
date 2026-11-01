@@ -94,7 +94,7 @@ const AdminPromotePostModal = ({
     <ModalPortal>
     <div data-modal-layer className="fixed inset-0 bg-black/50 z-[60] flex items-stretch sm:items-center justify-center sm:p-4" onClick={onClose}>
       <div
-        className="bg-card sm:border border-stroke sm:rounded-2xl w-full max-w-sm shadow-xl overflow-y-auto h-full sm:h-auto sm:max-h-[90dvh] max-sm:max-w-none max-sm:rounded-none max-sm:pt-[env(safe-area-inset-top)] max-sm:pb-[env(safe-area-inset-bottom)]"
+        className="bg-card sm:border-2 border-line sm:rounded-2xl w-full max-w-sm shadow-hard-lg overflow-y-auto h-full sm:h-auto sm:max-h-[90dvh] max-sm:max-w-none max-sm:rounded-none max-sm:pt-[env(safe-area-inset-top)] max-sm:pb-[env(safe-area-inset-bottom)]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -191,7 +191,7 @@ const AdminPromotePostModal = ({
                     value={targetLocation}
                     onChange={(e) => setTargetLocation(e.target.value)}
                     placeholder="e.g. Lagos, Abuja, Nigeria"
-                    className="w-full px-3 py-2 rounded-lg border border-stroke bg-surface text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:border-primary-400 transition"
+                    className="field w-full py-2"
                     maxLength={100}
                   />
                 </div>
@@ -207,7 +207,7 @@ const AdminPromotePostModal = ({
                         onClick={() => toggleInterest(interest)}
                         className={`px-2.5 py-1 rounded-full text-[11px] font-semibold border transition ${
                           targetInterests.includes(interest)
-                            ? "bg-primary-600 text-white border-primary-600"
+                            ? "bg-ink text-surface border-line"
                             : "bg-surface text-ink-muted border-stroke hover:border-primary-400"
                         }`}
                       >
@@ -227,7 +227,7 @@ const AdminPromotePostModal = ({
               <select
                 value={ctaType}
                 onChange={(e) => setCtaType(e.target.value)}
-                className="w-full px-3 py-2.5 rounded-xl border border-stroke bg-surface text-sm text-ink focus:outline-none focus:border-primary-400 transition"
+                className="field w-full py-2.5"
               >
                 <option value="">No CTA button</option>
                 {CTA_OPTIONS.map((o) => (
@@ -242,7 +242,7 @@ const AdminPromotePostModal = ({
                 value={destinationUrl}
                 onChange={(e) => setDestinationUrl(e.target.value)}
                 placeholder="https://their-site.com/offer"
-                className="w-full px-3 py-2.5 rounded-xl border border-stroke bg-surface text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:border-primary-400 transition"
+                className="field w-full py-2.5"
                 maxLength={2000}
               />
             </div>
@@ -257,13 +257,13 @@ const AdminPromotePostModal = ({
 
         {/* Actions */}
         <div className="px-5 pb-5 flex gap-2">
-          <button onClick={onClose} className="flex-1 py-2.5 rounded-xl border border-stroke text-sm font-semibold text-ink-sub hover:bg-surface transition">
+          <button onClick={onClose} className="btn flex-1">
             Cancel
           </button>
           <button
             onClick={handleSubmit}
             disabled={submitting}
-            className="flex-1 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold transition disabled:opacity-50 flex items-center justify-center gap-2"
+            className="btn btn-primary flex-1"
           >
             {submitting
               ? <><FiLoader size={13} className="animate-spin" />Promoting…</>

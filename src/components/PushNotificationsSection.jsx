@@ -36,11 +36,11 @@ const Toggle = ({ checked, onChange, disabled }) => (
     disabled={disabled}
     onClick={() => onChange(!checked)}
     className={`relative w-10 h-6 rounded-full transition shrink-0 disabled:opacity-50 ${
-      checked ? "bg-primary-600" : "bg-stroke"
+      checked ? "bg-primary-600 ring-2 ring-line" : "bg-sand ring-2 ring-line"
     }`}
   >
     <span
-      className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${
+      className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white ring-2 ring-line transition-transform ${
         checked ? "translate-x-4" : "translate-x-0"
       }`}
     />
@@ -111,7 +111,7 @@ const PushNotificationsSection = ({ embedded = false }) => {
   };
 
   if (!supported) {
-    const cls = embedded ? "p-5" : "bg-card border border-stroke rounded-2xl p-5 mt-4";
+    const cls = embedded ? "p-5" : "card p-5 mt-4";
     return (
       <div className={cls}>
         {!embedded && <h2 className="text-base font-semibold text-ink mb-1">Push notifications</h2>}
@@ -122,7 +122,7 @@ const PushNotificationsSection = ({ embedded = false }) => {
     );
   }
 
-  const outerClass = embedded ? "overflow-hidden" : "bg-card border border-stroke rounded-2xl mt-4 overflow-hidden";
+  const outerClass = embedded ? "overflow-hidden" : "card mt-4 overflow-hidden";
 
   return (
     <div className={outerClass}>

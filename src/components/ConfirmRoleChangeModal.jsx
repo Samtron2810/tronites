@@ -37,7 +37,7 @@ const ConfirmRoleChangeModal = ({
   // (Navbar's LogoutModal already uses this same pattern).
   return createPortal(
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-70 px-4">
-      <div className="bg-card rounded-2xl shadow-xl p-6 w-full max-w-sm max-h-[90dvh] overflow-y-auto">
+      <div className="bg-card rounded-2xl shadow-hard-lg p-6 w-full max-w-sm max-h-[90dvh] overflow-y-auto border-2 border-line">
         <div className="flex items-center gap-3 mb-3">
           <div
             className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
@@ -90,7 +90,7 @@ const ConfirmRoleChangeModal = ({
           <button
             onClick={onCancel}
             disabled={isUpdating}
-            className="flex-1 px-4 py-2.5 rounded-xl border border-stroke text-base font-medium text-ink-sub hover:bg-surface disabled:opacity-50 disabled:cursor-not-allowed transition"
+            className="btn flex-1"
           >
             Cancel
           </button>

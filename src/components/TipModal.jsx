@@ -40,7 +40,7 @@ const TipModal = ({ creator, postId = null, onClose }) => {
   return (
     <ModalPortal>
     <div data-modal-layer className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm px-0 sm:px-4">
-      <div className="bg-card w-full sm:max-w-md rounded-t-3xl sm:rounded-2xl border border-stroke shadow-2xl overflow-y-auto max-h-[95dvh] pb-[env(safe-area-inset-bottom)]">
+      <div className="bg-card w-full sm:max-w-md rounded-t-3xl sm:rounded-2xl border-2 border-line shadow-hard-lg overflow-y-auto max-h-[95dvh] pb-[env(safe-area-inset-bottom)]">
         {/* Header */}
         <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-stroke">
           <div className="flex items-center gap-3">
@@ -85,10 +85,10 @@ const TipModal = ({ creator, postId = null, onClose }) => {
                     setAmount(String(a));
                     setCustomAmount("");
                   }}
-                  className={`py-2.5 rounded-xl text-sm font-semibold border transition ${
+                  className={`py-2.5 rounded-lg font-mono text-sm font-medium border-2 transition ${
                     amount === String(a)
-                      ? "bg-primary-600 text-white border-primary-600"
-                      : "border-stroke text-ink hover:border-primary-400 hover:text-primary-600"
+                      ? "bg-ink text-surface border-line"
+                      : "border-line text-ink hover:bg-sand"
                   }`}
                 >
                   ₦{a.toLocaleString()}
@@ -116,7 +116,7 @@ const TipModal = ({ creator, postId = null, onClose }) => {
                   setAmount("");
                 }}
                 placeholder="e.g. 3000"
-                className="w-full pl-8 pr-4 py-2.5 bg-surface border border-stroke rounded-xl text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:border-primary-400 transition"
+                className="field w-full pl-8 pr-4 py-2.5"
               />
             </div>
             {amountNgn > 0 && !valid && (
@@ -137,7 +137,7 @@ const TipModal = ({ creator, postId = null, onClose }) => {
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               placeholder="Say something nice…"
-              className="w-full px-3.5 py-2.5 bg-surface border border-stroke rounded-xl text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:border-primary-400 transition resize-none"
+              className="field w-full py-2.5 resize-none"
             />
             <p className="text-right text-xs text-ink-muted mt-1">
               {150 - message.length}
@@ -148,12 +148,12 @@ const TipModal = ({ creator, postId = null, onClose }) => {
           <label className="flex items-center gap-3 cursor-pointer">
             <div
               className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
-                isAnonymous ? "bg-primary-600" : "bg-stroke"
+                isAnonymous ? "bg-primary-600 ring-2 ring-line" : "bg-sand ring-2 ring-line"
               }`}
               onClick={() => setIsAnonymous((v) => !v)}
             >
               <span
-                className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${
+                className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white ring-2 ring-line transition-transform ${
                   isAnonymous ? "translate-x-4.5" : "translate-x-1"
                 }`}
               />
@@ -172,7 +172,7 @@ const TipModal = ({ creator, postId = null, onClose }) => {
           <button
             onClick={handleTip}
             disabled={!valid || loading}
-            className="w-full py-3 rounded-xl bg-primary-600 text-white font-semibold text-sm flex items-center justify-center gap-2 disabled:opacity-40 hover:bg-primary-700 transition"
+            className="btn btn-primary btn-lg btn-block"
           >
             {loading ? (
               <span className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />

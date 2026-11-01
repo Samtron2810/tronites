@@ -213,7 +213,7 @@ const ComplianceGate = () => {
         <button
           type="submit"
           disabled={!canSubmit}
-          className="w-full bg-primary-600 hover:bg-primary-800 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-xl text-base transition"
+          className="btn btn-primary btn-lg btn-block"
         >
           {saving ? "Saving..." : "Continue"}
         </button>

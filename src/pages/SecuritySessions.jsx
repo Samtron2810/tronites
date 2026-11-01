@@ -114,13 +114,13 @@ const SecuritySessions = () => {
       </p>
 
       {error && (
-        <div className="bg-card border border-stroke rounded-2xl p-6 text-center">
+        <div className="card p-6 text-center">
           <p className="text-base text-ink-muted mb-3">
             Couldn't load your sessions.
           </p>
           <button
             onClick={load}
-            className="px-4 py-2 rounded-xl border border-stroke text-sm font-medium text-ink hover:bg-surface transition"
+            className="btn"
           >
             Try again
           </button>
@@ -128,7 +128,7 @@ const SecuritySessions = () => {
       )}
 
       {!error && sessions === null && (
-        <div className="bg-card border border-stroke rounded-2xl overflow-hidden divide-y divide-stroke">
+        <div className="card overflow-hidden divide-y divide-stroke">
           <SkeletonRow />
           <SkeletonRow />
         </div>
@@ -137,7 +137,7 @@ const SecuritySessions = () => {
       {!error && sessions !== null && (
         <>
           {currentSession && (
-            <section className="bg-card border border-stroke rounded-2xl overflow-hidden mb-4">
+            <section className="card overflow-hidden mb-4">
               <h2 className="text-sm font-semibold text-ink-muted uppercase tracking-wide px-5 pt-4 pb-2">
                 This device
               </h2>
@@ -145,7 +145,7 @@ const SecuritySessions = () => {
             </section>
           )}
 
-          <section className="bg-card border border-stroke rounded-2xl overflow-hidden">
+          <section className="card overflow-hidden">
             <div className="flex items-center justify-between px-5 pt-4 pb-2">
               <h2 className="text-sm font-semibold text-ink-muted uppercase tracking-wide">
                 Other devices

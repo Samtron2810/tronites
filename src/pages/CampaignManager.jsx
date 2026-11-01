@@ -67,7 +67,7 @@ const CampaignCard = ({ campaign, onPay, onCancel, onExport, onResume, onCancelP
     : "0.0";
 
   return (
-    <div className="bg-card border border-stroke rounded-2xl overflow-hidden">
+    <div className="card overflow-hidden">
       {/* Header */}
       <div className="flex items-start justify-between gap-3 px-4 pt-4 pb-3">
         <div className="min-w-0">
@@ -135,7 +135,7 @@ const CampaignCard = ({ campaign, onPay, onCancel, onExport, onResume, onCancelP
             <button
               onClick={() => onResume(campaign)}
               disabled={isResuming || isCancellingPending}
-              className="flex-1 py-2 rounded-xl bg-primary-600 hover:bg-primary-700 text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition disabled:opacity-60"
+              className="btn btn-primary flex-1"
             >
               <FiRefreshCw size={12} className={isResuming ? "animate-spin" : ""} />
               {isResuming ? "Verifying…" : "Resume / Verify payment"}
@@ -154,7 +154,7 @@ const CampaignCard = ({ campaign, onPay, onCancel, onExport, onResume, onCancelP
           <>
             <button
               onClick={() => onPay(campaign)}
-              className="flex-1 py-2 rounded-xl bg-primary-600 hover:bg-primary-700 text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition"
+              className="btn btn-primary flex-1"
             >
               <FiCreditCard size={12} />Pay & Launch
             </button>
@@ -170,7 +170,7 @@ const CampaignCard = ({ campaign, onPay, onCancel, onExport, onResume, onCancelP
           <>
             <button
               onClick={() => onExport(campaign._id)}
-              className="flex-1 py-2 rounded-xl border border-stroke text-ink-sub text-xs font-semibold hover:bg-surface flex items-center justify-center gap-1.5 transition"
+              className="btn btn-sm flex-1"
             >
               <FiDownload size={12} />Export CSV
             </button>
@@ -185,7 +185,7 @@ const CampaignCard = ({ campaign, onPay, onCancel, onExport, onResume, onCancelP
         {["completed","cancelled"].includes(campaign.status) && (
           <button
             onClick={() => onExport(campaign._id)}
-            className="flex-1 py-2 rounded-xl border border-stroke text-ink-sub text-xs font-semibold hover:bg-surface flex items-center justify-center gap-1.5 transition"
+            className="btn btn-sm flex-1"
           >
             <FiDownload size={12} />Export report
           </button>
@@ -269,7 +269,7 @@ const CreateCampaignModal = ({ onClose, onCreated, tiers, currentUserId }) => {
   return (
     <ModalPortal>
     <div className="fixed inset-0 bg-black/50 z-50 flex items-stretch sm:items-center justify-center sm:p-4" onClick={onClose}>
-      <div className="bg-card sm:border border-stroke sm:rounded-2xl w-full max-w-md shadow-2xl overflow-y-auto h-full sm:h-auto sm:max-h-[90dvh] max-sm:max-w-none max-sm:rounded-none max-sm:pt-[env(safe-area-inset-top)] max-sm:pb-[env(safe-area-inset-bottom)]" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-card sm:border-2 border-line sm:rounded-2xl w-full max-w-md shadow-hard-lg overflow-y-auto h-full sm:h-auto sm:max-h-[90dvh] max-sm:max-w-none max-sm:rounded-none max-sm:pt-[env(safe-area-inset-top)] max-sm:pb-[env(safe-area-inset-bottom)]" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-stroke sticky top-0 bg-card z-10">
           <div className="flex items-center gap-2">
@@ -290,7 +290,7 @@ const CreateCampaignModal = ({ onClose, onCreated, tiers, currentUserId }) => {
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-ink-muted">Campaign name</label>
                 <input
-                  className="w-full px-3 py-2.5 rounded-xl border border-stroke bg-surface text-sm text-ink focus:outline-none focus:border-primary-400 transition"
+                  className="field w-full py-2.5"
                   placeholder="e.g. Sallah Sales Push"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
@@ -368,7 +368,7 @@ const CreateCampaignModal = ({ onClose, onCreated, tiers, currentUserId }) => {
                   📍 Location
                 </label>
                 <input
-                  className="w-full px-3 py-2.5 rounded-xl border border-stroke bg-surface text-sm text-ink focus:outline-none focus:border-primary-400 transition"
+                  className="field w-full py-2.5"
                   placeholder="e.g. Lagos, Abuja, Nigeria"
                   value={targetLocation}
                   onChange={(e) => setTargetLocation(e.target.value)}
@@ -386,7 +386,7 @@ const CreateCampaignModal = ({ onClose, onCreated, tiers, currentUserId }) => {
                       )}
                       className={`px-2.5 py-1 rounded-full text-[11px] font-semibold border transition ${
                         targetInterests.includes(interest)
-                          ? "bg-primary-600 text-white border-primary-600"
+                          ? "bg-ink text-surface border-line"
                           : "bg-surface text-ink-muted border-stroke hover:border-primary-400"
                       }`}
                     >
@@ -406,7 +406,7 @@ const CreateCampaignModal = ({ onClose, onCreated, tiers, currentUserId }) => {
                 <select
                   value={ctaType}
                   onChange={(e) => setCtaType(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-xl border border-stroke bg-surface text-sm text-ink focus:outline-none focus:border-primary-400 transition"
+                  className="field w-full py-2.5"
                 >
                   <option value="">No CTA button</option>
                   {CTA_OPTIONS.map((o) => (
@@ -421,7 +421,7 @@ const CreateCampaignModal = ({ onClose, onCreated, tiers, currentUserId }) => {
                   value={destinationUrl}
                   onChange={(e) => setDestinationUrl(e.target.value)}
                   placeholder="https://your-site.com/offer"
-                  className="w-full px-3 py-2.5 rounded-xl border border-stroke bg-surface text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:border-primary-400 transition"
+                  className="field w-full py-2.5"
                   maxLength={2000}
                 />
                 <p className="text-[10px] text-ink-muted">
@@ -465,11 +465,11 @@ const CreateCampaignModal = ({ onClose, onCreated, tiers, currentUserId }) => {
         {/* Footer nav */}
         <div className="px-5 pb-5 flex gap-2 border-t border-stroke pt-4">
           {step > 1 ? (
-            <button onClick={() => setStep((s) => s - 1)} className="flex-1 py-2.5 rounded-xl border border-stroke text-sm font-semibold text-ink-sub hover:bg-surface transition">
+            <button onClick={() => setStep((s) => s - 1)} className="btn flex-1">
               Back
             </button>
           ) : (
-            <button onClick={onClose} className="flex-1 py-2.5 rounded-xl border border-stroke text-sm font-semibold text-ink-sub hover:bg-surface transition">
+            <button onClick={onClose} className="btn flex-1">
               Cancel
             </button>
           )}
@@ -486,7 +486,7 @@ const CreateCampaignModal = ({ onClose, onCreated, tiers, currentUserId }) => {
                 }
                 setStep((s) => s + 1);
               }}
-              className="flex-1 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold transition flex items-center justify-center gap-2"
+              className="btn btn-primary flex-1"
             >
               Next <FiChevronRight size={14} />
             </button>
@@ -494,7 +494,7 @@ const CreateCampaignModal = ({ onClose, onCreated, tiers, currentUserId }) => {
             <button
               onClick={handleCreate}
               disabled={creating}
-              className="flex-1 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold transition disabled:opacity-50 flex items-center justify-center gap-2"
+              className="btn btn-primary flex-1"
             >
               {creating ? <><FiLoader size={13} className="animate-spin" />Creating…</> : <><FiCheck size={13} />Create campaign</>}
             </button>
@@ -634,7 +634,7 @@ const CampaignManager = () => {
           </div>
           <button
             onClick={() => setShowCreate(true)}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold transition"
+            className="btn btn-primary"
           >
             <FiPlus size={16} />New
           </button>
@@ -648,7 +648,7 @@ const CampaignManager = () => {
               { icon: FiEye,          label: "Impressions", value: totalImpressions.toLocaleString() },
               { icon: FiCreditCard,   label: "Total spent", value: `₦${totalSpend.toLocaleString()}` },
             ].map(({ icon: Icon, label, value }) => (
-              <div key={label} className="bg-card border border-stroke rounded-2xl p-3 text-center">
+              <div key={label} className="card p-3 text-center">
                 <Icon size={16} className="mx-auto text-primary-500 mb-1" />
                 <p className="text-base font-bold text-ink">{value}</p>
                 <p className="text-[10px] text-ink-muted font-medium">{label}</p>
@@ -664,13 +664,13 @@ const CampaignManager = () => {
             <p className="text-sm">Loading campaigns…</p>
           </div>
         ) : campaigns.length === 0 ? (
-          <div className="bg-card border border-stroke rounded-2xl p-12 text-center space-y-3">
+          <div className="card p-12 text-center space-y-3">
             <span className="text-4xl">📣</span>
             <p className="font-semibold text-ink">No campaigns yet</p>
             <p className="text-sm text-ink-muted">Create a campaign to promote multiple posts with a shared budget, schedule and audience.</p>
             <button
               onClick={() => setShowCreate(true)}
-              className="mx-auto flex items-center gap-2 px-4 py-2 rounded-xl bg-primary-600 text-white text-sm font-semibold hover:bg-primary-700 transition"
+              className="btn btn-primary"
             >
               <FiPlus size={14} />Create first campaign
             </button>

@@ -40,7 +40,7 @@ const AppealModal = ({ identifier: initialIdentifier, onClose }) => {
   return (
     <ModalPortal>
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 px-4">
-      <div className="bg-card rounded-2xl shadow-xl p-6 w-full max-w-sm max-h-[90dvh] overflow-y-auto">
+      <div className="bg-card rounded-2xl shadow-hard-lg p-6 w-full max-w-sm max-h-[90dvh] overflow-y-auto border-2 border-line">
         <div className="flex items-start justify-between mb-4">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-primary-50 flex items-center justify-center shrink-0">
@@ -67,7 +67,7 @@ const AppealModal = ({ identifier: initialIdentifier, onClose }) => {
             <p className="text-base text-ink mb-4">{result.message}</p>
             <button
               onClick={onClose}
-              className="px-4 py-2 rounded-xl bg-primary-600 hover:bg-primary-800 text-white font-semibold text-base transition"
+              className="btn btn-primary"
             >
               Done
             </button>
@@ -86,7 +86,7 @@ const AppealModal = ({ identifier: initialIdentifier, onClose }) => {
               placeholder="Email or username"
               required
               autoCapitalize="none"
-              className="w-full px-3 py-2.5 rounded-xl border border-stroke bg-card text-ink text-base placeholder:text-ink-muted outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100 transition"
+              className="field w-full py-2.5"
             />
             <input
               type="password"
@@ -94,7 +94,7 @@ const AppealModal = ({ identifier: initialIdentifier, onClose }) => {
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Password"
               required
-              className="w-full px-3 py-2.5 rounded-xl border border-stroke bg-card text-ink text-base placeholder:text-ink-muted outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100 transition"
+              className="field w-full py-2.5"
             />
             <textarea
               value={statement}
@@ -103,7 +103,7 @@ const AppealModal = ({ identifier: initialIdentifier, onClose }) => {
               rows={4}
               required
               minLength={10}
-              className="w-full px-3 py-2.5 rounded-xl border border-stroke bg-card text-ink text-base placeholder:text-ink-muted outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100 transition resize-none"
+              className="field w-full py-2.5 resize-none"
             />
             <p className="text-sm text-ink-muted text-right -mt-1">
               {statement.length}/1000
@@ -116,7 +116,7 @@ const AppealModal = ({ identifier: initialIdentifier, onClose }) => {
             <button
               type="submit"
               disabled={submitting}
-              className="w-full bg-primary-600 hover:bg-primary-800 disabled:opacity-60 text-white font-semibold py-2.5 rounded-xl text-base transition"
+              className="btn btn-primary btn-block"
             >
               {submitting ? "Submitting..." : "Submit appeal"}
             </button>

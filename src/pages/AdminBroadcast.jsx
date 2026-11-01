@@ -64,7 +64,7 @@ const Chip = ({ active, onClick, children }) => (
 );
 
 const Step = ({ n, title, sub, children }) => (
-  <section className="bg-card border border-stroke rounded-2xl">
+  <section className="card">
     <header className="flex items-center gap-3 px-5 py-4 border-b border-stroke rounded-t-2xl">
       <span className="w-7 h-7 rounded-full bg-primary-100 text-primary-600 text-sm font-bold flex items-center justify-center shrink-0">
         {n}
@@ -90,7 +90,7 @@ const ConfirmSendModal = ({ count, labels, type, sending, onConfirm, onCancel })
 
   return createPortal(
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-70 px-4">
-      <div className="bg-card rounded-2xl shadow-xl p-6 w-full max-w-md max-h-[90dvh] overflow-y-auto">
+      <div className="bg-card rounded-2xl shadow-hard-lg p-6 w-full max-w-md max-h-[90dvh] overflow-y-auto border-2 border-line">
         <div className="flex items-center gap-3 mb-4">
           <div className="w-9 h-9 rounded-xl bg-primary-50 flex items-center justify-center shrink-0">
             <FiSend className="text-primary-600" size={16} />
@@ -135,14 +135,14 @@ const ConfirmSendModal = ({ count, labels, type, sending, onConfirm, onCancel })
           <button
             onClick={onCancel}
             disabled={sending}
-            className="flex-1 px-4 py-2.5 rounded-xl border border-stroke text-base font-medium text-ink-sub hover:bg-surface disabled:opacity-50 transition"
+            className="btn flex-1"
           >
             Cancel
           </button>
           <button
             onClick={onConfirm}
             disabled={!ready || sending}
-            className="flex-1 px-4 py-2.5 rounded-xl text-base font-semibold text-white bg-primary-600 hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
+            className="btn btn-primary flex-1"
           >
             {sending ? "Queuing…" : "Send now"}
           </button>
@@ -238,7 +238,7 @@ const HistoryTab = () => {
         const pct = c.recipientCount ? Math.min(100, (done / c.recipientCount) * 100) : 0;
         const isActive = ACTIVE_CAMPAIGN_STATUSES.includes(c.status);
         return (
-          <div key={c._id} className="bg-card border border-stroke rounded-2xl overflow-hidden">
+          <div key={c._id} className="card overflow-hidden">
             <button
               onClick={() => toggle(c._id)}
               className="w-full text-left px-5 py-4 hover:bg-surface/60 transition"
@@ -300,7 +300,7 @@ const HistoryTab = () => {
                   {c.status === "paused" && (
                     <button
                       onClick={() => act(c._id, "resume")}
-                      className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-semibold transition"
+                      className="btn btn-primary"
                     >
                       <FiPlay size={13} /> Resume
                     </button>
@@ -726,14 +726,14 @@ const AdminBroadcast = () => {
                   <button
                     type="button"
                     onClick={() => wrapSelection("**")}
-                    className="px-2.5 py-1 rounded-lg border border-stroke text-sm font-bold text-ink hover:bg-surface transition"
+                    className="btn btn-sm"
                   >
                     B
                   </button>
                   <button
                     type="button"
                     onClick={() => wrapSelection("{{firstName}}", "")}
-                    className="px-2.5 py-1 rounded-lg border border-stroke text-sm font-medium text-ink hover:bg-surface transition"
+                    className="btn btn-sm"
                   >
                     + First name
                   </button>
@@ -790,7 +790,7 @@ const AdminBroadcast = () => {
 
       {tab === "compose" && (
         <div className="sticky bottom-3 z-30">
-          <div className="bg-card border border-stroke rounded-2xl shadow-xl p-3.5 flex flex-wrap items-center gap-3">
+          <div className="bg-card border-2 border-line rounded-2xl shadow-hard-lg p-3.5 flex flex-wrap items-center gap-3">
             <div className="min-w-0 flex-1 basis-48">
               <p className="text-base font-semibold text-ink flex items-center gap-2">
                 {previewLoading ? (
@@ -820,14 +820,14 @@ const AdminBroadcast = () => {
             <button
               onClick={handleTest}
               disabled={!contentOk || testing}
-              className="px-4 py-2.5 rounded-xl border border-stroke text-base font-medium text-ink hover:bg-surface disabled:opacity-40 disabled:cursor-not-allowed transition"
+              className="btn"
             >
               {testing ? "Sending…" : "Send test"}
             </button>
             <button
               onClick={() => setConfirmOpen(true)}
               disabled={!canSend}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-base font-semibold text-white bg-primary-600 hover:bg-primary-700 disabled:opacity-40 disabled:cursor-not-allowed transition"
+              className="btn btn-primary"
             >
               <FiSend size={15} /> Review & send
             </button>

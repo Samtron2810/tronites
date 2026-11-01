@@ -87,7 +87,7 @@ const RescheduleModal = ({ post, onClose, onSaved }) => {
     <ModalPortal>
     <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" onClick={onClose}>
       <div
-        className="bg-card border border-stroke rounded-2xl w-full max-w-sm p-5 space-y-4 max-h-[90dvh] overflow-y-auto"
+        className="card w-full max-w-sm p-5 space-y-4 max-h-[90dvh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between">
@@ -103,20 +103,20 @@ const RescheduleModal = ({ post, onClose, onSaved }) => {
             value={value}
             min={minValue}
             onChange={(e) => setValue(e.target.value)}
-            className="w-full px-3 py-2.5 bg-surface border border-stroke rounded-xl text-sm text-ink focus:outline-none focus:border-primary-400 transition"
+            className="field w-full py-2.5"
           />
         </div>
         <div className="flex gap-2">
           <button
             onClick={onClose}
-            className="flex-1 py-2.5 rounded-xl border border-stroke text-sm font-semibold text-ink hover:bg-surface transition"
+            className="btn flex-1"
           >
             Cancel
           </button>
           <button
             onClick={handleSave}
             disabled={saving}
-            className="flex-1 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold transition disabled:opacity-50 flex items-center justify-center gap-2"
+            className="btn btn-primary flex-1"
           >
             {saving ? <span className="w-3 h-3 border-2 border-white/40 border-t-white rounded-full animate-spin" /> : null}
             {saving ? "Saving…" : "Save"}
@@ -217,11 +217,11 @@ const ScheduledPosts = () => {
       {loading ? (
         <div className="space-y-3">
           {[...Array(3)].map((_, i) => (
-            <div key={i} className="h-24 bg-card border border-stroke rounded-2xl animate-pulse" />
+            <div key={i} className="h-24 card animate-pulse" />
           ))}
         </div>
       ) : posts.length === 0 ? (
-        <div className="bg-card border border-stroke rounded-2xl p-12 text-center">
+        <div className="card p-12 text-center">
           <FaCalendarAlt size={28} className="text-ink-muted mx-auto mb-3" />
           <p className="text-base font-semibold text-ink mb-1">Nothing scheduled</p>
           <p className="text-sm text-ink-muted">
@@ -233,7 +233,7 @@ const ScheduledPosts = () => {
           {posts.map((post) => (
             <div
               key={post._id}
-              className="bg-card border border-stroke rounded-2xl p-4 flex gap-3"
+              className="card p-4 flex gap-3"
             >
               {/* Media type icon */}
               <div className="w-9 h-9 rounded-xl bg-primary-50 flex items-center justify-center shrink-0">

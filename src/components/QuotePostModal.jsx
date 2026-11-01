@@ -63,7 +63,7 @@ const QuotePostModal = ({ post, closeModal, onSubmit }) => {
   return (
     <ModalPortal>
     <div data-modal-layer className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-stretch sm:items-center justify-center z-[60] sm:px-4">
-      <div className="bg-card w-full max-w-lg sm:rounded-2xl shadow-xl overflow-hidden flex flex-col h-full sm:h-auto sm:max-h-[90dvh] max-sm:max-w-none max-sm:rounded-none max-sm:pt-[env(safe-area-inset-top)] max-sm:pb-[env(safe-area-inset-bottom)]">
+      <div className="bg-card w-full max-w-lg sm:rounded-2xl shadow-hard-lg overflow-hidden flex flex-col h-full sm:h-auto sm:max-h-[90dvh] max-sm:max-w-none max-sm:rounded-none max-sm:pt-[env(safe-area-inset-top)] max-sm:pb-[env(safe-area-inset-bottom)] sm:border-2 border-line">
         <div className="flex items-center justify-between px-5 py-4 border-b border-stroke">
           <h2 className="text-lg font-semibold text-ink">Quote post</h2>
           <button
@@ -85,7 +85,7 @@ const QuotePostModal = ({ post, closeModal, onSubmit }) => {
               rows={3}
               autoFocus
               placeholder="Add a comment..."
-              className="w-full border border-stroke rounded-xl p-4 text-base text-ink placeholder:text-ink-muted outline-none resize-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100 transition"
+              className="field w-full p-4 resize-none"
             />
             {mention.showSuggestions && (
               <MentionSuggestions
@@ -118,7 +118,7 @@ const QuotePostModal = ({ post, closeModal, onSubmit }) => {
           <button
             onClick={handleSubmit}
             disabled={isSubmitting}
-            className="px-5 py-2 rounded-lg text-base font-semibold text-white bg-primary-600 hover:bg-primary-700 transition disabled:opacity-50"
+            className="btn btn-primary"
           >
             {isSubmitting ? "Posting..." : "Post"}
           </button>

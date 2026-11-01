@@ -68,7 +68,7 @@ const SubscribeModal = ({ creator, onClose, onAlreadySubscribed }) => {
   return (
     <ModalPortal>
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm px-0 sm:px-4">
-      <div className="bg-card w-full sm:max-w-md rounded-t-3xl sm:rounded-2xl border border-stroke shadow-2xl overflow-y-auto max-h-[95dvh] pb-[env(safe-area-inset-bottom)]">
+      <div className="bg-card w-full sm:max-w-md rounded-t-3xl sm:rounded-2xl border-2 border-line shadow-hard-lg overflow-y-auto max-h-[95dvh] pb-[env(safe-area-inset-bottom)]">
         {/* Header */}
         <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-stroke">
           <div className="flex items-center gap-3">
@@ -169,7 +169,7 @@ const SubscribeModal = ({ creator, onClose, onAlreadySubscribed }) => {
               <button
                 onClick={handleSubscribe}
                 disabled={initiating}
-                className="w-full py-3 rounded-xl bg-primary-600 text-white font-semibold text-sm flex items-center justify-center gap-2 disabled:opacity-40 hover:bg-primary-700 transition"
+                className="btn btn-primary btn-lg btn-block"
               >
                 {initiating ? (
                   <span className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -183,7 +183,7 @@ const SubscribeModal = ({ creator, onClose, onAlreadySubscribed }) => {
             ) : (
               <button
                 onClick={handleCancel}
-                className="w-full py-3 rounded-xl border border-stroke text-ink-muted text-sm font-medium hover:bg-surface transition"
+                className="btn btn-lg btn-block"
               >
                 Cancel subscription
               </button>

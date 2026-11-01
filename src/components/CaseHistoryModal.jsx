@@ -162,7 +162,7 @@ const CaseHistoryModal = ({ user, currentUserId, viewerRole, onClose }) => {
   return (
     <ModalPortal>
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-stretch sm:items-center justify-center z-50 sm:px-4">
-      <div className="bg-card sm:rounded-2xl shadow-xl w-full max-w-2xl flex flex-col overflow-hidden h-full sm:h-auto sm:max-h-[90dvh] max-sm:max-w-none max-sm:rounded-none max-sm:pt-[env(safe-area-inset-top)] max-sm:pb-[env(safe-area-inset-bottom)]">
+      <div className="bg-card sm:rounded-2xl shadow-hard-lg w-full max-w-2xl flex flex-col overflow-hidden h-full sm:h-auto sm:max-h-[90dvh] max-sm:max-w-none max-sm:rounded-none max-sm:pt-[env(safe-area-inset-top)] max-sm:pb-[env(safe-area-inset-bottom)] sm:border-2 border-line">
         {/* Header */}
         <div className="flex items-center gap-3 px-5 py-4 border-b border-stroke shrink-0">
           <img
@@ -270,12 +270,12 @@ const CaseHistoryModal = ({ user, currentUserId, viewerRole, onClose }) => {
                     onChange={(e) => setNoteBody(e.target.value.slice(0, 1000))}
                     rows={2}
                     placeholder="Internal note — never shown to the account holder."
-                    className="flex-1 rounded-xl border border-stroke px-3 py-2 text-base text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-primary-300 resize-none bg-card"
+                    className="field flex-1 py-2 resize-none"
                   />
                   <button
                     onClick={handleAddNote}
                     disabled={adding || !noteBody.trim()}
-                    className="shrink-0 px-3 py-2 rounded-xl bg-primary-600 text-white text-sm font-semibold hover:bg-primary-700 transition disabled:opacity-50"
+                    className="btn btn-primary shrink-0"
                   >
                     {adding ? (
                       <FiLoader size={13} className="animate-spin" />

@@ -102,7 +102,7 @@ const ConfirmRestrictionModal = ({
   // sticky blurred navbar regardless of where it's opened from.
   return createPortal(
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-70 px-4">
-      <div className="bg-card rounded-2xl shadow-xl p-6 w-full max-w-sm max-h-[90dvh] overflow-y-auto">
+      <div className="bg-card rounded-2xl shadow-hard-lg p-6 w-full max-w-sm max-h-[90dvh] overflow-y-auto border-2 border-line">
         <div className="flex items-center gap-3 mb-3">
           <div
             className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
@@ -190,7 +190,7 @@ const ConfirmRestrictionModal = ({
                 value={customUntil}
                 min={customMin}
                 onChange={(e) => setCustomUntil(e.target.value)}
-                className="mt-2 w-full rounded-xl border border-stroke px-3 py-2 text-base text-ink outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-100 transition"
+                className="field mt-2 w-full py-2"
               />
             )}
           </div>
@@ -206,7 +206,7 @@ const ConfirmRestrictionModal = ({
                 : "Optional note for the moderation record"
             }
             rows={2}
-            className="w-full rounded-xl border border-stroke px-3 py-2 text-base text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-primary-300 resize-none mb-3"
+            className="field w-full py-2 resize-none mb-3"
           />
         )}
         {isBan && (
@@ -216,7 +216,7 @@ const ConfirmRestrictionModal = ({
               onChange={(e) => setReason(e.target.value.slice(0, 500))}
               placeholder="Reason for the ban"
               rows={2}
-              className="w-full rounded-xl border border-stroke px-3 py-2 text-base text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-red-200 resize-none mb-3"
+              className="field w-full py-2 resize-none mb-3"
             />
             <div className="flex items-start gap-2.5 rounded-xl border border-red-200 bg-red-50 px-3 py-2.5 mb-3">
               <FiAlertTriangle
@@ -235,7 +235,7 @@ const ConfirmRestrictionModal = ({
           <button
             onClick={onCancel}
             disabled={isSubmitting}
-            className="flex-1 px-4 py-2.5 rounded-xl border border-stroke text-base font-medium text-ink-sub hover:bg-surface disabled:opacity-50 disabled:cursor-not-allowed transition"
+            className="btn flex-1"
           >
             Cancel
           </button>

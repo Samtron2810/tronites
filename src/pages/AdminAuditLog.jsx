@@ -920,7 +920,7 @@ const AdminAuditLog = () => {
                   <button
                     onClick={() => fetchPage(page - 1)}
                     disabled={page <= 1 || isLoading}
-                    className="px-4 py-2.5 rounded-lg text-base font-medium border border-stroke disabled:opacity-40 hover:bg-surface transition"
+                    className="btn"
                   >
                     Prev
                   </button>
@@ -931,7 +931,7 @@ const AdminAuditLog = () => {
                   <button
                     onClick={() => fetchPage(page + 1)}
                     disabled={page >= totalPages || isLoading}
-                    className="px-4 py-2.5 rounded-lg text-base font-medium border border-stroke disabled:opacity-40 hover:bg-surface transition"
+                    className="btn"
                   >
                     Next
                   </button>
@@ -942,7 +942,7 @@ const AdminAuditLog = () => {
                   <button
                     onClick={() => fetchPage(page - 1)}
                     disabled={page <= 1 || isLoading}
-                    className="px-3 py-1.5 rounded-lg text-base border border-stroke disabled:opacity-40 hover:bg-surface transition"
+                    className="btn btn-sm"
                   >
                     Prev
                   </button>
@@ -972,7 +972,7 @@ const AdminAuditLog = () => {
                   <button
                     onClick={() => fetchPage(page + 1)}
                     disabled={page >= totalPages || isLoading}
-                    className="px-3 py-1.5 rounded-lg text-base border border-stroke disabled:opacity-40 hover:bg-surface transition"
+                    className="btn btn-sm"
                   >
                     Next
                   </button>

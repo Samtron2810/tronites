@@ -42,7 +42,7 @@ const AdminCancelPromotionModal = ({
     <ModalPortal>
     <div data-modal-layer className="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4" onClick={onClose}>
       <div
-        className="bg-card border border-stroke rounded-2xl w-full max-w-sm shadow-xl"
+        className="bg-card border-2 border-line rounded-2xl w-full max-w-sm shadow-hard-lg"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-stroke">
@@ -83,13 +83,13 @@ const AdminCancelPromotionModal = ({
         </div>
 
         <div className="px-5 pb-5 flex gap-2">
-          <button onClick={onClose} className="flex-1 py-2.5 rounded-xl border border-stroke text-sm font-semibold text-ink-sub hover:bg-surface transition">
+          <button onClick={onClose} className="btn flex-1">
             Back
           </button>
           <button
             onClick={handleConfirm}
             disabled={submitting}
-            className="flex-1 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-sm font-semibold transition disabled:opacity-50 flex items-center justify-center gap-2"
+            className="btn btn-danger flex-1"
           >
             {submitting
               ? <><FiLoader size={13} className="animate-spin" />Cancelling…</>

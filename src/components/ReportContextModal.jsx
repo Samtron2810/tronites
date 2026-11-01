@@ -237,7 +237,7 @@ const ReportContextModal = ({ report, onClose, onResolved }) => {
         onClick={onClose}
       />
 
-      <div className="relative bg-card sm:rounded-2xl shadow-xl w-full max-w-2xl flex flex-col sm:border border-stroke h-full sm:h-auto sm:max-h-[90dvh] max-sm:max-w-none max-sm:rounded-none max-sm:pt-[env(safe-area-inset-top)] max-sm:pb-[env(safe-area-inset-bottom)]">
+      <div className="relative bg-card sm:rounded-2xl shadow-hard-lg w-full max-w-2xl flex flex-col sm:border-2 border-line h-full sm:h-auto sm:max-h-[90dvh] max-sm:max-w-none max-sm:rounded-none max-sm:pt-[env(safe-area-inset-top)] max-sm:pb-[env(safe-area-inset-bottom)]">
         {/* Header */}
         <div className="flex items-start justify-between gap-3 px-5 py-4 border-b border-stroke shrink-0">
           <div className="min-w-0">
@@ -356,7 +356,7 @@ const ReportContextModal = ({ report, onClose, onResolved }) => {
               onChange={(e) => setNote(e.target.value.slice(0, 500))}
               placeholder="Optional note (visible only to moderators)"
               rows={2}
-              className="w-full rounded-xl border border-stroke px-3 py-2 text-base text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-primary-300 resize-none"
+              className="field w-full py-2 resize-none"
             />
             {confirmingRemove ? (
               <div className="space-y-2.5">
@@ -375,7 +375,7 @@ const ReportContextModal = ({ report, onClose, onResolved }) => {
                   <button
                     onClick={() => setConfirmingRemove(false)}
                     disabled={submitting}
-                    className="px-3.5 py-2 rounded-lg text-sm font-medium text-ink-sub border border-stroke hover:bg-surface transition disabled:opacity-50"
+                    className="btn"
                   >
                     Back
                   </button>
@@ -384,7 +384,7 @@ const ReportContextModal = ({ report, onClose, onResolved }) => {
                       submitResolve({ status: "actioned", removeContent: true })
                     }
                     disabled={submitting}
-                    className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-semibold text-white bg-red-500 hover:bg-red-600 transition disabled:opacity-60"
+                    className="btn btn-danger"
                   >
                     <FiTrash2 size={13} />
                     {submitting ? "..." : "Confirm & remove"}
@@ -396,14 +396,14 @@ const ReportContextModal = ({ report, onClose, onResolved }) => {
                 <button
                   onClick={() => submitResolve({ status: "dismissed" })}
                   disabled={submitting}
-                  className="px-3.5 py-2 rounded-lg text-sm font-semibold text-ink-sub border border-stroke hover:bg-surface transition disabled:opacity-50"
+                  className="btn"
                 >
                   Dismiss
                 </button>
                 <button
                   onClick={() => setConfirmingRemove(true)}
                   disabled={submitting}
-                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-semibold text-white bg-red-500 hover:bg-red-600 transition disabled:opacity-50"
+                  className="btn btn-danger"
                 >
                   <FiTrash2 size={13} /> Remove content…
                 </button>

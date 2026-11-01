@@ -207,7 +207,7 @@ const CreatePostModal = ({ closeModal, onSubmit, onSubmitVideo }) => {
   return (
     <ModalPortal>
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-stretch sm:items-center justify-center z-50 sm:px-4">
-      <div className="bg-card w-full max-w-lg sm:rounded-2xl shadow-xl overflow-hidden flex flex-col h-full sm:h-auto sm:max-h-[90dvh] max-sm:max-w-none max-sm:rounded-none max-sm:pt-[env(safe-area-inset-top)] max-sm:pb-[env(safe-area-inset-bottom)]">
+      <div className="bg-card w-full max-w-lg sm:rounded-2xl shadow-hard-lg overflow-hidden flex flex-col h-full sm:h-auto sm:max-h-[90dvh] max-sm:max-w-none max-sm:rounded-none max-sm:pt-[env(safe-area-inset-top)] max-sm:pb-[env(safe-area-inset-bottom)] sm:border-2 border-line">
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-stroke">
           <h2 className="text-lg font-semibold text-ink">Create Post</h2>
@@ -230,7 +230,7 @@ const CreatePostModal = ({ closeModal, onSubmit, onSubmitVideo }) => {
               maxLength={charLimit}
               rows={4}
               placeholder="What's happening?"
-              className="w-full border border-stroke rounded-xl p-4 text-base text-ink placeholder:text-ink-muted outline-none resize-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100 transition"
+              className="field w-full p-4 resize-none"
             />
             {mention.showSuggestions && (
               <MentionSuggestions
@@ -275,7 +275,7 @@ const CreatePostModal = ({ closeModal, onSubmit, onSubmitVideo }) => {
                 value={privacy}
                 onChange={(e) => setPrivacy(e.target.value)}
                 aria-label="Who can see this post"
-                className="bg-surface border border-stroke rounded-lg px-2.5 py-1.5 text-base text-ink outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100 transition cursor-pointer"
+                className="field py-1.5"
               >
                 {getPrivacyOptions(user).map(({ value, label }) => (
                   <option key={value} value={value}>
@@ -325,7 +325,7 @@ const CreatePostModal = ({ closeModal, onSubmit, onSubmitVideo }) => {
                     onClick={() => setAltEditIndex(altEditIndex === i ? null : i)}
                     className={`absolute bottom-2 left-2 text-[10px] font-semibold px-1.5 py-0.5 rounded-md transition z-10 ${
                       altTexts[i]
-                        ? "bg-primary-600 text-white"
+                        ? "bg-ink text-surface"
                         : "bg-black/50 text-white/80 hover:bg-black/70"
                     }`}
                     title="Add alt text for accessibility"
@@ -471,7 +471,7 @@ const CreatePostModal = ({ closeModal, onSubmit, onSubmitVideo }) => {
           <button
             onClick={handleSubmit}
             disabled={!text.trim() && images.length === 0 && !videoFile}
-            className="px-5 py-2 rounded-xl text-base font-semibold text-white bg-primary-600 hover:bg-primary-800 disabled:opacity-50 disabled:cursor-not-allowed transition shadow-sm"
+            className="btn btn-primary"
           >
             {scheduledFor ? "Schedule" : videoFile ? "Post video" : "Post"}
           </button>
@@ -490,7 +490,7 @@ const CreatePostModal = ({ closeModal, onSubmit, onSubmitVideo }) => {
                 value={scheduledFor}
                 min={minSchedulableDateTime()}
                 onChange={(e) => setScheduledFor(e.target.value)}
-                className="w-full text-sm bg-surface border border-stroke rounded-xl px-3 py-2 text-ink focus:outline-none focus:border-primary-600 transition"
+                className="field w-full py-2"
               />
             </div>
             {scheduledFor && (
