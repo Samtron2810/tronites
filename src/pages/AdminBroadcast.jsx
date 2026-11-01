@@ -65,7 +65,7 @@ const Chip = ({ active, onClick, children }) => (
 
 const Step = ({ n, title, sub, children }) => (
   <section className="card">
-    <header className="flex items-center gap-3 px-5 py-4 border-b border-stroke rounded-t-2xl">
+    <header className="flex items-center gap-3 px-5 py-4 border-b-2 border-line rounded-t-2xl">
       <span className="w-7 h-7 rounded-full bg-primary-100 text-primary-600 text-sm font-bold flex items-center justify-center shrink-0">
         {n}
       </span>
@@ -246,7 +246,7 @@ const HistoryTab = () => {
               <div className="flex items-start justify-between gap-3">
                 <p className="text-base font-semibold text-ink truncate">{c.subject}</p>
                 <span
-                  className={`shrink-0 px-2.5 py-0.5 rounded-full border text-[11px] font-semibold capitalize ${STATUS_STYLE[c.status] || STATUS_STYLE.cancelled}`}
+                  className={`shrink-0 px-2.5 py-0.5 rounded border font-mono text-[11px] font-medium uppercase tracking-wider ${STATUS_STYLE[c.status] || STATUS_STYLE.cancelled}`}
                 >
                   {c.status}
                 </span>
@@ -325,7 +325,7 @@ const HistoryTab = () => {
           <button
             disabled={page <= 1}
             onClick={() => setPage((p) => p - 1)}
-            className="px-4 py-2 rounded-xl border border-stroke text-sm font-medium text-ink disabled:opacity-40"
+            className="btn btn-sm"
           >
             Newer
           </button>
@@ -335,7 +335,7 @@ const HistoryTab = () => {
           <button
             disabled={page >= data.pages}
             onClick={() => setPage((p) => p + 1)}
-            className="px-4 py-2 rounded-xl border border-stroke text-sm font-medium text-ink disabled:opacity-40"
+            className="btn btn-sm"
           >
             Older
           </button>
@@ -567,7 +567,7 @@ const AdminBroadcast = () => {
 
       <div className="flex items-end justify-between gap-3 mb-5">
         <div>
-          <h1 className="text-2xl font-bold text-ink">Email broadcast</h1>
+          <h1 className="display-md">Email broadcast</h1>
           <p className="text-base text-ink-muted">Write once, send to the right people.</p>
         </div>
         <div className="flex bg-surface rounded-xl p-1 shrink-0">

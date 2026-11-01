@@ -393,7 +393,7 @@ const Person = ({ name, username, fallback = "—" }) => (
 
 const Pill = ({ className = "", children, ...rest }) => (
   <span
-    className={`inline-block rounded-full px-2.5 py-0.5 text-sm font-semibold ${className}`}
+    className={`inline-block rounded px-2.5 py-0.5 font-mono text-[11px] font-medium uppercase tracking-wider ${className}`}
     {...rest}
   >
     {children}
@@ -644,7 +644,7 @@ const AdminAuditLog = () => {
     return (
       <MainLayout>
         <div className="max-w-3xl mx-auto px-0 py-10 sm:py-16 text-center">
-          <h1 className="text-2xl font-bold text-ink mb-2">
+          <h1 className="display-md mb-2">
             No audit access
           </h1>
           <p className="text-ink-sub text-base">
@@ -750,7 +750,7 @@ const AdminAuditLog = () => {
                 <FaFilter className="text-xs" />
                 Filters
                 {activeFilterCount > 0 && (
-                  <span className="min-w-5 h-5 px-1.5 rounded-full bg-primary-600 text-white text-xs font-semibold inline-flex items-center justify-center">
+                  <span className="min-w-5 h-5 px-1.5 rounded bg-accent text-[#16140f] text-xs font-bold inline-flex items-center justify-center">
                     {activeFilterCount}
                   </span>
                 )}
@@ -1074,7 +1074,7 @@ const AdminAuditLog = () => {
                   <button
                     onClick={() => fetchLegacy(legacyOffset)}
                     disabled={isLegacyLoading}
-                    className="w-full sm:w-auto sm:mx-auto sm:block px-4 py-2.5 rounded-lg text-base font-medium text-primary-600 hover:bg-primary-50 transition disabled:opacity-50"
+                    className="btn flex w-full sm:w-auto sm:mx-auto"
                   >
                     {isLegacyLoading ? "Loading..." : "Load more"}
                   </button>
@@ -1128,17 +1128,17 @@ const AdminAuditLog = () => {
                       {gap.user.role || "user"}
                     </span>
                     {gap.user.banned && (
-                      <span className="text-sm font-semibold rounded-full px-2 py-0.5 bg-red-50 text-red-600">
+                      <span className="font-mono text-[11px] font-medium uppercase tracking-wider rounded px-2 py-0.5 bg-red-50 text-red-600">
                         banned
                       </span>
                     )}
                     {gap.user.suspendedUntil && (
-                      <span className="text-sm font-semibold rounded-full px-2 py-0.5 bg-amber-50 text-amber-700">
+                      <span className="font-mono text-[11px] font-medium uppercase tracking-wider rounded px-2 py-0.5 bg-amber-50 text-amber-700">
                         suspension ended {formatUntil(gap.user.suspendedUntil)}
                       </span>
                     )}
                     {gap.user.shadowRanked && (
-                      <span className="text-sm font-semibold rounded-full px-2 py-0.5 bg-amber-50 text-amber-700">
+                      <span className="font-mono text-[11px] font-medium uppercase tracking-wider rounded px-2 py-0.5 bg-amber-50 text-amber-700">
                         shadow-ranked
                       </span>
                     )}

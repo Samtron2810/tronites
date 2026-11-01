@@ -98,7 +98,7 @@ const AdminPromotePostModal = ({
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-stroke sticky top-0 bg-card z-10">
+        <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b-2 border-line sticky top-0 bg-card z-10">
           <div className="flex items-center gap-2">
             <span className="flex items-center justify-center w-8 h-8 rounded-xl bg-primary-50 text-primary-600">
               <FiShield size={16} />

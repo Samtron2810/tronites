@@ -34,7 +34,7 @@ const TIER_COLORS = {
 const StatusBadge = ({ status }) => {
   const { label, icon: Icon, cls } = STATUS_MAP[status] || STATUS_MAP.expired;
   return (
-    <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full border text-[11px] font-semibold ${cls}`}>
+    <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded border font-mono text-[11px] font-medium uppercase tracking-wider ${cls}`}>
       <Icon size={11} />{label}
     </span>
   );
@@ -101,12 +101,12 @@ const PromotionRow = ({ promo, onCancelClick, onExtend }) => {
         <div className="flex flex-col items-end gap-1 shrink-0">
           <StatusBadge status={promo.status} />
           {promo.promotionSource === "admin" ? (
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border text-primary-600 bg-primary-50 border-primary-200">
+            <span className="font-mono text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border text-primary-600 bg-primary-50 border-primary-200">
               {promo.promotedBy ? `By @${promo.promotedBy.username}` : "Boosted by Tronites"}
             </span>
           ) : (
             promo.promotionTier && (
-              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${tierCls}`}>
+              <span className={`font-mono text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border ${tierCls}`}>
                 {promo.promotionTier}
               </span>
             )
@@ -261,7 +261,7 @@ const AdminPromotions = () => {
             <FiArrowLeft size={18} />
           </button>
           <div>
-            <h1 className="text-xl font-bold text-ink leading-tight">Promotions</h1>
+            <h1 className="display-md">Promotions</h1>
             <p className="text-sm text-ink-muted">Manage every promoted post across the platform</p>
           </div>
         </div>

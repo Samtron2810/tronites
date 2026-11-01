@@ -235,7 +235,7 @@ const RoleRow = ({
   // md+ tools row, so it lives outside the cluster below.
   const roleTag = (
     <span
-      className={`text-sm font-semibold px-2 py-0.5 rounded-full ${ROLE_STYLES[target.role]}`}
+      className={`font-mono text-[11px] font-medium uppercase tracking-wider px-2 py-0.5 rounded ${ROLE_STYLES[target.role]}`}
     >
       {target.role}
     </span>
@@ -250,7 +250,7 @@ const RoleRow = ({
     <>
       {target.banned && (
         <span
-          className="text-sm font-semibold px-2 py-0.5 rounded-full bg-red-50 text-red-600"
+          className="font-mono text-[11px] font-medium uppercase tracking-wider px-2 py-0.5 rounded bg-red-50 text-red-600"
           title={target.restrictionReason || undefined}
         >
           banned
@@ -258,7 +258,7 @@ const RoleRow = ({
       )}
       {!target.banned && isSuspended && (
         <span
-          className="text-sm font-semibold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700"
+          className="font-mono text-[11px] font-medium uppercase tracking-wider px-2 py-0.5 rounded bg-amber-50 text-amber-700"
           title={
             `${target.restrictionReason || "No reason recorded"} — ends ` +
             new Date(target.suspendedUntil).toLocaleString()
@@ -271,7 +271,7 @@ const RoleRow = ({
           DTO; individual reasons stay between mods and the audit log. */}
       {target.strikesCount > 0 && (
         <span
-          className="text-sm font-semibold px-2 py-0.5 rounded-full bg-orange-50 text-orange-700"
+          className="font-mono text-[11px] font-medium uppercase tracking-wider px-2 py-0.5 rounded bg-orange-50 text-orange-700"
           title={`${target.strikesCount} formal warning${target.strikesCount === 1 ? "" : "s"} on record`}
         >
           {target.strikesCount} strike{target.strikesCount === 1 ? "" : "s"}
@@ -280,7 +280,7 @@ const RoleRow = ({
       {/* Feature 9 — shadow-rank indicator */}
       {target.shadowRanked && (
         <span
-          className="flex items-center gap-1 text-sm font-semibold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700"
+          className="flex items-center gap-1 font-mono text-[11px] font-medium uppercase tracking-wider px-2 py-0.5 rounded bg-amber-50 text-amber-700"
           title={target.shadowRankedReason || "Algorithmic reach throttled"}
         >
           <FiEyeOff size={11} />
@@ -349,7 +349,7 @@ const RoleRow = ({
             defaultAvatar
           }
           alt={target.name}
-          className="w-10 h-10 rounded-full object-cover ring-2 ring-primary-100 shrink-0"
+          className="w-10 h-10 rounded-lg object-cover border-2 border-line shrink-0"
         />
         <div className="min-w-0">
           <p className="text-base font-semibold text-ink truncate flex items-center gap-1.5">
@@ -882,7 +882,7 @@ Enter a reason (optional):`,
       )}
       <div className="flex items-center gap-2 mb-1">
         <FiShield className="text-primary-600" size={18} />
-        <h1 className="text-2xl font-bold text-ink">Manage roles</h1>
+        <h1 className="display-md">Manage roles</h1>
       </div>
       <p className="text-base text-ink-muted mb-5">
         Grant or revoke moderator and admin access.

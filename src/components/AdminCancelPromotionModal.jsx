@@ -45,7 +45,7 @@ const AdminCancelPromotionModal = ({
         className="bg-card border-2 border-line rounded-2xl w-full max-w-sm shadow-hard-lg"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-stroke">
+        <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b-2 border-line">
           <div className="flex items-center gap-2">
             <span className="flex items-center justify-center w-8 h-8 rounded-xl bg-red-50 text-red-600">
               <FiAlertTriangle size={16} />

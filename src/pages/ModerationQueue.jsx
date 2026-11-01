@@ -120,11 +120,11 @@ const ReportCard = ({
             {report.priority === "high" && (
               // Phase 6 — set by the flagRepeatOffenders job when this
               // owner crosses the repeat-offender threshold.
-              <span className="text-sm font-semibold px-2 py-0.5 rounded-full bg-red-500 text-white">
+              <span className="font-mono text-[11px] font-medium uppercase tracking-wider px-2 py-0.5 rounded bg-red-500 text-white">
                 HIGH PRIORITY
               </span>
             )}
-            <span className="text-sm font-semibold px-2 py-0.5 rounded-full bg-primary-50 text-primary-700">
+            <span className="font-mono text-[11px] font-medium uppercase tracking-wider px-2 py-0.5 rounded bg-primary-50 text-primary-700">
               {TARGET_TYPE_LABELS[report.targetType]}
             </span>
             <span className="text-sm text-ink-muted">
@@ -132,7 +132,7 @@ const ReportCard = ({
             </span>
             {report.status !== "open" && (
               <span
-                className={`text-sm font-semibold px-2 py-0.5 rounded-full ${
+                className={`font-mono text-[11px] font-medium uppercase tracking-wider px-2 py-0.5 rounded ${
                   report.status === "actioned"
                     ? "bg-red-50 text-red-600"
                     : "bg-gray-100 text-gray-500"
@@ -142,7 +142,7 @@ const ReportCard = ({
               </span>
             )}
             {report.contentRemoved && (
-              <span className="text-sm font-semibold px-2 py-0.5 rounded-full bg-red-50 text-red-600">
+              <span className="font-mono text-[11px] font-medium uppercase tracking-wider px-2 py-0.5 rounded bg-red-50 text-red-600">
                 content removed
               </span>
             )}
@@ -174,7 +174,7 @@ const ReportCard = ({
                 .map((signal) => (
                   <span
                     key={signal}
-                    className="text-sm font-medium px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200"
+                    className="font-mono text-[11px] font-medium uppercase tracking-wider px-2 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200"
                   >
                     {SIGNAL_LABELS[signal] || signal}
                   </span>
@@ -183,7 +183,7 @@ const ReportCard = ({
                 <span
                   key={flag.category}
                   title="AI classifier confidence score"
-                  className="text-sm font-medium px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200"
+                  className="font-mono text-[11px] font-medium uppercase tracking-wider px-2 py-0.5 rounded bg-purple-50 text-purple-700 border border-purple-200"
                 >
                   {flag.category} · {Math.round(flag.score * 100)}%
                 </span>
@@ -348,7 +348,7 @@ const ReportCard = ({
         <div className="mt-2 flex flex-wrap items-center gap-2">
           {owner?.banned ? (
             <>
-              <span className="text-sm font-semibold px-2 py-0.5 rounded-full bg-red-50 text-red-600">
+              <span className="font-mono text-[11px] font-medium uppercase tracking-wider px-2 py-0.5 rounded bg-red-50 text-red-600">
                 banned
               </span>
               <button
@@ -362,7 +362,7 @@ const ReportCard = ({
             <>
               {ownerSuspended && (
                 <span
-                  className="text-sm font-semibold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700"
+                  className="font-mono text-[11px] font-medium uppercase tracking-wider px-2 py-0.5 rounded bg-amber-50 text-amber-700"
                   title={owner.restrictionReason || undefined}
                 >
                   suspended until{" "}
@@ -429,19 +429,19 @@ const VerificationRequestCard = ({ request, onResolve }) => {
   };
 
   return (
-    <div className="rounded-2xl p-4 border bg-card border-stroke">
+    <div className="card p-4">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <span
-              className="text-sm font-semibold px-2 py-0.5 rounded-full"
+              className="font-mono text-[11px] font-medium uppercase tracking-wider px-2 py-0.5 rounded"
               style={{ backgroundColor: `${meta?.color}1a`, color: meta?.color }}
             >
               {meta?.label || request.type}
             </span>
             {request.status !== "pending" && (
               <span
-                className={`text-sm font-semibold px-2 py-0.5 rounded-full ${
+                className={`font-mono text-[11px] font-medium uppercase tracking-wider px-2 py-0.5 rounded ${
                   request.status === "approved"
                     ? "bg-green-50 text-green-600"
                     : "bg-gray-100 text-gray-500"
@@ -576,16 +576,16 @@ const AppealCard = ({ appeal, onResolve }) => {
   };
 
   return (
-    <div className="rounded-2xl p-4 border bg-card border-stroke">
+    <div className="card p-4">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-sm font-semibold px-2 py-0.5 rounded-full bg-primary-50 text-primary-700">
+            <span className="font-mono text-[11px] font-medium uppercase tracking-wider px-2 py-0.5 rounded bg-primary-50 text-primary-700">
               {appeal.restrictionType === "ban" ? "Ban appeal" : "Suspension appeal"}
             </span>
             {appeal.status !== "open" && (
               <span
-                className={`text-sm font-semibold px-2 py-0.5 rounded-full ${
+                className={`font-mono text-[11px] font-medium uppercase tracking-wider px-2 py-0.5 rounded ${
                   appeal.status === "granted"
                     ? "bg-green-50 text-green-600"
                     : "bg-gray-100 text-gray-500"
@@ -984,7 +984,7 @@ const ModerationQueue = () => {
           onCancel={() => setPendingUserRestriction(null)}
         />
       )}
-      <h1 className="text-2xl font-bold text-ink mb-1">Moderation queue</h1>
+      <h1 className="display-md mb-1">Moderation queue</h1>
       <p className="text-base text-ink-muted mb-5">
         {queueTab === "reports"
           ? "Reports from the community, newest last."
