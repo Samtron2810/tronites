@@ -409,10 +409,10 @@ const ChatModal = ({
 
       <div
         ref={panelRef}
-        className="relative bg-card sm:rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden overflow-x-hidden flex flex-col sm:border border-stroke h-full sm:h-auto sm:max-h-[90dvh] max-sm:max-w-none max-sm:rounded-none max-sm:pt-[env(safe-area-inset-top)] max-sm:pb-[env(safe-area-inset-bottom)]"
+        className="relative bg-card sm:rounded-2xl sm:shadow-hard-lg w-full max-w-2xl overflow-hidden overflow-x-hidden flex flex-col sm:border-2 border-line h-full sm:h-auto sm:max-h-[90dvh] max-sm:max-w-none max-sm:rounded-none max-sm:pt-[env(safe-area-inset-top)] max-sm:pb-[env(safe-area-inset-bottom)]"
       >
         {/* Header */}
-        <div className="flex items-center gap-3 px-4 py-3 border-b border-stroke">
+        <div className="flex items-center gap-3 px-4 py-3 border-b-2 border-line">
           <button
             onClick={onClose}
             disabled={isSending}
@@ -429,7 +429,7 @@ const ChatModal = ({
                 ) || defaultAvatar
               }
               alt={activeUser?.name}
-              className="w-9 h-9 rounded-full object-cover ring-2 ring-primary-100"
+              className="w-9 h-9 rounded-lg object-cover border-2 border-line"
             />
             <span
               className={`absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border border-white ${activeIsOnline ? "bg-primary-400" : "bg-gray-300"}`}
@@ -643,7 +643,7 @@ const ChatModal = ({
                 <Fragment key={message._id}>
                   {showDayDivider && (
                     <div className="flex justify-center py-1">
-                      <span className="text-[10px] font-medium text-ink-muted bg-surface border border-stroke rounded-full px-3 py-0.5">
+                      <span className="rounded border-[1.5px] border-line bg-card px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-ink-muted">
                         {formatDayLabel(message.createdAt)}
                       </span>
                     </div>
@@ -803,8 +803,8 @@ const ChatModal = ({
                                 {...longPressHandlers(message._id)}
                                 className={`px-4 py-2.5 rounded-2xl text-base whitespace-pre-wrap select-none ${
                                   isMine
-                                    ? "bg-primary-600 text-white self-end rounded-br-sm"
-                                    : "bg-card text-ink self-start rounded-bl-sm border border-stroke"
+                                    ? "bg-primary-600 text-white self-end rounded-br-sm border-2 border-line"
+                                    : "bg-sand text-ink self-start rounded-bl-sm border-2 border-line"
                                 }`}
                               >
                                 {/* Feature 5 — reply preview inside bubble */}
@@ -812,7 +812,7 @@ const ChatModal = ({
                                   <div className={`mb-2 px-2.5 py-1.5 rounded-lg border-l-2 text-left ${
                                     isMine
                                       ? "border-white/60 bg-white/10"
-                                      : "border-primary-400 bg-primary-50"
+                                      : "border-primary-600 bg-card/60"
                                   }`}>
                                     <p className={`text-[10px] font-semibold mb-0.5 ${isMine ? "text-white/70" : "text-primary-600"}`}>
                                       {message.replyTo.sender?._id === user._id ? "You" : activeUser?.name}
@@ -932,7 +932,7 @@ const ChatModal = ({
             })}
             {otherUserTyping && (
               <div className="flex justify-start">
-                <div className="px-4 py-2.5 rounded-2xl rounded-bl-sm bg-card border border-stroke self-start">
+                <div className="px-4 py-2.5 rounded-2xl rounded-bl-sm bg-sand border-2 border-line self-start">
                   <span className="flex gap-1">
                     <span className="w-1.5 h-1.5 rounded-full bg-ink-muted animate-bounce [animation-delay:-0.3s]" />
                     <span className="w-1.5 h-1.5 rounded-full bg-ink-muted animate-bounce [animation-delay:-0.15s]" />
@@ -949,11 +949,11 @@ const ChatModal = ({
               type="button"
               onClick={onScrollToBottom}
               aria-label="Scroll to latest messages"
-              className="absolute bottom-4 right-4 flex items-center gap-1.5 bg-card border border-stroke shadow-lg rounded-full pl-3 pr-3.5 py-2 text-sm font-medium text-ink hover:bg-surface transition z-30"
+              className="absolute bottom-4 right-4 flex items-center gap-1.5 bg-card border-2 border-line shadow-hard-sm rounded-full pl-3 pr-3.5 py-2 text-sm font-medium text-ink hover:bg-surface transition z-30"
             >
               <FaChevronDown size={12} className="text-primary-600" />
               {newMessagesBelowCount > 0 && (
-                <span className="min-w-4.5 px-1 h-4.5 flex items-center justify-center rounded-full bg-primary-600 text-white text-[11px] leading-none">
+                <span className="min-w-4.5 px-1 h-4.5 flex items-center justify-center rounded bg-accent text-[#16140f] font-bold text-[11px] leading-none">
                   {newMessagesBelowCount > 99 ? "99+" : newMessagesBelowCount}
                 </span>
               )}
@@ -962,7 +962,7 @@ const ChatModal = ({
         </div>
 
         {/* Input */}
-        <div className="border-t border-stroke px-4 py-3 bg-card">
+        <div className="border-t-2 border-line px-4 py-3 bg-card">
           {requestInfo?.status === "pending" && !requestInfo.isInitiator && (
             <div>
               <p className="text-sm text-ink-muted mb-2 text-center">
@@ -972,14 +972,14 @@ const ChatModal = ({
                 <button
                   onClick={onAcceptRequest}
                   disabled={requestActionPending}
-                  className="flex-1 py-2.5 rounded-xl text-base font-semibold text-white bg-primary-600 hover:bg-primary-800 disabled:opacity-50 transition"
+                  className="btn btn-primary flex-1"
                 >
                   {requestActionPending ? "..." : "Accept"}
                 </button>
                 <button
                   onClick={onDeclineRequest}
                   disabled={requestActionPending}
-                  className="flex-1 py-2.5 rounded-xl text-base font-semibold text-ink-sub border border-stroke hover:bg-surface disabled:opacity-50 transition"
+                  className="btn flex-1"
                 >
                   Decline
                 </button>
@@ -1113,7 +1113,7 @@ const ChatModal = ({
               )}
               <div className="flex items-center gap-2">
                 {isRecordingVoice ? (
-                  <div className="flex-1 flex items-center gap-3 border border-stroke rounded-xl px-4 py-2.5 bg-surface">
+                  <div className="flex-1 flex items-center gap-3 border-2 border-line rounded-lg px-4 py-2.5 bg-surface">
                     <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse shrink-0" />
                     <span className="text-base text-ink font-medium tabular-nums">
                       {Math.floor(recordingElapsed / 60)}:
@@ -1160,13 +1160,13 @@ const ChatModal = ({
                         }
                       }}
                       placeholder="Write a message..."
-                      className="flex-1 border border-stroke rounded-xl px-4 py-2.5 text-base text-ink placeholder:text-ink-muted outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100 transition"
+                      className="field flex-1 py-2.5"
                     />
                     <button
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
                       disabled={!!videoFile}
-                      className="p-2.5 rounded-xl border border-stroke text-ink-muted hover:text-primary-600 hover:border-primary-400 transition disabled:opacity-40 disabled:cursor-not-allowed"
+                      className="p-2.5 rounded-lg border-2 border-line text-ink transition hover:bg-sand disabled:opacity-40 disabled:cursor-not-allowed"
                       title="Attach image"
                     >
                       <FiImage size={16} />
@@ -1183,7 +1183,7 @@ const ChatModal = ({
                       type="button"
                       onClick={() => videoInputRef.current?.click()}
                       disabled={!!videoFile || imagePreviews.length > 0}
-                      className="p-2.5 rounded-xl border border-stroke text-ink-muted hover:text-primary-600 hover:border-primary-400 transition disabled:opacity-40 disabled:cursor-not-allowed"
+                      className="p-2.5 rounded-lg border-2 border-line text-ink transition hover:bg-sand disabled:opacity-40 disabled:cursor-not-allowed"
                       title="Attach video"
                     >
                       <FiVideo size={16} />
@@ -1205,7 +1205,7 @@ const ChatModal = ({
                       <button
                         type="button"
                         onClick={onStartRecording}
-                        className="p-2.5 rounded-xl border border-stroke text-ink-muted hover:text-primary-600 hover:border-primary-400 transition"
+                        className="p-2.5 rounded-lg border-2 border-line text-ink transition hover:bg-sand"
                         title="Record voice note"
                       >
                         <FiMic size={16} />
@@ -1220,7 +1220,7 @@ const ChatModal = ({
                             !videoFile) ||
                           isSending
                         }
-                        className="px-4 py-2.5 rounded-xl text-base font-semibold text-white bg-primary-600 hover:bg-primary-800 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                        className="btn btn-primary"
                       >
                         {isSending ? "..." : "Send"}
                       </button>

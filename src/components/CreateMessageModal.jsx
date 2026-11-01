@@ -46,8 +46,8 @@ const ChatModal = ({
     <div className="fixed inset-0 z-50 flex items-stretch sm:items-center justify-center sm:p-4">
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
 
-      <div className="relative bg-card sm:rounded-2xl shadow-lg w-full max-w-3xl overflow-hidden overflow-x-hidden flex flex-col h-full sm:h-auto sm:max-h-[90dvh] max-sm:max-w-none max-sm:rounded-none max-sm:pt-[env(safe-area-inset-top)] max-sm:pb-[env(safe-area-inset-bottom)]">
-        <div className="flex items-center gap-3 px-4 py-3 border-b">
+      <div className="relative bg-card sm:rounded-2xl sm:border-2 sm:border-line sm:shadow-hard-lg w-full max-w-3xl overflow-hidden overflow-x-hidden flex flex-col h-full sm:h-auto sm:max-h-[90dvh] max-sm:max-w-none max-sm:rounded-none max-sm:pt-[env(safe-area-inset-top)] max-sm:pb-[env(safe-area-inset-bottom)]">
+        <div className="flex items-center gap-3 px-4 py-3 border-b-2 border-line">
           <button
             onClick={onClose}
             className="text-gray-600 hover:text-gray-900 p-2"
@@ -64,7 +64,7 @@ const ChatModal = ({
             <img
               src={resizedImageUrl(activeUser.profilePic, IMAGE_SIZES.avatarSmall) || defaultAvatar}
               alt={activeUser.name}
-              className="w-10 h-10 rounded-full object-cover"
+              className="w-10 h-10 rounded-lg border-2 border-line object-cover"
             />
           )}
         </div>
@@ -109,7 +109,7 @@ const ChatModal = ({
                   )}
                   {message.text && (
                     <div
-                      className={`w-fit px-4 py-3 rounded-2xl whitespace-pre-wrap ${isMine ? "bg-primary-600 text-white self-end" : "bg-gray-100 text-gray-900 self-start"}`}
+                      className={`w-fit px-4 py-3 rounded-2xl whitespace-pre-wrap ${isMine ? "bg-primary-600 text-white self-end border-2 border-line" : "bg-sand text-ink self-start border-2 border-line"}`}
                     >
                       {message.text}
                     </div>
@@ -151,7 +151,7 @@ const ChatModal = ({
           <div ref={scrollRef} />
         </div>
 
-        <div className="border-t px-4 py-3">
+        <div className="border-t-2 border-line px-4 py-3">
           {imagePreview && (
             <div className="mb-3 relative">
               <img
@@ -179,7 +179,7 @@ const ChatModal = ({
                 }
               }}
               placeholder="Write a message..."
-              className="flex-1 border rounded-2xl px-4 py-3 outline-none"
+              className="field flex-1"
             />
 
             <button
@@ -202,7 +202,7 @@ const ChatModal = ({
               type="button"
               onClick={handleSendMessage}
               disabled={(!messageText.trim() && !imagePreview) || isSending}
-              className={`px-5 py-3 rounded-2xl font-semibold text-white transition ${(!messageText.trim() && !imagePreview) || isSending ? "bg-primary-200 cursor-not-allowed" : "bg-primary-600 hover:bg-primary-800"}`}
+              className={`px-5 py-3 rounded-lg border-2 border-line font-semibold text-white transition ${(!messageText.trim() && !imagePreview) || isSending ? "bg-primary-200 cursor-not-allowed" : "bg-primary-600 hover:bg-primary-800"}`}
             >
               {isSending ? "Sending..." : "Send"}
             </button>

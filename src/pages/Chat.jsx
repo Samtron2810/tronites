@@ -1390,22 +1390,22 @@ const Chat = () => {
 
   return (
     <MainLayout>
-      <div className="bg-card border border-stroke rounded-2xl overflow-hidden">
+      <div className="card card-pop overflow-hidden">
         {/* Header */}
-        <div className="px-5 py-4 border-b border-stroke flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-ink">Messages</h2>
-          <span className="text-sm text-ink-muted">
+        <div className="px-5 py-4 border-b-2 border-line flex items-center justify-between">
+          <h2 className="font-display text-2xl font-extrabold tracking-[-0.03em] text-ink">Messages</h2>
+          <span className="font-mono text-[12px] uppercase tracking-wider text-ink-muted">
             {totalConversationsCount} chats
           </span>
         </div>
 
         {/* Tabs */}
-        <div className="flex border-b border-stroke">
+        <div className="flex border-b-2 border-line">
           <button
             onClick={() => setActiveTab("messages")}
-            className={`flex-1 py-3 text-base font-medium transition ${
+            className={`flex-1 py-3 font-mono text-[13px] uppercase tracking-wider transition ${
               activeTab === "messages"
-                ? "text-primary-600 border-b-2 border-primary-600"
+                ? "bg-ink text-surface"
                 : "text-ink-muted hover:text-ink"
             }`}
           >
@@ -1413,15 +1413,15 @@ const Chat = () => {
           </button>
           <button
             onClick={() => setActiveTab("requests")}
-            className={`flex-1 py-3 text-base font-medium transition relative ${
+            className={`flex-1 py-3 font-mono text-[13px] uppercase tracking-wider transition relative ${
               activeTab === "requests"
-                ? "text-primary-600 border-b-2 border-primary-600"
+                ? "bg-ink text-surface"
                 : "text-ink-muted hover:text-ink"
             }`}
           >
             Requests
             {requests.length > 0 && (
-              <span className="ml-1.5 inline-flex items-center justify-center min-w-4 h-4 rounded-full bg-primary-600 text-white text-[10px] font-bold px-1">
+              <span className="ml-1.5 inline-flex items-center justify-center min-w-4 h-4 rounded bg-accent text-[#16140f] text-[10px] font-bold px-1">
                 {requests.length}
               </span>
             )}
@@ -1453,7 +1453,7 @@ const Chat = () => {
                     key={conv.conversationId}
                     type="button"
                     onClick={() => loadConversation(conv.otherUser)}
-                    className={`w-full text-left px-5 py-4 transition ${isSelected ? "bg-primary-50" : "hover:bg-surface"}`}
+                    className={`w-full text-left px-5 py-4 transition ${isSelected ? "bg-sand" : "hover:bg-surface"}`}
                   >
                     <div className="flex items-center gap-3">
                       <div className="relative shrink-0">
@@ -1465,10 +1465,10 @@ const Chat = () => {
                             ) || defaultAvatar
                           }
                           alt={conv.otherUser.name}
-                          className="w-11 h-11 rounded-full object-cover ring-2 ring-primary-100"
+                          className="w-11 h-11 rounded-lg object-cover border-2 border-line"
                         />
                         <span
-                          className={`absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-white ${isOnline ? "bg-primary-600" : "bg-gray-300"}`}
+                          className={`absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-card ${isOnline ? "bg-primary-600" : "bg-gray-300"}`}
                         />
                       </div>
                       <div className="flex-1 min-w-0">
@@ -1487,7 +1487,7 @@ const Chat = () => {
                             )}
                           </p>
                           {conv.unreadCount > 0 && (
-                            <span className="shrink-0 min-w-5 h-5 rounded-full bg-primary-600 text-white text-sm font-bold flex items-center justify-center px-1">
+                            <span className="shrink-0 min-w-5 h-5 rounded bg-accent text-[#16140f] text-sm font-bold flex items-center justify-center px-1">
                               {conv.unreadCount}
                             </span>
                           )}
@@ -1543,7 +1543,7 @@ const Chat = () => {
                         ) || defaultAvatar
                       }
                       alt={req.otherUser.name}
-                      className="w-11 h-11 rounded-full object-cover ring-2 ring-primary-100 shrink-0"
+                      className="w-11 h-11 rounded-lg object-cover border-2 border-line shrink-0"
                     />
                     <div className="flex-1 min-w-0">
                       <p className="text-base font-semibold text-ink truncate">
@@ -1575,7 +1575,7 @@ const Chat = () => {
                     <button
                       onClick={() => handleAcceptRequest(req)}
                       disabled={requestActionId === req.conversationId}
-                      className="flex-1 py-2 rounded-lg text-sm font-semibold text-white bg-primary-600 hover:bg-primary-800 disabled:opacity-50 transition"
+                      className="btn btn-primary btn-sm flex-1"
                     >
                       {requestActionId === req.conversationId
                         ? "..."
@@ -1584,7 +1584,7 @@ const Chat = () => {
                     <button
                       onClick={() => handleDeclineRequest(req)}
                       disabled={requestActionId === req.conversationId}
-                      className="flex-1 py-2 rounded-lg text-sm font-semibold text-ink-sub border border-stroke hover:bg-surface disabled:opacity-50 transition"
+                      className="btn btn-sm flex-1"
                     >
                       Decline
                     </button>

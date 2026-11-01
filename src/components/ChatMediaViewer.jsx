@@ -95,11 +95,11 @@ const ChatMediaViewer = ({
       onClick={onClose}
     >
       <div
-        className="bg-card w-full sm:max-w-3xl sm:rounded-2xl h-dvh flex flex-col max-sm:pt-[env(safe-area-inset-top)] max-sm:pb-[env(safe-area-inset-bottom)]"
+        className="bg-card w-full sm:max-w-3xl sm:rounded-2xl sm:border-2 sm:border-line h-dvh flex flex-col max-sm:pt-[env(safe-area-inset-top)] max-sm:pb-[env(safe-area-inset-bottom)]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-stroke sm:rounded-t-2xl">
+        <div className="flex items-center justify-between px-5 py-4 border-b-2 border-line sm:rounded-t-2xl">
           <p className="text-base font-semibold text-ink">
             {isVideo ? "Video" : images.length > 1 ? "Photos" : "Photo"}
           </p>
