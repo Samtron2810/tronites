@@ -38,6 +38,8 @@ const ACTION_OPTIONS = [
   { value: "moderator_note_deleted", label: "Moderator notes deleted" },
   { value: "email_broadcast_created", label: "Email broadcasts sent" },
   { value: "email_broadcast_cancelled", label: "Email broadcasts cancelled" },
+  { value: "creator_payout_approved", label: "Payouts approved" },
+  { value: "creator_payout_rejected", label: "Payouts rejected" },
 ];
 
 const TARGET_OPTIONS = [
@@ -61,6 +63,8 @@ const ACTION_STYLES = {
   user_role_changed: "bg-primary-100 text-primary-700",
   user_warned: "bg-orange-100 text-orange-700",
   report_resolved: "bg-blue-100 text-blue-600",
+  creator_payout_approved: "bg-emerald-100 text-emerald-700",
+  creator_payout_rejected: "bg-amber-100 text-amber-700",
   post_admin_promoted: "bg-primary-100 text-primary-700",
   post_promotion_extended: "bg-primary-100 text-primary-700",
   post_promotion_cancelled: "bg-amber-100 text-amber-700",
@@ -290,6 +294,20 @@ const DetailCell = ({ log }) => {
           {d.previousSource && (
             <span className="text-ink-muted"> · was {d.previousSource}</span>
           )}
+        </span>
+      );
+    case "creator_payout_approved":
+      return (
+        <span>
+          <span className="font-medium text-emerald-700">₦{Number(d.amountNgn || 0).toLocaleString()} sent</span>
+          {d.transferCode && <span className="text-ink-muted"> · {d.transferCode}</span>}
+        </span>
+      );
+    case "creator_payout_rejected":
+      return (
+        <span>
+          ₦{Number(d.amountNgn || 0).toLocaleString()}
+          {d.reason && <span className="text-ink-muted"> · {d.reason}</span>}
         </span>
       );
     case "email_broadcast_created":

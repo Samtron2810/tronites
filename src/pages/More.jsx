@@ -18,6 +18,7 @@ import {
   FaWallet,
   FaIdCard,
   FaBolt,
+  FaMoneyBillWave,
   FaUserShield,
   FaClipboardList,
   FaEnvelopeOpenText,
@@ -247,6 +248,14 @@ const More = () => {
           label: "Promotions",
           description: "Manage every promoted post across the platform.",
           href: "/admin/promotions",
+        }]
+      : []),
+    ...(user?.role === "admin"
+      ? [{
+          icon: FaMoneyBillWave,
+          label: "Creator payouts",
+          description: "Review and send creator withdrawal requests.",
+          href: "/admin/payouts",
         }]
       : []),
     ...(user?.role === "admin"
