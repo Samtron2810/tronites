@@ -34,6 +34,7 @@ const PublicPostView = () => {
     if (initial) return;
 
     let cancelled = false;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reset when the id changes; skipped above when SSR data was consumed
     setState({ loading: true, error: null, data: null });
 
     (async () => {
@@ -56,6 +57,7 @@ const PublicPostView = () => {
     return () => {
       cancelled = true;
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- `initial` is first-render-only by design (useSsrInitialData); adding it would re-fetch on the next render
   }, [id]);
 
   const promptLogin = useCallback(() => navigate("/login"), [navigate]);

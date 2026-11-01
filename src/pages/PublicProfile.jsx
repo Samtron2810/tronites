@@ -58,6 +58,7 @@ const PublicProfile = () => {
     if (initial) return;
 
     let cancelled = false;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reset when the username changes; skipped above when SSR data was consumed
     setState({ loading: true, error: null, data: null });
     setPosts([]);
     setPage(1);
@@ -85,6 +86,7 @@ const PublicProfile = () => {
     return () => {
       cancelled = true;
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- `initial` is first-render-only by design (useSsrInitialData); adding it would re-fetch on the next render
   }, [username]);
 
   const loadMore = useCallback(async () => {

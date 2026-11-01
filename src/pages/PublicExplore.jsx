@@ -3,14 +3,12 @@ import { useNavigate } from "react-router-dom";
 import MainLayout from "../layouts/MainLayout";
 import PublicPostCard from "../components/PublicPostCard";
 import SeoHead from "../components/SeoHead";
-import { useAuth } from "../context/useAuth";
 import api from "../services/api";
 import { FiCompass, FiLoader } from "react-icons/fi";
 import { useSsrInitialData } from "../hooks/useSsrInitialData";
 
 const PublicExplore = () => {
   const navigate = useNavigate();
-  const { user: viewer } = useAuth();
 
   // See PublicProfile.jsx's comment on useSsrInitialData for the full
   // server/client handoff explanation.
@@ -46,6 +44,7 @@ const PublicExplore = () => {
     return () => {
       cancelled = true;
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- `initial` is first-render-only by design (useSsrInitialData); adding it would re-fetch on the next render
   }, []);
 
   const loadMore = useCallback(async () => {

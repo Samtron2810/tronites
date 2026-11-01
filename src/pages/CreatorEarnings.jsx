@@ -65,9 +65,9 @@ const BankForm = ({ existing, onSaved }) => {
   const [banksLoading, setBanksLoading] = useState(true);
   const [bankCode, setBankCode] = useState(existing?.bankCode || "");
   const [accountNumber, setAccountNumber] = useState("");
-  const [resolving, setResolving] = useState(false);
-  const [resolvedName, setResolvedName] = useState("");
-  const [resolveError, setResolveError] = useState("");
+  // Result of the last account lookup, tagged with the bank+number it was for
+  // so a stale result is ignored as soon as either input changes.
+  const [lookup, setLookup] = useState({ key: null, name: "", error: "" });
   const [saving, setSaving] = useState(false);
   // With a saved account the form stays closed until "Change" is clicked.
   const hasSaved = !!existing?.accountNumberLast4;
@@ -85,23 +85,37 @@ const BankForm = ({ existing, onSaved }) => {
   }, [open]);
 
   // Look the account up as soon as a bank and 10 digits are present.
-  useEffect(() => {
-    setResolvedName("");
-    setResolveError("");
-    if (!bankCode || !/^\d{10}$/.test(accountNumber)) return;
+  const lookupKey =
+    bankCode && /^\d{10}$/.test(accountNumber) ? `${bankCode}:${accountNumber}` : null;
 
+  useEffect(() => {
+    if (!lookupKey) return;
+    const [code, number] = lookupKey.split(":");
     let cancelled = false;
-    setResolving(true);
     api
-      .post("/creator-monetization/bank-account/resolve", { accountNumber, bankCode })
-      .then((r) => !cancelled && setResolvedName(r.data?.accountName || ""))
-      .catch((e) =>
-        !cancelled &&
-        setResolveError(e.response?.data?.message || "Could not verify this account."),
-      )
-      .finally(() => !cancelled && setResolving(false));
+      .post("/creator-monetization/bank-account/resolve", {
+        accountNumber: number,
+        bankCode: code,
+      })
+      .then((r) => {
+        if (!cancelled)
+          setLookup({ key: lookupKey, name: r.data?.accountName || "", error: "" });
+      })
+      .catch((e) => {
+        if (!cancelled)
+          setLookup({
+            key: lookupKey,
+            name: "",
+            error: e.response?.data?.message || "Could not verify this account.",
+          });
+      });
     return () => { cancelled = true; };
-  }, [bankCode, accountNumber]);
+  }, [lookupKey]);
+
+  const settled = lookup.key === lookupKey;
+  const resolving = Boolean(lookupKey) && !settled;
+  const resolvedName = settled ? lookup.name : "";
+  const resolveError = settled ? lookup.error : "";
 
   const handleSave = async () => {
     if (!resolvedName) return;

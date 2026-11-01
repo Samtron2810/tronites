@@ -25,7 +25,12 @@ export const SsrDataContext = createContext(null);
 export const useSsrInitialData = () => {
   const context = useContext(SsrDataContext);
   const consumedRef = useRef(false);
+  // The ref read/write during render is the point of this hook: the payload
+  // must be handed out on the first render only (see the comment above), and
+  // a state-based version would keep returning it on later renders.
+  // eslint-disable-next-line react-hooks/refs -- first-render-only contract
   if (consumedRef.current) return null;
+  // eslint-disable-next-line react-hooks/refs -- first-render-only contract
   consumedRef.current = true;
   return context;
 };

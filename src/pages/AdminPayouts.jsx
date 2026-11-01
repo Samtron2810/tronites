@@ -242,7 +242,7 @@ const AdminPayouts = () => {
   }, []);
 
   useEffect(() => {
-    if (isAdmin) load(status, 1);
+    if (isAdmin) void Promise.resolve().then(() => load(status, 1));
   }, [isAdmin, status, load]);
 
   if (user && !isAdmin) return <Navigate to="/home" replace />;

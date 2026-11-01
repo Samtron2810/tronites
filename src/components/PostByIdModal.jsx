@@ -52,6 +52,8 @@ const PostByIdModal = ({
   const [showPromoteModal, setShowPromoteModal] = useState(false);
   const [showAdminPromoteModal, setShowAdminPromoteModal] = useState(false);
   const [showAdminCancelModal, setShowAdminCancelModal] = useState(false);
+  const [isTogglingComments, setIsTogglingComments] = useState(false);
+  const [showAudienceModal, setShowAudienceModal] = useState(false);
   const [isLiking, setIsLiking] = useState(false);
   const [isBookmarking, setIsBookmarking] = useState(false);
   const [isReposting, setIsReposting] = useState(false);
@@ -264,8 +266,6 @@ const PostByIdModal = ({
     }
   };
 
-  const [isTogglingComments, setIsTogglingComments] = useState(false);
-  const [showAudienceModal, setShowAudienceModal] = useState(false);
   const handleChangeAudience = async (next) => {
     try {
       const res = await api.put(`/posts/${post._id}/privacy`, { privacy: next });

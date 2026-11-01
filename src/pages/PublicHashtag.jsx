@@ -3,7 +3,6 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import MainLayout from "../layouts/MainLayout";
 import PublicPostCard from "../components/PublicPostCard";
 import SeoHead from "../components/SeoHead";
-import { useAuth } from "../context/useAuth";
 import api from "../services/api";
 import { FiHash, FiArrowLeft, FiLoader } from "react-icons/fi";
 import { useSsrInitialData } from "../hooks/useSsrInitialData";
@@ -18,7 +17,6 @@ const THIN_PAGE_THRESHOLD = 3;
 const PublicHashtag = () => {
   const { tag } = useParams();
   const navigate = useNavigate();
-  const { user: viewer } = useAuth();
 
   // See PublicProfile.jsx's comment on useSsrInitialData for the full
   // server/client handoff explanation.
@@ -36,6 +34,7 @@ const PublicHashtag = () => {
     if (initial) return;
 
     let cancelled = false;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reset when the tag changes; skipped above when SSR data was consumed
     setLoading(true);
     setError(false);
     setPosts([]);
@@ -62,6 +61,7 @@ const PublicHashtag = () => {
     return () => {
       cancelled = true;
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- `initial` is first-render-only by design (useSsrInitialData); adding it would re-fetch on the next render
   }, [tag]);
 
   const loadMore = useCallback(async () => {
