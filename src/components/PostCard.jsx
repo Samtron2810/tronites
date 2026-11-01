@@ -1275,7 +1275,7 @@ const PostCard = ({
               privacy === "subscribers" && (
                 <span className="chip">
                   <FiLock size={10} />
-                  Subscribers
+                  <span className="hidden min-[420px]:inline">Subscribers</span>
                 </span>
               )
             )}

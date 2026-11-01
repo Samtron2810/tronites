@@ -254,7 +254,7 @@ const CreatorEarnings = () => {
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState("overview"); // overview | tips | subscribers | payouts | bank
 
-  const tipsList = usePaginatedList("/tips/received", "tips");
+  const tipsList = usePaginatedList("/creator-monetization/tips/received", "tips");
   const subsList = usePaginatedList("/creator-monetization/subscribers", "subscribers");
 
   const load = useCallback(async () => {

@@ -4,7 +4,7 @@ const SplashScreen = () => {
       <img
         src="/tronite-logo.png"
         alt="Tronites"
-        className="splash-logo h-16 w-auto object-contain"
+        className="splash-logo h-16 w-auto rounded-lg object-contain mix-blend-multiply dark:mix-blend-normal"
       />
       <span className="splash-text mt-3 font-display text-4xl font-extrabold tracking-[-0.04em]">
         tronites

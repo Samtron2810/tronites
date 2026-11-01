@@ -422,6 +422,12 @@
     box-shadow: 5px 5px 0 0 var(--hard-shadow);
   }
   .card-amber {
+    /* Amber stays amber in dark mode, so pin the ink tokens inside it. */
+    --color-ink: #16140f;
+    --color-ink-sub: #4a463c;
+    --color-ink-muted: #6e685a;
+    --color-surface: #f4eee1;
+    --color-line: #16140f;
     background-color: var(--color-accent);
     color: #16140f;
   }

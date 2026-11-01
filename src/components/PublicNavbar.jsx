@@ -3,7 +3,7 @@ import { useAuth } from "../context/useAuth";
 import BrandMark from "./ui/BrandMark";
 
 const NAV_LINK =
-  "px-2 py-2 font-mono text-[12px] uppercase tracking-[0.08em] text-ink-sub transition hover:text-ink sm:px-3";
+  "whitespace-nowrap px-1.5 py-2 font-mono text-[11px] uppercase tracking-[0.06em] text-ink-sub transition hover:text-ink sm:px-3 sm:text-[12px] sm:tracking-[0.08em]";
 
 /**
  * Lightweight navigation for public pages.
@@ -17,13 +17,13 @@ const PublicNavbar = () => {
 
   return (
     <header className="sticky top-0 z-50 border-b-2 border-line bg-surface/95 backdrop-blur">
-      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-3 px-4 sm:px-8">
+      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-2 px-3 sm:gap-3 sm:px-8">
         <Link to="/" className="flex shrink-0 items-center" aria-label="Tronites home">
-          <BrandMark size={34} />
+          <BrandMark size={32} />
         </Link>
 
         <nav className="flex items-center gap-0.5 sm:gap-2" aria-label="Public navigation">
-          <Link to="/explore" className={NAV_LINK}>
+          <Link to="/explore" className={`hidden min-[400px]:inline ${NAV_LINK}`}>
             Explore
           </Link>
           <Link to="/tiers" className={`hidden md:inline ${NAV_LINK}`}>

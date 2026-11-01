@@ -91,7 +91,7 @@ const Landing = () => {
         {/* Sample posts — illustration only, not interactive. */}
         <div
           aria-hidden="true"
-          className="relative mx-auto w-full max-w-md space-y-5 lg:h-[470px] lg:max-w-none lg:space-y-0"
+          className="relative mx-auto w-full max-w-md space-y-5 lg:h-[500px] lg:max-w-none lg:space-y-0"
         >
           <div className="card card-pop rotate-[-2.5deg] p-5 lg:absolute lg:right-6 lg:top-0 lg:w-[78%]">
             <div className="flex items-center gap-3">
@@ -114,7 +114,7 @@ const Landing = () => {
             </p>
           </div>
 
-          <div className="card card-amber rotate-[2deg] rounded-tl-[2rem] p-5 lg:absolute lg:right-0 lg:top-[165px] lg:w-[86%]">
+          <div className="card card-amber rotate-[2deg] rounded-tl-[2rem] p-5 lg:absolute lg:right-0 lg:top-[175px] lg:w-[86%]">
             <div className="flex items-center justify-between gap-3">
               <p className="text-sm font-bold">Tobi Makes</p>
               <span className="chip bg-card">Tip received</span>
@@ -131,7 +131,7 @@ const Landing = () => {
             </div>
           </div>
 
-          <div className="card shadow-hard-green rotate-[-1deg] overflow-hidden lg:absolute lg:right-10 lg:top-[330px] lg:w-[80%]">
+          <div className="card shadow-hard-green rotate-[-1deg] overflow-hidden lg:absolute lg:right-10 lg:top-[350px] lg:w-[80%]">
             <div className="hatch-bar" />
             <div className="p-5">
               <p className="mono-label flex items-center gap-1.5">

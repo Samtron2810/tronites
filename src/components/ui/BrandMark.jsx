@@ -12,7 +12,14 @@ const BrandMark = ({ size = 32, wordmark = true, tone = "default", className }) 
       alt={wordmark ? "" : "Tronites"}
       width={size}
       height={size}
-      className="shrink-0 object-contain"
+      className={cx(
+        "shrink-0 object-contain",
+        // The logo file has a white backdrop: multiply drops it on the cream
+        // page; on dark surfaces it stays a clean rounded tile instead.
+        tone === "light"
+          ? "rounded-lg"
+          : "mix-blend-multiply dark:mix-blend-normal dark:rounded-lg",
+      )}
       style={{ height: size, width: "auto" }}
     />
     {wordmark && (
