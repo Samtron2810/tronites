@@ -95,6 +95,11 @@ const PayoutRow = ({ payout, onChanged }) => {
           <>
             <span className="font-semibold text-ink">{bank.accountName}</span>
             {" · "}{bank.bankName}{" · "}•••• {bank.accountNumberLast4}
+            <span className="block mt-1 text-ink-muted">
+              {bank.lockedAtRequest
+                ? "Destination locked when requested — later bank changes don't affect it."
+                : "Older request: sends to the creator's current saved account."}
+            </span>
             {!ready && (
               <span className="block mt-1 text-amber-600">
                 Not registered for transfers — the creator must re-save their bank details.

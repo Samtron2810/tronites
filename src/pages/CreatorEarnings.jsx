@@ -69,8 +69,12 @@ const BankForm = ({ existing, onSaved }) => {
   const [resolvedName, setResolvedName] = useState("");
   const [resolveError, setResolveError] = useState("");
   const [saving, setSaving] = useState(false);
+  // With a saved account the form stays closed until "Change" is clicked.
+  const hasSaved = !!existing?.accountNumberLast4;
+  const [open, setOpen] = useState(!hasSaved);
 
   useEffect(() => {
+    if (!open) return;
     let cancelled = false;
     api
       .get("/creator-monetization/banks")
@@ -78,7 +82,7 @@ const BankForm = ({ existing, onSaved }) => {
       .catch(() => !cancelled && toast.error("Couldn't load the bank list."))
       .finally(() => !cancelled && setBanksLoading(false));
     return () => { cancelled = true; };
-  }, []);
+  }, [open]);
 
   // Look the account up as soon as a bank and 10 digits are present.
   useEffect(() => {
@@ -106,6 +110,7 @@ const BankForm = ({ existing, onSaved }) => {
       await api.post("/creator-monetization/bank-account", { accountNumber, bankCode });
       toast.success("Bank account saved.");
       setAccountNumber("");
+      setOpen(false);
       onSaved?.();
     } catch (e) {
       toast.error(e.response?.data?.message || "Could not save bank account.");
@@ -117,11 +122,28 @@ const BankForm = ({ existing, onSaved }) => {
   return (
     <div className="card p-5 space-y-4">
       <h3 className="font-semibold text-ink text-sm">Bank account for payouts</h3>
-      {existing?.accountNumberLast4 && (
+      {hasSaved && (
         <div className="bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-xl px-3 py-2 flex items-center gap-2 text-xs text-green-700 dark:text-green-400">
-          <FaCheckCircle size={11} />
-          Saved: {existing.bankName} ···{existing.accountNumberLast4} · {existing.accountName}
+          <FaCheckCircle size={11} className="shrink-0" />
+          <span className="flex-1 min-w-0">
+            {existing.bankName} ···{existing.accountNumberLast4} · {existing.accountName}
+          </span>
+          {!open && (
+            <button
+              onClick={() => setOpen(true)}
+              className="font-semibold underline underline-offset-2 shrink-0"
+            >
+              Change
+            </button>
+          )}
         </div>
+      )}
+      {open && (<>
+      {hasSaved && (
+        <p className="text-xs text-ink-muted">
+          Saving a new account replaces this one for future payout requests.
+          Requests you've already submitted still go to the account they were made with.
+        </p>
       )}
       <div className="grid grid-cols-1 gap-3">
         <div>
@@ -165,14 +187,26 @@ const BankForm = ({ existing, onSaved }) => {
         )}
         {resolveError && <p className="text-xs text-red-600">{resolveError}</p>}
       </div>
-      <button
-        onClick={handleSave}
-        disabled={saving || resolving || !resolvedName}
-        className="btn btn-primary btn-block"
-      >
-        {saving ? <FaSpinner size={13} className="animate-spin" /> : null}
-        {saving ? "Saving…" : "Save bank account"}
-      </button>
+      <div className="flex gap-2">
+        <button
+          onClick={handleSave}
+          disabled={saving || resolving || !resolvedName}
+          className="btn btn-primary flex-1"
+        >
+          {saving ? <FaSpinner size={13} className="animate-spin" /> : null}
+          {saving ? "Saving…" : "Save bank account"}
+        </button>
+        {hasSaved && (
+          <button
+            onClick={() => { setOpen(false); setAccountNumber(""); setBankCode(existing?.bankCode || ""); }}
+            disabled={saving}
+            className="px-4 py-2.5 rounded-xl border border-stroke text-ink-muted text-sm hover:bg-surface transition"
+          >
+            Cancel
+          </button>
+        )}
+      </div>
+      </>)}
     </div>
   );
 };
