@@ -6,7 +6,7 @@ import NotificationSkeleton from "../components/NotificationSkeleton";
 import api from "../services/api";
 import { useRefetchOnFocus } from "../hooks/useRefetchOnFocus";
 import { useSocket } from "../context/useSocket";
-import { FaHeart, FaRegComment, FaUserPlus, FaAt, FaReply, FaBell, FaShieldAlt, FaExclamationTriangle, FaRetweet, FaQuoteRight, FaRegSmile, FaAward, FaTimesCircle, FaClock, FaBolt } from "react-icons/fa";
+import { FaHeart, FaRegComment, FaUserPlus, FaAt, FaReply, FaBell, FaShieldAlt, FaExclamationTriangle, FaRetweet, FaQuoteRight, FaRegSmile, FaAward, FaTimesCircle, FaClock, FaBolt, FaStar, FaCoins } from "react-icons/fa";
 import defaultAvatar from "../assets/defaultAvatar";
 import { resizedImageUrl, IMAGE_SIZES } from "../utils/cloudinaryImage";
 import VerifiedBadge from "../components/VerifiedBadge";
@@ -47,6 +47,21 @@ const typeConfig = {
   // like post_admin_promoted: system avatar, no sender link, message from n.message.
   post_promotion_cancelled: { icon: FaTimesCircle, color: "text-amber-500", label: "" },
   post_promotion_extended:   { icon: FaBolt, color: "text-primary-600", label: "" },
+  // Creator monetization. Sender is the subscriber/tipper (tipper is null
+  // for anonymous tips). The tip label is rebuilt per-row from n.message
+  // (amount + optional note) — see tipLabel below.
+  creator_subscribe: { icon: FaStar, color: "text-amber-500", label: "subscribed to your creator plan" },
+  creator_tip:       { icon: FaCoins, color: "text-amber-500", label: "sent you a tip" },
+};
+
+// Backend tip copy is "<Name|Someone> sent you a ₦500 tip: \"note\"". The
+// actor name is rendered separately, so strip it and keep amount + note.
+const tipLabel = (row) => {
+  const m = row.message;
+  if (!m) return "sent you a tip";
+  const name = row.actors[0]?.name;
+  if (name && m.startsWith(name)) return m.slice(name.length).trim();
+  return m.replace(/^Someone\s+/, "");
 };
 
 // Router target a notification row navigates to when clicked — the
@@ -68,6 +83,7 @@ const rowTarget = (row) => {
     case "repost":
     case "quote":
     case "reaction":
+    case "creator_tip":
     case "post_admin_promoted":
     case "post_promotion_cancelled":
     case "post_promotion_extended":
@@ -101,7 +117,14 @@ const actorsLine = (row, label) => {
   const names = row.actors.map((a) => a?.name || "Someone");
   const totalOtherActors = row.othersCount;
 
-  if (names.length === 0) return <span className="text-ink-sub">{label}</span>;
+  // No actor (anonymous tip / deleted sender) — "Someone <label>".
+  if (names.length === 0)
+    return (
+      <>
+        <span className="font-semibold">Someone</span>{" "}
+        <span className="text-ink-sub">{label}</span>
+      </>
+    );
 
   if (names.length === 1 && totalOtherActors === 0) {
     return <span className="text-ink-sub">{label}</span>;
@@ -277,7 +300,9 @@ const Notifications = () => {
             const label =
               row.type === "reaction" && row.message
                 ? `reacted ${row.message} to your post`
-                : cfg.label;
+                : row.type === "creator_tip"
+                  ? tipLabel(row)
+                  : cfg.label;
             return (
               <div
                 key={row._id}
@@ -305,6 +330,11 @@ const Notifications = () => {
                       </div>
                     );
                   })()
+                ) : row.actors.length === 0 ? (
+                  // No sender (anonymous tip) — neutral avatar, no profile link.
+                  <div className="w-10 h-10 rounded-lg bg-surface border-2 border-line flex items-center justify-center shrink-0">
+                    <Icon className={cfg.color} size={16} />
+                  </div>
                 ) : row.actors.length > 1 ? (
                   // Grouped row — stacked avatars for the actors shown,
                   // no single profile link (there's no one destination
