@@ -17,7 +17,15 @@ import {
   FaQuoteRight,
   FaCommentSlash,
 } from "react-icons/fa";
-import { FiFlag, FiGlobe, FiUsers, FiLock, FiZap, FiExternalLink, FiAlertTriangle } from "react-icons/fi";
+import {
+  FiFlag,
+  FiGlobe,
+  FiUsers,
+  FiLock,
+  FiZap,
+  FiExternalLink,
+  FiAlertTriangle,
+} from "react-icons/fi";
 
 const CTA_LABELS = {
   learn_more: "Learn More",
@@ -202,7 +210,9 @@ const PostCard = ({
   // Local copy so the owner's toggle reflects instantly; re-syncs when the
   // parent passes a different prop (feed refetch / cache refresh).
   const [commentsOff, setCommentsOff] = useState(Boolean(commentsDisabled));
-  const [syncedCommentsDisabled, setSyncedCommentsDisabled] = useState(Boolean(commentsDisabled));
+  const [syncedCommentsDisabled, setSyncedCommentsDisabled] = useState(
+    Boolean(commentsDisabled),
+  );
   const [isTogglingComments, setIsTogglingComments] = useState(false);
   // Local audience so the owner's change reflects instantly; re-syncs when
   // the parent passes a different prop (feed refetch / cache refresh).
@@ -293,7 +303,9 @@ const PostCard = ({
   // modal and immediately erroring "already promoted"). Reads the synced
   // local override so an admin-granted promotion (see below) reflects here
   // immediately too, not just the original prop.
-  const isCurrentlyPromoted = Boolean(promotedUntilState && new Date(promotedUntilState) > new Date());
+  const isCurrentlyPromoted = Boolean(
+    promotedUntilState && new Date(promotedUntilState) > new Date(),
+  );
   // Admin/moderator comp — a non-owner path distinct from the owner's own
   // paid Promote above. Gated on the POST AUTHOR's tier (canPromote reads
   // `verifications`, which here is the AUTHOR's badges, not the viewer's —
@@ -330,7 +342,8 @@ const PostCard = ({
     } catch {
       // Non-fatal — still let the user reach the destination even if the
       // click-tracking call failed.
-      if (destinationUrl) window.open(destinationUrl, "_blank", "noopener,noreferrer");
+      if (destinationUrl)
+        window.open(destinationUrl, "_blank", "noopener,noreferrer");
     } finally {
       setCtaClicking(false);
     }
@@ -388,7 +401,7 @@ const PostCard = ({
   const { socket } = useSocket();
 
   const media = (images || []).map((img) =>
-    typeof img === "string" ? { url: img, altText: "" } : img
+    typeof img === "string" ? { url: img, altText: "" } : img,
   );
 
   // Mirrors Profile.jsx's user-report submit — same endpoint, same payload
@@ -617,7 +630,8 @@ const PostCard = ({
   // (replaces the old creator-only check). Server re-validates ownership
   // and tier limit; client-side check avoids showing a guaranteed-403.
   const pinLimit = getPinnedLimit(currentUser);
-  const isPinned = Array.isArray(pinnedPostIds) && pinnedPostIds.includes(postId);
+  const isPinned =
+    Array.isArray(pinnedPostIds) && pinnedPostIds.includes(postId);
   const atPinLimit =
     Array.isArray(pinnedPostIds) && pinnedPostIds.length >= pinLimit;
 
@@ -635,7 +649,9 @@ const PostCard = ({
         postId: isPinned ? null : postId,
       });
       if (onTogglePin) onTogglePin(res.data.pinnedPosts);
-      toast.success(isPinned ? "Post unpinned." : "Pinned to the top of your profile!");
+      toast.success(
+        isPinned ? "Post unpinned." : "Pinned to the top of your profile!",
+      );
     } catch (e) {
       console.error(e);
       toast.error(
@@ -673,7 +689,10 @@ const PostCard = ({
       toast.success(next ? "Commenting turned off." : "Commenting turned on.");
     } catch (e) {
       console.error(e);
-      toast.error(e.response?.data?.message || "Couldn't update comment settings. Try again.");
+      toast.error(
+        e.response?.data?.message ||
+          "Couldn't update comment settings. Try again.",
+      );
     } finally {
       setIsTogglingComments(false);
     }
@@ -698,7 +717,9 @@ const PostCard = ({
       toast.success("Audience updated.");
     } catch (e) {
       console.error(e);
-      toast.error(e.response?.data?.message || "Couldn't update the audience. Try again.");
+      toast.error(
+        e.response?.data?.message || "Couldn't update the audience. Try again.",
+      );
     }
   };
 
@@ -952,7 +973,12 @@ const PostCard = ({
     postEditedAt && cooldownRemainingMs(postEditedAt, POST_EDIT_COOLDOWN_MS),
   );
   // Edit option is hidden when: user can't edit at all, window closed, or cooldown active.
-  const showEditOption = isOwner && userCanEdit && !editWindowClosed && !isEditing && !editCooldownActive;
+  const showEditOption =
+    isOwner &&
+    userCanEdit &&
+    !editWindowClosed &&
+    !isEditing &&
+    !editCooldownActive;
   // Per-user char limit for the inline edit textarea
   const editCharLimit = getCharLimit(currentUser);
 
@@ -1150,7 +1176,11 @@ const PostCard = ({
               ? "card shadow-hard-green overflow-hidden p-5"
               : "border-b-2 border-line py-5"
         }
-        onClick={isPromoted && postId ? () => api.post(`/posts/promote/click/${postId}`).catch(() => {}) : undefined}
+        onClick={
+          isPromoted && postId
+            ? () => api.post(`/posts/promote/click/${postId}`).catch(() => {})
+            : undefined
+        }
       >
         {privacy === "subscribers" && !isPromoted && (
           <div aria-hidden="true" className="hatch-bar -mx-5 -mt-5 mb-4" />
@@ -1233,7 +1263,9 @@ const PostCard = ({
                 </span>
 
                 {username && (
-                  <span className="font-mono text-[12px] text-ink-muted">@{username}</span>
+                  <span className="font-mono text-[12px] text-ink-muted">
+                    @{username}
+                  </span>
                 )}
               </div>
               <p className="flex items-center gap-1 font-mono text-[12px] text-ink-muted">
@@ -1293,7 +1325,14 @@ const PostCard = ({
             </button>
 
             {menuOpen && (
-              <FloatingMenu open anchorRef={triggerRef} menuRef={menuRef} align="right" offset={8} className="w-44 rounded-lg py-1">
+              <FloatingMenu
+                open
+                anchorRef={triggerRef}
+                menuRef={menuRef}
+                align="right"
+                offset={8}
+                className="w-44 rounded-lg py-1"
+              >
                 <button
                   onClick={handleCopyPost}
                   className="w-full flex items-center gap-3 px-4 py-2.5 text-base text-ink-sub hover:bg-surface transition"
@@ -1341,8 +1380,14 @@ const PostCard = ({
                             : "text-ink hover:bg-primary-50"
                         }`}
                       >
-                        <span className={`text-sm font-bold ${isCurrentlyPromoted ? "text-ink-muted" : "text-primary-600"}`}>⚡</span>
-                        <span className="font-medium">{isCurrentlyPromoted ? "Promoted" : "Promote post"}</span>
+                        <span
+                          className={`text-sm font-bold ${isCurrentlyPromoted ? "text-ink-muted" : "text-primary-600"}`}
+                        >
+                          ⚡
+                        </span>
+                        <span className="font-medium">
+                          {isCurrentlyPromoted ? "Promoted" : "Promote post"}
+                        </span>
                       </button>
                     )}
                     {/* Edit — verified tiers only, within their edit window */}
@@ -1380,10 +1425,15 @@ const PostCard = ({
                       {commentsOff ? (
                         <FaRegComment className="text-primary-600" size={13} />
                       ) : (
-                        <FaCommentSlash className="text-primary-600" size={13} />
+                        <FaCommentSlash
+                          className="text-primary-600"
+                          size={13}
+                        />
                       )}
                       <span className="font-medium">
-                        {commentsOff ? "Turn on commenting" : "Turn off commenting"}
+                        {commentsOff
+                          ? "Turn on commenting"
+                          : "Turn off commenting"}
                       </span>
                     </button>
                     <button
@@ -1407,7 +1457,9 @@ const PostCard = ({
                         }}
                         className="w-full flex items-center gap-3 px-4 py-2.5 text-base text-ink hover:bg-primary-50 transition"
                       >
-                        <span className="text-sm font-bold text-primary-600">⚡</span>
+                        <span className="text-sm font-bold text-primary-600">
+                          ⚡
+                        </span>
                         <span className="font-medium">Promote for creator</span>
                       </button>
                     )}
@@ -1421,7 +1473,9 @@ const PostCard = ({
                       >
                         <FiAlertTriangle size={13} />
                         <span className="font-medium">
-                          {isCurrentlyPromoted ? "Cancel promotion" : "Cancel pending promotion"}
+                          {isCurrentlyPromoted
+                            ? "Cancel promotion"
+                            : "Cancel pending promotion"}
                         </span>
                       </button>
                     )}
@@ -1503,101 +1557,100 @@ const PostCard = ({
             </div>
           </div>
         ) : (
-          <>{/* ── Subscriber gate — wraps text + media for subscriber-only posts ── */}
-          <SubscriberOnlyGate
-            creator={{ _id: userId, name, username, profilePic }}
-            isSubscribed={privacy !== "subscribers" || isOwner}
-            onTip={
-              !isOwner && userId
-                ? () => setShowTipModal(true)
-                : undefined
-            }
-          >
-          <p
-            onClick={openDetail}
-            className="text-ink-sub text-base leading-relaxed cursor-pointer whitespace-pre-line"
-          >
-            <TextWithLinks text={postText} />
-            {postHasBeenEdited && (
-              <span
-                className="text-[11px] text-ink-muted ml-1.5 align-middle"
-                title={
-                  postEditedAt
-                    ? new Date(postEditedAt).toLocaleString()
-                    : undefined
-                }
+          <>
+            {/* ── Subscriber gate — wraps text + media for subscriber-only posts ── */}
+            <SubscriberOnlyGate
+              creator={{ _id: userId, name, username, profilePic }}
+              isSubscribed={privacy !== "subscribers" || isOwner}
+              onTip={
+                !isOwner && userId ? () => setShowTipModal(true) : undefined
+              }
+            >
+              <p
+                onClick={openDetail}
+                className="text-ink-sub text-base leading-relaxed cursor-pointer whitespace-pre-line"
               >
-                (edited)
-              </span>
-            )}
-          </p>
+                <TextWithLinks text={postText} />
+                {postHasBeenEdited && (
+                  <span
+                    className="text-[11px] text-ink-muted ml-1.5 align-middle"
+                    title={
+                      postEditedAt
+                        ? new Date(postEditedAt).toLocaleString()
+                        : undefined
+                    }
+                  >
+                    (edited)
+                  </span>
+                )}
+              </p>
 
-        {/* Embedded original — quote cards only. Clicking it opens the
+              {/* Embedded original — quote cards only. Clicking it opens the
             ORIGINAL post's own detail view (a separate post, with its
             own like/comment/bookmark/repost state) — stopPropagation
             keeps this from also triggering the quote's own detail
             modal via the text paragraph's onClick above it. */}
-        {isQuotePost && (
-          <div
-            className="mt-3 cursor-pointer"
-            onClick={(e) => {
-              e.stopPropagation();
-              setOpenOriginalId(quoteOf?._id);
-            }}
-          >
-            <QuotedPostPreview post={quoteOf} />
-          </div>
-        )}
-
-        {/* Video */}
-        {postVideo?.status === "processing" && (
-          <div className="mt-4 rounded-xl overflow-hidden bg-surface aspect-video flex flex-col items-center justify-center gap-2 text-ink-muted">
-            <div className="h-6 w-6 border-2 border-primary-600 border-t-transparent rounded-full animate-spin" />
-            <span className="text-sm">Processing video...</span>
-          </div>
-        )}
-        {postVideo?.status === "failed" && (
-          <div className="mt-4 rounded-xl overflow-hidden bg-surface aspect-video flex flex-col items-center justify-center gap-1 text-ink-muted">
-            <span className="text-sm">Video processing failed.</span>
-          </div>
-        )}
-        {postVideo?.status === "ready" && postVideo.url && (
-          <div className="mt-4 relative rounded-xl overflow-hidden border-2 border-line bg-black">
-            <video
-              ref={videoRef}
-              src={`${postVideo.url}#t=0.1`}
-              poster={postVideo.thumbnailUrl || undefined}
-              controls
-              playsInline
-              preload="metadata"
-              disablePictureInPicture
-              controlsList="nodownload nofullscreen noplaybackrate"
-              onContextMenu={(e) => e.preventDefault()}
-              onClick={(e) => e.stopPropagation()}
-              className="w-full max-h-96 object-contain"
-            />
-            {/* Mute/unmute overlay — sits top-right, clear of the bottom
-                native-controls bar. */}
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleToggleVideoMute();
-              }}
-              aria-label={isVideoMuted ? "Unmute video" : "Mute video"}
-              title={isVideoMuted ? "Unmute" : "Mute"}
-              className="absolute top-2 right-2 w-8 h-8 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/70 transition"
-            >
-              {isVideoMuted ? (
-                <FaVolumeMute size={16} />
-              ) : (
-                <FaVolumeUp size={16} />
+              {isQuotePost && (
+                <div
+                  className="mt-3 cursor-pointer"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setOpenOriginalId(quoteOf?._id);
+                  }}
+                >
+                  <QuotedPostPreview post={quoteOf} />
+                </div>
               )}
-            </button>
-          </div>
-        )}
 
-        {/* Single image: unchanged inline view, natural aspect ratio,
+              {/* Video */}
+              {postVideo?.status === "processing" && (
+                <div className="mt-4 rounded-xl overflow-hidden bg-surface aspect-video flex flex-col items-center justify-center gap-2 text-ink-muted">
+                  <div className="h-6 w-6 border-2 border-primary-600 border-t-transparent rounded-full animate-spin" />
+                  <span className="text-sm">Processing video...</span>
+                </div>
+              )}
+              {postVideo?.status === "failed" && (
+                <div className="mt-4 rounded-xl overflow-hidden bg-surface aspect-video flex flex-col items-center justify-center gap-1 text-ink-muted">
+                  <span className="text-sm">Video processing failed.</span>
+                </div>
+              )}
+              {postVideo?.status === "ready" && postVideo.url && (
+                <div className="mt-4 relative rounded-xl overflow-hidden border-2 border-line bg-black">
+                  <video
+                    ref={videoRef}
+                    src={`${postVideo.url}#t=0.1`}
+                    poster={postVideo.thumbnailUrl || undefined}
+                    controls
+                    playsInline
+                    preload="metadata"
+                    disablePictureInPicture
+                    controlsList="nodownload nofullscreen noplaybackrate"
+                    onContextMenu={(e) => e.preventDefault()}
+                    onClick={(e) => e.stopPropagation()}
+                    className="w-full max-h-96 object-contain"
+                  />
+                  {/* Mute/unmute overlay — sits top-right, clear of the bottom
+                native-controls bar. */}
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleToggleVideoMute();
+                    }}
+                    aria-label={isVideoMuted ? "Unmute video" : "Mute video"}
+                    title={isVideoMuted ? "Unmute" : "Mute"}
+                    className="absolute top-2 right-2 w-8 h-8 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/70 transition"
+                  >
+                    {isVideoMuted ? (
+                      <FaVolumeMute size={16} />
+                    ) : (
+                      <FaVolumeUp size={16} />
+                    )}
+                  </button>
+                </div>
+              )}
+
+              {/* Single image: unchanged inline view, natural aspect ratio,
             click opens the detail modal on the same (only) slide.
             Multiple images: fixed-height grid (2/3/4-up, chat-style) so
             a 4-image post takes up the same card footprint as a
@@ -1606,63 +1659,71 @@ const PostCard = ({
             neutral cell background. Clicking a cell opens the detail
             modal seeked to that image's index; the modal itself keeps
             its own carousel/arrows/dots untouched. */}
-        {media.length === 1 && (
-          <div
-            className="mt-4 relative rounded-xl overflow-hidden border-2 border-line bg-surface cursor-pointer"
-            onClick={() => openDetail(0)}
-          >
-            <LazyImage
-              src={resizedImageUrl(media[0]?.url || media[0], IMAGE_SIZES.feedImage)}
-              alt="post-1"
-              className="max-h-96 object-contain"
-              priority={priority}
-            />
-          </div>
-        )}
-
-        {media.length > 1 && (
-          <div
-            className={`mt-4 grid gap-0.5 rounded-xl overflow-hidden border-2 border-line h-50 ${
-              media.length === 2 ? "grid-cols-2" : "grid-cols-2 grid-rows-2"
-            }`}
-          >
-            {media.slice(0, 4).map((img, i) => {
-              const isFirstOfThree = media.length === 3 && i === 0;
-              const extraCount = media.length - 4;
-              const isLastVisibleOfFour = media.length > 4 && i === 3;
-
-              return (
+              {media.length === 1 && (
                 <div
-                  key={i}
-                  className={`relative h-full bg-surface cursor-pointer ${
-                    isFirstOfThree ? "row-span-2" : ""
-                  }`}
-                  onClick={() => openDetail(i)}
+                  className="mt-4 relative rounded-xl overflow-hidden border-2 border-line bg-surface cursor-pointer"
+                  onClick={() => openDetail(0)}
                 >
                   <LazyImage
-                    src={resizedImageUrl(img.url || img, IMAGE_SIZES.feedImage)}
-                    alt={img.altText || `Image ${i + 1}`}
-                    className="object-contain"
-                    fill
-                    priority={priority && i === 0}
+                    src={resizedImageUrl(
+                      media[0]?.url || media[0],
+                      IMAGE_SIZES.feedImage,
+                    )}
+                    alt="post-1"
+                    className="max-h-75 object-contain"
+                    priority={priority}
                   />
-                  {isLastVisibleOfFour && extraCount > 0 && (
-                    <div className="absolute inset-0 bg-black/60 flex items-center justify-center pointer-events-none">
-                      <span className="text-white text-2xl font-semibold">
-                        +{extraCount}
-                      </span>
-                    </div>
-                  )}
                 </div>
-              );
-            })}
-          </div>
-        )}
+              )}
 
-        {/* Reaction summary — sits above the action bar, same info
+              {media.length > 1 && (
+                <div
+                  className={`mt-4 grid gap-1 rounded-xl overflow-hidden border-2 border-line h-75 ${
+                    media.length === 2
+                      ? "grid-cols-2"
+                      : "grid-cols-2 grid-rows-2"
+                  }`}
+                >
+                  {media.slice(0, 4).map((img, i) => {
+                    const isFirstOfThree = media.length === 3 && i === 0;
+                    const extraCount = media.length - 4;
+                    const isLastVisibleOfFour = media.length > 4 && i === 3;
+
+                    return (
+                      <div
+                        key={i}
+                        className={`relative h-full bg-surface cursor-pointer ${
+                          isFirstOfThree ? "row-span-2" : ""
+                        }`}
+                        onClick={() => openDetail(i)}
+                      >
+                        <LazyImage
+                          src={resizedImageUrl(
+                            img.url || img,
+                            IMAGE_SIZES.feedImage,
+                          )}
+                          alt={img.altText || `Image ${i + 1}`}
+                          className="object-contain"
+                          fill
+                          priority={priority && i === 0}
+                        />
+                        {isLastVisibleOfFour && extraCount > 0 && (
+                          <div className="absolute inset-0 bg-black/60 flex items-center justify-center pointer-events-none">
+                            <span className="text-white text-2xl font-semibold">
+                              +{extraCount}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Reaction summary — sits above the action bar, same info
             tier as the like count today. Hidden entirely when no one
             has reacted yet (no empty state clutter). */}
-          </SubscriberOnlyGate>
+            </SubscriberOnlyGate>
           </>
         )}
 
@@ -1728,7 +1789,11 @@ const PostCard = ({
                 : "text-ink-muted hover:text-primary-600"
             }`}
           >
-            {commentsOff ? <FaCommentSlash size={15} /> : <FaRegComment size={15} />}
+            {commentsOff ? (
+              <FaCommentSlash size={15} />
+            ) : (
+              <FaRegComment size={15} />
+            )}
             <span>{commentCount}</span>
           </button>
 
@@ -1769,7 +1834,14 @@ const PostCard = ({
             </button>
 
             {repostMenuOpen && (
-              <FloatingMenu open anchorRef={repostTriggerRef} menuRef={repostMenuRef} align="left" offset={8} className="w-40 rounded-lg py-1">
+              <FloatingMenu
+                open
+                anchorRef={repostTriggerRef}
+                menuRef={repostMenuRef}
+                align="left"
+                offset={8}
+                className="w-40 rounded-lg py-1"
+              >
                 <button
                   onClick={handleRepost}
                   disabled={isReposting}
@@ -1800,35 +1872,37 @@ const PostCard = ({
           </div>
 
           {/* Tip button — shown on other people's creator posts only */}
-          {!isOwner && userId && (() => {
-            // Check if post author has creator badge — we approximate here
-            // by checking if verifications prop includes 'creator'.
-            // Full check happens server-side; this is just a UI hint.
-            const authorIsCreator = (verifications || []).some(
-              (v) => v.type === "creator",
-            );
-            if (!authorIsCreator) return null;
-            return (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowTipModal(true);
-                }}
-                title="Send a tip"
-                className="chip chip-amber transition hover:-translate-y-px"
-              >
-                <svg
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                  className="h-3 w-3"
-                  aria-hidden="true"
+          {!isOwner &&
+            userId &&
+            (() => {
+              // Check if post author has creator badge — we approximate here
+              // by checking if verifications prop includes 'creator'.
+              // Full check happens server-side; this is just a UI hint.
+              const authorIsCreator = (verifications || []).some(
+                (v) => v.type === "creator",
+              );
+              if (!authorIsCreator) return null;
+              return (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowTipModal(true);
+                  }}
+                  title="Send a tip"
+                  className="chip chip-amber transition hover:-translate-y-px"
                 >
-                  <path d="M10 2a8 8 0 100 16A8 8 0 0010 2zm.75 11.5v.75a.75.75 0 01-1.5 0v-.75a2.25 2.25 0 01-1.856-2.2c0-1.034.7-1.907 1.856-2.194V7.75a.75.75 0 011.5 0v1.306c1.156.287 1.856 1.16 1.856 2.194a.75.75 0 01-1.5 0c0-.414-.374-.75-.856-.75s-.856.336-.856.75.374.75.856.75c1.156.287 1.856 1.16 1.856 2.194a2.25 2.25 0 01-1.856 2.2z" />
-                </svg>
-                <span>Tip</span>
-              </button>
-            );
-          })()}
+                  <svg
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                    className="h-3 w-3"
+                    aria-hidden="true"
+                  >
+                    <path d="M10 2a8 8 0 100 16A8 8 0 0010 2zm.75 11.5v.75a.75.75 0 01-1.5 0v-.75a2.25 2.25 0 01-1.856-2.2c0-1.034.7-1.907 1.856-2.194V7.75a.75.75 0 011.5 0v1.306c1.156.287 1.856 1.16 1.856 2.194a.75.75 0 01-1.5 0c0-.414-.374-.75-.856-.75s-.856.336-.856.75.374.75.856.75c1.156.287 1.856 1.16 1.856 2.194a2.25 2.25 0 01-1.856 2.2z" />
+                  </svg>
+                  <span>Tip</span>
+                </button>
+              );
+            })()}
 
           <button
             onClick={handleBookmark}
